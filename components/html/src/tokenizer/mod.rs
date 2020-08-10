@@ -33,7 +33,8 @@ macro_rules! emit_error {
 pub enum Char {
     ch(char),
     eof,
-    null
+    null,
+    whitespace
 }
 
 pub struct Tokenizer<'a> {
@@ -59,7 +60,7 @@ pub struct Tokenizer<'a> {
     reconsume_char: bool,
 
     // Temporary buffer to track progress
-    temp_buffer: Vec<char>,
+    temp_buffer: String,
 
     // Last emitted start tag to verify if end tag is valid
     last_emitted_start_tag: Option<Token>
@@ -75,7 +76,7 @@ impl<'a> Tokenizer<'a> {
             return_state: None,
             current_token: None,
             reconsume_char: false,
-            temp_buffer: Vec::new(),
+            temp_buffer: String::new(),
             last_emitted_start_tag: None
         }
     }
@@ -203,8 +204,7 @@ impl<'a> Tokenizer<'a> {
                 }
                 State::TagName => {
                     match ch {
-                        // \x0C = U+000C FORM FEED (FF)
-                        Char::ch('\t') | Char::ch('\n') | Char::ch('\x0C') | Char::ch(' ') => {
+                        Char::whitespace => {
                             self.switch_to(State::BeforeAttributeName);
                         }
                         Char::ch('/') => {
@@ -256,7 +256,7 @@ impl<'a> Tokenizer<'a> {
                 }
                 State::RCDATAEndTagName => {
                     match ch {
-                        Char::ch('\t') | Char::ch('\n') | Char::ch('\x0C') | Char::ch(' ') => {
+                        Char::whitespace => {
                             if !self.is_end_tag_appropriate() {
                                 self.will_emit(Token::Character('<'));
                                 self.will_emit(Token::Character('/'));
@@ -330,7 +330,7 @@ impl<'a> Tokenizer<'a> {
                 }
                 State::RAWTEXTEndTagName => {
                     match ch {
-                        Char::ch('\t') | Char::ch('\n') | Char::ch('\x0C') | Char::ch(' ') => {
+                        Char::whitespace => {
                             if !self.is_end_tag_appropriate() {
                                 self.will_emit(Token::Character('<'));
                                 self.will_emit(Token::Character('/'));
@@ -409,7 +409,7 @@ impl<'a> Tokenizer<'a> {
                 }
                 State::ScriptDataEndTagName => {
                     match ch {
-                        Char::ch('\t') | Char::ch('\n') | Char::ch('\x0C') | Char::ch(' ') => {
+                        Char::whitespace => {
                             if !self.is_end_tag_appropriate() {
                                 self.will_emit(Token::Character('<'));
                                 self.will_emit(Token::Character('/'));
@@ -573,7 +573,7 @@ impl<'a> Tokenizer<'a> {
                     match ch {
                         Char::ch(c) if c.is_ascii_alphabetic() => {
                             self.new_token(Token::new_end_tag());
-                            self.reconsume_in(State::ScriptDataEscapedEngTagName);
+                            self.reconsume_in(State::ScriptDataEscapedEndTagName);
                         }
                         _ => {
                             self.will_emit(Token::Character('<'));
@@ -582,11 +582,157 @@ impl<'a> Tokenizer<'a> {
                         }
                     }
                 }
-                State::ScriptDataEscapedEndTagName => {}
-                State::ScriptDataDoubleEscapeStart => {}
-                State::ScriptDataDoubleEscaped => {}
-                State::ScriptDataDoubleEscapedDash => {}
-                State::ScriptDataDoubleEscapedDashDash => {}
+                State::ScriptDataEscapedEndTagName => {
+                    match ch {
+                        Char::whitespace => {
+                            if !self.is_end_tag_appropriate() {
+                                self.will_emit(Token::Character('<'));
+                                self.will_emit(Token::Character('/'));
+                                self.emit_temp_buffer();
+                                self.reconsume_in(State::ScriptDataEscaped);
+                            }
+                            else {
+                                self.switch_to(State::BeforeAttributeName);
+                            }
+                        }
+                        Char::ch('/') => {
+                            if !self.is_end_tag_appropriate() {
+                                self.will_emit(Token::Character('<'));
+                                self.will_emit(Token::Character('/'));
+                                self.emit_temp_buffer();
+                                self.reconsume_in(State::ScriptDataEscaped);
+                            }
+                            else {
+                                self.switch_to(State::SelfClosingStartTag);
+                            }
+                        }
+                        Char::ch('>') => {
+                            if !self.is_end_tag_appropriate() {
+                                self.will_emit(Token::Character('<'));
+                                self.will_emit(Token::Character('/'));
+                                self.emit_temp_buffer();
+                                self.reconsume_in(State::ScriptDataEscaped);
+                            }
+                            else {
+                                self.switch_to(State::Data);
+                                return self.emit_current_token();
+                            }
+                        }
+                        Char::ch(c) if c.is_ascii_uppercase() => {
+                            self.append_character_to_tag_name(c.to_ascii_lowercase());
+                            self.temp_buffer.push(c);
+                        }
+                        Char::ch(c) if c.is_ascii_lowercase() => {
+                            self.append_character_to_tag_name(c);
+                            self.temp_buffer.push(c);
+                        }
+                        _ => {
+                            self.will_emit(Token::Character('<'));
+                            self.will_emit(Token::Character('/'));
+                            self.emit_temp_buffer();
+                            self.reconsume_in(State::ScriptDataEscaped);
+                        }
+                    }
+                }
+                State::ScriptDataDoubleEscapeStart => {
+                    match ch {
+                        Char::whitespace | Char::ch('/') | Char::ch('>') => {
+                            if self.temp_buffer == "script" {
+                                self.switch_to(State::ScriptDataDoubleEscaped);
+                            } else {
+                                self.switch_to(State::ScriptDataEscaped);
+                            }
+                            return self.emit_current_char();
+                        }
+                        Char::ch(c) if c.is_ascii_uppercase() => {
+                            self.temp_buffer.push(c.to_ascii_lowercase());
+                            return self.emit_current_char();
+                        }
+                        Char::ch(c) if c.is_ascii_lowercase() => {
+                            self.temp_buffer.push(c);
+                            return self.emit_current_char();
+                        }
+                        _ => {
+                            self.reconsume_in(State::ScriptDataEscaped);
+                        }
+                    }
+                }
+                State::ScriptDataDoubleEscaped => {
+                    match ch {
+                        Char::ch('-') => {
+                            self.switch_to(State::ScriptDataDoubleEscapedDash);
+                            return self.emit_char('-');
+                        }
+                        Char::ch('<') => {
+                            self.switch_to(State::ScriptDataDoubleEscapedLessThanSign);
+                            return self.emit_char('<');
+                        }
+                        Char::null => {
+                            emit_error!("unexpected-null-character");
+                            return self.emit_char('\u{FFFD}');
+                        }
+                        Char::eof => {
+                            emit_error!("eof-in-script-html-comment-like-text");
+                            return self.emit_eof();
+                        }
+                        _ => {
+                            return self.emit_current_char();
+                        }
+                    }
+                }
+                State::ScriptDataDoubleEscapedDash => {
+                    match ch {
+                        Char::ch('-') => {
+                            self.switch_to(State::ScriptDataDoubleEscapedDashDash);
+                            return self.emit_char('-');
+                        }
+                        Char::ch('<') => {
+                            self.switch_to(State::ScriptDataDoubleEscapedLessThanSign);
+                            return self.emit_char('<');
+                        }
+                        Char::null => {
+                            emit_error!("unexpected-null-character");
+                            self.switch_to(State::ScriptDataDoubleEscaped);
+                            return self.emit_char('\u{FFFD}');
+                        }
+                        Char::eof => {
+                            emit_error!("eof-in-script-html-comment-like-text");
+                            return self.emit_eof();
+                        }
+                        _ => {
+                            self.switch_to(State::ScriptDataDoubleEscaped);
+                            return self.emit_current_char();
+                        }
+                    }
+                }
+                State::ScriptDataDoubleEscapedDashDash => {
+                    match ch {
+                        Char::ch('-') => {
+                            return self.emit_char('-');
+                        }
+                        Char::ch('<') => {
+                            self.switch_to(State::ScriptDataDoubleEscapedLessThanSign);
+                            return self.emit_char('<');
+                        }
+                        Char::ch('>') => {
+                            self.switch_to(State::ScriptData);
+                            return self.emit_char('>');
+                        }
+                        Char::null => {
+                            emit_error!("unexpected-null-character");
+                            self.switch_to(State::ScriptDataDoubleEscaped);
+                            return self.emit_char('\u{FFFD}');
+                        }
+                        Char::eof => {
+                            emit_error!("eof-in-script-html-comment-like-text");
+                            return self.emit_eof();
+                        }
+                        _ => {
+                            self.switch_to(State::ScriptDataDoubleEscaped);
+                            return self.emit_current_char();
+                        }
+                    }
+                }
                 State::ScriptDataDoubleEscapedLessThanSign => {
                     match ch {
                         Char::ch('/') => {
@@ -599,7 +745,29 @@ impl<'a> Tokenizer<'a> {
                         }
                     }
                 }
-                State::ScriptDataDoubleEscapeEnd => {}
+                State::ScriptDataDoubleEscapeEnd => {
+                    match ch {
+                        Char::whitespace | Char::ch('/') | Char::ch('>') => {
+                            if self.temp_buffer == "script" {
+                                self.switch_to(State::ScriptDataEscaped);
+                            } else {
+                                self.switch_to(State::ScriptDataDoubleEscaped);
+                            }
+                            return self.emit_current_char();
+                        }
+                        Char::ch(c) if c.is_ascii_uppercase() => {
+                            self.temp_buffer.push(c.to_ascii_lowercase());
+                            return self.emit_current_char();
+                        }
+                        Char::ch(c) if c.is_ascii_lowercase() => {
+                            self.temp_buffer.push(c);
+                            return self.emit_current_char();
+                        }
+                        _ => {
+                            self.reconsume_in(State::ScriptDataDoubleEscaped);
+                        }
+                    }
+                }
                 State::BeforeAttributeName => {}
                 State::AttributeName => {}
                 State::AfterAttributeName => {}
@@ -862,7 +1030,7 @@ impl<'a> Tokenizer<'a> {
 
     fn flush_code_points_consumed_as_a_character_reference(&mut self) {
         if self.is_character_part_of_attribute() {
-            for c in self.temp_buffer.iter_mut() {
+            for c in self.temp_buffer.chars() {
                 // TODO: implement attribute value
             }
         } else {
@@ -884,8 +1052,8 @@ impl<'a> Tokenizer<'a> {
     }
 
     fn emit_temp_buffer(&mut self) {
-        for c in self.temp_buffer.iter_mut() {
-            self.output.push_back(Token::Character(*c));
+        for c in self.temp_buffer.chars() {
+            self.output.push_back(Token::Character(c));
         }
     }
 
@@ -987,6 +1155,7 @@ impl<'a> Tokenizer<'a> {
                 self.current_character = c;
                 match c {
                     '\0' => Char::null,
+                    '\t' | '\n' | '\x0C' | ' ' => Char::whitespace,
                     _ => Char::ch(c)
                 }
             }
