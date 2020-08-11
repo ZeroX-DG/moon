@@ -6,7 +6,7 @@ use std::str::Chars;
 use std::env;
 use state::State;
 use token::Token;
-
+use token::Attribute;
 
 fn is_trace() -> bool { match env::var("TRACE_TOKENIZER") {
         Ok(s) => s == "true",
@@ -63,7 +63,7 @@ pub struct Tokenizer<'a> {
     temp_buffer: String,
 
     // Last emitted start tag to verify if end tag is valid
-    last_emitted_start_tag: Option<Token>
+    last_emitted_start_tag: Option<Token>,
 }
 
 impl<'a> Tokenizer<'a> {
@@ -288,7 +288,7 @@ impl<'a> Tokenizer<'a> {
                             }
                         }
                         Char::ch(c) if c.is_ascii_uppercase() => {
-                            self.append_character_to_tag_name(self.current_character.to_ascii_lowercase());
+                            self.append_character_to_tag_name(c.to_ascii_lowercase());
                             self.temp_buffer.push(self.current_character);
                         }
                         Char::ch(c) if c.is_ascii_lowercase() => {
@@ -362,7 +362,7 @@ impl<'a> Tokenizer<'a> {
                             }
                         }
                         Char::ch(c) if c.is_ascii_uppercase() => {
-                            self.append_character_to_tag_name(self.current_character.to_ascii_lowercase());
+                            self.append_character_to_tag_name(c.to_ascii_lowercase());
                             self.temp_buffer.push(self.current_character);
                         }
                         Char::ch(c) if c.is_ascii_lowercase() => {
@@ -441,7 +441,7 @@ impl<'a> Tokenizer<'a> {
                             }
                         }
                         Char::ch(c) if c.is_ascii_uppercase() => {
-                            self.append_character_to_tag_name(self.current_character.to_ascii_lowercase());
+                            self.append_character_to_tag_name(c.to_ascii_lowercase());
                             self.temp_buffer.push(self.current_character);
                         }
                         Char::ch(c) if c.is_ascii_lowercase() => {
@@ -768,14 +768,189 @@ impl<'a> Tokenizer<'a> {
                         }
                     }
                 }
-                State::BeforeAttributeName => {}
-                State::AttributeName => {}
-                State::AfterAttributeName => {}
-                State::BeforeAttributeValue => {}
-                State::AttributeValueDoubleQuoted => {}
-                State::AttributeValueSingleQuoted => {}
-                State::AttributeValueUnQuoted => {}
-                State::AfterAttributeValueQuoted => {}
+                State::BeforeAttributeName => {
+                    match ch {
+                        Char::whitespace => continue,
+                        Char::ch('/') | Char::ch('>') | Char::eof => {
+                            self.reconsume_in(State::AfterAttributeName);
+                        }
+                        Char::ch('=') => {
+                            emit_error!("unexpected-equals-sign-before-attribute-name");
+                            let mut attribute = Attribute::new();
+                            attribute.name.push(self.current_character);
+                            self.new_attribute(attribute);
+                            self.switch_to(State::AttributeName);
+                        }
+                        _ => {
+                            let attribute = Attribute::new();
+                            self.new_attribute(attribute);
+                            self.reconsume_in(State::AttributeName);
+                        }
+                    }
+                }
+                State::AttributeName => {
+                    match ch {
+                        Char::whitespace | Char::ch('/') | Char::ch('>') | Char::eof => {
+                            self.reconsume_in(State::AfterAttributeName);
+                        }
+                        Char::ch('=') => {
+                            self.switch_to(State::BeforeAttributeValue);
+                        }
+                        Char::ch(c) if c.is_ascii_uppercase() => {
+                            self.append_character_to_attribute_name(c.to_ascii_lowercase());
+                        }
+                        Char::null => {
+                            emit_error!("unexpected-null-character");
+                            self.append_character_to_attribute_name('\u{FFFD}');
+                        }
+                        Char::ch('"') | Char::ch('\'') | Char::ch('<') => {
+                            emit_error!("unexpected-character-in-attribute-name");
+                            self.append_character_to_attribute_name(self.current_character);
+                        }
+                        _ => {
+                            self.append_character_to_attribute_name(self.current_character);
+                        }
+                    }
+                }
+                State::AfterAttributeName => {
+                    match ch {
+                        Char::whitespace => continue,
+                        Char::ch('/') => {
+                            self.switch_to(State::SelfClosingStartTag);
+                        }
+                        Char::ch('=') => {
+                            self.switch_to(State::BeforeAttributeValue);
+                        }
+                        Char::ch('>') => {
+                            self.switch_to(State::Data);
+                            return self.emit_current_token();
+                        }
+                        Char::eof => {
+                            emit_error!("eof-in-tag");
+                            return self.emit_eof();
+                        }
+                        _ => {
+                            let attribute = Attribute::new();
+                            self.new_attribute(attribute);
+                            self.reconsume_in(State::AttributeName);
+                        }
+                    }
+                }
+                State::BeforeAttributeValue => {
+                    match ch {
+                        Char::whitespace => continue,
+                        Char::ch('"') => {
+                            self.switch_to(State::AttributeValueDoubleQuoted);
+                        }
+                        Char::ch('\'') => {
+                            self.switch_to(State::AttributeValueSingleQuoted);
+                        }
+                        Char::ch('>') => {
+                            emit_error!("missing-attribute-value");
+                            self.switch_to(State::Data);
+                            return self.emit_current_token();
+                        }
+                        _ => {
+                            self.reconsume_in(State::AttributeValueUnQuoted);
+                        }
+                    }
+                }
+                State::AttributeValueDoubleQuoted => {
+                    match ch {
+                        Char::ch('"') => {
+                            self.switch_to(State::AfterAttributeValueQuoted);
+                        }
+                        Char::ch('&') => {
+                            self.return_state = Some(State::AttributeValueDoubleQuoted);
+                            self.switch_to(State::CharacterReference);
+                        }
+                        Char::null => {
+                            emit_error!("unexpected-null-character");
+                            self.append_character_to_attribute_value('\u{FFFD}');
+                        }
+                        Char::eof => {
+                            emit_error!("eof-in-tag");
+                            return self.emit_eof();
+                        }
+                        _ => {
+                            self.append_character_to_attribute_value(self.current_character);
+                        }
+                    }
+                }
+                State::AttributeValueSingleQuoted => {
+                    match ch {
+                        Char::ch('"') => {
+                            self.switch_to(State::AfterAttributeValueQuoted);
+                        }
+                        Char::ch('&') => {
+                            self.return_state = Some(State::AttributeValueSingleQuoted);
+                            self.switch_to(State::CharacterReference);
+                        }
+                        Char::null => {
+                            emit_error!("unexpected-null-character");
+                            self.append_character_to_attribute_value('\u{FFFD}');
+                        }
+                        Char::eof => {
+                            emit_error!("eof-in-tag");
+                            return self.emit_eof();
+                        }
+                        _ => {
+                            self.append_character_to_attribute_value(self.current_character);
+                        }
+                    }
+                }
+                State::AttributeValueUnQuoted => {
+                    match ch {
+                        Char::whitespace => {
+                            self.switch_to(State::BeforeAttributeName);
+                        }
+                        Char::ch('&') => {
+                            self.return_state = Some(State::AttributeValueUnQuoted);
+                            self.switch_to(State::CharacterReference);
+                        }
+                        Char::ch('>') => {
+                            self.switch_to(State::Data);
+                            return self.emit_current_token();
+                        }
+                        Char::null => {
+                            emit_error!("unexpected-null-character");
+                            self.append_character_to_attribute_value('\u{FFFD}');
+                        }
+                        Char::ch('"') | Char::ch('\'') | Char::ch('<') | Char::ch('=') | Char::ch('`') =>  {
+                            emit_error!("unexpected-character-in-unquoted-attribute-value");
+                            self.append_character_to_attribute_value(self.current_character);
+                        }
+                        Char::eof => {
+                            emit_error!("eof-in-tag");
+                            return self.emit_eof();
+                        }
+                        _ => {
+                            self.append_character_to_attribute_value(self.current_character);
+                        }
+                    }
+                }
+                State::AfterAttributeValueQuoted => {
+                    match ch {
+                        Char::whitespace => {
+                            self.switch_to(State::BeforeAttributeName);
+                        }
+                        Char::ch('/') => {
+                            self.switch_to(State::SelfClosingStartTag);
+                        }
+                        Char::ch('>') => {
+                            self.switch_to(State::Data);
+                            return self.emit_current_token();
+                        }
+                        Char::eof => {
+                            emit_error!("eof-in-tag");
+                            return self.emit_eof();
+                        }
+                        _ => {
+                            emit_error!("missing-whitespace-between-attributes");
+                            self.reconsume_in(State::BeforeAttributeName);
+                        }
+                    }
+                }
                 State::SelfClosingStartTag => {
                     match ch {
                         Char::ch('>') => {
@@ -901,9 +1076,7 @@ impl<'a> Tokenizer<'a> {
                     }
                 }
                 State::CommentLessThanSignBangDash => {
-                    match ch {
-                        Char::ch('-') => {
-                            self.switch_to(State::CommentLessThanSignBangDashDash);
+                    match ch { Char::ch('-') => { self.switch_to(State::CommentLessThanSignBangDashDash);
                         }
                         _ => {
                             self.reconsume_in(State::CommentEndDash);
@@ -1028,6 +1201,13 @@ impl<'a> Tokenizer<'a> {
         self.reconsume_in(self.return_state.clone().unwrap());
     }
 
+    fn new_attribute(&mut self, attribute: Attribute) {
+        let token = self.current_token.as_mut().unwrap();
+        if let Token::Tag { ref mut attributes, .. } = token {
+            attributes.push(attribute);
+        }
+    }
+
     fn flush_code_points_consumed_as_a_character_reference(&mut self) {
         if self.is_character_part_of_attribute() {
             for c in self.temp_buffer.chars() {
@@ -1078,6 +1258,22 @@ impl<'a> Tokenizer<'a> {
         }
     }
 
+    fn append_character_to_attribute_name(&mut self, ch: char) {
+        let current_tag = self.current_token.as_mut().unwrap();
+        if let Token::Tag { ref mut attributes, .. } = current_tag {
+            let attribute = attributes.last_mut().unwrap();
+            attribute.name.push(ch);
+        }
+    }
+
+    fn append_character_to_attribute_value(&mut self, ch: char) {
+        let current_tag = self.current_token.as_mut().unwrap();
+        if let Token::Tag { ref mut attributes, .. } = current_tag {
+            let attribute = attributes.last_mut().unwrap();
+            attribute.value.push(ch);
+        }
+    }
+
     fn emit_current_token(&mut self) -> Token {
         self.will_emit(self.current_token.clone().unwrap());
         self.pop_token()
@@ -1106,6 +1302,7 @@ impl<'a> Tokenizer<'a> {
             if !is_end_tag {
                 self.last_emitted_start_tag = Some(token.clone());
             }
+            // TODO: filter duplicate attributes
         }
         self.output.push_back(token);
     }

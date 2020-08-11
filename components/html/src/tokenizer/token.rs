@@ -1,5 +1,8 @@
-use std::collections::HashMap;
-type AttrMap = HashMap<String, String>;
+#[derive(Clone)]
+pub struct Attribute {
+    pub name: String,
+    pub value: String
+}
 
 #[derive(Clone)]
 pub enum Token {
@@ -12,7 +15,7 @@ pub enum Token {
     Tag {
         tag_name: String,
         self_closing: bool,
-        attributes: AttrMap,
+        attributes: Vec<Attribute>,
         is_end_tag: bool
     },
     Comment(String),
@@ -26,7 +29,7 @@ impl Token {
             tag_name: String::new(),
             is_end_tag: false,
             self_closing: false,
-            attributes: HashMap::new()
+            attributes: Vec::new()
         }
     }
 
@@ -35,11 +38,20 @@ impl Token {
             tag_name: String::new(),
             is_end_tag: true,
             self_closing: false,
-            attributes: HashMap::new()
+            attributes: Vec::new()
         }
     }
 
     pub fn new_comment(data: &str) -> Self {
         Token::Comment(data.to_owned())
+    }
+}
+
+impl Attribute {
+    pub fn new() -> Self {
+        Self {
+            name: String::new(),
+            value: String::new()
+        }
     }
 }
