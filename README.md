@@ -11,7 +11,8 @@ To keep the "do it from scratch" spirit, I'll try to limit the use of dependenci
 
 I write about what I learn from this journey on my blog:
 
-**Browser from Scratch: Introduction**
+### Browser from Scratch: Introduction
+
 This is the start of Browser from Scratch series, created to help me (and probably you too) to learn more about how a browser works by building one! - [**Read more**][1]
 
 [1]: https://zerox-dg.github.io/blog/2020/05/29/Browser-from-Scratch-Introduction/
