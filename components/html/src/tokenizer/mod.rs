@@ -1227,8 +1227,82 @@ impl<'a> Tokenizer<'a> {
                         }
                     }
                 }
-                State::DOCTYPE => {}
-                State::BeforeDOCTYPEName => {}
+                State::DOCTYPE => {
+                    let ch = self.consume_next();
+                    match ch {
+                        Char::whitespace => {
+                            self.switch_to(State::BeforeDOCTYPEName);
+                        }
+                        Char::ch('>') => {
+                            self.reconsume_in(State::BeforeDOCTYPEName);
+                        }
+                        Char::eof => {
+                            emit_error!("eof-in-doctype");
+                            let mut token = Token::new_doctype();
+                            token.set_force_quirks(true);
+                            self.new_token(token);
+                            self.will_emit(self.current_token.clone().unwrap());
+                            return self.emit_eof();
+                        }
+                        _ => {
+                            emit_error!("missing-whitespace-before-doctype-name");
+                            self.reconsume_in(State::BeforeDOCTYPEName);
+                        }
+                    }
+                }
+                State::BeforeDOCTYPEName => {
+                    let ch = self.consume_next();
+                    match ch {
+                        Char::whitespace => continue,
+                        Char::ch(c) if c.is_ascii_uppercase() => {
+                            let mut token = Token::new_doctype();
+                            if let Token::DOCTYPE { ref mut name, .. } = token {
+                                let mut new_name = String::new();
+                                new_name.push(c.to_ascii_lowercase());
+                                *name = Some(new_name);
+                            }
+                            self.new_token(token);
+                            self.switch_to(State::DOCTYPEName);
+                        }
+                        Char::null => {
+                            emit_error!("unexpected-null-character");
+                            let mut token = Token::new_doctype();
+                            if let Token::DOCTYPE { ref mut name, .. } = token {
+                                let mut new_name = String::new();
+                                new_name.push('\u{FFFD}');
+                                *name = Some(new_name);
+                            }
+                            self.new_token(token);
+                            self.switch_to(State::DOCTYPEName);
+                        }
+                        Char::ch('>') => {
+                            emit_error!("missing-doctype-name");
+                            let mut token = Token::new_doctype();
+                            token.set_force_quirks(true);
+                            self.new_token(token);
+                            self.switch_to(State::Data);
+                            return self.emit_current_token();
+                        }
+                        Char::eof => {
+                            emit_error!("eof-in-doctype");
+                            let mut token = Token::new_doctype();
+                            token.set_force_quirks(true);
+                            self.new_token(token);
+                            self.will_emit(self.current_token.clone().unwrap());
+                            return self.emit_eof();
+                        }
+                        _ => {
+                            let mut token = Token::new_doctype();
+                            if let Token::DOCTYPE { ref mut name, .. } = token {
+                                let mut new_name = String::new();
+                                new_name.push(self.current_character);
+                                *name = Some(new_name);
+                            }
+                            self.new_token(token);
+                            self.switch_to(State::DOCTYPEName);
+                        }
+                    }
+                }
                 State::DOCTYPEName => {}
                 State::AfterDOCTYPEName => {}
                 State::AfterDOCTYPEPublicKeyword => {}

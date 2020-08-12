@@ -6,7 +6,7 @@ pub struct Attribute {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Token {
-    Doctype {
+    DOCTYPE {
         name: Option<String>,
         public_identifier: Option<String>,
         system_identifier: Option<String>,
@@ -44,6 +44,21 @@ impl Token {
 
     pub fn new_comment(data: &str) -> Self {
         Token::Comment(data.to_owned())
+    }
+
+    pub fn new_doctype() -> Self {
+        Token::DOCTYPE {
+            name: None,
+            public_identifier: None,
+            system_identifier: None,
+            force_quirks: false
+        }
+    }
+
+    pub fn set_force_quirks(&mut self, value: bool) {
+        if let Token::DOCTYPE { ref mut force_quirks, .. } = self {
+            *force_quirks = value;
+        }
     }
 }
 
