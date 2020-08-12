@@ -65,9 +65,6 @@ pub struct Tokenizer<'a> {
 
     // Last emitted start tag to verify if end tag is valid
     last_emitted_start_tag: Option<Token>,
-
-    // Previous input char to prevent consume if we need
-    previous_input_char: Option<char>
 }
 
 impl<'a> Tokenizer<'a> {
@@ -82,7 +79,6 @@ impl<'a> Tokenizer<'a> {
             reconsume_char: false,
             temp_buffer: String::new(),
             last_emitted_start_tag: None,
-            previous_input_char: None
         }
     }
 
@@ -1141,7 +1137,9 @@ impl<'a> Tokenizer<'a> {
                 }
                 State::CommentLessThanSignBangDash => {
                     let ch = self.consume_next();
-                    match ch { Char::ch('-') => { self.switch_to(State::CommentLessThanSignBangDashDash);
+                    match ch {
+                        Char::ch('-') => {
+                            self.switch_to(State::CommentLessThanSignBangDashDash);
                         }
                         _ => {
                             self.reconsume_in(State::CommentEndDash);
@@ -1177,8 +1175,58 @@ impl<'a> Tokenizer<'a> {
                         }
                     }
                 }
-                State::CommentEnd => {}
-                State::CommentEndBang => {}
+                State::CommentEnd => {
+                    let ch = self.consume_next();
+                    match ch {
+                        Char::ch('>') => {
+                            self.switch_to(State::Data);
+                            return self.emit_current_token();
+                        }
+                        Char::ch('!') => {
+                            self.switch_to(State::CommentEndBang);
+                        }
+                        Char::ch('-') => {
+                            self.append_character_to_token_data('-');
+                        }
+                        Char::eof => {
+                            emit_error!("eof-in-comment");
+                            self.will_emit(self.current_token.clone().unwrap());
+                            return self.emit_eof();
+                        }
+                        _ => {
+                            self.append_character_to_token_data('-');
+                            self.append_character_to_token_data('-');
+                            self.reconsume_in(State::Comment);
+                        }
+                    }
+                }
+                State::CommentEndBang => {
+                    let ch = self.consume_next();
+                    match ch {
+                        Char::ch('-') => {
+                            self.append_character_to_token_data('-');
+                            self.append_character_to_token_data('-');
+                            self.append_character_to_token_data('!');
+                            self.switch_to(State::CommentEndDash);
+                        }
+                        Char::ch('>') => {
+                            emit_error!("incorrectly-closed-comment");
+                            self.switch_to(State::Data);
+                            return self.emit_current_token();
+                        }
+                        Char::eof => {
+                            emit_error!("eof-in-comment");
+                            self.will_emit(self.current_token.clone().unwrap());
+                            return self.emit_eof();
+                        }
+                        _ => {
+                            self.append_character_to_token_data('-');
+                            self.append_character_to_token_data('-');
+                            self.append_character_to_token_data('!');
+                            self.reconsume_in(State::Comment);
+                        }
+                    }
+                }
                 State::DOCTYPE => {}
                 State::BeforeDOCTYPEName => {}
                 State::DOCTYPEName => {}
@@ -1405,6 +1453,7 @@ impl<'a> Tokenizer<'a> {
     }
 
     fn switch_to(&mut self, state: State) {
+        println!("Switch to: {:#?}", state);
         self.state = state;
     }
 
@@ -1417,9 +1466,9 @@ impl<'a> Tokenizer<'a> {
         }
         if current_str.starts_with(&pattern) {
             for _ in 0..pattern.len() {
-                self.input.next();
+                self.consume_next();
             }
-            return false;
+            return true;
         }
         false
     }
@@ -1448,3 +1497,28 @@ impl<'a> Tokenizer<'a> {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parse_comment() {
+        let html = "<!--xin chao-->";
+        let mut chars = html.chars();
+        let mut tokenizer = Tokenizer::new(&mut chars);
+        assert_eq!(Token::Comment("xin chao".to_owned()), tokenizer.next_token());
+    }
+
+    #[test]
+    fn parse_tag() {
+        let html = "<html>";
+        let mut chars = html.chars();
+        let mut tokenizer = Tokenizer::new(&mut chars);
+        assert_eq!(Token::Tag {
+            tag_name: "html".to_owned(),
+            self_closing: false,
+            attributes: Vec::new(),
+            is_end_tag: false
+        }, tokenizer.next_token());
+    }
+}

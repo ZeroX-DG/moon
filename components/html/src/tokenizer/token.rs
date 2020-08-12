@@ -1,10 +1,10 @@
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Attribute {
     pub name: String,
     pub value: String
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Token {
     Doctype {
         name: Option<String>,
