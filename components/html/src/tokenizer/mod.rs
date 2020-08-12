@@ -8,7 +8,8 @@ use state::State;
 use token::Token;
 use token::Attribute;
 
-fn is_trace() -> bool { match env::var("TRACE_TOKENIZER") {
+fn is_trace() -> bool {
+    match env::var("TRACE_TOKENIZER") {
         Ok(s) => s == "true",
         _ => false
     }
@@ -64,6 +65,9 @@ pub struct Tokenizer<'a> {
 
     // Last emitted start tag to verify if end tag is valid
     last_emitted_start_tag: Option<Token>,
+
+    // Previous input char to prevent consume if we need
+    previous_input_char: Option<char>
 }
 
 impl<'a> Tokenizer<'a> {
@@ -77,7 +81,8 @@ impl<'a> Tokenizer<'a> {
             current_token: None,
             reconsume_char: false,
             temp_buffer: String::new(),
-            last_emitted_start_tag: None
+            last_emitted_start_tag: None,
+            previous_input_char: None
         }
     }
 
@@ -86,9 +91,9 @@ impl<'a> Tokenizer<'a> {
             return self.output.pop_front().unwrap();
         }
         loop {
-            let ch = self.consume_next();
             match self.state {
                 State::Data => {
+                    let ch = self.consume_next();
                     match ch {
                         Char::ch('&') => {
                             self.return_state = Some(State::Data);
@@ -104,6 +109,7 @@ impl<'a> Tokenizer<'a> {
                     }
                 }
                 State::RCDATA => {
+                    let ch = self.consume_next();
                     match ch {
                         Char::ch('&') => {
                             self.return_state = Some(State::RCDATA);
@@ -120,6 +126,7 @@ impl<'a> Tokenizer<'a> {
                     }
                 }
                 State::RAWTEXT => {
+                    let ch = self.consume_next();
                     match ch {
                         Char::ch('<') => self.switch_to(State::RAWTEXTLessThanSign),
                         Char::null => {
@@ -132,6 +139,7 @@ impl<'a> Tokenizer<'a> {
                     }
                 }
                 State::ScriptData => {
+                    let ch = self.consume_next();
                     match ch {
                         Char::ch('<') => self.switch_to(State::ScriptDataLessThanSign),
                         Char::null => {
@@ -144,6 +152,7 @@ impl<'a> Tokenizer<'a> {
                     }
                 }
                 State::PLAINTEXT => {
+                    let ch = self.consume_next();
                     match ch {
                         Char::null => {
                             emit_error!("unexpected-null-character");
@@ -151,10 +160,11 @@ impl<'a> Tokenizer<'a> {
                             return self.emit_char('\u{FFFD}');
                         }
                         Char::eof => return self.emit_eof(),
-                        Char::ch(_) => return self.emit_current_char()
+                        _ => return self.emit_current_char()
                     }
                 }
                 State::TagOpen => {
+                    let ch = self.consume_next();
                     match ch {
                         Char::ch('!') => self.switch_to(State::MarkupDeclarationOpen),
                         Char::ch('/') => self.switch_to(State::EndTagOpen),
@@ -180,6 +190,7 @@ impl<'a> Tokenizer<'a> {
                     }
                 }
                 State::EndTagOpen => {
+                    let ch = self.consume_next();
                     match ch {
                         Char::ch(c) if c.is_ascii_alphabetic() => {
                             self.new_token(Token::new_end_tag());
@@ -203,6 +214,7 @@ impl<'a> Tokenizer<'a> {
                     }
                 }
                 State::TagName => {
+                    let ch = self.consume_next();
                     match ch {
                         Char::whitespace => {
                             self.switch_to(State::BeforeAttributeName);
@@ -230,6 +242,7 @@ impl<'a> Tokenizer<'a> {
                     }
                 }
                 State::RCDATALessThanSign => {
+                    let ch = self.consume_next();
                     match ch {
                         Char::ch('/') => {
                             self.temp_buffer.clear();
@@ -242,6 +255,7 @@ impl<'a> Tokenizer<'a> {
                     }
                 }
                 State::RCDATAEndTagOpen => {
+                    let ch = self.consume_next();
                     match ch {
                         Char::ch(c) if c.is_ascii_alphabetic() => {
                             self.new_token(Token::new_end_tag());
@@ -255,6 +269,7 @@ impl<'a> Tokenizer<'a> {
                     }
                 }
                 State::RCDATAEndTagName => {
+                    let ch = self.consume_next();
                     match ch {
                         Char::whitespace => {
                             if !self.is_end_tag_appropriate() {
@@ -304,6 +319,7 @@ impl<'a> Tokenizer<'a> {
                     }
                 }
                 State::RAWTEXTLessThanSign => {
+                    let ch = self.consume_next();
                     match ch {
                         Char::ch('/') => {
                             self.temp_buffer.clear();
@@ -316,6 +332,7 @@ impl<'a> Tokenizer<'a> {
                     }
                 }
                 State::RAWTEXTEndTagOpen => {
+                    let ch = self.consume_next();
                     match ch {
                         Char::ch(c) if c.is_ascii_alphabetic() => {
                             self.new_token(Token::new_end_tag());
@@ -329,6 +346,7 @@ impl<'a> Tokenizer<'a> {
                     }
                 }
                 State::RAWTEXTEndTagName => {
+                    let ch = self.consume_next();
                     match ch {
                         Char::whitespace => {
                             if !self.is_end_tag_appropriate() {
@@ -378,6 +396,7 @@ impl<'a> Tokenizer<'a> {
                     }
                 }
                 State::ScriptDataLessThanSign => {
+                    let ch = self.consume_next();
                     match ch {
                         Char::ch('/') => {
                             self.temp_buffer.clear();
@@ -395,6 +414,7 @@ impl<'a> Tokenizer<'a> {
                     }
                 }
                 State::ScriptDataEndTagOpen => {
+                    let ch = self.consume_next();
                     match ch {
                         Char::ch(c) if c.is_ascii_alphabetic() => {
                             self.new_token(Token::new_end_tag());
@@ -408,6 +428,7 @@ impl<'a> Tokenizer<'a> {
                     }
                 }
                 State::ScriptDataEndTagName => {
+                    let ch = self.consume_next();
                     match ch {
                         Char::whitespace => {
                             if !self.is_end_tag_appropriate() {
@@ -457,6 +478,7 @@ impl<'a> Tokenizer<'a> {
                     }
                 }
                 State::ScriptDataEscapeStart => {
+                    let ch = self.consume_next();
                     match ch {
                         Char::ch('-') => {
                             self.switch_to(State::ScriptDataEscapeStartDash);
@@ -467,6 +489,7 @@ impl<'a> Tokenizer<'a> {
                     }
                 }
                 State::ScriptDataEscapeStartDash => {
+                    let ch = self.consume_next();
                     match ch {
                         Char::ch('-') => {
                             self.switch_to(State::ScriptDataEscapedDashDash);
@@ -477,6 +500,7 @@ impl<'a> Tokenizer<'a> {
                     }
                 }
                 State::ScriptDataEscaped => {
+                    let ch = self.consume_next();
                     match ch {
                         Char::ch('-') => {
                             self.switch_to(State::ScriptDataEscapedDash);
@@ -500,6 +524,7 @@ impl<'a> Tokenizer<'a> {
                     }
                 }
                 State::ScriptDataEscapedDash => {
+                    let ch = self.consume_next();
                     match ch {
                         Char::ch('-') => {
                             self.switch_to(State::ScriptDataEscapedDashDash);
@@ -525,6 +550,7 @@ impl<'a> Tokenizer<'a> {
                     }
                 }
                 State::ScriptDataEscapedDashDash => {
+                    let ch = self.consume_next();
                     match ch {
                         Char::ch('-') => {
                             return self.emit_char('-');
@@ -553,6 +579,7 @@ impl<'a> Tokenizer<'a> {
                     }
                 }
                 State::ScriptDataEscapedLessThanSign => {
+                    let ch = self.consume_next();
                     match ch {
                         Char::ch('/') => {
                             self.temp_buffer.clear();
@@ -570,6 +597,7 @@ impl<'a> Tokenizer<'a> {
                     }
                 }
                 State::ScriptDataEscapedEndTagOpen => {
+                    let ch = self.consume_next();
                     match ch {
                         Char::ch(c) if c.is_ascii_alphabetic() => {
                             self.new_token(Token::new_end_tag());
@@ -583,6 +611,7 @@ impl<'a> Tokenizer<'a> {
                     }
                 }
                 State::ScriptDataEscapedEndTagName => {
+                    let ch = self.consume_next();
                     match ch {
                         Char::whitespace => {
                             if !self.is_end_tag_appropriate() {
@@ -635,6 +664,7 @@ impl<'a> Tokenizer<'a> {
                     }
                 }
                 State::ScriptDataDoubleEscapeStart => {
+                    let ch = self.consume_next();
                     match ch {
                         Char::whitespace | Char::ch('/') | Char::ch('>') => {
                             if self.temp_buffer == "script" {
@@ -658,6 +688,7 @@ impl<'a> Tokenizer<'a> {
                     }
                 }
                 State::ScriptDataDoubleEscaped => {
+                    let ch = self.consume_next();
                     match ch {
                         Char::ch('-') => {
                             self.switch_to(State::ScriptDataDoubleEscapedDash);
@@ -681,6 +712,7 @@ impl<'a> Tokenizer<'a> {
                     }
                 }
                 State::ScriptDataDoubleEscapedDash => {
+                    let ch = self.consume_next();
                     match ch {
                         Char::ch('-') => {
                             self.switch_to(State::ScriptDataDoubleEscapedDashDash);
@@ -706,6 +738,7 @@ impl<'a> Tokenizer<'a> {
                     }
                 }
                 State::ScriptDataDoubleEscapedDashDash => {
+                    let ch = self.consume_next();
                     match ch {
                         Char::ch('-') => {
                             return self.emit_char('-');
@@ -734,6 +767,7 @@ impl<'a> Tokenizer<'a> {
                     }
                 }
                 State::ScriptDataDoubleEscapedLessThanSign => {
+                    let ch = self.consume_next();
                     match ch {
                         Char::ch('/') => {
                             self.temp_buffer.clear();
@@ -746,6 +780,7 @@ impl<'a> Tokenizer<'a> {
                     }
                 }
                 State::ScriptDataDoubleEscapeEnd => {
+                    let ch = self.consume_next();
                     match ch {
                         Char::whitespace | Char::ch('/') | Char::ch('>') => {
                             if self.temp_buffer == "script" {
@@ -769,6 +804,7 @@ impl<'a> Tokenizer<'a> {
                     }
                 }
                 State::BeforeAttributeName => {
+                    let ch = self.consume_next();
                     match ch {
                         Char::whitespace => continue,
                         Char::ch('/') | Char::ch('>') | Char::eof => {
@@ -789,6 +825,7 @@ impl<'a> Tokenizer<'a> {
                     }
                 }
                 State::AttributeName => {
+                    let ch = self.consume_next();
                     match ch {
                         Char::whitespace | Char::ch('/') | Char::ch('>') | Char::eof => {
                             self.reconsume_in(State::AfterAttributeName);
@@ -813,6 +850,7 @@ impl<'a> Tokenizer<'a> {
                     }
                 }
                 State::AfterAttributeName => {
+                    let ch = self.consume_next();
                     match ch {
                         Char::whitespace => continue,
                         Char::ch('/') => {
@@ -837,6 +875,7 @@ impl<'a> Tokenizer<'a> {
                     }
                 }
                 State::BeforeAttributeValue => {
+                    let ch = self.consume_next();
                     match ch {
                         Char::whitespace => continue,
                         Char::ch('"') => {
@@ -856,6 +895,7 @@ impl<'a> Tokenizer<'a> {
                     }
                 }
                 State::AttributeValueDoubleQuoted => {
+                    let ch = self.consume_next();
                     match ch {
                         Char::ch('"') => {
                             self.switch_to(State::AfterAttributeValueQuoted);
@@ -878,6 +918,7 @@ impl<'a> Tokenizer<'a> {
                     }
                 }
                 State::AttributeValueSingleQuoted => {
+                    let ch = self.consume_next();
                     match ch {
                         Char::ch('"') => {
                             self.switch_to(State::AfterAttributeValueQuoted);
@@ -900,6 +941,7 @@ impl<'a> Tokenizer<'a> {
                     }
                 }
                 State::AttributeValueUnQuoted => {
+                    let ch = self.consume_next();
                     match ch {
                         Char::whitespace => {
                             self.switch_to(State::BeforeAttributeName);
@@ -930,6 +972,7 @@ impl<'a> Tokenizer<'a> {
                     }
                 }
                 State::AfterAttributeValueQuoted => {
+                    let ch = self.consume_next();
                     match ch {
                         Char::whitespace => {
                             self.switch_to(State::BeforeAttributeName);
@@ -952,6 +995,7 @@ impl<'a> Tokenizer<'a> {
                     }
                 }
                 State::SelfClosingStartTag => {
+                    let ch = self.consume_next();
                     match ch {
                         Char::ch('>') => {
                             let tag = self.current_token.as_mut().unwrap();
@@ -972,6 +1016,7 @@ impl<'a> Tokenizer<'a> {
                     }
                 }
                 State::BogusComment => {
+                    let ch = self.consume_next();
                     match ch {
                         Char::ch('>') => {
                             self.switch_to(State::Data);
@@ -991,8 +1036,10 @@ impl<'a> Tokenizer<'a> {
                         }
                     }
                 }
-                State::MarkupDeclarationOpen => {}
+                State::MarkupDeclarationOpen => {
+                }
                 State::CommentStart => {
+                    let ch = self.consume_next();
                     match ch {
                         Char::ch('-') => {
                             self.switch_to(State::CommentStartDash);
@@ -1008,6 +1055,7 @@ impl<'a> Tokenizer<'a> {
                     }
                 }
                 State::CommentStartDash => {
+                    let ch = self.consume_next();
                     match ch {
                         Char::ch('-') => {
                             self.switch_to(State::CommentEnd);
@@ -1029,6 +1077,7 @@ impl<'a> Tokenizer<'a> {
                     }
                 }
                 State::Comment => {
+                    let ch = self.consume_next();
                     match ch {
                         Char::ch('<') => {
                             self.append_character_to_token_data(self.current_character);
@@ -1052,6 +1101,7 @@ impl<'a> Tokenizer<'a> {
                     }
                 }
                 State::CommentLessThanSign => {
+                    let ch = self.consume_next();
                     match ch {
                         Char::ch('!') => {
                             self.append_character_to_token_data(self.current_character);
@@ -1066,6 +1116,7 @@ impl<'a> Tokenizer<'a> {
                     }
                 }
                 State::CommentLessThanSignBang => {
+                    let ch = self.consume_next();
                     match ch {
                         Char::ch('-') => {
                             self.switch_to(State::CommentLessThanSignBangDash);
@@ -1076,6 +1127,7 @@ impl<'a> Tokenizer<'a> {
                     }
                 }
                 State::CommentLessThanSignBangDash => {
+                    let ch = self.consume_next();
                     match ch { Char::ch('-') => { self.switch_to(State::CommentLessThanSignBangDashDash);
                         }
                         _ => {
@@ -1084,6 +1136,7 @@ impl<'a> Tokenizer<'a> {
                     }
                 }
                 State::CommentLessThanSignBangDashDash => {
+                    let ch = self.consume_next();
                     match ch {
                         Char::ch('>') | Char::eof => {
                             self.reconsume_in(State::CommentEnd);
@@ -1095,6 +1148,7 @@ impl<'a> Tokenizer<'a> {
                     }
                 }
                 State::CommentEndDash => {
+                    let ch = self.consume_next();
                     match ch {
                         Char::ch('-') => {
                             self.switch_to(State::CommentEnd);
@@ -1129,6 +1183,7 @@ impl<'a> Tokenizer<'a> {
                 State::AfterDOCTYPESystemIdentifier => {}
                 State::BogusDOCTYPE => {}
                 State::CDATASection => {
+                    let ch = self.consume_next();
                     match ch {
                         Char::ch(']') => {
                             self.switch_to(State::CDATASectionBracket);
@@ -1143,6 +1198,7 @@ impl<'a> Tokenizer<'a> {
                     }
                 }
                 State::CDATASectionBracket => {
+                    let ch = self.consume_next();
                     match ch {
                         Char::ch(']') => {
                             self.switch_to(State::CDATASectionEnd);
@@ -1154,6 +1210,7 @@ impl<'a> Tokenizer<'a> {
                     }
                 }
                 State::CDATASectionEnd => {
+                    let ch = self.consume_next();
                     match ch {
                         Char::ch(']') => {
                             return self.emit_char(']');
@@ -1169,6 +1226,7 @@ impl<'a> Tokenizer<'a> {
                     }
                 }
                 State::CharacterReference => {
+                    let ch = self.consume_next();
                     self.temp_buffer.clear();
                     self.temp_buffer.push('&');
                     match ch {
