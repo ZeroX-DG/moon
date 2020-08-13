@@ -41,7 +41,11 @@ When the tokenizer emit a new token, it's processed by the DOM tree constructor 
 ## Read more
 - [Building the DOM faster: speculative parsing, async, defer and preload][2]
 - [Adding Interactivity with JavaScript][3]
+- [HTML Standard][4]
+- [DOM Standard][5]
 
 [1]: https://en.wikipedia.org/wiki/Document_Object_Model
 [2]: https://hacks.mozilla.org/2017/09/building-the-dom-faster-speculative-parsing-async-defer-and-preload/
 [3]: https://developers.google.com/web/fundamentals/performance/critical-rendering-path/adding-interactivity-with-javascript
+[4]: https://html.spec.whatwg.org/
+[5]: https://dom.spec.whatwg.org/
