@@ -4,6 +4,11 @@ Parsing HTML is a process of transforming a stream of characters into a [DOM tre
 
 ![](https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/DOM-model.svg/800px-DOM-model.svg.png)
 
+## HTML parsing flow
+The overall flow going from receiving bytes from network API to producing DOM tree is visualized below:
+
+![](./docs/html-parsing-process.png)
+
 ## Bytes stream decoding & Encoding detecting
 Normally, the stream of characters that get input into the HTML parser comes from the the network. At this stage, the HTML document are just a bunch of bytes. These bytes will be decoded into characters with the appropriate encoding. 
 
@@ -31,7 +36,7 @@ Tokenizer is a state machine that can produce one or more tokens when being requ
 ![](https://mermaid.ink/img/eyJjb2RlIjoic2VxdWVuY2VEaWFncmFtXG5cdERPTSB0cmVlIGNvbnN0cnVjdG9yLT4-K1Rva2VuaXplcjogSGVsbG8gdG9rZW5pemVyLCBjYW4geW91IGdpdmUgbWUgdGhlIG5leHQgdG9rZW4_XG4gIFRva2VuaXplci0-Pi1ET00gdHJlZSBjb25zdHJ1Y3RvcjogWWVwLCBoZXJlIHlvdSBhcmU6IFRhZ09wZW4oaHRtbClcblx0XHRcdFx0XHQiLCJtZXJtYWlkIjp7InRoZW1lIjoiZGVmYXVsdCJ9LCJ1cGRhdGVFZGl0b3IiOmZhbHNlfQ)
 
 ## DOM Tree construction
-When the tokenizer emit a new token, it's processed by the DOM tree constructor to create a tree of DOM nodes using the received tokens. If the tokenizer said it received a script, the DOM tree construction stage will be paused/blocked before the JavaScript code execution is finished.
+When the tokenizer emit a new token, it's processed by the DOM tree constructor to create a tree of DOM nodes using the received tokens. If the tokenizer said it received a script, the DOM tree construction stage will be paused/blocked until the JavaScript code execution is finished. After all resources has been fetched, CSSOM is constructed and all JavaScript is executed, the DOM tree will be returned and ready for rendering.
 
 ## Read more
 - [Building the DOM faster: speculative parsing, async, defer and preload][2]
