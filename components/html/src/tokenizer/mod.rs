@@ -1303,20 +1303,523 @@ impl<'a> Tokenizer<'a> {
                         }
                     }
                 }
-                State::DOCTYPEName => {}
-                State::AfterDOCTYPEName => {}
-                State::AfterDOCTYPEPublicKeyword => {}
-                State::BeforeDOCTYPEPublicIdentifier => {}
-                State::DOCTYPEPublicIdentifierDoubleQuoted => {}
-                State::DOCTYPEPublicIdentifierSingleQuoted => {}
-                State::AfterDOCTYPEPublicIdentifier => {}
-                State::BetweenDOCTYPEPublicAndSystemIdentifiers => {}
-                State::AfterDOCTYPESystemKeyword => {}
-                State::BeforeDOCTYPESystemIdentifier => {}
-                State::DOCTYPESytemIdentifierDoubleQuoted => {}
-                State::DOCTYPESytemIdentifierSingleQuoted => {}
-                State::AfterDOCTYPESystemIdentifier => {}
-                State::BogusDOCTYPE => {}
+                State::DOCTYPEName => {
+                    let ch = self.consume_next();
+                    match ch {
+                        Char::whitespace => {
+                            self.switch_to(State::AfterDOCTYPEName);
+                        }
+                        Char::ch('>') => {
+                            self.switch_to(State::Data);
+                            return self.emit_current_token();
+                        }
+                        Char::ch(c) if c.is_ascii_uppercase() => {
+                            self.append_character_to_doctype_name(c.to_ascii_lowercase());
+                        }
+                        Char::null => {
+                            emit_error!("unexpected-null-character");
+                            self.append_character_to_doctype_name('\u{FFFD}');
+                        }
+                        Char::eof => {
+                            emit_error!("eof-in-doctype");
+                            let token = self.current_token.as_mut().unwrap();
+                            if let Token::DOCTYPE { ref mut force_quirks, .. } = token {
+                                *force_quirks = true;
+                            }
+                            self.will_emit(self.current_token.clone().unwrap());
+                            return self.emit_eof();
+                        }
+                        _ => {
+                            self.append_character_to_doctype_name(self.current_character);
+                        }
+                    }
+                }
+                State::AfterDOCTYPEName => {
+                    let ch = self.consume_next();
+                    match ch {
+                        Char::whitespace => continue,
+                        Char::ch('>') => {
+                            self.switch_to(State::Data);
+                            return self.emit_current_token();
+                        }
+                        Char::eof => {
+                            emit_error!("eof-in-doctype");
+                            let token = self.current_token.as_mut().unwrap();
+                            if let Token::DOCTYPE { ref mut force_quirks, .. } = token {
+                                *force_quirks = true;
+                            }
+                            self.will_emit(self.current_token.clone().unwrap());
+                            return self.emit_eof();
+                        }
+                        _ => {
+                            if self.consume_from_current_if_match("PUBLIC", true) {
+                                self.switch_to(State::AfterDOCTYPEPublicKeyword);
+                            } else if self.consume_from_current_if_match("SYSTEM", true) {
+                                self.switch_to(State::AfterDOCTYPESystemKeyword);
+                            } else {
+                                emit_error!("invalid-character-sequence-after-doctype-name");
+                                let token = self.current_token.as_mut().unwrap();
+                                if let Token::DOCTYPE { ref mut force_quirks, .. } = token {
+                                    *force_quirks = true;
+                                }
+                                self.reconsume_in(State::BogusDOCTYPE);
+                            }
+                        }
+                    }
+                }
+                State::AfterDOCTYPEPublicKeyword => {
+                    let ch = self.consume_next();
+                    match ch {
+                        Char::whitespace => {
+                            self.switch_to(State::BeforeDOCTYPEPublicIdentifier);
+                        }
+                        Char::ch('"') => {
+                            emit_error!("missing-whitespace-after-doctype-public-keyword");
+                            let token = self.current_token.as_mut().unwrap();
+                            if let Token::DOCTYPE { ref mut public_identifier, .. } = token {
+                                *public_identifier = Some(String::new());
+                            }
+                            self.switch_to(State::DOCTYPEPublicIdentifierDoubleQuoted);
+                        }
+                        Char::ch('\'') => {
+                            emit_error!("missing-whitespace-after-doctype-public-keyword");
+                            let token = self.current_token.as_mut().unwrap();
+                            if let Token::DOCTYPE { ref mut public_identifier, .. } = token {
+                                *public_identifier = Some(String::new());
+                            }
+                            self.switch_to(State::DOCTYPEPublicIdentifierSingleQuoted);
+                        }
+                        Char::ch('>') => {
+                            emit_error!("missing-doctype-public-identifier");
+                            let token = self.current_token.as_mut().unwrap();
+                            if let Token::DOCTYPE { ref mut force_quirks, .. } = token {
+                                *force_quirks = true;
+                            }
+                            self.switch_to(State::Data);
+                            return self.emit_current_token();
+                        }
+                        Char::eof => {
+                            emit_error!("eof-in-doctype");
+                            let token = self.current_token.as_mut().unwrap();
+                            if let Token::DOCTYPE { ref mut force_quirks, .. } = token {
+                                *force_quirks = true;
+                            }
+                            self.will_emit(self.current_token.clone().unwrap());
+                            return self.emit_eof();
+                        }
+                        _ => {
+                            emit_error!("missing-quote-before-doctype-public-identifier");
+                            let token = self.current_token.as_mut().unwrap();
+                            if let Token::DOCTYPE { ref mut force_quirks, .. } = token {
+                                *force_quirks = true;
+                            }
+                            self.reconsume_in(State::BogusDOCTYPE);
+                        }
+                    }
+                }
+                State::BeforeDOCTYPEPublicIdentifier => {
+                    let ch = self.consume_next();
+                    match ch {
+                        Char::whitespace => continue,
+                        Char::ch('"') => {
+                            let token = self.current_token.as_mut().unwrap();
+                            if let Token::DOCTYPE { ref mut public_identifier, .. } = token {
+                                *public_identifier = Some(String::new());
+                            }
+                            self.switch_to(State::DOCTYPEPublicIdentifierDoubleQuoted);
+                        }
+                        Char::ch('\'') => {
+                            let token = self.current_token.as_mut().unwrap();
+                            if let Token::DOCTYPE { ref mut public_identifier, .. } = token {
+                                *public_identifier = Some(String::new());
+                            }
+                            self.switch_to(State::DOCTYPEPublicIdentifierSingleQuoted);
+                        }
+                        Char::ch('>') => {
+                            emit_error!("missing-doctype-public-identifier");
+                            let token = self.current_token.as_mut().unwrap();
+                            if let Token::DOCTYPE { ref mut force_quirks, .. } = token {
+                                *force_quirks = true;
+                            }
+                            self.switch_to(State::Data);
+                            return self.emit_current_token();
+                        }
+                        Char::eof => {
+                            emit_error!("eof-in-doctype");
+                            let token = self.current_token.as_mut().unwrap();
+                            if let Token::DOCTYPE { ref mut force_quirks, .. } = token {
+                                *force_quirks = true;
+                            }
+                            self.will_emit(self.current_token.clone().unwrap());
+                            return self.emit_eof();
+                        }
+                        _ => {
+                            emit_error!("missing-quote-before-doctype-public-identifier");
+                            let token = self.current_token.as_mut().unwrap();
+                            if let Token::DOCTYPE { ref mut force_quirks, .. } = token {
+                                *force_quirks = true;
+                            }
+                            self.reconsume_in(State::BogusDOCTYPE);
+                        }
+                    }
+                }
+                State::DOCTYPEPublicIdentifierDoubleQuoted => {
+                    let ch = self.consume_next();
+                    match ch {
+                        Char::ch('"') => {
+                            self.switch_to(State::AfterDOCTYPEPublicIdentifier);
+                        }
+                        Char::null => {
+                            emit_error!("unexpected-null-character");
+                            self.append_character_to_doctype_public_identifier('\u{FFFD}');
+                        }
+                        Char::ch('>') => {
+                            emit_error!("abrupt-doctype-public-identifier");
+                            let token = self.current_token.as_mut().unwrap();
+                            if let Token::DOCTYPE { ref mut force_quirks, .. } = token {
+                                *force_quirks = true;
+                            }
+                            self.switch_to(State::Data);
+                            return self.emit_current_token();
+                        }
+                        Char::eof => {
+                            emit_error!("eof-in-doctype");
+                            let token = self.current_token.as_mut().unwrap();
+                            if let Token::DOCTYPE { ref mut force_quirks, .. } = token {
+                                *force_quirks = true;
+                            }
+                            self.will_emit(self.current_token.clone().unwrap());
+                            return self.emit_eof();
+                        }
+                        _ => {
+                            self.append_character_to_doctype_public_identifier(self.current_character);
+                        }
+                    }
+                }
+                State::DOCTYPEPublicIdentifierSingleQuoted => {
+                    let ch = self.consume_next();
+                    match ch {
+                        Char::ch('\'') => {
+                            self.switch_to(State::AfterDOCTYPEPublicIdentifier);
+                        }
+                        Char::null => {
+                            emit_error!("unexpected-null-character");
+                            self.append_character_to_doctype_public_identifier('\u{FFFD}');
+                        }
+                        Char::ch('>') => {
+                            emit_error!("abrupt-doctype-public-identifier");
+                            let token = self.current_token.as_mut().unwrap();
+                            if let Token::DOCTYPE { ref mut force_quirks, .. } = token {
+                                *force_quirks = true;
+                            }
+                            self.switch_to(State::Data);
+                            return self.emit_current_token();
+                        }
+                        Char::eof => {
+                            emit_error!("eof-in-doctype");
+                            let token = self.current_token.as_mut().unwrap();
+                            if let Token::DOCTYPE { ref mut force_quirks, .. } = token {
+                                *force_quirks = true;
+                            }
+                            self.will_emit(self.current_token.clone().unwrap());
+                            return self.emit_eof();
+                        }
+                        _ => {
+                            self.append_character_to_doctype_public_identifier(self.current_character);
+                        }
+                    }
+                }
+                State::AfterDOCTYPEPublicIdentifier => {
+                    let ch = self.consume_next();
+                    match ch {
+                        Char::whitespace => {
+                            self.switch_to(State::BetweenDOCTYPEPublicAndSystemIdentifiers);
+                        }
+                        Char::ch('>') => {
+                            self.switch_to(State::Data);
+                            return self.emit_current_token();
+                        }
+                        Char::ch('"') => {
+                            emit_error!("missing-whitespace-between-doctype-public-and-system-identifiers");
+                            let token = self.current_token.as_mut().unwrap();
+                            if let Token::DOCTYPE { ref mut system_identifier, .. } = token {
+                                *system_identifier = Some(String::new());
+                            }
+                            self.switch_to(State::DOCTYPESytemIdentifierDoubleQuoted);
+                        }
+                        Char::ch('\'') => {
+                            emit_error!("missing-whitespace-between-doctype-public-and-system-identifiers");
+                            let token = self.current_token.as_mut().unwrap();
+                            if let Token::DOCTYPE { ref mut system_identifier, .. } = token {
+                                *system_identifier = Some(String::new());
+                            }
+                            self.switch_to(State::DOCTYPESytemIdentifierSingleQuoted);
+                        }
+                        Char::eof => {
+                            emit_error!("eof-in-doctype");
+                            let token = self.current_token.as_mut().unwrap();
+                            if let Token::DOCTYPE { ref mut force_quirks, .. } = token {
+                                *force_quirks = true;
+                            }
+                            self.will_emit(self.current_token.clone().unwrap());
+                            return self.emit_eof();
+                        }
+                        _ => {
+                            emit_error!("missing-quote-before-doctype-system-identifier");
+                            let token = self.current_token.as_mut().unwrap();
+                            if let Token::DOCTYPE { ref mut force_quirks, .. } = token {
+                                *force_quirks = true;
+                            }
+                            self.reconsume_in(State::BogusDOCTYPE);
+                        }
+                    }
+                }
+                State::BetweenDOCTYPEPublicAndSystemIdentifiers => {
+                    let ch = self.consume_next();
+                    match ch {
+                        Char::whitespace => continue,
+                        Char::ch('>') => {
+                            self.switch_to(State::Data);
+                            return self.emit_current_token();
+                        }
+                        Char::ch('"') => {
+                            let token = self.current_token.as_mut().unwrap();
+                            if let Token::DOCTYPE { ref mut system_identifier, .. } = token {
+                                *system_identifier = Some(String::new());
+                            }
+                            self.switch_to(State::DOCTYPESytemIdentifierDoubleQuoted);
+                        }
+                        Char::ch('\'') => {
+                            let token = self.current_token.as_mut().unwrap();
+                            if let Token::DOCTYPE { ref mut system_identifier, .. } = token {
+                                *system_identifier = Some(String::new());
+                            }
+                            self.switch_to(State::DOCTYPESytemIdentifierSingleQuoted);
+                        }
+                        Char::eof => {
+                            emit_error!("eof-in-doctype");
+                            let token = self.current_token.as_mut().unwrap();
+                            if let Token::DOCTYPE { ref mut force_quirks, .. } = token {
+                                *force_quirks = true;
+                            }
+                            self.will_emit(self.current_token.clone().unwrap());
+                            return self.emit_eof();
+                        }
+                        _ => {
+                            emit_error!("missing-quote-before-doctype-system-identifier");
+                            let token = self.current_token.as_mut().unwrap();
+                            if let Token::DOCTYPE { ref mut force_quirks, .. } = token {
+                                *force_quirks = true;
+                            }
+                            self.reconsume_in(State::BogusDOCTYPE);
+                        }
+                    }
+                }
+                State::AfterDOCTYPESystemKeyword => {
+                    let ch = self.consume_next();
+                    match ch {
+                        Char::whitespace => {
+                            self.switch_to(State::BeforeDOCTYPESystemIdentifier);
+                        },
+                        Char::ch('"') => {
+                            emit_error!("missing-whitespace-after-doctype-system-keyword");
+                            let token = self.current_token.as_mut().unwrap();
+                            if let Token::DOCTYPE { ref mut system_identifier, .. } = token {
+                                *system_identifier = Some(String::new());
+                            }
+                            self.switch_to(State::DOCTYPESytemIdentifierDoubleQuoted);
+                        }
+                        Char::ch('\'') => {
+                            emit_error!("missing-whitespace-after-doctype-system-keyword");
+                            let token = self.current_token.as_mut().unwrap();
+                            if let Token::DOCTYPE { ref mut system_identifier, .. } = token {
+                                *system_identifier = Some(String::new());
+                            }
+                            self.switch_to(State::DOCTYPESytemIdentifierSingleQuoted);
+                        }
+                        Char::ch('>') => {
+                            emit_error!("missing-doctype-system-identifier");
+                            let token = self.current_token.as_mut().unwrap();
+                            if let Token::DOCTYPE { ref mut force_quirks, .. } = token {
+                                *force_quirks = true;
+                            }
+                            self.switch_to(State::Data);
+                            return self.emit_current_token();
+                        }
+                        Char::eof => {
+                            emit_error!("eof-in-doctype");
+                            let token = self.current_token.as_mut().unwrap();
+                            if let Token::DOCTYPE { ref mut force_quirks, .. } = token {
+                                *force_quirks = true;
+                            }
+                            self.will_emit(self.current_token.clone().unwrap());
+                            return self.emit_eof();
+                        }
+                        _ => {
+                            emit_error!("missing-quote-before-doctype-system-identifier");
+                            let token = self.current_token.as_mut().unwrap();
+                            if let Token::DOCTYPE { ref mut force_quirks, .. } = token {
+                                *force_quirks = true;
+                            }
+                            self.reconsume_in(State::BogusDOCTYPE);
+                        }
+                    }
+                }
+                State::BeforeDOCTYPESystemIdentifier => {
+                    let ch = self.consume_next();
+                    match ch {
+                        Char::whitespace => continue,
+                        Char::ch('"') => {
+                            let token = self.current_token.as_mut().unwrap();
+                            if let Token::DOCTYPE { ref mut system_identifier, .. } = token {
+                                *system_identifier = Some(String::new());
+                            }
+                            self.switch_to(State::DOCTYPESytemIdentifierDoubleQuoted);
+                        }
+                        Char::ch('\'') => {
+                            let token = self.current_token.as_mut().unwrap();
+                            if let Token::DOCTYPE { ref mut system_identifier, .. } = token {
+                                *system_identifier = Some(String::new());
+                            }
+                            self.switch_to(State::DOCTYPESytemIdentifierSingleQuoted);
+                        }
+                        Char::ch('>') => {
+                            emit_error!("missing-doctype-system-identifier");
+                            let token = self.current_token.as_mut().unwrap();
+                            if let Token::DOCTYPE { ref mut force_quirks, .. } = token {
+                                *force_quirks = true;
+                            }
+                            self.switch_to(State::Data);
+                            return self.emit_current_token();
+                        }
+                        Char::eof => {
+                            emit_error!("eof-in-doctype");
+                            let token = self.current_token.as_mut().unwrap();
+                            if let Token::DOCTYPE { ref mut force_quirks, .. } = token {
+                                *force_quirks = true;
+                            }
+                            self.will_emit(self.current_token.clone().unwrap());
+                            return self.emit_eof();
+                        }
+                        _ => {
+                            emit_error!("missing-quote-before-doctype-system-identifier");
+                            let token = self.current_token.as_mut().unwrap();
+                            if let Token::DOCTYPE { ref mut force_quirks, .. } = token {
+                                *force_quirks = true;
+                            }
+                            self.reconsume_in(State::BogusDOCTYPE);
+                        }
+                    }
+                }
+                State::DOCTYPESytemIdentifierDoubleQuoted => {
+                    let ch = self.consume_next();
+                    match ch {
+                        Char::ch('"') => {
+                            self.switch_to(State::AfterDOCTYPESystemIdentifier);
+                        }
+                        Char::null => {
+                            emit_error!("unexpected-null-character");
+                            self.append_character_to_doctype_system_identifier('\u{FFFD}');
+                        }
+                        Char::ch('>') => {
+                            emit_error!("abrupt-doctype-system-identifier");
+                            let token = self.current_token.as_mut().unwrap();
+                            if let Token::DOCTYPE { ref mut force_quirks, .. } = token {
+                                *force_quirks = true;
+                            }
+                            self.switch_to(State::Data);
+                            return self.emit_current_token();
+                        }
+                        Char::eof => {
+                            emit_error!("eof-in-doctype");
+                            let token = self.current_token.as_mut().unwrap();
+                            if let Token::DOCTYPE { ref mut force_quirks, .. } = token {
+                                *force_quirks = true;
+                            }
+                            self.will_emit(self.current_token.clone().unwrap());
+                            return self.emit_eof();
+                        }
+                        _ => {
+                            self.append_character_to_doctype_system_identifier(self.current_character);
+                        }
+                    }
+                }
+                State::DOCTYPESytemIdentifierSingleQuoted => {
+                    let ch = self.consume_next();
+                    match ch {
+                        Char::ch('\'') => {
+                            self.switch_to(State::AfterDOCTYPESystemIdentifier);
+                        }
+                        Char::null => {
+                            emit_error!("unexpected-null-character");
+                            self.append_character_to_doctype_system_identifier('\u{FFFD}');
+                        }
+                        Char::ch('>') => {
+                            emit_error!("abrupt-doctype-system-identifier");
+                            let token = self.current_token.as_mut().unwrap();
+                            if let Token::DOCTYPE { ref mut force_quirks, .. } = token {
+                                *force_quirks = true;
+                            }
+                            self.switch_to(State::Data);
+                            return self.emit_current_token();
+                        }
+                        Char::eof => {
+                            emit_error!("eof-in-doctype");
+                            let token = self.current_token.as_mut().unwrap();
+                            if let Token::DOCTYPE { ref mut force_quirks, .. } = token {
+                                *force_quirks = true;
+                            }
+                            self.will_emit(self.current_token.clone().unwrap());
+                            return self.emit_eof();
+                        }
+                        _ => {
+                            self.append_character_to_doctype_system_identifier(self.current_character);
+                        }
+                    }
+                }
+                State::AfterDOCTYPESystemIdentifier => {
+                    let ch = self.consume_next();
+                    match ch {
+                        Char::whitespace => continue,
+                        Char::ch('>') => {
+                            self.switch_to(State::Data);
+                            return self.emit_current_token();
+                        }
+                        Char::eof => {
+                            emit_error!("eof-in-doctype");
+                            let token = self.current_token.as_mut().unwrap();
+                            if let Token::DOCTYPE { ref mut force_quirks, .. } = token {
+                                *force_quirks = true;
+                            }
+                            self.will_emit(self.current_token.clone().unwrap());
+                            return self.emit_eof();
+                        }
+                        _ => {
+                            emit_error!("unexpected-character-after-doctype-system-identifier");
+                            self.reconsume_in(State::BogusDOCTYPE);
+                        }
+                    }
+                }
+                State::BogusDOCTYPE => {
+                    let ch = self.consume_next();
+                    match ch {
+                        Char::ch('>') => {
+                            self.switch_to(State::Data);
+                            return self.emit_current_token();
+                        }
+                        Char::null => {
+                            emit_error!("unexpected-null-character");
+                            continue;
+                        }
+                        Char::eof => {
+                            self.will_emit(self.current_token.clone().unwrap());
+                            return self.emit_eof();
+                        }
+                        _ => {
+                            continue;
+                        }
+                    }
+                }
                 State::CDATASection => {
                     let ch = self.consume_next();
                     match ch {
@@ -1427,6 +1930,30 @@ impl<'a> Tokenizer<'a> {
     fn emit_temp_buffer(&mut self) {
         for c in self.temp_buffer.chars() {
             self.output.push_back(Token::Character(c));
+        }
+    }
+
+    fn append_character_to_doctype_name(&mut self, ch: char) {
+        let token = self.current_token.as_mut().unwrap();
+        if let Token::DOCTYPE { ref mut name, .. } = token {
+            let name = name.as_mut().unwrap();
+            name.push(ch);
+        }
+    }
+
+    fn append_character_to_doctype_public_identifier(&mut self, ch: char) {
+        let token = self.current_token.as_mut().unwrap();
+        if let Token::DOCTYPE { ref mut public_identifier, .. } = token {
+            let public_identifier = public_identifier.as_mut().unwrap();
+            public_identifier.push(ch);
+        }
+    }
+
+    fn append_character_to_doctype_system_identifier(&mut self, ch: char) {
+        let token = self.current_token.as_mut().unwrap();
+        if let Token::DOCTYPE { ref mut system_identifier, .. } = token {
+            let system_identifier = system_identifier.as_mut().unwrap();
+            system_identifier.push(ch);
         }
     }
 
@@ -1547,6 +2074,22 @@ impl<'a> Tokenizer<'a> {
         false
     }
 
+    fn consume_from_current_if_match(&mut self, pattern: &str, case_insensitive: bool) -> bool {
+        let mut current_str = format!("{}{}", self.current_character, self.input.as_str());
+        let mut pattern = pattern.to_owned();
+        if case_insensitive {
+            current_str = current_str.to_ascii_lowercase();
+            pattern = pattern.to_ascii_lowercase();
+        }
+        if current_str.starts_with(&pattern) {
+            for _ in 0..pattern.len() {
+                self.consume_next();
+            }
+            return true;
+        }
+        false
+    }
+
     fn consume_next(&mut self) -> Char {
         let ch = if self.reconsume_char {
             // reset reconsume flag
@@ -1593,6 +2136,32 @@ mod tests {
             self_closing: false,
             attributes: Vec::new(),
             is_end_tag: false
+        }, tokenizer.next_token());
+    }
+
+    #[test]
+    fn parse_doctype() {
+        let html = "<!DOCTYPE html>";
+        let mut chars = html.chars();
+        let mut tokenizer = Tokenizer::new(&mut chars);
+        assert_eq!(Token::DOCTYPE {
+            name: Some("html".to_owned()),
+            force_quirks: false,
+            public_identifier: None,
+            system_identifier: None
+        }, tokenizer.next_token());
+    }
+
+    #[test]
+    fn parse_doctype_with_identifiers() {
+        let html = r#"<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">"#;
+        let mut chars = html.chars();
+        let mut tokenizer = Tokenizer::new(&mut chars);
+        assert_eq!(Token::DOCTYPE {
+            name: Some("html".to_owned()),
+            force_quirks: false,
+            public_identifier: Some("-//W3C//DTD HTML 4.01 Transitional//EN".to_owned()),
+            system_identifier: Some("http://www.w3.org/TR/html4/loose.dtd".to_owned())
         }, tokenizer.next_token());
     }
 }
