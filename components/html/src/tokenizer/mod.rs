@@ -1906,8 +1906,9 @@ impl<'a> Tokenizer<'a> {
 
     fn flush_code_points_consumed_as_a_character_reference(&mut self) {
         if self.is_character_part_of_attribute() {
-            for c in self.temp_buffer.chars() {
-                // TODO: implement attribute value
+            let chars: Vec<char> = self.temp_buffer.chars().collect();
+            for c in chars {
+                self.append_character_to_attribute_value(c);
             }
         } else {
             self.emit_temp_buffer();
