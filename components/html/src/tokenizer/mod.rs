@@ -7,6 +7,7 @@ use std::env;
 use state::State;
 use token::Token;
 use token::Attribute;
+use super::entities::ENTITIES;
 
 fn is_trace() -> bool {
     match env::var("TRACE_TOKENIZER") {
@@ -1956,7 +1957,55 @@ impl<'a> Tokenizer<'a> {
                         }
                     }
                 }
-                State::NamedCharacterReference => {}
+                State::NamedCharacterReference => {
+                    let current_str = self.input.as_str().to_owned();
+                    let mut match_result: Option<(&str, u32, u32)> = None;
+                    let mut max_len: usize = 0;
+
+                    // TODO: optimize matching
+                    for entity in ENTITIES.iter() {
+                        let entity_name = entity.0;
+                        let entity_len = entity_name.len();
+                        if current_str.starts_with(entity_name) {
+                            if entity_len > max_len {
+                                max_len = entity_len;
+                                match_result = Some(*entity);
+                            }
+                        }
+                    }
+
+                    if let Some(result) = match_result {
+                        let (entity_name, charcode_1, charcode_2) = result;
+                        for c in entity_name.chars() {
+                            self.consume_next();
+                            self.temp_buffer.push(c);
+                        }
+                        if self.is_character_part_of_attribute() && self.current_character != ';' {
+                            let next_ch = current_str.chars().nth(max_len - 1);
+                            if let Some(next_ch) = next_ch {
+                                if next_ch == '=' || next_ch.is_ascii_alphanumeric() {
+                                    self.flush_code_points_consumed_as_a_character_reference();
+                                    self.switch_to_return_state();
+                                    continue;
+                                }
+                            }
+                        }
+
+                        if self.current_character != ';' {
+                            emit_error!("missing-semicolon-after-character-reference");
+                        }
+                        self.temp_buffer.clear();
+                        self.temp_buffer.push(std::char::from_u32(charcode_1).unwrap());
+                        if charcode_2 != 0 {
+                            self.temp_buffer.push(std::char::from_u32(charcode_2).unwrap());
+                        }
+                        self.flush_code_points_consumed_as_a_character_reference();
+                        self.switch_to_return_state();
+                    } else {
+                        self.flush_code_points_consumed_as_a_character_reference();
+                        self.switch_to(State::AmbiguousAmpersand);
+                    }
+                }
                 State::AmbiguousAmpersand => {
                     let ch = self.consume_next();
                     match ch {
