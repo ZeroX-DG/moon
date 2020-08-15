@@ -29,6 +29,85 @@ macro_rules! emit_error {
     }
 }
 
+fn is_surrogate(n: u32) -> bool {
+    match n {
+        0xD800..=0xDFFF => true,
+        _ => false
+    }
+}
+
+fn is_nonecharacter(n: u32) -> bool {
+    match n {
+        0xfdd0..=0xfdef
+        | 0xfffe..=0xffff
+        | 0x1_fffe..=0x1_ffff
+        | 0x2_fffe..=0x2_ffff
+        | 0x3_fffe..=0x3_ffff
+        | 0x4_fffe..=0x4_ffff
+        | 0x5_fffe..=0x5_ffff
+        | 0x6_fffe..=0x6_ffff
+        | 0x7_fffe..=0x7_ffff
+        | 0x8_fffe..=0x8_ffff
+        | 0x9_fffe..=0x9_ffff
+        | 0xA_fffe..=0xA_ffff
+        | 0xB_fffe..=0xB_ffff
+        | 0xC_fffe..=0xC_ffff
+        | 0xD_fffe..=0xD_ffff
+        | 0xE_fffe..=0xE_ffff
+        | 0xF_fffe..=0xF_ffff
+        | 0x10_fffe..=0x10_ffff => true,
+        _ => false
+    }
+}
+
+fn is_control(n: u32) -> bool {
+    match n {
+        0x0000..=0x001F => true,
+        0x007F..=0x009F => true,
+        _ => false
+    }
+}
+
+fn is_whitespace(n: u32) -> bool {
+    match n {
+        0x0009 | 0x000A | 0x000C | 0x000D | 0x0020 => true,
+        _ => false
+    }
+}
+
+pub fn replace_control_codes(n: u32) -> Option<u32> {
+    match n {
+        0x80 => Some(0x20AC),
+        0x82 => Some(0x201A),
+        0x83 => Some(0x0192),
+        0x84 => Some(0x201E),
+        0x85 => Some(0x2026),
+        0x86 => Some(0x2020),
+        0x87 => Some(0x2021),
+        0x88 => Some(0x02C6),
+        0x89 => Some(0x2030),
+        0x8A => Some(0x0160),
+        0x8B => Some(0x2039),
+        0x8C => Some(0x0152),
+        0x8E => Some(0x017D),
+        0x91 => Some(0x2018),
+        0x92 => Some(0x2019),
+        0x93 => Some(0x201C),
+        0x94 => Some(0x201D),
+        0x95 => Some(0x2022),
+        0x96 => Some(0x2013),
+        0x97 => Some(0x2014),
+        0x98 => Some(0x02DC),
+        0x99 => Some(0x2122),
+        0x9A => Some(0x0161),
+        0x9B => Some(0x203A),
+        0x9C => Some(0x0153),
+        0x9E => Some(0x017E),
+        0x9F => Some(0x0178),
+        _ => None
+    }
+}
+
 // TODO: replace with char::REPLACEMENT_CHARACTER when stable
 const REPLACEMENT_CHARACTER: char = '\u{FFFD}';
 
@@ -68,6 +147,9 @@ pub struct Tokenizer<'a> {
 
     // Last emitted start tag to verify if end tag is valid
     last_emitted_start_tag: Option<Token>,
+
+    // Code for a character reference. Example: &#228;
+    character_reference_code: u32
 }
 
 impl<'a> Tokenizer<'a> {
@@ -76,12 +158,10 @@ impl<'a> Tokenizer<'a> {
             input,
             output: VecDeque::new(),
             current_character: '\0',
-            state: State::Data,
-            return_state: None,
-            current_token: None,
-            reconsume_char: false,
+            state: State::Data, return_state: None, current_token: None, reconsume_char: false,
             temp_buffer: String::new(),
             last_emitted_start_tag: None,
+            character_reference_code: 0
         }
     }
 
@@ -1896,7 +1976,19 @@ impl<'a> Tokenizer<'a> {
                         }
                     }
                 }
-                State::NumericCharacterReference => {}
+                State::NumericCharacterReference => {
+                    self.character_reference_code = 0;
+                    let ch = self.consume_next();
+                    match ch {
+                        Char::ch('x') | Char::ch('X') => {
+                            self.temp_buffer.push(self.current_character);
+                            self.switch_to(State::HexadecimalCharacterReferenceStart);
+                        }
+                        _ => {
+                            self.reconsume_in(State::DecimalCharacterReferenceStart);
+                        }
+                    }
+                }
                 State::HexadecimalCharacterReferenceStart => {
                     let ch = self.consume_next();
                     match ch {
@@ -1923,15 +2015,94 @@ impl<'a> Tokenizer<'a> {
                         }
                     }
                 }
-                State::HexadecimalCharacterReference => {}
-                State::DecimalCharacterReference => {}
-                State::NumericCharacterReferenceEnd => {}
+                State::HexadecimalCharacterReference => {
+                    let ch = self.consume_next();
+                    match ch {
+                        Char::ch(c) if c.is_ascii_digit() => {
+                            self.character_reference_code *= 16;
+                            if let Some(d) = self.current_character.to_digit(10) {
+                                self.character_reference_code += d;
+                            } else {
+                                emit_error!("Can't convert current character to digit");
+                            }
+                        }
+                        Char::ch(c) if c.is_ascii_hexdigit() => {
+                            self.character_reference_code *= 16;
+                            if let Some(d) = self.current_character.to_digit(16) {
+                                self.character_reference_code += d;
+                            } else {
+                                emit_error!("Can't convert current character to digit");
+                            }
+                        }
+                        Char::ch(';') => {
+                            self.switch_to(State::NumericCharacterReferenceEnd);
+                        }
+                        _ => {
+                            emit_error!("missing-semicolon-after-character-reference");
+                            self.reconsume_in(State::NumericCharacterReferenceEnd);
+                        }
+                    }
+                }
+                State::DecimalCharacterReference => {
+                    let ch = self.consume_next();
+                    match ch {
+                        Char::ch(c) if c.is_ascii_digit() => {
+                            self.character_reference_code *= 10;
+                            if let Some(d) = self.current_character.to_digit(10) {
+                                self.character_reference_code += d;
+                            } else {
+                                emit_error!("Can't convert current character to digit");
+                            }
+                        }
+                        Char::ch(';') => {
+                            self.switch_to(State::NumericCharacterReferenceEnd);
+                        }
+                        _ => {
+                            emit_error!("missing-semicolon-after-character-reference");
+                            self.reconsume_in(State::NumericCharacterReferenceEnd);
+                        }
+                    }
+                }
+                State::NumericCharacterReferenceEnd => {
+                    let code = self.character_reference_code;
+                    if code == 0x00 {
+                        emit_error!("null-character-reference");
+                        self.character_reference_code = 0xFFFD;
+                    }
+                    if code > 0x10FFFF {
+                        emit_error!("character-reference-outside-unicode-range");
+                        self.character_reference_code = 0xFFFD;
+                    }
+                    if is_surrogate(code) {
+                        emit_error!("surrogate-character-reference");
+                        self.character_reference_code = 0xFFFD;
+                    }
+                    if is_nonecharacter(code) {
+                        emit_error!("noncharacter-character-reference");
+                    }
+                    if code == 0x0D || (is_control(code) && !is_whitespace(code)) {
+                        emit_error!("control-character-reference");
+                        if let Some(new_code) = replace_control_codes(code) {
+                            self.character_reference_code = new_code;
+                        }
+                    }
+                    let result = std::char::from_u32(self.character_reference_code)
+                        .unwrap_or(REPLACEMENT_CHARACTER);
+                    self.temp_buffer.clear();
+                    self.temp_buffer.push(result);
+                    self.flush_code_points_consumed_as_a_character_reference();
+                    self.switch_to_return_state();
+                }
             }
         }
     }
 
     fn reconsume_in_return_state(&mut self) {
         self.reconsume_in(self.return_state.clone().unwrap());
+    }
+
+    fn switch_to_return_state(&mut self) {
+        self.switch_to(self.return_state.clone().unwrap());
     }
 
     fn new_attribute(&mut self, attribute: Attribute) {
