@@ -992,7 +992,7 @@ impl<'a> Tokenizer<'a> {
                 State::AttributeValueSingleQuoted => {
                     let ch = self.consume_next();
                     match ch {
-                        Char::ch('"') => {
+                        Char::ch('\'') => {
                             self.switch_to(State::AfterAttributeValueQuoted);
                         }
                         Char::ch('&') => {
@@ -1958,7 +1958,7 @@ impl<'a> Tokenizer<'a> {
                     }
                 }
                 State::NamedCharacterReference => {
-                    let current_str = self.input.as_str().to_owned();
+                    let current_str = format!("{}{}", self.current_character, self.input.as_str());
                     let mut match_result: Option<(&str, u32, u32)> = None;
                     let mut max_len: usize = 0;
 
@@ -1980,7 +1980,9 @@ impl<'a> Tokenizer<'a> {
                             self.consume_next();
                             self.temp_buffer.push(c);
                         }
-                        if self.is_character_part_of_attribute() && self.current_character != ';' {
+
+                        let last_match_ch = self.current_character;
+                        if self.is_character_part_of_attribute() && last_match_ch != ';' {
                             let next_ch = current_str.chars().nth(max_len - 1);
                             if let Some(next_ch) = next_ch {
                                 if next_ch == '=' || next_ch.is_ascii_alphanumeric() {
@@ -1991,9 +1993,10 @@ impl<'a> Tokenizer<'a> {
                             }
                         }
 
-                        if self.current_character != ';' {
+                        if last_match_ch != ';' {
                             emit_error!("missing-semicolon-after-character-reference");
                         }
+
                         self.temp_buffer.clear();
                         self.temp_buffer.push(std::char::from_u32(charcode_1).unwrap());
                         if charcode_2 != 0 {
@@ -2398,6 +2401,65 @@ mod tests {
     }
 
     #[test]
+    fn parse_tag_self_closing() {
+        let html = "<div />";
+        let mut chars = html.chars();
+        let mut tokenizer = Tokenizer::new(&mut chars);
+        assert_eq!(Token::Tag {
+            tag_name: "div".to_owned(),
+            self_closing: true,
+            attributes: Vec::new(),
+            is_end_tag: false
+        }, tokenizer.next_token());
+    }
+
+    #[test]
+    fn parse_tag_attribute_double_quote() {
+        let html = "<div name=\"hello\" />";
+        let mut chars = html.chars();
+        let mut tokenizer = Tokenizer::new(&mut chars);
+        assert_eq!(Token::Tag {
+            tag_name: "div".to_owned(),
+            self_closing: true,
+            attributes: vec![
+                Attribute { name: "name".to_owned(), value: "hello".to_owned() }
+            ],
+            is_end_tag: false
+        }, tokenizer.next_token());
+    }
+
+    #[test]
+    fn parse_tag_attribute_single_quote() {
+        let html = "<div name='hello' />";
+        let mut chars = html.chars();
+        let mut tokenizer = Tokenizer::new(&mut chars);
+        assert_eq!(Token::Tag {
+            tag_name: "div".to_owned(),
+            self_closing: true,
+            attributes: vec![
+                Attribute { name: "name".to_owned(), value: "hello".to_owned() }
+            ],
+            is_end_tag: false
+        }, tokenizer.next_token());
+    }
+
+    #[test]
+    fn parse_tag_attribute_unquote() {
+        let html = "<div name=hello world />";
+        let mut chars = html.chars();
+        let mut tokenizer = Tokenizer::new(&mut chars);
+        assert_eq!(Token::Tag {
+            tag_name: "div".to_owned(),
+            self_closing: true,
+            attributes: vec![
+                Attribute { name: "name".to_owned(), value: "hello".to_owned() },
+                Attribute { name: "world".to_owned(), value: "".to_owned() }
+            ],
+            is_end_tag: false
+        }, tokenizer.next_token());
+    }
+
+    #[test]
     fn parse_doctype() {
         let html = "<!DOCTYPE html>";
         let mut chars = html.chars();
@@ -2424,7 +2486,7 @@ mod tests {
     }
 
     #[test]
-    fn parse_numeric_character_reference() {
+    fn parse_decimal_character_reference() {
         let html = "&#94;";
         let mut chars = html.chars();
         let mut tokenizer = Tokenizer::new(&mut chars);
@@ -2437,5 +2499,66 @@ mod tests {
         let mut chars = html.chars();
         let mut tokenizer = Tokenizer::new(&mut chars);
         assert_eq!(Token::Character('@'), tokenizer.next_token());
+    }
+
+    #[test]
+    fn parse_named_character_reference() {
+        let html = "&AElig;";
+        let mut chars = html.chars();
+        let mut tokenizer = Tokenizer::new(&mut chars);
+        assert_eq!(Token::Character('Æ'), tokenizer.next_token());
+    }
+
+    #[test]
+    fn parse_invalid_named_character_reference() {
+        let html = "&g;";
+        let mut chars = html.chars();
+        let mut tokenizer = Tokenizer::new(&mut chars);
+        assert_eq!(Token::Character('&'), tokenizer.next_token());
+    }
+
+    #[test]
+    fn parse_named_character_reference_in_string() {
+        let html = "I'm &notit;";
+        let mut chars = html.chars();
+        let mut tokenizer = Tokenizer::new(&mut chars);
+        assert_eq!(Token::Character('I'), tokenizer.next_token());
+        assert_eq!(Token::Character('\''), tokenizer.next_token());
+        assert_eq!(Token::Character('m'), tokenizer.next_token());
+        assert_eq!(Token::Character(' '), tokenizer.next_token());
+        assert_eq!(Token::Character('¬'), tokenizer.next_token());
+        assert_eq!(Token::Character('i'), tokenizer.next_token());
+        assert_eq!(Token::Character('t'), tokenizer.next_token());
+        assert_eq!(Token::Character(';'), tokenizer.next_token());
+    }
+
+    #[test]
+    fn parse_named_character_reference_in_attribute_name() {
+        let html = "<br &block;=\"name\" />";
+        let mut chars = html.chars();
+        let mut tokenizer = Tokenizer::new(&mut chars);
+        assert_eq!(Token::Tag {
+            tag_name: "br".to_owned(),
+            self_closing: true,
+            is_end_tag: false,
+            attributes: vec![
+                Attribute { name: "&block;".to_owned(), value: "name".to_owned() }
+            ]
+        }, tokenizer.next_token());
+    }
+
+    #[test]
+    fn parse_named_character_reference_in_attribute_value() {
+        let html = "<br name=\"&block;\" />";
+        let mut chars = html.chars();
+        let mut tokenizer = Tokenizer::new(&mut chars);
+        assert_eq!(Token::Tag {
+            tag_name: "br".to_owned(),
+            self_closing: true,
+            is_end_tag: false,
+            attributes: vec![
+                Attribute { name: "name".to_owned(), value: "█".to_owned() }
+            ]
+        }, tokenizer.next_token());
     }
 }
