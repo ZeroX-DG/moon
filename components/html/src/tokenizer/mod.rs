@@ -29,6 +29,9 @@ macro_rules! emit_error {
     }
 }
 
+// TODO: replace with char::REPLACEMENT_CHARACTER when stable
+const REPLACEMENT_CHARACTER: char = '\u{FFFD}';
+
 #[allow(non_camel_case_types)]
 #[derive(Clone)]
 pub enum Char {
@@ -114,8 +117,7 @@ impl<'a> Tokenizer<'a> {
                         Char::ch('<') => self.switch_to(State::RCDATALessThanSign),
                         Char::null => {
                             emit_error!("unexpected-null-character");
-                            // TODO: replace with char::REPLACEMENT_CHARACTER when stable
-                            return self.emit_char('\u{FFFD}');
+                            return self.emit_char(REPLACEMENT_CHARACTER);
                         }
                         Char::eof => return self.emit_eof(),
                         _ => return self.emit_current_char()
@@ -127,8 +129,7 @@ impl<'a> Tokenizer<'a> {
                         Char::ch('<') => self.switch_to(State::RAWTEXTLessThanSign),
                         Char::null => {
                             emit_error!("unexpected-null-character");
-                            // TODO: replace with char::REPLACEMENT_CHARACTER when stable
-                            return self.emit_char('\u{FFFD}');
+                            return self.emit_char(REPLACEMENT_CHARACTER);
                         }
                         Char::eof => return self.emit_eof(),
                         _ => return self.emit_current_char()
@@ -140,8 +141,7 @@ impl<'a> Tokenizer<'a> {
                         Char::ch('<') => self.switch_to(State::ScriptDataLessThanSign),
                         Char::null => {
                             emit_error!("unexpected-null-character");
-                            // TODO: replace with char::REPLACEMENT_CHARACTER when stable
-                            self.emit_char('\u{FFFD}');
+                            self.emit_char(REPLACEMENT_CHARACTER);
                         }
                         Char::eof => return self.emit_eof(),
                         _ => return self.emit_current_char()
@@ -152,8 +152,7 @@ impl<'a> Tokenizer<'a> {
                     match ch {
                         Char::null => {
                             emit_error!("unexpected-null-character");
-                            // TODO: replace with char::REPLACEMENT_CHARACTER when stable
-                            return self.emit_char('\u{FFFD}');
+                            return self.emit_char(REPLACEMENT_CHARACTER);
                         }
                         Char::eof => return self.emit_eof(),
                         _ => return self.emit_current_char()
@@ -227,8 +226,7 @@ impl<'a> Tokenizer<'a> {
                         }
                         Char::null => {
                             emit_error!("unexpected-null-character");
-                            // TODO: replace with char::REPLACEMENT_CHARACTER when stable
-                            self.append_character_to_tag_name('\u{FFFD}');
+                            self.append_character_to_tag_name(REPLACEMENT_CHARACTER);
                         } Char::eof => { emit_error!("eof-in-tag");
                             return self.emit_eof();
                         }
@@ -507,8 +505,7 @@ impl<'a> Tokenizer<'a> {
                         }
                         Char::null => {
                             emit_error!("unexpected-null-character");
-                            // TODO: replace with char::REPLACEMENT_CHARACTER when stable
-                            return self.emit_char('\u{FFFD}');
+                            return self.emit_char(REPLACEMENT_CHARACTER);
                         }
                         Char::eof => {
                             emit_error!("eof-in-script-html-comment-like-text");
@@ -532,8 +529,7 @@ impl<'a> Tokenizer<'a> {
                         Char::null => {
                             emit_error!("unexpected-null-character");
                             self.switch_to(State::ScriptDataEscaped);
-                            // TODO: replace with char::REPLACEMENT_CHARACTER when stable
-                            return self.emit_char('\u{FFFD}');
+                            return self.emit_char(REPLACEMENT_CHARACTER);
                         }
                         Char::eof => {
                             emit_error!("eof-in-script-html-comment-like-text");
@@ -561,8 +557,7 @@ impl<'a> Tokenizer<'a> {
                         Char::null => {
                             emit_error!("unexpected-null-character");
                             self.switch_to(State::ScriptDataEscaped);
-                            // TODO: replace with char::REPLACEMENT_CHARACTER when stable
-                            return self.emit_char('\u{FFFD}');
+                            return self.emit_char(REPLACEMENT_CHARACTER);
                         }
                         Char::eof => {
                             emit_error!("eof-in-script-html-comment-like-text");
@@ -696,7 +691,7 @@ impl<'a> Tokenizer<'a> {
                         }
                         Char::null => {
                             emit_error!("unexpected-null-character");
-                            return self.emit_char('\u{FFFD}');
+                            return self.emit_char(REPLACEMENT_CHARACTER);
                         }
                         Char::eof => {
                             emit_error!("eof-in-script-html-comment-like-text");
@@ -721,7 +716,7 @@ impl<'a> Tokenizer<'a> {
                         Char::null => {
                             emit_error!("unexpected-null-character");
                             self.switch_to(State::ScriptDataDoubleEscaped);
-                            return self.emit_char('\u{FFFD}');
+                            return self.emit_char(REPLACEMENT_CHARACTER);
                         }
                         Char::eof => {
                             emit_error!("eof-in-script-html-comment-like-text");
@@ -750,7 +745,7 @@ impl<'a> Tokenizer<'a> {
                         Char::null => {
                             emit_error!("unexpected-null-character");
                             self.switch_to(State::ScriptDataDoubleEscaped);
-                            return self.emit_char('\u{FFFD}');
+                            return self.emit_char(REPLACEMENT_CHARACTER);
                         }
                         Char::eof => {
                             emit_error!("eof-in-script-html-comment-like-text");
@@ -834,7 +829,7 @@ impl<'a> Tokenizer<'a> {
                         }
                         Char::null => {
                             emit_error!("unexpected-null-character");
-                            self.append_character_to_attribute_name('\u{FFFD}');
+                            self.append_character_to_attribute_name(REPLACEMENT_CHARACTER);
                         }
                         Char::ch('"') | Char::ch('\'') | Char::ch('<') => {
                             emit_error!("unexpected-character-in-attribute-name");
@@ -902,7 +897,7 @@ impl<'a> Tokenizer<'a> {
                         }
                         Char::null => {
                             emit_error!("unexpected-null-character");
-                            self.append_character_to_attribute_value('\u{FFFD}');
+                            self.append_character_to_attribute_value(REPLACEMENT_CHARACTER);
                         }
                         Char::eof => {
                             emit_error!("eof-in-tag");
@@ -925,7 +920,7 @@ impl<'a> Tokenizer<'a> {
                         }
                         Char::null => {
                             emit_error!("unexpected-null-character");
-                            self.append_character_to_attribute_value('\u{FFFD}');
+                            self.append_character_to_attribute_value(REPLACEMENT_CHARACTER);
                         }
                         Char::eof => {
                             emit_error!("eof-in-tag");
@@ -952,7 +947,7 @@ impl<'a> Tokenizer<'a> {
                         }
                         Char::null => {
                             emit_error!("unexpected-null-character");
-                            self.append_character_to_attribute_value('\u{FFFD}');
+                            self.append_character_to_attribute_value(REPLACEMENT_CHARACTER);
                         }
                         Char::ch('"') | Char::ch('\'') | Char::ch('<') | Char::ch('=') | Char::ch('`') =>  {
                             emit_error!("unexpected-character-in-unquoted-attribute-value");
@@ -1025,7 +1020,7 @@ impl<'a> Tokenizer<'a> {
                         Char::null => {
                             emit_error!("unexpected-null-character");
                             // TODO: replace with char::REPLACEMENT_CHARACTER when stable
-                            self.append_character_to_token_data('\u{FFFD}');
+                            self.append_character_to_token_data(REPLACEMENT_CHARACTER);
                         }
                         _ => {
                             self.append_character_to_token_data(self.current_character);
@@ -1097,7 +1092,7 @@ impl<'a> Tokenizer<'a> {
                         }
                         Char::null => {
                             emit_error!("unexpected-null-character");
-                            self.append_character_to_token_data('\u{FFFD}');
+                            self.append_character_to_token_data(REPLACEMENT_CHARACTER);
                         }
                         Char::eof => {
                             emit_error!("eof-in-comment");
@@ -1269,7 +1264,7 @@ impl<'a> Tokenizer<'a> {
                             let mut token = Token::new_doctype();
                             if let Token::DOCTYPE { ref mut name, .. } = token {
                                 let mut new_name = String::new();
-                                new_name.push('\u{FFFD}');
+                                new_name.push(REPLACEMENT_CHARACTER);
                                 *name = Some(new_name);
                             }
                             self.new_token(token);
@@ -1318,7 +1313,7 @@ impl<'a> Tokenizer<'a> {
                         }
                         Char::null => {
                             emit_error!("unexpected-null-character");
-                            self.append_character_to_doctype_name('\u{FFFD}');
+                            self.append_character_to_doctype_name(REPLACEMENT_CHARACTER);
                         }
                         Char::eof => {
                             emit_error!("eof-in-doctype");
@@ -1471,7 +1466,7 @@ impl<'a> Tokenizer<'a> {
                         }
                         Char::null => {
                             emit_error!("unexpected-null-character");
-                            self.append_character_to_doctype_public_identifier('\u{FFFD}');
+                            self.append_character_to_doctype_public_identifier(REPLACEMENT_CHARACTER);
                         }
                         Char::ch('>') => {
                             emit_error!("abrupt-doctype-public-identifier");
@@ -1504,7 +1499,7 @@ impl<'a> Tokenizer<'a> {
                         }
                         Char::null => {
                             emit_error!("unexpected-null-character");
-                            self.append_character_to_doctype_public_identifier('\u{FFFD}');
+                            self.append_character_to_doctype_public_identifier(REPLACEMENT_CHARACTER);
                         }
                         Char::ch('>') => {
                             emit_error!("abrupt-doctype-public-identifier");
@@ -1719,7 +1714,7 @@ impl<'a> Tokenizer<'a> {
                         }
                         Char::null => {
                             emit_error!("unexpected-null-character");
-                            self.append_character_to_doctype_system_identifier('\u{FFFD}');
+                            self.append_character_to_doctype_system_identifier(REPLACEMENT_CHARACTER);
                         }
                         Char::ch('>') => {
                             emit_error!("abrupt-doctype-system-identifier");
@@ -1752,7 +1747,7 @@ impl<'a> Tokenizer<'a> {
                         }
                         Char::null => {
                             emit_error!("unexpected-null-character");
-                            self.append_character_to_doctype_system_identifier('\u{FFFD}');
+                            self.append_character_to_doctype_system_identifier(REPLACEMENT_CHARACTER);
                         }
                         Char::ch('>') => {
                             emit_error!("abrupt-doctype-system-identifier");
