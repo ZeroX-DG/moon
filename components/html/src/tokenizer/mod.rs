@@ -1882,10 +1882,52 @@ impl<'a> Tokenizer<'a> {
                     }
                 }
                 State::NamedCharacterReference => {}
-                State::AmbiguousAmpersand => {}
+                State::AmbiguousAmpersand => {
+                    let ch = self.consume_next();
+                    match ch {
+                        Char::ch(c) if c.is_ascii_alphanumeric() => {
+                            if self.is_character_part_of_attribute() {
+                                self.append_character_to_attribute_value(c);
+                            } else {
+                                return self.emit_current_char();
+                            }
+                        }
+                        Char::ch(';') => {
+                            emit_error!("unknown-named-character-reference");
+                            self.reconsume_in_return_state();
+                        }
+                        _ => {
+                            self.reconsume_in_return_state();
+                        }
+                    }
+                }
                 State::NumericCharacterReference => {}
-                State::HexadecimalCharacterReferenceStart => {}
-                State::DecimalCharacterReferenceStart => {}
+                State::HexadecimalCharacterReferenceStart => {
+                    let ch = self.consume_next();
+                    match ch {
+                        Char::ch(c) if c.is_ascii_hexdigit() => {
+                            self.reconsume_in(State::HexadecimalCharacterReference);
+                        }
+                        _ => {
+                            emit_error!("absence-of-digits-in-numeric-character-reference");
+                            self.flush_code_points_consumed_as_a_character_reference();
+                            self.reconsume_in_return_state();
+                        }
+                    }
+                }
+                State::DecimalCharacterReferenceStart => {
+                    let ch = self.consume_next();
+                    match ch {
+                        Char::ch(c) if c.is_ascii_digit() => {
+                            self.reconsume_in(State::DecimalCharacterReference);
+                        }
+                        _ => {
+                            emit_error!("absence-of-digits-in-numeric-character-reference");
+                            self.flush_code_points_consumed_as_a_character_reference();
+                            self.reconsume_in_return_state();
+                        }
+                    }
+                }
                 State::HexadecimalCharacterReference => {}
                 State::DecimalCharacterReference => {}
                 State::NumericCharacterReferenceEnd => {}
