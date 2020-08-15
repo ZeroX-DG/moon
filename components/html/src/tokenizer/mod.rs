@@ -2373,4 +2373,20 @@ mod tests {
             system_identifier: Some("http://www.w3.org/TR/html4/loose.dtd".to_owned())
         }, tokenizer.next_token());
     }
+
+    #[test]
+    fn parse_numeric_character_reference() {
+        let html = "&#94;";
+        let mut chars = html.chars();
+        let mut tokenizer = Tokenizer::new(&mut chars);
+        assert_eq!(Token::Character('^'), tokenizer.next_token());
+    }
+
+    #[test]
+    fn parse_hex_character_reference() {
+        let html = "&#x00040;";
+        let mut chars = html.chars();
+        let mut tokenizer = Tokenizer::new(&mut chars);
+        assert_eq!(Token::Character('@'), tokenizer.next_token());
+    }
 }
