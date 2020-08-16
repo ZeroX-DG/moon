@@ -14,6 +14,8 @@ dependencies = [
  "libc 0.2.74 (registry+https://github.com/rust-lang/crates.io-index)",
  "wasi 0.9.0+wasi-snapshot-preview1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
+name = "dom"
+version = "0.1.0"
 
 [[package]]
 name = "html"
