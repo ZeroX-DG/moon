@@ -23,4 +23,14 @@ impl NodeList {
         }
         node
     }
+
+    pub fn length(&self) -> usize {
+        let mut node = self.start.clone();
+        let mut length = 0;
+        while let Some(node_ref) = &node {
+            node = node_ref.next_sibling();
+            length += 1;
+        }
+        length
+    }
 }

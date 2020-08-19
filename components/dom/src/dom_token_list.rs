@@ -24,10 +24,14 @@ impl DOMTokenList {
     }
 
     pub fn remove(&mut self, tokens: Vec<String>) {
-        self.items = self.items
-            .iter()
-            .cloned()
-            .filter(|item| tokens.contains(item))
-            .collect();
+        for (index, item) in self.items.iter().enumerate() {
+            if tokens.contains(item) {
+                self.items.remove(index);
+            }
+        }
+    }
+
+    pub fn value(&self) -> String {
+        self.items.join(" ")
     }
 }
