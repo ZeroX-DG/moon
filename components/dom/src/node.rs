@@ -1,6 +1,12 @@
 use std::rc::{Weak, Rc};
 use std::cell::RefCell;
 use std::ops::{Deref};
+use super::node_list::NodeList;
+use super::nodes::document::Document;
+
+pub enum NodeData {
+    Document(Document)
+}
 
 #[derive(Debug, Clone)]
 pub enum NodeType {
@@ -15,12 +21,13 @@ pub enum NodeType {
 }
 
 pub struct Node {
-    node_type: NodeType,
+    node_type: Rc<RefCell<NodeType>>,
     parent_node: Option<WeakNodeRef>,
     first_child: Option<NodeRef>,
     last_child: Option<WeakNodeRef>,
     next_sibling: Option<NodeRef>,
     prev_sibling: Option<WeakNodeRef>,
+    data: Rc<RefCell<NodeData>>
 }
 
 pub struct NodeRef(Rc<RefCell<Node>>);
@@ -47,6 +54,10 @@ impl Clone for NodeRef {
 }
 
 impl NodeRef {
+    pub fn new(node: Node) -> Self {
+        Self(Rc::new(RefCell::new(node)))
+    }
+
     pub fn downgrade(self) -> WeakNodeRef {
         WeakNodeRef(Rc::downgrade(&self.0))
     }
@@ -85,9 +96,18 @@ impl NodeRef {
         }
     }
 
-    pub fn node_type(&self) -> NodeType {
+    pub fn node_type(&self) -> Rc<RefCell<NodeType>> {
         let ref_self = self.borrow();
         ref_self.node_type.clone()
+    }
+
+    pub fn child_nodes(&self) -> NodeList {
+        NodeList::new(self.first_child())
+    }
+
+    pub fn data(&self) -> Rc<RefCell<NodeData>> {
+        let ref_self = self.borrow();
+        ref_self.data.clone()
     }
 }
 
