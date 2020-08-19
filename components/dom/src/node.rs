@@ -3,14 +3,6 @@ use std::cell::RefCell;
 use std::ops::{Deref};
 use super::node_list::NodeList;
 
-use super::nodes::document::Document;
-use super::nodes::element::Element;
-
-pub enum NodeData {
-    Document(Document),
-    Element(Element)
-}
-
 #[derive(Debug, Clone)]
 pub enum NodeType {
     Element = 1,
@@ -30,7 +22,6 @@ pub struct Node {
     last_child: Option<WeakNodeRef>,
     next_sibling: Option<NodeRef>,
     prev_sibling: Option<WeakNodeRef>,
-    data: Rc<RefCell<NodeData>>
 }
 
 pub struct NodeRef(Rc<RefCell<Node>>);
@@ -106,11 +97,6 @@ impl NodeRef {
 
     pub fn child_nodes(&self) -> NodeList {
         NodeList::new(self.first_child())
-    }
-
-    pub fn data(&self) -> Rc<RefCell<NodeData>> {
-        let ref_self = self.borrow();
-        ref_self.data.clone()
     }
 }
 
