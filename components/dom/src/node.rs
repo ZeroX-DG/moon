@@ -2,10 +2,13 @@ use std::rc::{Weak, Rc};
 use std::cell::RefCell;
 use std::ops::{Deref};
 use super::node_list::NodeList;
+
 use super::nodes::document::Document;
+use super::nodes::element::Element;
 
 pub enum NodeData {
-    Document(Document)
+    Document(Document),
+    Element(Element)
 }
 
 #[derive(Debug, Clone)]
