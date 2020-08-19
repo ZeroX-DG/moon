@@ -1,7 +1,7 @@
 mod state;
 mod token;
 
-use std::collections::{VecDeque};
+use std::collections::{VecDeque, HashSet};
 use std::str::Chars;
 use std::env;
 use state::State;
@@ -1100,7 +1100,6 @@ impl<'a> Tokenizer<'a> {
                         }
                         Char::null => {
                             emit_error!("unexpected-null-character");
-                            // TODO: replace with char::REPLACEMENT_CHARACTER when stable
                             self.append_character_to_token_data(REPLACEMENT_CHARACTER);
                         }
                         _ => {
@@ -2279,11 +2278,24 @@ impl<'a> Tokenizer<'a> {
     }
 
     fn will_emit(&mut self, token: Token) {
-        if let Token::Tag { is_end_tag, .. } = &token {
+        let mut token = token;
+        if let Token::Tag { is_end_tag, ref mut attributes, .. } = token {
+            let mut seen = HashSet::new();
+            let mut remove_indexes = Vec::new();
+            for (index, attribute) in attributes.iter().enumerate() {
+                if seen.contains(&attribute.name) {
+                    emit_error!("duplicate-attribute");
+                    remove_indexes.push(index);
+                } else {
+                    seen.insert(attribute.name.clone());
+                }
+            }
+            for index in remove_indexes {
+                attributes.remove(index);
+            }
             if !is_end_tag {
                 self.last_emitted_start_tag = Some(token.clone());
             }
-            // TODO: filter duplicate attributes
         }
         self.output.push_back(token);
     }
@@ -2558,6 +2570,21 @@ mod tests {
             is_end_tag: false,
             attributes: vec![
                 Attribute { name: "name".to_owned(), value: "█".to_owned() }
+            ]
+        }, tokenizer.next_token());
+    }
+
+    #[test]
+    fn parse_duplicate_attribute() {
+        let html = "<div attr attr />";
+        let mut chars = html.chars();
+        let mut tokenizer = Tokenizer::new(&mut chars);
+        assert_eq!(Token::Tag {
+            tag_name: "div".to_owned(),
+            self_closing: true,
+            is_end_tag: false,
+            attributes: vec![
+                Attribute { name: "attr".to_owned(), value: "".to_owned() }
             ]
         }, tokenizer.next_token());
     }
