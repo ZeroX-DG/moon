@@ -1,6 +1,6 @@
 use std::rc::{Weak, Rc};
 use std::cell::RefCell;
-use std::ops::{Deref};
+use std::ops::Deref;
 use super::node_list::NodeList;
 
 #[derive(Debug, Clone)]
@@ -22,7 +22,10 @@ pub struct Node {
     last_child: Option<WeakNodeRef>,
     next_sibling: Option<NodeRef>,
     prev_sibling: Option<WeakNodeRef>,
+    inner: Rc<RefCell<dyn NodeData>>
 }
+
+pub trait NodeData {}
 
 pub struct NodeRef(Rc<RefCell<Node>>);
 pub struct WeakNodeRef(Weak<RefCell<Node>>);
@@ -97,6 +100,11 @@ impl NodeRef {
 
     pub fn child_nodes(&self) -> NodeList {
         NodeList::new(self.first_child())
+    }
+
+    pub fn inner(&self) -> Rc<RefCell<dyn NodeData>> {
+        let ref_self = self.borrow();
+        ref_self.inner.clone()
     }
 }
 
