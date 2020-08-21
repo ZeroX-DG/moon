@@ -1,14 +1,13 @@
 use super::node::NodeData;
-use super::str::{USVString, DOMString};
 
 pub struct DocumentType {
-    pub name: DOMString,
-    pub publicId: DOMString,
-    pub systemId: DOMString
+    pub name: String,
+    pub publicId: String,
+    pub systemId: String
 }
 
 pub struct Document {
-    URL: USVString,
+    URL: String,
     doctype: Option<DocumentType>
 }
 
