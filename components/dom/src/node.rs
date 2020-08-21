@@ -1,7 +1,6 @@
 use std::rc::{Weak, Rc};
 use std::cell::RefCell;
 use std::ops::Deref;
-use super::node_list::NodeList;
 
 #[derive(Debug, Clone)]
 pub enum NodeType {
@@ -16,24 +15,24 @@ pub enum NodeType {
 }
 
 pub struct Node<'a> {
-    node_type: Rc<RefCell<NodeType>>,
-    parent_node: Option<WeakNodeRef<'a>>,
-    first_child: Option<NodeRef<'a>>,
-    last_child: Option<WeakNodeRef<'a>>,
-    next_sibling: Option<NodeRef<'a>>,
-    prev_sibling: Option<WeakNodeRef<'a>>,
-    inner: Rc<RefCell<dyn NodeData + 'a>>
+    pub(crate) node_type: NodeType,
+    pub(crate) parent_node: Option<WeakNodeRef<'a>>,
+    pub(crate) first_child: Option<NodeRef<'a>>,
+    pub(crate) last_child: Option<WeakNodeRef<'a>>,
+    pub(crate) next_sibling: Option<NodeRef<'a>>,
+    pub(crate) prev_sibling: Option<WeakNodeRef<'a>>,
+    pub(crate) inner: Rc<RefCell<dyn NodeData + 'a>>
 }
 
 pub trait NodeData {}
 
-pub struct NodeRef<'a>(Rc<RefCell<Node<'a>>>);
-pub struct WeakNodeRef<'a>(Weak<RefCell<Node<'a>>>);
+pub struct NodeRef<'a>(pub(crate) Rc<RefCell<Node<'a>>>);
+pub struct WeakNodeRef<'a>(pub(crate) Weak<RefCell<Node<'a>>>);
 
 impl<'a> Node<'a> {
     pub fn new<D: NodeData + 'a>(node_type: NodeType, inner: D) -> Self {
         Self {
-            node_type: Rc::new(RefCell::new(node_type)),
+            node_type,
             parent_node: None,
             first_child: None,
             last_child: None,
@@ -77,52 +76,8 @@ impl<'a> NodeRef<'a> {
         WeakNodeRef(Rc::downgrade(&self.0))
     }
 
-    pub fn parent(&self) -> Option<NodeRef<'a>> {
-        let ref_self = self.borrow();
-        match &ref_self.parent_node {
-            Some(node) => node.clone().upgrade(),
-            _ => None
-        }
-    }
-
-    pub fn next_sibling(&self) -> Option<NodeRef<'a>> {
-        let ref_self = self.borrow();
-        ref_self.next_sibling.clone()
-    }
-
-    pub fn prev_sibling(&self) -> Option<NodeRef<'a>> {
-        let ref_self = self.borrow();
-        match &ref_self.prev_sibling {
-            Some(node) => node.clone().upgrade(),
-            _ => None
-        }
-    }
-
-    pub fn first_child(&self) -> Option<NodeRef<'a>> {
-        let ref_self = self.borrow();
-        ref_self.first_child.clone()
-    }
-
-    pub fn last_child(&self) -> Option<NodeRef<'a>> {
-        let ref_self = self.borrow();
-        match &ref_self.last_child {
-            Some(node) => node.clone().upgrade(),
-            _ => None
-        }
-    }
-
-    pub fn node_type(&self) -> Rc<RefCell<NodeType>> {
-        let ref_self = self.borrow();
-        ref_self.node_type.clone()
-    }
-
-    pub fn child_nodes(&self) -> NodeList {
-        NodeList::new(self.first_child())
-    }
-
-    pub fn inner(&self) -> Rc<RefCell<dyn NodeData + 'a>> {
-        let ref_self = self.borrow();
-        ref_self.inner.clone()
+    pub fn inner(&self) -> &Rc<RefCell<Node<'a>>> {
+        &self.0
     }
 }
 

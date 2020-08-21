@@ -1,15 +1,15 @@
-use crate::node::{NodeType, NodeRef};
+use crate::node::{NodeRef, NodeData};
 
-pub struct Document {
-    node: NodeRef,
-    doctype: Option<NodeRef>
+pub struct Document<'a> {
+    doctype: Option<NodeRef<'a>>
 }
 
-impl Document {
+impl<'a> Document<'a> {
     pub fn new() -> Self {
         Self {
-            node: NodeRef::new_node(NodeType::Document),
             doctype: None
         }
     }
 }
+
+impl<'a> NodeData for Document<'a> {}

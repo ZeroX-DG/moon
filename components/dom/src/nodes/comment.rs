@@ -1,15 +1,11 @@
-use crate::node::{NodeRef, NodeType};
+use crate::node::NodeData;
 
-pub struct Comment {
-    node: NodeRef,
-    data: String
-}
+pub struct Comment(String);
 
 impl Comment {
     pub fn new(data: String) -> Self {
-        Self {
-            node: NodeRef::new_node(NodeType::Comment),
-            data
-        }
+        Self(data)
     }
 }
+
+impl NodeData for Comment {}

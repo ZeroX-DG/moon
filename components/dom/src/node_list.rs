@@ -1,17 +1,18 @@
 use super::node::NodeRef;
+use super::implementations::Node;
 
-pub struct NodeList {
-    start: Option<NodeRef>
+pub struct NodeList<'a> {
+    start: Option<NodeRef<'a>>
 }
 
-impl NodeList {
-    pub fn new(start: Option<NodeRef>) -> Self {
+impl<'a> NodeList<'a> {
+    pub fn new(start: Option<NodeRef<'a>>) -> Self {
         Self {
             start
         }
     }
 
-    pub fn item(&self, index: usize) -> Option<NodeRef> {
+    pub fn item(&self, index: usize) -> Option<NodeRef<'a>> {
         let mut node = self.start.clone();
         let mut current_idx = index;
         while let Some(node_ref) = &node {
