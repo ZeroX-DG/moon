@@ -1,6 +1,6 @@
 use std::ops::Deref;
-use super::dom_token_list::DOMTokenList;
-use super::node::NodeData;
+use crate::dom_token_list::DOMTokenList;
+use crate::node::NodeData;
 
 pub struct Element<T: ElementData> {
     inner: T,

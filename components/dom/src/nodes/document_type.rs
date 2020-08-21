@@ -1,4 +1,4 @@
-use super::node::NodeData;
+use crate::node::NodeData;
 
 pub struct DocumentType {
     pub name: String,
