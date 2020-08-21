@@ -1,15 +1,30 @@
-use crate::node::{NodeRef, NodeData};
+use crate::node::NodeRef;
 
-pub struct Document<'a> {
-    doctype: Option<NodeRef<'a>>
+pub struct Document {
+    doctype: Option<NodeRef>,
+    mode: QuirksMode
 }
 
-impl<'a> Document<'a> {
+pub enum QuirksMode {
+    Quirks,
+    NoQuirks,
+    LimitedQuirks
+}
+
+impl Document {
     pub fn new() -> Self {
         Self {
-            doctype: None
+            doctype: None,
+            mode: QuirksMode::NoQuirks
         }
+    }
+
+    pub fn set_doctype(&mut self, doctype: Option<NodeRef>) {
+        self.doctype = doctype;
+    }
+
+    pub fn set_mode(&mut self, mode: QuirksMode) {
+        self.mode = mode;
     }
 }
 
-impl<'a> NodeData for Document<'a> {}

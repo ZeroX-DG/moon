@@ -1,6 +1,5 @@
 use std::ops::Deref;
 use crate::dom_token_list::DOMTokenList;
-use crate::node::NodeData;
 
 pub struct Element<T: ElementData> {
     inner: T,
@@ -36,5 +35,3 @@ impl<T: ElementData> Deref for Element<T> {
 }
 
 pub trait ElementData {}
-
-impl<T: ElementData> NodeData for Element<T> {}

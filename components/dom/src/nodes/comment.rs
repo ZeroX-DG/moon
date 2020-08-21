@@ -1,5 +1,3 @@
-use crate::node::NodeData;
-
 pub struct Comment(String);
 
 impl Comment {
@@ -8,4 +6,3 @@ impl Comment {
     }
 }
 
-impl NodeData for Comment {}
