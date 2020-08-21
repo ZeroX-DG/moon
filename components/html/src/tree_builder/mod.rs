@@ -1,14 +1,15 @@
 mod insert_mode;
 
-use dom::dom_traits::Dom;
 use insert_mode::InsertMode;
+use dom::node::NodeRef;
+use super::tokenizer::token::Token;
 
-pub struct TreeBuilder<T: Dom> {
-    open_elements: Vec<T>,
+pub struct TreeBuilder {
+    open_elements: Vec<NodeRef>,
     insert_mode: InsertMode
 }
 
-impl<T: Dom> TreeBuilder<T> {
+impl TreeBuilder {
     pub fn new() -> Self {
         Self {
             open_elements: Vec::new(),

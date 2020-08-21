@@ -1,5 +1,5 @@
-mod state;
-mod token;
+pub mod state;
+pub mod token;
 
 use std::collections::{VecDeque, HashSet};
 use std::str::Chars;
