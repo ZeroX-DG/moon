@@ -1,37 +1,27 @@
-use std::ops::Deref;
 use crate::dom_token_list::DOMTokenList;
+use std::collections::HashMap;
+use std::rc::Rc;
+use std::cell::RefCell;
 
-pub struct Element<T: ElementData> {
-    inner: T,
-    tag_name: String,
-    id: String,
-    class_list: DOMTokenList
+pub enum ElementData {
+    AnchorElement
 }
 
-impl<T: ElementData> Element<T> {
-    pub fn tag_name(&self) -> String {
-        self.tag_name.clone()
-    }
-
-    pub fn id(&self) -> String {
-        self.id.clone()
-    }
-
-    pub fn class_list(&self) -> &DOMTokenList {
-        &self.class_list
-    }
-
-    pub fn class_name(&self) -> String {
-        self.class_list.value()
-    }
+pub struct Element {
+    pub(crate) data: ElementData,
+    pub(crate) attributes: HashMap<String, String>,
+    pub(crate) id: String,
+    pub(crate) class_list: Rc<RefCell<DOMTokenList>>
 }
 
-impl<T: ElementData> Deref for Element<T> {
-    type Target = T;
-
-    fn deref(&self) -> &Self::Target {
-        &self.inner
+impl Element {
+    pub fn new(data: ElementData) -> Self {
+        Self {
+            data,
+            attributes: HashMap::new(),
+            id: String::new(),
+            class_list: Rc::new(RefCell::new(DOMTokenList::new()))
+        }
     }
 }
 
-pub trait ElementData {}

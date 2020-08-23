@@ -3,6 +3,12 @@ pub struct DOMTokenList {
 }
 
 impl DOMTokenList {
+    pub fn new() -> Self {
+        Self {
+            items: Vec::new()
+        }
+    }
+
     pub fn length(&self) -> usize {
         self.items.len()
     }
