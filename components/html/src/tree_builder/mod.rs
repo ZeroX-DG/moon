@@ -39,7 +39,7 @@ pub struct TreeBuilder {
     document: NodeRef
 }
 
-pub enum TreeBuildingStatus {
+pub enum ProcessingResult {
     Continue,
     Stop
 }
@@ -63,9 +63,10 @@ impl TreeBuilder {
         }
     }
 
-    pub fn process(&mut self, token: Token) -> TreeBuildingStatus {
+    pub fn process(&mut self, token: Token) -> ProcessingResult {
         match self.insert_mode {
             InsertMode::Initial => self.handle_initial(token),
+            InsertMode::BeforeHtml => self.handle_before_html(token),
             _ => unimplemented!()
         }
     }
@@ -89,16 +90,16 @@ impl TreeBuilder {
         self.insert_mode = mode;
     }
 
-    fn handle_initial(&mut self, token: Token) -> TreeBuildingStatus {
+    fn handle_initial(&mut self, token: Token) -> ProcessingResult {
         match token.clone() {
-            Token::Character(c) if is_whitespace(c) => TreeBuildingStatus::Continue,
+            Token::Character(c) if is_whitespace(c) => ProcessingResult::Continue,
             Token::Comment(data) => {
                 let comment = NodeRef::new_node(
                     NodeType::Comment,
                     NodeInner::Comment(Comment::new(data))
                 );
                 self.document.append_child(comment);
-                TreeBuildingStatus::Continue
+                ProcessingResult::Continue
             }
             Token::DOCTYPE { name, public_identifier, system_identifier, .. } => {
                 let name = name.unwrap_or_default();
@@ -130,12 +131,36 @@ impl TreeBuilder {
 
                 self.switch_to(InsertMode::BeforeHtml);
 
-                TreeBuildingStatus::Continue
+                ProcessingResult::Continue
             }
             _ => {
                 emit_error!("Bad token");
                 self.switch_to(InsertMode::BeforeHtml);
                 self.process(token)
+            }
+        }
+    }
+
+    fn handle_before_html(&mut self, token: Token) -> ProcessingResult {
+        match token {
+            Token::DOCTYPE { .. } => {
+                emit_error!("Unexpected doctype");
+                ProcessingResult::Continue
+            }
+            Token::Comment(data) => {
+                let comment = NodeRef::new_node(
+                    NodeType::Comment,
+                    NodeInner::Comment(Comment::new(data))
+                );
+                self.document.append_child(comment);
+                ProcessingResult::Continue
+            }
+            Token::Character(c) if is_whitespace(c) => ProcessingResult::Continue,
+            Token::Tag { tag_name, is_end_tag, .. } => {
+                if tag_name == "html" {
+                    self.switch_to(InsertMode::BeforeHead);
+                    ProcessingResult::Continue
+                }
             }
         }
     }

@@ -54,6 +54,8 @@ impl Node for NodeRef {
             last_child.borrow_mut().next_sibling = Some(child.clone());
         }
 
+        child.borrow_mut().parent_node = Some(self.clone().downgrade());
+
         ref_self.last_child = Some(child.downgrade());
     }
 }
