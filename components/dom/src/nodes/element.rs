@@ -2,9 +2,10 @@ use crate::dom_token_list::DOMTokenList;
 use std::collections::HashMap;
 use std::rc::Rc;
 use std::cell::RefCell;
+use super::HTMLElement;
 
 pub enum ElementData {
-    AnchorElement
+    HTMLElement(HTMLElement)
 }
 
 pub struct Element {
