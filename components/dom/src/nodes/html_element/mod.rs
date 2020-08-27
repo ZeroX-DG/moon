@@ -1,5 +1,5 @@
-pub enum HTMLElementData {
-}
+mod data;
+use data::HTMLElementData;
 
 pub struct HTMLElement {
     data: HTMLElementData
