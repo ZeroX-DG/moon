@@ -6,6 +6,7 @@ use super::Node;
 
 pub trait Element : Node {
     fn id(&self) -> String;
+    fn tag_name(&self) -> String;
     fn class_name(&self) -> String;
     fn class_list(&mut self) -> Rc<RefCell<DOMTokenList>>;
     fn get_attribute(&self, attr: &str) -> Option<String>;
@@ -19,6 +20,14 @@ impl Element for NodeRef {
         let ref_self = self.borrow();
         if let NodeInner::Element(element) = &*ref_self.inner.borrow() {
             return element.id.clone()
+        }
+        panic!(PANIC_NON_ELEMENT)
+    }
+
+    fn tag_name(&self) -> String {
+        let ref_self = self.borrow();
+        if let NodeInner::Element(element) = &*ref_self.inner.borrow() {
+            return element.tag_name.clone()
         }
         panic!(PANIC_NON_ELEMENT)
     }
