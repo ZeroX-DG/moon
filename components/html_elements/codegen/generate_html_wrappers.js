@@ -20,7 +20,7 @@ function main() {
             const wrapper = gerenateWrapper(elementInterface);
             const fileName = elementInterface.name.toLowerCase();
 
-            fs.writeFile(`../src/elements/${fileName}.rs`, wrapper, err => {
+            fs.writeFile(`../src/${fileName}.rs`, wrapper, err => {
               if (err) {
                 reject(
                   console.log(
@@ -42,9 +42,10 @@ function main() {
     Promise.all(generateTasks).then(fileNames => {
       const modFileContent = fileNames.reduce((acc, curr) => {
         acc += `mod ${curr};\n`;
+        acc += `pub use ${curr}::*;\n\n`;
         return acc;
       }, "");
-      fs.writeFile(`../src/elements/mod.rs`, modFileContent, err => {
+      fs.writeFile(`../src/lib.rs`, modFileContent, err => {
         if (err) {
           console.log("Error while writing mod.rs");
           return;

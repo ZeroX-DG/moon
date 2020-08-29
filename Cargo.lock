@@ -3,6 +3,9 @@
 [[package]]
 name = "dom"
 version = "0.1.0"
+dependencies = [
+ "html_elements",
+]
 
 [[package]]
 name = "html"
@@ -10,6 +13,10 @@ version = "0.1.0"
 dependencies = [
  "dom",
 ]
+
+[[package]]
+name = "html_elements"
+version = "0.1.0"
 
 [[package]]
 name = "nox"

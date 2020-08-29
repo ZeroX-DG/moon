@@ -1,7 +1,13 @@
-use super::html;
+use html_elements::{
+    HTMLHtmlElement,
+    HTMLHeadElement,
+    HTMLTitleElement,
+};
 
 pub enum HTMLElementData {
     HTMLUnknownElement,
     HTMLElement,
-    HTMLHeadElement()
+    HTMLHtmlElement(HTMLHtmlElement),
+    HTMLHeadElement(HTMLHeadElement),
+    HTMLTitleElement(HTMLTitleElement),
 }
