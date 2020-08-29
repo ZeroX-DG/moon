@@ -1,4 +1,7 @@
+use super::html;
+
 pub enum HTMLElementData {
     HTMLUnknownElement,
-    HTMLElement
+    HTMLElement,
+    HTMLHeadElement()
 }
