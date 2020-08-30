@@ -30,6 +30,7 @@ pub struct Node {
     pub(crate) last_child: Option<WeakNodeRef>,
     pub(crate) next_sibling: Option<NodeRef>,
     pub(crate) prev_sibling: Option<WeakNodeRef>,
+    pub(crate) owner_document: Option<WeakNodeRef>,
     pub(crate) inner: Rc<RefCell<NodeInner>>
 }
 
@@ -45,6 +46,7 @@ impl Node {
             last_child: None,
             next_sibling: None,
             prev_sibling: None,
+            owner_document: None,
             inner: Rc::new(RefCell::new(inner))
         }
     }

@@ -1,4 +1,4 @@
-use crate::node::{NodeType, NodeRef};
+use crate::node::{NodeType, NodeRef, WeakNodeRef};
 use crate::node_list::NodeList;
 
 pub trait Node {
@@ -8,6 +8,8 @@ pub trait Node {
     fn last_child(&self) -> Option<NodeRef>;
     fn next_sibling(&self) -> Option<NodeRef>;
     fn prev_sibling(&self) -> Option<NodeRef>;
+    fn owner_document(&self) -> Option<NodeRef>;
+    fn set_document(&self, document: WeakNodeRef);
     fn append_child(&self, child: NodeRef);
 }
 
@@ -45,6 +47,19 @@ impl Node for NodeRef {
 
     fn child_nodes(&self) -> NodeList {
         NodeList::new(self.first_child())
+    }
+
+    fn owner_document(&self) -> Option<NodeRef> {
+        let ref_self = self.borrow();
+        match &ref_self.owner_document {
+            Some(node) => node.clone().upgrade(),
+            _ => None
+        }
+    }
+
+    fn set_document(&self, document: WeakNodeRef) {
+        let mut ref_self = self.borrow_mut();
+        ref_self.owner_document = Some(document);
     }
 
     fn append_child(&self, child: NodeRef) {

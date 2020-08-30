@@ -5,7 +5,8 @@ use std::cell::RefCell;
 use super::HTMLElement;
 
 pub enum ElementData {
-    HTMLElement(HTMLElement)
+    HTMLElement(HTMLElement),
+    Element
 }
 
 pub struct Element {

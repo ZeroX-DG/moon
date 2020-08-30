@@ -5,7 +5,8 @@ use insert_mode::InsertMode;
 use super::tokenizer::token::Token;
 use dom::node::{NodeType, NodeRef, NodeInner};
 use dom::nodes::{Document, Comment, DocumentType, QuirksMode};
-use dom::implementations::Node;
+use dom::implementations::{Node, Element};
+use dom::element_factory::create_element;
 
 fn is_trace() -> bool {
     match env::var("TRACE_TREE_BUILDER") {
@@ -28,6 +29,12 @@ macro_rules! emit_error {
     }
 }
 
+macro_rules! match_any {
+    ($target:ident, $($cmp:expr), *) => {
+        $($target == $cmp)||*
+    };
+}
+
 pub struct TreeBuilder {
     // stack of open elements as mentioned in specs
     open_elements: Vec<NodeRef>,
@@ -36,7 +43,7 @@ pub struct TreeBuilder {
     insert_mode: InsertMode,
 
     // the result document
-    document: NodeRef
+    document: NodeRef,
 }
 
 pub enum ProcessingResult {
@@ -74,9 +81,8 @@ impl TreeBuilder {
     fn which_quirks_mode(&self, token: Token) -> QuirksMode {
         if let Token::DOCTYPE {
             name,
-            public_identifier,
-            system_identifier,
-            force_quirks
+            force_quirks,
+            ..
         } = token {
             // TODO: Implement full stpecs detection
             if force_quirks || name.unwrap_or_default() != "html" {
@@ -141,8 +147,39 @@ impl TreeBuilder {
         }
     }
 
+    fn create_element(&self, tag_token: Token) -> NodeRef {
+        let (tag_name, attributes) = if let Token::Tag { tag_name, attributes, .. } = tag_token {
+            (tag_name, attributes)
+        } else {
+            ("".to_string(), Vec::new())
+        };
+        let mut element = create_element(self.document.clone().downgrade(), &tag_name);
+        for attribute in attributes {
+            element.set_attribute(&attribute.name, &attribute.value);
+        }
+        element
+    }
+
+    fn create_element_from_tag_name(&self, tag_name: &str) -> NodeRef {
+        self.create_element(Token::Tag {
+            tag_name: tag_name.to_owned(),
+            self_closing: false,
+            attributes: Vec::new(),
+            is_end_tag: false
+        })
+    }
+
     fn handle_before_html(&mut self, token: Token) -> ProcessingResult {
-        match token {
+        fn anything_else(this: &mut TreeBuilder, token: Token) -> ProcessingResult {
+            let element = this.create_element_from_tag_name("html");
+            this.document.append_child(element.clone());
+            this.open_elements.push(element.clone());
+            // TODO: Implement additional steps in specs
+            this.switch_to(InsertMode::BeforeHead);
+            this.process(token.clone())
+        }
+
+        match token.clone() {
             Token::DOCTYPE { .. } => {
                 emit_error!("Unexpected doctype");
                 ProcessingResult::Continue
@@ -157,11 +194,24 @@ impl TreeBuilder {
             }
             Token::Character(c) if is_whitespace(c) => ProcessingResult::Continue,
             Token::Tag { tag_name, is_end_tag, .. } => {
-                if tag_name == "html" {
+                if tag_name == "html" && !is_end_tag {
+                    let element = self.create_element(token);
+                    self.document.append_child(element.clone());
+                    self.open_elements.push(element.clone());
+                    // TODO: implement additional steps in specs
                     self.switch_to(InsertMode::BeforeHead);
                     ProcessingResult::Continue
+                } else if match_any!(tag_name, "head", "body", "html", "br") && is_end_tag {
+                    anything_else(self, token)
+                } else {
+                    if is_end_tag {
+                        emit_error!("Invalid end tag");
+                        return ProcessingResult::Continue;
+                    }
+                    anything_else(self, token)
                 }
             }
+            _ => anything_else(self, token)
         }
     }
 }
