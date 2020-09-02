@@ -1,7 +1,9 @@
 mod insert_mode;
+mod stack_of_open_elements;
 
 use std::env;
 use insert_mode::InsertMode;
+use stack_of_open_elements::StackOfOpenElements;
 use super::tokenizer::token::Token;
 use dom::node::{NodeType, NodeRef, NodeInner};
 use dom::nodes::{Document, Comment, DocumentType, QuirksMode};
@@ -37,13 +39,21 @@ macro_rules! match_any {
 
 pub struct TreeBuilder {
     // stack of open elements as mentioned in specs
-    open_elements: Vec<NodeRef>,
+    open_elements: StackOfOpenElements,
 
     // current insertion mode
     insert_mode: InsertMode,
 
     // the result document
     document: NodeRef,
+
+    // enable or disable foster parenting
+    foster_parenting: bool
+}
+
+pub struct AdjustedInsertionLocation {
+    parent: NodeRef,
+    insert_before_sibling: Option<NodeRef>
 }
 
 pub enum ProcessingResult {
@@ -61,12 +71,13 @@ fn is_whitespace(c: char) -> bool {
 impl TreeBuilder {
     pub fn new() -> Self {
         Self {
-            open_elements: Vec::new(),
+            open_elements: StackOfOpenElements::new(),
             insert_mode: InsertMode::Initial,
             document: NodeRef::new_node(
                 NodeType::Document,
                 NodeInner::Document(Document::new())
-            )
+            ),
+            foster_parenting: false
         }
     }
 
@@ -167,6 +178,16 @@ impl TreeBuilder {
             attributes: Vec::new(),
             is_end_tag: false
         })
+    }
+
+    fn get_appropriate_place_for_inserting_a_node(&self) -> AdjustedInsertionLocation {
+        let target = self.open_elements.current_node().unwrap();
+        
+        // TODO: implement full specs
+        return AdjustedInsertionLocation {
+            parent: target.clone(),
+            insert_before_sibling: target.last_child()
+        };
     }
 
     fn handle_before_html(&mut self, token: Token) -> ProcessingResult {
