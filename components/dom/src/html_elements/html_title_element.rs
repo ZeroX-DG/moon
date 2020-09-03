@@ -1,3 +1,3 @@
 pub struct HTMLTitleElement {
-  text: String,
+    text: String
 }

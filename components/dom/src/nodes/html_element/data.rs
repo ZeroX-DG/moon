@@ -1,7 +1,9 @@
-use html_elements::{
+use crate::html_elements::{
     HTMLHtmlElement,
     HTMLHeadElement,
     HTMLTitleElement,
+    HTMLBodyElement,
+    HTMLDivElement
 };
 
 pub enum HTMLElementData {
@@ -10,4 +12,6 @@ pub enum HTMLElementData {
     HTMLHtmlElement(HTMLHtmlElement),
     HTMLHeadElement(HTMLHeadElement),
     HTMLTitleElement(HTMLTitleElement),
+    HTMLBodyElement(HTMLBodyElement),
+    HTMLDivElement(HTMLDivElement),
 }
