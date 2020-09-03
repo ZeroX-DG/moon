@@ -48,12 +48,15 @@ pub struct TreeBuilder {
     document: NodeRef,
 
     // enable or disable foster parenting
-    foster_parenting: bool
+    foster_parenting: bool,
+
+    // element pointer to head element
+    head_pointer: Option<NodeRef>
 }
 
 pub struct AdjustedInsertionLocation {
-    parent: NodeRef,
-    insert_before_sibling: Option<NodeRef>
+    pub parent: NodeRef,
+    pub insert_before_sibling: Option<NodeRef>
 }
 
 pub enum ProcessingResult {
@@ -77,7 +80,8 @@ impl TreeBuilder {
                 NodeType::Document,
                 NodeInner::Document(Document::new())
             ),
-            foster_parenting: false
+            foster_parenting: false,
+            head_pointer: None
         }
     }
 
@@ -85,6 +89,7 @@ impl TreeBuilder {
         match self.insert_mode {
             InsertMode::Initial => self.handle_initial(token),
             InsertMode::BeforeHtml => self.handle_before_html(token),
+            InsertMode::BeforeHead => self.handle_before_head(token),
             _ => unimplemented!()
         }
     }
@@ -107,6 +112,52 @@ impl TreeBuilder {
         self.insert_mode = mode;
     }
 
+    fn create_element(&self, tag_token: Token) -> NodeRef {
+        let (tag_name, attributes) = if let Token::Tag { tag_name, attributes, .. } = tag_token {
+            (tag_name, attributes)
+        } else {
+            ("".to_string(), Vec::new())
+        };
+        let mut element = create_element(self.document.clone().downgrade(), &tag_name);
+        for attribute in attributes {
+            element.set_attribute(&attribute.name, &attribute.value);
+        }
+        element
+    }
+
+    fn create_element_from_tag_name(&self, tag_name: &str) -> NodeRef {
+        self.create_element(Token::Tag {
+            tag_name: tag_name.to_owned(),
+            self_closing: false,
+            attributes: Vec::new(),
+            is_end_tag: false
+        })
+    }
+
+    fn get_appropriate_place_for_inserting_a_node(&self) -> AdjustedInsertionLocation {
+        let target = self.open_elements.current_node().unwrap();
+        
+        // TODO: implement full specs
+        return AdjustedInsertionLocation {
+            parent: target.clone(),
+            insert_before_sibling: target.last_child()
+        };
+    }
+
+    fn insert_html_element(&mut self, token: Token) -> NodeRef {
+        let insert_position = self.get_appropriate_place_for_inserting_a_node();
+        let element = self.create_element(token);
+        let return_ref = element.clone();
+        
+        // TODO: check if location is possible to insert node (Idk why so we just leave it for now)
+        self.open_elements.push(element.clone());
+        insert_position.parent.insert_before(element, insert_position.insert_before_sibling);
+        return_ref
+    }
+    
+}
+
+impl TreeBuilder {
     fn handle_initial(&mut self, token: Token) -> ProcessingResult {
         match token.clone() {
             Token::Character(c) if is_whitespace(c) => ProcessingResult::Continue,
@@ -158,38 +209,6 @@ impl TreeBuilder {
         }
     }
 
-    fn create_element(&self, tag_token: Token) -> NodeRef {
-        let (tag_name, attributes) = if let Token::Tag { tag_name, attributes, .. } = tag_token {
-            (tag_name, attributes)
-        } else {
-            ("".to_string(), Vec::new())
-        };
-        let mut element = create_element(self.document.clone().downgrade(), &tag_name);
-        for attribute in attributes {
-            element.set_attribute(&attribute.name, &attribute.value);
-        }
-        element
-    }
-
-    fn create_element_from_tag_name(&self, tag_name: &str) -> NodeRef {
-        self.create_element(Token::Tag {
-            tag_name: tag_name.to_owned(),
-            self_closing: false,
-            attributes: Vec::new(),
-            is_end_tag: false
-        })
-    }
-
-    fn get_appropriate_place_for_inserting_a_node(&self) -> AdjustedInsertionLocation {
-        let target = self.open_elements.current_node().unwrap();
-        
-        // TODO: implement full specs
-        return AdjustedInsertionLocation {
-            parent: target.clone(),
-            insert_before_sibling: target.last_child()
-        };
-    }
-
     fn handle_before_html(&mut self, token: Token) -> ProcessingResult {
         fn anything_else(this: &mut TreeBuilder, token: Token) -> ProcessingResult {
             let element = this.create_element_from_tag_name("html");
@@ -234,5 +253,59 @@ impl TreeBuilder {
             }
             _ => anything_else(self, token)
         }
+    }
+
+    fn handle_before_head(&mut self, token: Token) -> ProcessingResult {
+        fn anything_else(this: &mut TreeBuilder, token: Token) -> ProcessingResult {
+            let head_element = this.insert_html_element(Token::Tag {
+                tag_name: "head".to_owned(),
+                attributes: Vec::new(),
+                is_end_tag: false,
+                self_closing: false
+            });
+            this.head_pointer = Some(head_element.clone());
+            this.switch_to(InsertMode::InHead);
+            this.process(token)
+        }
+        match token.clone() {
+            Token::Character(c) if is_whitespace(c) => ProcessingResult::Continue,
+            Token::Comment(data) => {
+                let insert_position = self.get_appropriate_place_for_inserting_a_node();
+                let comment = NodeRef::new_node(
+                    NodeType::Comment,
+                    NodeInner::Comment(Comment::new(data))
+                );
+                insert_position.parent.insert_before(comment, insert_position.insert_before_sibling);
+                ProcessingResult::Continue
+            }
+            Token::DOCTYPE { .. } => {
+                emit_error!("Unexpected doctype");
+                ProcessingResult::Continue
+            }
+            Token::Tag { tag_name, is_end_tag, .. } => {
+                if !is_end_tag && tag_name == "html" {
+                    return self.handle_in_body(token);
+                }
+                if !is_end_tag && tag_name == "head" {
+                    let head_element = self.insert_html_element(token);
+                    self.head_pointer = Some(head_element);
+                    self.switch_to(InsertMode::InHead);
+                    return ProcessingResult::Continue
+                }
+                if is_end_tag && match_any!(tag_name, "head", "body", "html", "br") {
+                    return anything_else(self, token);
+                }
+                if is_end_tag {
+                    emit_error!("Invalid end tag");
+                    return ProcessingResult::Continue
+                }
+                anything_else(self, token)
+            }
+            _ => anything_else(self, token)
+        }
+    }
+
+    fn handle_in_body(&mut self, token: Token) -> ProcessingResult {
+        ProcessingResult::Continue
     }
 }

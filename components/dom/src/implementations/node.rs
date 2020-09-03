@@ -11,6 +11,7 @@ pub trait Node {
     fn owner_document(&self) -> Option<NodeRef>;
     fn set_document(&self, document: WeakNodeRef);
     fn append_child(&self, child: NodeRef);
+    fn insert_before(&self, child: NodeRef, ref_child: Option<NodeRef>);
 }
 
 impl Node for NodeRef {
@@ -72,5 +73,19 @@ impl Node for NodeRef {
         child.borrow_mut().parent_node = Some(self.clone().downgrade());
 
         ref_self.last_child = Some(child.downgrade());
+    }
+
+    fn insert_before(&self, child: NodeRef, ref_child: Option<NodeRef>) {
+        if let Some(ref_child) = ref_child {
+            let mut child_ref = child.borrow_mut();
+            if let Some(prev_sibling) = ref_child.prev_sibling() {
+                prev_sibling.borrow_mut().next_sibling = Some(child.clone());
+                child_ref.prev_sibling = Some(prev_sibling.clone().downgrade());
+            }
+            child_ref.next_sibling = Some(ref_child.clone());
+            ref_child.borrow_mut().prev_sibling = Some(child.clone().downgrade());
+        } else {
+            self.append_child(child);
+        }
     }
 }
