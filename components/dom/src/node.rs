@@ -2,7 +2,7 @@ use std::rc::{Weak, Rc};
 use std::cell::RefCell;
 use std::ops::Deref;
 
-use super::nodes::{Document, Comment, DocumentType, Element};
+use super::nodes::{Document, Comment, DocumentType, Element, Text};
 
 #[derive(Debug, Clone)]
 pub enum NodeType {
@@ -20,7 +20,8 @@ pub enum NodeInner {
     Document(Document),
     Comment(Comment),
     DocumentType(DocumentType),
-    Element(Element)
+    Element(Element),
+    Text(Text)
 }
 
 pub struct Node {
