@@ -1,1 +1,0 @@
-pub struct Text(String);

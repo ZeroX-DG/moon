@@ -1,5 +1,4 @@
-use super::node::NodeRef;
-use super::implementations::Node;
+use super::dom_ref::NodeRef;
 
 pub struct NodeList {
     start: Option<NodeRef>
@@ -19,7 +18,7 @@ impl NodeList {
             if current_idx == 0 {
                 break
             }
-            node = node_ref.next_sibling();
+            node = node_ref.clone().borrow().as_node().next_sibling.clone();
             current_idx -= 1;
         }
         node
@@ -29,7 +28,7 @@ impl NodeList {
         let mut node = self.start.clone();
         let mut length = 0;
         while let Some(node_ref) = &node {
-            node = node_ref.next_sibling();
+            node = node_ref.clone().borrow().as_node().next_sibling.clone();
             length += 1;
         }
         length
