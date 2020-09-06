@@ -1,6 +1,7 @@
 # Nox
 > A hobby web browser developed from scratch 
 
+![license MIT](https://img.shields.io/badge/license-MIT-blue>)
 [![By Vietnamese](https://raw.githubusercontent.com/webuild-community/badge/master/svg/by.svg)](https://webuild.community)
 
 ## About
