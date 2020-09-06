@@ -25,12 +25,21 @@ To keep the "do it from scratch" spirit, I'll try to limit the use of dependenci
     - [ ] Id selectors
     - [ ] Class selectors
 - [ ] :earth_americas: Networking
-- [ ] :clapper: Video playing
-  - [ ] MP4
-  - [ ] WebM
-- [ ] :speaker: Audio playing
-  - [ ] MP3
-  - [ ] WAV
+  - [ ] URL parsing
+  - [ ] DNS resolving
+  - [ ] DNS caching
+  - [ ] HTTP/HTTPS
+- [ ] :framed_picture: Media
+  - [ ] :framed_picture: Image rendering
+    - [ ] JPG
+    - [ ] PNG
+    - [ ] GIF
+  - [ ] :clapper: Video playing
+    - [ ] MP4
+    - [ ] WebM
+  - [ ] :speaker: Audio playing
+    - [ ] MP3
+    - [ ] WAV
 - [ ] JavaScript
 
 ## Blog posts
