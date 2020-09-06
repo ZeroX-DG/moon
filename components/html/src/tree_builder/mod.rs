@@ -5,10 +5,12 @@ use std::env;
 use insert_mode::InsertMode;
 use stack_of_open_elements::StackOfOpenElements;
 use super::tokenizer::token::Token;
-use dom::node::{NodeType, NodeRef, NodeInner};
-use dom::nodes::{Document, Comment, DocumentType, QuirksMode};
-use dom::implementations::{Node, Element};
-use dom::element_factory::create_element;
+use dom::dom_ref::NodeRef;
+use dom::document::{Document, QuirksMode, DocumentType};
+use dom::comment::Comment;
+use dom::element::Element;
+use dom::node::Node;
+use super::element_factory::create_element;
 
 fn is_trace() -> bool {
     match env::var("TRACE_TREE_BUILDER") {
@@ -76,10 +78,7 @@ impl TreeBuilder {
         Self {
             open_elements: StackOfOpenElements::new(),
             insert_mode: InsertMode::Initial,
-            document: NodeRef::new_node(
-                NodeType::Document,
-                NodeInner::Document(Document::new())
-            ),
+            document: NodeRef::new(Document::new()),
             foster_parenting: false,
             head_pointer: None
         }
@@ -118,11 +117,13 @@ impl TreeBuilder {
         } else {
             ("".to_string(), Vec::new())
         };
-        let mut element = create_element(self.document.clone().downgrade(), &tag_name);
-        for attribute in attributes {
-            element.set_attribute(&attribute.name, &attribute.value);
+        let element_ref = create_element(self.document.clone().downgrade(), &tag_name);
+        if let Some(element) = element_ref.borrow_mut().as_any_mut().downcast_mut::<Element>() {
+            for attribute in attributes {
+                element.set_attribute(&attribute.name, &attribute.value);
+            }
         }
-        element
+        element_ref
     }
 
     fn create_element_from_tag_name(&self, tag_name: &str) -> NodeRef {
@@ -140,7 +141,7 @@ impl TreeBuilder {
         // TODO: implement full specs
         return AdjustedInsertionLocation {
             parent: target.clone(),
-            insert_before_sibling: target.last_child()
+            insert_before_sibling: target.borrow().as_node().last_child()
         };
     }
 
@@ -151,7 +152,7 @@ impl TreeBuilder {
         
         // TODO: check if location is possible to insert node (Idk why so we just leave it for now)
         self.open_elements.push(element.clone());
-        insert_position.parent.insert_before(element, insert_position.insert_before_sibling);
+        Node::insert_before(insert_position.parent, element, insert_position.insert_before_sibling);
         return_ref
     }
     
@@ -162,11 +163,8 @@ impl TreeBuilder {
         match token.clone() {
             Token::Character(c) if is_whitespace(c) => ProcessingResult::Continue,
             Token::Comment(data) => {
-                let comment = NodeRef::new_node(
-                    NodeType::Comment,
-                    NodeInner::Comment(Comment::new(data))
-                );
-                self.document.append_child(comment);
+                let comment = NodeRef::new(Comment::new(data));
+                Node::append_child(self.document.clone(), comment);
                 ProcessingResult::Continue
             }
             Token::DOCTYPE { name, public_identifier, system_identifier, .. } => {
@@ -182,20 +180,12 @@ impl TreeBuilder {
                     emit_error!("Bad doctype");
                 }
 
-                let public_id = public_identifier.unwrap_or_default();
-                let system_id = system_identifier.unwrap_or_default();
-                let doctype = NodeRef::new_node(
-                    NodeType::DocumentType,
-                    NodeInner::DocumentType(DocumentType::new(name, public_id, system_id))
-                );
+                let doctype = DocumentType::new(name, public_identifier, system_identifier);
                 
-
-                if let NodeInner::Document(doc) = &mut *self.document.inner().borrow_mut() {
-                    doc.set_doctype(Some(doctype.clone()));
+                if let Some(doc) = self.document.borrow_mut().as_any_mut().downcast_mut::<Document>() {
+                    doc.set_doctype(doctype);
                     doc.set_mode(self.which_quirks_mode(token));
                 }
-
-                self.document.append_child(doctype);
 
                 self.switch_to(InsertMode::BeforeHtml);
 
@@ -212,7 +202,7 @@ impl TreeBuilder {
     fn handle_before_html(&mut self, token: Token) -> ProcessingResult {
         fn anything_else(this: &mut TreeBuilder, token: Token) -> ProcessingResult {
             let element = this.create_element_from_tag_name("html");
-            this.document.append_child(element.clone());
+            Node::append_child(this.document.clone(), element.clone());
             this.open_elements.push(element.clone());
             // TODO: Implement additional steps in specs
             this.switch_to(InsertMode::BeforeHead);
@@ -225,18 +215,15 @@ impl TreeBuilder {
                 ProcessingResult::Continue
             }
             Token::Comment(data) => {
-                let comment = NodeRef::new_node(
-                    NodeType::Comment,
-                    NodeInner::Comment(Comment::new(data))
-                );
-                self.document.append_child(comment);
+                let comment = NodeRef::new(Comment::new(data));
+                Node::append_child(self.document.clone(), comment);
                 ProcessingResult::Continue
             }
             Token::Character(c) if is_whitespace(c) => ProcessingResult::Continue,
             Token::Tag { tag_name, is_end_tag, .. } => {
                 if tag_name == "html" && !is_end_tag {
                     let element = self.create_element(token);
-                    self.document.append_child(element.clone());
+                    Node::append_child(self.document.clone(), element.clone());
                     self.open_elements.push(element.clone());
                     // TODO: implement additional steps in specs
                     self.switch_to(InsertMode::BeforeHead);
@@ -271,11 +258,8 @@ impl TreeBuilder {
             Token::Character(c) if is_whitespace(c) => ProcessingResult::Continue,
             Token::Comment(data) => {
                 let insert_position = self.get_appropriate_place_for_inserting_a_node();
-                let comment = NodeRef::new_node(
-                    NodeType::Comment,
-                    NodeInner::Comment(Comment::new(data))
-                );
-                insert_position.parent.insert_before(comment, insert_position.insert_before_sibling);
+                let comment = NodeRef::new(Comment::new(data));
+                Node::insert_before(insert_position.parent, comment, insert_position.insert_before_sibling);
                 ProcessingResult::Continue
             }
             Token::DOCTYPE { .. } => {
