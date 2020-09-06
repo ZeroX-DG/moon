@@ -12,4 +12,8 @@ impl CharacterData {
             data
         }
     }
+
+    pub fn get_data(&self) -> String {
+        return self.data.clone();
+    }
 }

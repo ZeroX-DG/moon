@@ -39,6 +39,7 @@ macro_rules! match_any {
     };
 }
 
+#[derive(Debug)]
 pub struct TreeBuilder {
     // stack of open elements as mentioned in specs
     open_elements: StackOfOpenElements,
@@ -61,6 +62,7 @@ pub struct AdjustedInsertionLocation {
     pub insert_before_sibling: Option<NodeRef>
 }
 
+#[derive(Debug, PartialEq)]
 pub enum ProcessingResult {
     Continue,
     Stop
@@ -91,6 +93,10 @@ impl TreeBuilder {
             InsertMode::BeforeHead => self.handle_before_head(token),
             _ => unimplemented!()
         }
+    }
+
+    pub fn get_document(&self) -> NodeRef {
+        self.document.clone()
     }
 
     fn which_quirks_mode(&self, token: Token) -> QuirksMode {
@@ -291,5 +297,42 @@ impl TreeBuilder {
 
     fn handle_in_body(&mut self, token: Token) -> ProcessingResult {
         ProcessingResult::Continue
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::tokenizer::Tokenizer;
+
+    #[test]
+    fn handle_initial_correctly() {
+        let mut html = "<!-- this is a test -->".chars();
+        let mut tokenizer = Tokenizer::new(&mut html);
+        let mut tree_builder = TreeBuilder::new();
+        let token = tokenizer.next_token();
+        assert_eq!(tree_builder.process(token), ProcessingResult::Continue);
+
+        println!("{:#?}", tree_builder.get_document().borrow().as_node());
+
+        if let Some(child) = tree_builder.get_document().borrow().as_node().first_child() {
+            if let Some(comment) = child.borrow().as_any().downcast_ref::<Comment>() {
+                assert_ne!(comment.get_data(), "this is a test");
+            } else {
+                panic!("First child is not a comment");
+            }
+        } else {
+            panic!("There is no first child");
+        }
+
+        if let Some(child) = tree_builder.get_document().borrow().as_node().last_child() {
+            if let Some(comment) = child.borrow().as_any().downcast_ref::<Comment>() {
+                assert_ne!(comment.get_data(), "this is a test");
+            } else {
+                panic!("Last child is not a comment");
+            }
+        } else {
+            panic!("There is no last child");
+        }
     }
 }

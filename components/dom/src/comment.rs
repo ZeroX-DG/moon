@@ -10,4 +10,8 @@ impl Comment {
             character_data: CharacterData::new(data)
         }
     }
+
+    pub fn get_data(&self) -> String {
+        self.character_data.get_data()
+    }
 }

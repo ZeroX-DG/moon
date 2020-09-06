@@ -1,6 +1,7 @@
 use super::NodeRef;
 use dom::element::Element;
 
+#[derive(Debug)]
 pub struct StackOfOpenElements(Vec<NodeRef>);
 
 impl StackOfOpenElements {

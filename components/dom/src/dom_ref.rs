@@ -18,13 +18,13 @@ pub struct WeakNodeRef(Weak<RefCell<dyn DOMObject>>);
 
 impl core::fmt::Display for dyn DOMObject {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "DOMObject at {}", &self)
+        write!(f, "DOMObject at {:?}", self as *const dyn DOMObject)
     }
 }
 
 impl core::fmt::Debug for dyn DOMObject {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "DOMObject at {}", &self)
+        write!(f, "DOMObject at {:?}", self as *const dyn DOMObject)
     }
 }
 

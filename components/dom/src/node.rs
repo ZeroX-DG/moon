@@ -61,7 +61,11 @@ impl Node {
         }
 
         child.borrow_mut().as_node_mut().parent_node = Some(parent.clone().downgrade());
-
+        
+        if parent.borrow().as_node().first_child().is_none() {
+            parent.borrow_mut().as_node_mut().first_child = Some(child.clone());
+        }
+        
         parent.borrow_mut().as_node_mut().last_child = Some(child.downgrade());
     }
 
