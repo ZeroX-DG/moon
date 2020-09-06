@@ -1,106 +1,81 @@
-use std::rc::{Weak, Rc};
-use std::cell::RefCell;
-use std::ops::Deref;
+use super::dom_ref::{WeakNodeRef, NodeRef};
 
-use super::nodes::{Document, Comment, DocumentType, Element, Text};
-
-#[derive(Debug, Clone)]
-pub enum NodeType {
-    Element = 1,
-    Text = 3,
-    CDataSection = 4,
-    ProcessingInstruction = 7,
-    Comment = 8,
-    Document = 9,
-    DocumentType = 10,
-    DocumentFragment = 11
-}
-
-pub enum NodeInner {
-    Document(Document),
-    Comment(Comment),
-    DocumentType(DocumentType),
-    Element(Element),
-    Text(Text)
-}
-
+#[derive(Debug)]
 pub struct Node {
-    pub(crate) node_type: NodeType,
-    pub(crate) parent_node: Option<WeakNodeRef>,
-    pub(crate) first_child: Option<NodeRef>,
-    pub(crate) last_child: Option<WeakNodeRef>,
-    pub(crate) next_sibling: Option<NodeRef>,
-    pub(crate) prev_sibling: Option<WeakNodeRef>,
-    pub(crate) owner_document: Option<WeakNodeRef>,
-    pub(crate) inner: Rc<RefCell<NodeInner>>
+    parent_node: Option<WeakNodeRef>,
+    first_child: Option<NodeRef>,
+    last_child: Option<WeakNodeRef>,
+    next_sibling: Option<NodeRef>,
+    prev_sibling: Option<WeakNodeRef>,
+    owner_document: Option<WeakNodeRef>,
 }
-
-pub struct NodeRef(pub(crate) Rc<RefCell<Node>>);
-pub struct WeakNodeRef(pub(crate) Weak<RefCell<Node>>);
 
 impl Node {
-    pub fn new(node_type: NodeType, inner: NodeInner) -> Self {
+    pub fn new() -> Self {
         Self {
-            node_type,
             parent_node: None,
             first_child: None,
             last_child: None,
             next_sibling: None,
             prev_sibling: None,
-            owner_document: None,
-            inner: Rc::new(RefCell::new(inner))
+            owner_document: None
         }
     }
-}
 
-impl Deref for NodeRef {
-    type Target = RefCell<Node>;
-
-    fn deref(&self) -> &RefCell<Node> {
-        &*self.0
-    }
-}
-
-impl Clone for WeakNodeRef {
-    fn clone(&self) -> Self {
-        Self(self.0.clone())        
-    }
-}
-
-impl Clone for NodeRef {
-    fn clone(&self) -> Self {
-        Self(self.0.clone())        
-    }
-}
-
-impl NodeRef {
-    pub fn new(node: Node) -> Self {
-        Self(Rc::new(RefCell::new(node)))
+    pub fn set_document(&mut self, doc: WeakNodeRef) {
+        self.owner_document = Some(doc);
     }
 
-    pub fn new_node(node_type: NodeType, inner: NodeInner) -> Self {
-        NodeRef::new(Node::new(node_type, inner))
+    pub fn first_child(&self) -> Option<NodeRef> {
+        self.first_child.clone()
     }
 
-    pub fn downgrade(self) -> WeakNodeRef {
-        WeakNodeRef(Rc::downgrade(&self.0))
-    }
-
-    pub fn inner(&self) -> Rc<RefCell<NodeInner>> {
-        let ref_self = self.borrow();
-        ref_self.inner.clone()
-    }
-}
-
-impl WeakNodeRef {
-    pub fn upgrade(self) -> Option<NodeRef> {
-        match self.0.upgrade() {
-            Some(node) => Some(NodeRef(node)),
+    pub fn last_child(&self) -> Option<NodeRef> {
+        match &self.last_child {
+            Some(node) => node.clone().upgrade(),
             _ => None
         }
     }
-}
 
-#[cfg(test)]
-mod test {
+    pub fn next_sibling(&self) -> Option<NodeRef> {
+        self.next_sibling.clone()
+    }
+
+    pub fn prev_sibling(&self) -> Option<NodeRef> {
+        match &self.prev_sibling {
+            Some(node) => node.clone().upgrade(),
+            _ => None
+        }
+    }
+
+    pub fn owner_document(&self) -> Option<NodeRef> {
+        match &self.owner_document {
+            Some(node) => node.clone().upgrade(),
+            _ => None
+        }
+    }
+
+    pub fn append_child(parent: NodeRef, child: NodeRef) {
+        if let Some(last_child) = parent.borrow().as_node().last_child() {
+            last_child.borrow_mut().as_node_mut().next_sibling = Some(child.clone());
+        }
+
+        child.borrow_mut().as_node_mut().parent_node = Some(parent.clone().downgrade());
+
+        parent.borrow_mut().as_node_mut().last_child = Some(child.downgrade());
+    }
+
+    pub fn insert_before(parent: NodeRef, child: NodeRef, ref_child: Option<NodeRef>) {
+        if let Some(ref_child) = ref_child {
+            let mut child_ref = child.borrow_mut();
+            if let Some(prev_sibling) = ref_child.borrow().as_node().prev_sibling() {
+                prev_sibling.borrow_mut().as_node_mut().next_sibling = Some(child.clone());
+                child_ref.as_node_mut().prev_sibling = Some(prev_sibling.clone().downgrade());
+            }
+            child_ref.as_node_mut().next_sibling = Some(ref_child.clone());
+            ref_child.borrow_mut().as_node_mut().prev_sibling = Some(child.clone().downgrade());
+        } else {
+            Node::append_child(parent, child);
+        }
+    }
 }

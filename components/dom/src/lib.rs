@@ -1,7 +1,10 @@
-pub mod node;
-pub mod node_list;
+pub mod dom_ref;
 pub mod dom_token_list;
-pub mod nodes;
+pub mod node_list;
 pub mod implementations;
-pub mod element_factory;
-pub mod html_elements;
+
+pub mod node;
+pub mod document;
+pub mod element;
+pub mod character_data;
+pub mod comment;
