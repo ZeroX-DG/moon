@@ -1,12 +1,13 @@
 pub mod state;
 pub mod token;
+pub mod input_stream;
 
 use std::collections::{VecDeque, HashSet};
-use std::str::Chars;
 use std::env;
 use state::State;
 use token::Token;
 use token::Attribute;
+use input_stream::InputStream;
 use super::entities::ENTITIES;
 
 fn is_trace() -> bool {
@@ -121,9 +122,10 @@ pub enum Char {
     whitespace
 }
 
-pub struct Tokenizer<'a> {
+#[derive(Debug)]
+pub struct Tokenizer {
     // chars input stream for tokenizer
-    input: &'a mut Chars<'a>,
+    input: InputStream,
 
     // A list of tokenized tokens
     output: VecDeque<Token>,
@@ -153,10 +155,10 @@ pub struct Tokenizer<'a> {
     character_reference_code: u32
 }
 
-impl<'a> Tokenizer<'a> {
-    pub fn new(input: &'a mut Chars<'a>) -> Self {
+impl Tokenizer {
+    pub fn new(input: String) -> Self {
         Self {
-            input,
+            input: InputStream::new(input),
             output: VecDeque::new(),
             current_character: '\0',
             state: State::Data, return_state: None, current_token: None, reconsume_char: false,
@@ -2393,17 +2395,15 @@ mod tests {
 
     #[test]
     fn parse_comment() {
-        let html = "<!--xin chao-->";
-        let mut chars = html.chars();
-        let mut tokenizer = Tokenizer::new(&mut chars);
+        let html = "<!--xin chao-->".to_owned();
+        let mut tokenizer = Tokenizer::new(html);
         assert_eq!(Token::Comment("xin chao".to_owned()), tokenizer.next_token());
     }
 
     #[test]
     fn parse_tag() {
-        let html = "<html>";
-        let mut chars = html.chars();
-        let mut tokenizer = Tokenizer::new(&mut chars);
+        let html = "<html>".to_owned();
+        let mut tokenizer = Tokenizer::new(html);
         assert_eq!(Token::Tag {
             tag_name: "html".to_owned(),
             self_closing: false,
@@ -2414,9 +2414,8 @@ mod tests {
 
     #[test]
     fn parse_tag_self_closing() {
-        let html = "<div />";
-        let mut chars = html.chars();
-        let mut tokenizer = Tokenizer::new(&mut chars);
+        let html = "<div />".to_owned();
+        let mut tokenizer = Tokenizer::new(html);
         assert_eq!(Token::Tag {
             tag_name: "div".to_owned(),
             self_closing: true,
@@ -2427,9 +2426,8 @@ mod tests {
 
     #[test]
     fn parse_tag_attribute_double_quote() {
-        let html = "<div name=\"hello\" />";
-        let mut chars = html.chars();
-        let mut tokenizer = Tokenizer::new(&mut chars);
+        let html = "<div name=\"hello\" />".to_owned();
+        let mut tokenizer = Tokenizer::new(html);
         assert_eq!(Token::Tag {
             tag_name: "div".to_owned(),
             self_closing: true,
@@ -2442,9 +2440,8 @@ mod tests {
 
     #[test]
     fn parse_tag_attribute_single_quote() {
-        let html = "<div name='hello' />";
-        let mut chars = html.chars();
-        let mut tokenizer = Tokenizer::new(&mut chars);
+        let html = "<div name='hello' />".to_owned();
+        let mut tokenizer = Tokenizer::new(html);
         assert_eq!(Token::Tag {
             tag_name: "div".to_owned(),
             self_closing: true,
@@ -2457,9 +2454,8 @@ mod tests {
 
     #[test]
     fn parse_tag_attribute_unquote() {
-        let html = "<div name=hello world />";
-        let mut chars = html.chars();
-        let mut tokenizer = Tokenizer::new(&mut chars);
+        let html = "<div name=hello world />".to_owned();
+        let mut tokenizer = Tokenizer::new(html);
         assert_eq!(Token::Tag {
             tag_name: "div".to_owned(),
             self_closing: true,
@@ -2473,9 +2469,8 @@ mod tests {
 
     #[test]
     fn parse_doctype() {
-        let html = "<!DOCTYPE html>";
-        let mut chars = html.chars();
-        let mut tokenizer = Tokenizer::new(&mut chars);
+        let html = "<!DOCTYPE html>".to_owned();
+        let mut tokenizer = Tokenizer::new(html);
         assert_eq!(Token::DOCTYPE {
             name: Some("html".to_owned()),
             force_quirks: false,
@@ -2486,9 +2481,8 @@ mod tests {
 
     #[test]
     fn parse_doctype_with_identifiers() {
-        let html = r#"<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">"#;
-        let mut chars = html.chars();
-        let mut tokenizer = Tokenizer::new(&mut chars);
+        let html = r#"<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">"#.to_owned();
+        let mut tokenizer = Tokenizer::new(html);
         assert_eq!(Token::DOCTYPE {
             name: Some("html".to_owned()),
             force_quirks: false,
@@ -2499,41 +2493,36 @@ mod tests {
 
     #[test]
     fn parse_decimal_character_reference() {
-        let html = "&#94;";
-        let mut chars = html.chars();
-        let mut tokenizer = Tokenizer::new(&mut chars);
+        let html = "&#94;".to_owned();
+        let mut tokenizer = Tokenizer::new(html);
         assert_eq!(Token::Character('^'), tokenizer.next_token());
     }
 
     #[test]
     fn parse_hex_character_reference() {
-        let html = "&#x00040;";
-        let mut chars = html.chars();
-        let mut tokenizer = Tokenizer::new(&mut chars);
+        let html = "&#x00040;".to_owned();
+        let mut tokenizer = Tokenizer::new(html);
         assert_eq!(Token::Character('@'), tokenizer.next_token());
     }
 
     #[test]
     fn parse_named_character_reference() {
-        let html = "&AElig;";
-        let mut chars = html.chars();
-        let mut tokenizer = Tokenizer::new(&mut chars);
+        let html = "&AElig;".to_owned();
+        let mut tokenizer = Tokenizer::new(html);
         assert_eq!(Token::Character('Æ'), tokenizer.next_token());
     }
 
     #[test]
     fn parse_invalid_named_character_reference() {
-        let html = "&g;";
-        let mut chars = html.chars();
-        let mut tokenizer = Tokenizer::new(&mut chars);
+        let html = "&g;".to_owned();
+        let mut tokenizer = Tokenizer::new(html);
         assert_eq!(Token::Character('&'), tokenizer.next_token());
     }
 
     #[test]
     fn parse_named_character_reference_in_string() {
-        let html = "I'm &notit;";
-        let mut chars = html.chars();
-        let mut tokenizer = Tokenizer::new(&mut chars);
+        let html = "I'm &notit;".to_owned();
+        let mut tokenizer = Tokenizer::new(html);
         assert_eq!(Token::Character('I'), tokenizer.next_token());
         assert_eq!(Token::Character('\''), tokenizer.next_token());
         assert_eq!(Token::Character('m'), tokenizer.next_token());
@@ -2546,9 +2535,8 @@ mod tests {
 
     #[test]
     fn parse_named_character_reference_in_attribute_name() {
-        let html = "<br &block;=\"name\" />";
-        let mut chars = html.chars();
-        let mut tokenizer = Tokenizer::new(&mut chars);
+        let html = "<br &block;=\"name\" />".to_owned();
+        let mut tokenizer = Tokenizer::new(html);
         assert_eq!(Token::Tag {
             tag_name: "br".to_owned(),
             self_closing: true,
@@ -2561,9 +2549,8 @@ mod tests {
 
     #[test]
     fn parse_named_character_reference_in_attribute_value() {
-        let html = "<br name=\"&block;\" />";
-        let mut chars = html.chars();
-        let mut tokenizer = Tokenizer::new(&mut chars);
+        let html = "<br name=\"&block;\" />".to_owned();
+        let mut tokenizer = Tokenizer::new(html);
         assert_eq!(Token::Tag {
             tag_name: "br".to_owned(),
             self_closing: true,
@@ -2576,9 +2563,8 @@ mod tests {
 
     #[test]
     fn parse_duplicate_attribute() {
-        let html = "<div attr attr />";
-        let mut chars = html.chars();
-        let mut tokenizer = Tokenizer::new(&mut chars);
+        let html = "<div attr attr />".to_owned();
+        let mut tokenizer = Tokenizer::new(html);
         assert_eq!(Token::Tag {
             tag_name: "div".to_owned(),
             self_closing: true,
