@@ -2327,7 +2327,7 @@ impl Tokenizer {
         self.switch_to(state);
     }
 
-    fn switch_to(&mut self, state: State) {
+    pub fn switch_to(&mut self, state: State) {
         println!("Switch to: {:#?}", state);
         self.state = state;
     }
