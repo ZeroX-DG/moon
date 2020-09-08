@@ -122,7 +122,6 @@ pub enum Char {
     whitespace
 }
 
-#[derive(Debug)]
 pub struct Tokenizer {
     // chars input stream for tokenizer
     input: InputStream,
