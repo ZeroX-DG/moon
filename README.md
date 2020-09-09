@@ -44,10 +44,15 @@ To keep the "do it from scratch" spirit, I'll try to limit the use of dependenci
 
 ## Blog posts
 
-I write about what I learn from this journey on my blog:
+I write about what I learn from this journey on my blog (order by latest):
+
+### Browser from Scratch: DOM API
+
+One of the main building blocks of the HTML rendering process is the DOM API. Before a browser can render the HTML document, it needs to parse the document content into a tree structure called the DOM tree. In this post, I'll break down my experimentation in building a DOM API with Rust. - [**Read more**][2]
 
 ### Browser from Scratch: Introduction
 
 This is the start of Browser from Scratch series, created to help me (and probably you too) to learn more about how a browser works by building one! - [**Read more**][1]
 
 [1]: https://zerox-dg.github.io/blog/2020/05/29/Browser-from-Scratch-Introduction/
+[2]: https://zerox-dg.github.io/blog/2020/09/01/Browser-from-Scratch-DOM-API/
