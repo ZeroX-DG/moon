@@ -187,7 +187,8 @@ impl TreeBuilder {
             tag_name: tag_name.to_owned(),
             self_closing: false,
             attributes: Vec::new(),
-            is_end_tag: false
+            is_end_tag: false,
+            self_closing_acknowledged: false
         })
     }
 
@@ -415,13 +416,13 @@ impl TreeBuilder {
                 if !is_end_tag && match_any!(tag_name, "base", "basefont", "bgsound", "link") {
                     self.insert_html_element(token);
                     self.open_elements.pop();
-                    // TODO: Acknowledge self-closing
+                    token.acknowledge_self_closing_if_set();
                     return ProcessingResult::Continue;
                 }
                 if !is_end_tag && tag_name == "meta" {
                     self.insert_html_element(token);
                     self.open_elements.pop();
-                    // TODO: processing charset and stuff
+                    token.acknowledge_self_closing_if_set();
                     return ProcessingResult::Continue;
                 }
                 if !is_end_tag && tag_name == "title" {
