@@ -13,6 +13,10 @@ impl StackOfOpenElements {
         self.0.push(node)
     }
 
+    pub fn pop(&mut self) {
+        self.0.pop();
+    }
+
     pub fn current_node(&self) -> Option<NodeRef> {
         if let Some(node) = self.0.last() {
             return Some(node.clone());

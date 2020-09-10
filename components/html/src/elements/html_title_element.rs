@@ -8,6 +8,15 @@ pub struct HTMLTitleElement {
     text: String
 }
 
+impl HTMLTitleElement {
+    pub fn new(html_element: HTMLElement) -> Self {
+        Self {
+            html_element,
+            text: String::new()
+        }
+    }
+}
+
 impl DOMObject for HTMLTitleElement {
     fn as_node(&self) -> &Node {
         self.html_element.as_node()

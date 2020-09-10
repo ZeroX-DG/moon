@@ -3,19 +3,23 @@ use dom::dom_ref::DOMObject;
 use dom::node::Node;
 use std::any::Any;
 
-pub struct HTMLBodyElement {
-    html_element: HTMLElement
+pub struct HTMLBaseElement {
+    html_element: HTMLElement,
+    href: String,
+    target: String,
 }
 
-impl HTMLBodyElement {
+impl HTMLBaseElement {
     pub fn new(html_element: HTMLElement) -> Self {
         Self {
-            html_element
+            html_element,
+            href: String::new(),
+            target: String::new()
         }
     }
 }
 
-impl DOMObject for HTMLBodyElement {
+impl DOMObject for HTMLBaseElement {
     fn as_node(&self) -> &Node {
         self.html_element.as_node()
     }

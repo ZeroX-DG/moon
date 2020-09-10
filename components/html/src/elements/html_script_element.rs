@@ -3,19 +3,29 @@ use dom::dom_ref::DOMObject;
 use dom::node::Node;
 use std::any::Any;
 
-pub struct HTMLBodyElement {
-    html_element: HTMLElement
+pub struct HTMLScriptElement {
+    html_element: HTMLElement,
+    src: String,
+    type_: String,
+    non_blocking: bool
 }
 
-impl HTMLBodyElement {
+impl HTMLScriptElement {
     pub fn new(html_element: HTMLElement) -> Self {
         Self {
-            html_element
+            html_element,
+            src: String::new(),
+            type_: String::new(),
+            non_blocking: true
         }
+    }
+
+    pub fn set_non_blocking(&mut self, value: bool) {
+        self.set_non_blocking(value);
     }
 }
 
-impl DOMObject for HTMLBodyElement {
+impl DOMObject for HTMLScriptElement {
     fn as_node(&self) -> &Node {
         self.html_element.as_node()
     }

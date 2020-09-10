@@ -7,6 +7,14 @@ pub struct HTMLHeadElement {
     html_element: HTMLElement
 }
 
+impl HTMLHeadElement {
+    pub fn new(html_element: HTMLElement) -> Self {
+        Self {
+            html_element
+        }
+    }
+}
+
 impl DOMObject for HTMLHeadElement {
     fn as_node(&self) -> &Node {
         self.html_element.as_node()
