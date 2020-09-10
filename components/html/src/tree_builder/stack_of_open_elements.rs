@@ -1,5 +1,4 @@
 use super::NodeRef;
-use dom::element::Element;
 
 #[derive(Debug)]
 pub struct StackOfOpenElements(Vec<NodeRef>);
@@ -26,10 +25,9 @@ impl StackOfOpenElements {
 
     pub fn last_element_with_tag_name(&self, tag_name: &str) -> Option<(&NodeRef, usize)> {
         for (i, node) in self.0.iter().rev().enumerate() {
-            if let Some(element) = node.borrow().as_any().downcast_ref::<Element>() {
-                if element.tag_name() == tag_name {
-                    return Some((&node, i))
-                }
+            let element = node.borrow().as_element().unwrap();
+            if element.tag_name() == tag_name {
+                return Some((&node, i))
             }
         }
         None
@@ -48,10 +46,9 @@ impl StackOfOpenElements {
 
     pub fn contains(&self, tag_name: &str) -> bool {
         self.0.iter().any(|node| {
-            if let Some(element) = node.borrow().as_any().downcast_ref::<Element>() {
-                if element.tag_name() == tag_name {
-                    return true
-                }
+            let element = node.borrow().as_element().unwrap();
+            if element.tag_name() == tag_name {
+                return true;
             }
             return false;
         })
