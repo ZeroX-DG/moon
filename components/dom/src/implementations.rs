@@ -24,6 +24,14 @@ impl DOMObject for Node {
     fn as_any_mut(&mut self) -> &mut dyn Any {
         self
     }
+
+    fn as_element(&self) -> Option<&Element> {
+        None
+    }
+
+    fn as_element_mut(&mut self) -> Option<&mut Element> {
+        None
+    }
 }
 
 impl DOMObject for Document {
@@ -41,6 +49,14 @@ impl DOMObject for Document {
 
     fn as_any_mut(&mut self) -> &mut dyn Any {
         self
+    }
+
+    fn as_element(&self) -> Option<&Element> {
+        None
+    }
+
+    fn as_element_mut(&mut self) -> Option<&mut Element> {
+        None
     }
 }
 
@@ -60,6 +76,14 @@ impl DOMObject for DocumentType {
     fn as_any_mut(&mut self) -> &mut dyn Any {
         self
     }
+
+    fn as_element(&self) -> Option<&Element> {
+        None
+    }
+
+    fn as_element_mut(&mut self) -> Option<&mut Element> {
+        None
+    }
 }
 
 impl DOMObject for Element {
@@ -77,6 +101,14 @@ impl DOMObject for Element {
 
     fn as_any_mut(&mut self) -> &mut dyn Any {
         self
+    }
+
+    fn as_element(&self) -> Option<&Element> {
+        Some(self)
+    }
+
+    fn as_element_mut(&mut self) -> Option<&mut Element> {
+        Some(self)
     }
 }
 
@@ -96,6 +128,14 @@ impl DOMObject for Comment {
     fn as_any_mut(&mut self) -> &mut dyn Any {
         self
     }
+
+    fn as_element(&self) -> Option<&Element> {
+        None
+    }
+
+    fn as_element_mut(&mut self) -> Option<&mut Element> {
+        None
+    }
 }
 
 impl DOMObject for Text {
@@ -114,6 +154,14 @@ impl DOMObject for Text {
     fn as_any_mut(&mut self) -> &mut dyn Any {
         self
     }
+
+    fn as_element(&self) -> Option<&Element> {
+        None
+    }
+
+    fn as_element_mut(&mut self) -> Option<&mut Element> {
+        None
+    }
 }
 
 impl DOMObject for CharacterData {
@@ -131,6 +179,14 @@ impl DOMObject for CharacterData {
 
     fn as_any_mut(&mut self) -> &mut dyn Any {
         self
+    }
+
+    fn as_element(&self) -> Option<&Element> {
+        None
+    }
+
+    fn as_element_mut(&mut self) -> Option<&mut Element> {
+        None
     }
 }
 

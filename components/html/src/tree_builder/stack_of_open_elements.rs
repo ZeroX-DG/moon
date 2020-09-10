@@ -13,8 +13,8 @@ impl StackOfOpenElements {
         self.0.push(node)
     }
 
-    pub fn pop(&mut self) {
-        self.0.pop();
+    pub fn pop(&mut self) -> Option<NodeRef> {
+        self.0.pop()
     }
 
     pub fn current_node(&self) -> Option<NodeRef> {
@@ -33,5 +33,31 @@ impl StackOfOpenElements {
             }
         }
         None
+    }
+
+    pub fn pop_until(&mut self, tag_name: &str) {
+        while let Some(node) = self.current_node() {
+            let element = node.borrow().as_element().unwrap();
+            if element.tag_name() == tag_name {
+                self.pop();
+                break
+            }
+            self.pop();
+        }
+    }
+
+    pub fn contains(&self, tag_name: &str) -> bool {
+        self.0.iter().any(|node| {
+            if let Some(element) = node.borrow().as_any().downcast_ref::<Element>() {
+                if element.tag_name() == tag_name {
+                    return true
+                }
+            }
+            return false;
+        })
+    }
+
+    pub fn len(&self) -> usize {
+        self.0.len()
     }
 }

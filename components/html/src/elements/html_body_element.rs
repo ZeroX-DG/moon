@@ -1,6 +1,7 @@
 use super::HTMLElement;
 use dom::dom_ref::DOMObject;
 use dom::node::Node;
+use dom::element::Element;
 use std::any::Any;
 
 pub struct HTMLBodyElement {
@@ -30,5 +31,13 @@ impl DOMObject for HTMLBodyElement {
 
     fn as_any_mut(&mut self) -> &mut dyn Any {
         self
+    }
+
+    fn as_element(&self) -> Option<&Element> {
+        Some(&self.html_element.element)
+    }
+
+    fn as_element_mut(&mut self) -> Option<&mut Element> {
+        Some(&mut self.html_element.element)
     }
 }

@@ -3,12 +3,15 @@ use std::cell::RefCell;
 use std::ops::Deref;
 use std::any::Any;
 use super::node::Node;
+use super::element::Element;
 
 pub trait DOMObject {
     fn as_node(&self) -> &Node;
     fn as_node_mut(&mut self) -> &mut Node;
     fn as_any(&self) -> &dyn Any;
     fn as_any_mut(&mut self) -> &mut dyn Any;
+    fn as_element(&self) -> Option<&Element>;
+    fn as_element_mut(&mut self) -> Option<&mut Element>;
 }
 
 #[derive(Debug)]

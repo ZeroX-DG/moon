@@ -1,16 +1,22 @@
 mod insert_mode;
 mod stack_of_open_elements;
+mod list_of_active_formatting_elements;
 
 use std::env;
 use insert_mode::InsertMode;
 use stack_of_open_elements::StackOfOpenElements;
+use list_of_active_formatting_elements::ListOfActiveFormattingElements;
 use super::tokenizer::token::Token;
+use super::tokenizer::state::State;
+use super::tokenizer::Tokenizer;
 use dom::dom_ref::NodeRef;
 use dom::document::{Document, QuirksMode, DocumentType};
 use dom::comment::Comment;
 use dom::element::Element;
 use dom::node::Node;
+use dom::text::Text;
 use super::element_factory::create_element;
+use super::elements::HTMLScriptElement;
 
 fn is_trace() -> bool {
     match env::var("TRACE_TREE_BUILDER") {
@@ -39,13 +45,18 @@ macro_rules! match_any {
     };
 }
 
-#[derive(Debug)]
 pub struct TreeBuilder {
+    // the tokenizer
+    tokenizer: Tokenizer,
+
     // stack of open elements as mentioned in specs
     open_elements: StackOfOpenElements,
 
     // current insertion mode
     insert_mode: InsertMode,
+
+    // the insert mode that the builder will return
+    original_insert_mode: Option<InsertMode>,
 
     // the result document
     document: NodeRef,
@@ -54,12 +65,29 @@ pub struct TreeBuilder {
     foster_parenting: bool,
 
     // element pointer to head element
-    head_pointer: Option<NodeRef>
+    head_pointer: Option<NodeRef>,
+
+    // is scripting enable?
+    scripting: bool,
+
+    // list of active formatting elements
+    active_formatting_elements: ListOfActiveFormattingElements,
+
+    // framset ok flag
+    frameset_ok: bool,
+
+    // stack of template insert mode to parse nested template
+    stack_of_template_insert_mode: Vec<InsertMode>
 }
 
 pub struct AdjustedInsertionLocation {
     pub parent: NodeRef,
     pub insert_before_sibling: Option<NodeRef>
+}
+
+enum TextOnlyElementParsingAlgo {
+    GenericRawText,
+    GenericRCDataElement
 }
 
 #[derive(Debug, PartialEq)]
@@ -76,13 +104,34 @@ fn is_whitespace(c: char) -> bool {
 }
 
 impl TreeBuilder {
-    pub fn new() -> Self {
+    pub fn new(tokenizer: Tokenizer) -> Self {
         Self {
+            tokenizer,
             open_elements: StackOfOpenElements::new(),
             insert_mode: InsertMode::Initial,
             document: NodeRef::new(Document::new()),
             foster_parenting: false,
-            head_pointer: None
+            head_pointer: None,
+            original_insert_mode: None,
+            scripting: false,
+            active_formatting_elements: ListOfActiveFormattingElements::new(),
+            frameset_ok: true,
+            stack_of_template_insert_mode: Vec::new()
+        }
+    }
+
+    pub fn run(&mut self) {
+        loop {
+            let token = self.tokenizer.next_token();
+            if let Token::EOF = token {
+                break
+            }
+            match self.process(token) {
+                ProcessingResult::Continue => {},
+                ProcessingResult::Stop => {
+                    break
+                }
+            }
         }
     }
 
@@ -91,6 +140,7 @@ impl TreeBuilder {
             InsertMode::Initial => self.handle_initial(token),
             InsertMode::BeforeHtml => self.handle_before_html(token),
             InsertMode::BeforeHead => self.handle_before_head(token),
+            InsertMode::InHead => self.handle_in_head(token),
             _ => unimplemented!()
         }
     }
@@ -161,7 +211,58 @@ impl TreeBuilder {
         Node::insert_before(insert_position.parent, element, insert_position.insert_before_sibling);
         return_ref
     }
-    
+
+    fn insert_character(&mut self, ch: char) {
+        let insert_position = self.get_appropriate_place_for_inserting_a_node();
+        if insert_position.parent.borrow().as_any().downcast_ref::<Document>().is_some() {
+            return
+        }
+        if let Some(sibling) = insert_position.insert_before_sibling.clone() {
+            if let Some(text) = sibling.borrow_mut().as_any_mut().downcast_mut::<Text>() {
+                text.character_data.append_data(&ch.to_string());
+                return
+            }
+        }
+        let text = NodeRef::new(Text::new(ch.to_string()));
+        Node::insert_before(insert_position.parent, text, insert_position.insert_before_sibling);
+    }
+
+    fn insert_comment(&mut self, data: String) {
+        let insert_position = self.get_appropriate_place_for_inserting_a_node();
+        let comment = NodeRef::new(Comment::new(data));
+        Node::insert_before(insert_position.parent, comment, insert_position.insert_before_sibling);
+    }
+
+    fn handle_text_only_element(&mut self, token: Token, algorithm: TextOnlyElementParsingAlgo) {
+        self.insert_html_element(token);
+        match algorithm {
+            TextOnlyElementParsingAlgo::GenericRawText => {
+                self.tokenizer.switch_to(State::RAWTEXT);
+            },
+            TextOnlyElementParsingAlgo::GenericRCDataElement => {
+                self.tokenizer.switch_to(State::RCDATA);
+            }
+        }
+        self.original_insert_mode = Some(self.insert_mode.clone());
+        self.switch_to(InsertMode::Text);
+    }
+
+    fn generate_all_implied_end_tags_thoroughly(&mut self) {
+        while let Some(node) = self.open_elements.current_node() {
+            let element = node.borrow().as_element().unwrap();
+            let tag_name = element.tag_name();
+            if match_any!(tag_name, "caption", "colgroup", "dd", "dt", "li", "optgroup", "option", "p", "rb", "rt", "rtc", "tbody", "td", "tfoot", "th", "thead", "tr") {
+                self.open_elements.pop();
+            }
+            else {
+                break
+            }
+        }
+    }
+
+    fn reset_insertion_mode_appropriately(&mut self) {
+        unimplemented!(); // Do this next!
+    }
 }
 
 impl TreeBuilder {
@@ -263,9 +364,7 @@ impl TreeBuilder {
         match token.clone() {
             Token::Character(c) if is_whitespace(c) => ProcessingResult::Continue,
             Token::Comment(data) => {
-                let insert_position = self.get_appropriate_place_for_inserting_a_node();
-                let comment = NodeRef::new(Comment::new(data));
-                Node::insert_before(insert_position.parent, comment, insert_position.insert_before_sibling);
+                self.insert_comment(data);
                 ProcessingResult::Continue
             }
             Token::DOCTYPE { .. } => {
@@ -295,6 +394,138 @@ impl TreeBuilder {
         }
     }
 
+    fn handle_in_head(&mut self, token: Token) -> ProcessingResult {
+        match token.clone() {
+            Token::Character(c) if is_whitespace(c) => {
+                self.insert_character(c);
+                ProcessingResult::Continue
+            }
+            Token::Comment(data) => {
+                self.insert_comment(data);
+                ProcessingResult::Continue
+            }
+            Token::DOCTYPE { .. } => {
+                emit_error!("Unexpected doctype");
+                ProcessingResult::Continue
+            }
+            Token::Tag { tag_name, is_end_tag, .. } => {
+                if !is_end_tag && tag_name == "html" {
+                    return self.handle_in_body(token);
+                }
+                if !is_end_tag && match_any!(tag_name, "base", "basefont", "bgsound", "link") {
+                    self.insert_html_element(token);
+                    self.open_elements.pop();
+                    // TODO: Acknowledge self-closing
+                    return ProcessingResult::Continue;
+                }
+                if !is_end_tag && tag_name == "meta" {
+                    self.insert_html_element(token);
+                    self.open_elements.pop();
+                    // TODO: processing charset and stuff
+                    return ProcessingResult::Continue;
+                }
+                if !is_end_tag && tag_name == "title" {
+                    self.handle_text_only_element(token, TextOnlyElementParsingAlgo::GenericRCDataElement);
+                    return ProcessingResult::Continue;
+                }
+                if !is_end_tag && tag_name == "noscript" && self.scripting {
+                    self.handle_text_only_element(token, TextOnlyElementParsingAlgo::GenericRawText);
+                    return ProcessingResult::Continue;
+                }
+                if !is_end_tag && match_any!(tag_name, "noframes", "style") {
+                    self.handle_text_only_element(token, TextOnlyElementParsingAlgo::GenericRawText);
+                    return ProcessingResult::Continue;
+                }
+                if !is_end_tag && tag_name == "noscript" && !self.scripting {
+                    self.insert_html_element(token);
+                    self.switch_to(InsertMode::InHeadNoScript);
+                    return ProcessingResult::Continue;
+                }
+                if !is_end_tag && tag_name == "script" {
+                    let insert_position = self.get_appropriate_place_for_inserting_a_node();
+                    let element = self.create_element(token);
+                    if let Some(script_element) = element
+                        .borrow_mut()
+                        .as_any_mut()
+                        .downcast_mut::<HTMLScriptElement>()
+                    {
+                        script_element.set_non_blocking(false);
+                        script_element.set_parser_document(self.get_document());
+                    }
+
+                    // TODO: implement steps 4 and 5
+
+                    Node::insert_before(
+                        insert_position.parent,
+                        element.clone(),
+                        insert_position.insert_before_sibling
+                    );
+                    self.open_elements.push(element.clone());
+                    self.tokenizer.switch_to(State::ScriptData);
+                    self.original_insert_mode = Some(self.insert_mode.clone());
+                    self.switch_to(InsertMode::Text);
+                    return ProcessingResult::Continue;
+                }
+
+                if is_end_tag && tag_name == "head" {
+                    self.open_elements.pop();
+                    self.switch_to(InsertMode::AfterHead);
+                    return ProcessingResult::Continue;
+                }
+
+                if is_end_tag && match_any!(tag_name, "body", "html", "br") {
+                    self.open_elements.pop();
+                    self.switch_to(InsertMode::AfterHead);
+                    return self.process(token);
+                }
+
+                if !is_end_tag && tag_name == "template" {
+                    self.insert_html_element(token);
+                    self.active_formatting_elements.add_marker();
+                    self.frameset_ok = false;
+                    self.switch_to(InsertMode::InTemplate);
+                    self.stack_of_template_insert_mode.push(InsertMode::InTemplate);
+                    return ProcessingResult::Continue;
+                }
+
+                if is_end_tag && tag_name == "template" {
+                    if !self.open_elements.contains("template") {
+                        emit_error!("No template tag found");
+                        return ProcessingResult::Continue;
+                    }
+
+                    self.generate_all_implied_end_tags_thoroughly();
+
+                    if let Some(node) = self.open_elements.current_node() {
+                        let element = node.borrow().as_element().unwrap();
+                        if element.tag_name() != "template" {
+                            emit_error!("Expected current node to be template");
+                        }
+                    }
+
+                    self.open_elements.pop_until("template");
+                    self.active_formatting_elements.clear_up_to_last_marker();
+                    self.stack_of_template_insert_mode.pop();
+                    self.reset_insertion_mode_appropriately();
+                }
+
+                if (!is_end_tag && tag_name == "head") || !is_end_tag {
+                    emit_error!("Unexpected tag token");
+                    return ProcessingResult::Continue;
+                }
+
+                self.open_elements.pop();
+                self.switch_to(InsertMode::AfterHead);
+                self.process(token)
+            }
+            _ => {
+                self.open_elements.pop();
+                self.switch_to(InsertMode::AfterHead);
+                self.process(token)
+            }
+        }
+    }
+
     fn handle_in_body(&mut self, token: Token) -> ProcessingResult {
         ProcessingResult::Continue
     }
@@ -307,11 +538,11 @@ mod test {
 
     #[test]
     fn handle_initial_correctly() {
-        let mut html = "<!-- this is a test -->".chars();
-        let mut tokenizer = Tokenizer::new(&mut html);
-        let mut tree_builder = TreeBuilder::new();
-        let token = tokenizer.next_token();
-        assert_eq!(tree_builder.process(token), ProcessingResult::Continue);
+        let html = "<!-- this is a test -->".to_owned();
+        let tokenizer = Tokenizer::new(html);
+        let mut tree_builder = TreeBuilder::new(tokenizer);
+        
+        tree_builder.run();
 
         println!("{:#?}", tree_builder.get_document().borrow().as_node());
 

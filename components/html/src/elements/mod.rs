@@ -19,10 +19,6 @@ pub use html_div_element::*;
 pub use html_base_element::*;
 pub use html_script_element::*;
 
-pub trait DerivedFromHtml {
-    fn as_element(&self) -> &Element;
-}
-
 pub struct HTMLElement {
     element: Element
 }
@@ -50,6 +46,14 @@ impl DOMObject for HTMLElement {
 
     fn as_any_mut(&mut self) -> &mut dyn Any {
         self
+    }
+
+    fn as_element(&self) -> Option<&Element> {
+        Some(&self.element)
+    }
+
+    fn as_element_mut(&mut self) -> Option<&mut Element> {
+        Some(&mut self.element)
     }
 }
 
