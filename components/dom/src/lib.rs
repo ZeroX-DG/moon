@@ -8,3 +8,4 @@ pub mod document;
 pub mod element;
 pub mod character_data;
 pub mod comment;
+pub mod text;
