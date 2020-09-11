@@ -141,6 +141,7 @@ impl TreeBuilder {
             InsertMode::BeforeHtml => self.handle_before_html(token),
             InsertMode::BeforeHead => self.handle_before_head(token),
             InsertMode::InHead => self.handle_in_head(token),
+            InsertMode::InHeadNoScript => self.handle_in_head_no_script(token),
             _ => unimplemented!()
         }
     }
@@ -523,6 +524,55 @@ impl TreeBuilder {
                 self.open_elements.pop();
                 self.switch_to(InsertMode::AfterHead);
                 self.process(token)
+            }
+        }
+    }
+
+    fn handle_in_head_no_script(&mut self, token: Token) -> ProcessingResult {
+        match token {
+            Token::DOCTYPE => {
+                emit_error!("Unexpected doctype");
+                ProcessingResult::Continue
+            }
+            Token::Tag { is_end_tag, tag_name, .. } => {
+                if !is_end_tag && tag_name == "html" {
+                    return self.handle_in_body(token);
+                }
+
+                if is_end_tag && tag_name == "noscript" {
+                    self.open_elements.pop();
+                    self.switch_to(InsertMode::InHead);
+                    return ProcessingResult::Continue;
+                }
+
+                if !is_end_tag && match_any!(tag_name, "basefont", "bgsound", "link", "meta", "noframes", "style") {
+                    return self.handle_in_head(token);
+                }
+
+                if is_end_tag && tag_name == "br" {
+                    emit_error!("Unexpected br");
+                    self.open_elements.pop();
+                    self.switch_to(InsertMode::InHead);
+                    return self.process(token);
+                }
+
+                if (!is_end_tag && match_any!(tag_name, "head", "noscript")) || is_end_tag {
+                    emit_error!("Unexpected tag token");
+                    return ProcessingResult::Continue;
+                }
+
+                emit_error!("Unexpected tag token");
+                self.open_elements.pop();
+                self.switch_to(InsertMode::InHead);
+                return self.process(token);
+            }
+            Token::Character(c) if is_whitespace(c) => self.handle_in_head(token),
+            Token::Comment(_) => self.handle_in_head(token),
+            _ => {
+                emit_error!("Unexpected token");
+                self.open_elements.pop();
+                self.switch_to(InsertMode::InHead);
+                return self.process(token);
             }
         }
     }
