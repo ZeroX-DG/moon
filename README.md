@@ -1,8 +1,14 @@
-# Nox
-> A hobby web browser developed from scratch 
+<p align="center"><img src="./resources/logo.png" /></p>
 
-![license MIT](https://img.shields.io/badge/license-MIT-blue>)
-[![By Vietnamese](https://raw.githubusercontent.com/webuild-community/badge/master/svg/by.svg)](https://webuild.community)
+<h1 align="center">Nox</h1>
+<p align="center">A hobby web browser developed from scratch</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT License" />
+  <a href="https://webuild.community">
+    <img src="https://raw.githubusercontent.com/webuild-community/badge/master/svg/by.svg" alt="By Vietnamese" />
+  </a>
+</p>
 
 ## About
 
