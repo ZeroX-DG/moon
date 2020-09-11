@@ -12,7 +12,7 @@ To keep the "do it from scratch" spirit, I'll try to limit the use of dependenci
 
 ## Features
 
-- [ ] :electric_plug: DOM API
+- [x] :electric_plug: DOM API
 - [ ] :memo: HTML Parsing
   - [x] HTML tokenizer
   - [ ] HTML dom tree builder
