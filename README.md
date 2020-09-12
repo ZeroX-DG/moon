@@ -1,6 +1,6 @@
 <p align="center"><img src="./resources/logo.png" /></p>
 
-<h1 align="center">Nox</h1>
+<h1 align="center">Moon</h1>
 <p align="center">A hobby web browser developed from scratch</p>
 
 <p align="center">
