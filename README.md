@@ -10,11 +10,11 @@
   </a>
 </p>
 
-## About
+## What is this?
 
-I started this project to learn more about how the browser works and also use this as a oppotunity to work on my Rust skill.
+This is a web browser developed from scratch using Rust. I created this project to practice my Rust skills as well as to learn how the browser works.
 
-To keep the "do it from scratch" spirit, I'll try to limit the use of dependencies to minimum.
+To fit with the "make from scratch" spirit, I'll limit the use of external libraries as much as possible.
 
 ## Features
 
@@ -59,6 +59,14 @@ One of the main building blocks of the HTML rendering process is the DOM API. Be
 ### Browser from Scratch: Introduction
 
 This is the start of Browser from Scratch series, created to help me (and probably you too) to learn more about how a browser works by building one! - [**Read more**][1]
+
+## Author
+
+- [Viet Hung Nguyen](https://github.com/ZeroX-DG)
+
+## License
+
+- [MIT](LICENSE)
 
 [1]: https://zerox-dg.github.io/blog/2020/05/29/Browser-from-Scratch-Introduction/
 [2]: https://zerox-dg.github.io/blog/2020/09/01/Browser-from-Scratch-DOM-API/
