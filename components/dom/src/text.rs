@@ -1,13 +1,13 @@
 use super::character_data::CharacterData;
 
 pub struct Text {
-    pub character_data: CharacterData
+    pub character_data: CharacterData,
 }
 
 impl Text {
     pub fn new(data: String) -> Self {
         Self {
-            character_data: CharacterData::new(data)
+            character_data: CharacterData::new(data),
         }
     }
 

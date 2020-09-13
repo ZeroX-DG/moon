@@ -1,12 +1,12 @@
 use super::dom_ref::DOMObject;
 use std::any::Any;
 
-use super::node::Node;
+use super::character_data::CharacterData;
+use super::comment::Comment;
 use super::document::{Document, DocumentType};
 use super::element::Element;
-use super::comment::Comment;
+use super::node::Node;
 use super::text::Text;
-use super::character_data::CharacterData;
 
 impl DOMObject for Node {
     fn as_node(&self) -> &Node {
@@ -172,7 +172,7 @@ impl DOMObject for CharacterData {
     fn as_node_mut(&mut self) -> &mut Node {
         &mut self.node
     }
-    
+
     fn as_any(&self) -> &dyn Any {
         self
     }
@@ -189,4 +189,3 @@ impl DOMObject for CharacterData {
         None
     }
 }
-

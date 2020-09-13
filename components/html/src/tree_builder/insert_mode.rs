@@ -22,5 +22,5 @@ pub enum InsertMode {
     InFrameset,
     AfterFrameset,
     AfterAfterBody,
-    AfterAfterFrameset
+    AfterAfterFrameset,
 }

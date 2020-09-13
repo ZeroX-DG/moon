@@ -1,33 +1,31 @@
-use dom::element::Element;
 use dom::dom_ref::DOMObject;
+use dom::element::Element;
 use dom::node::Node;
 use std::any::Any;
 
-mod html_html_element;
-mod html_head_element;
-mod html_body_element;
-mod html_title_element;
-mod html_div_element;
 mod html_base_element;
+mod html_body_element;
+mod html_div_element;
+mod html_head_element;
+mod html_html_element;
 mod html_script_element;
+mod html_title_element;
 
-pub use html_html_element::*;
-pub use html_head_element::*;
-pub use html_body_element::*;
-pub use html_title_element::*;
-pub use html_div_element::*;
 pub use html_base_element::*;
+pub use html_body_element::*;
+pub use html_div_element::*;
+pub use html_head_element::*;
+pub use html_html_element::*;
 pub use html_script_element::*;
+pub use html_title_element::*;
 
 pub struct HTMLElement {
-    element: Element
+    element: Element,
 }
 
 impl HTMLElement {
     pub fn new(element: Element) -> Self {
-        Self {
-            element
-        }
+        Self { element }
     }
 }
 
@@ -56,4 +54,3 @@ impl DOMObject for HTMLElement {
         Some(&mut self.element)
     }
 }
-

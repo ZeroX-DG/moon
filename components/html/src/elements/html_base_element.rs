@@ -1,7 +1,7 @@
 use super::HTMLElement;
 use dom::dom_ref::DOMObject;
-use dom::node::Node;
 use dom::element::Element;
+use dom::node::Node;
 use std::any::Any;
 
 pub struct HTMLBaseElement {
@@ -15,7 +15,7 @@ impl HTMLBaseElement {
         Self {
             html_element,
             href: String::new(),
-            target: String::new()
+            target: String::new(),
         }
     }
 }

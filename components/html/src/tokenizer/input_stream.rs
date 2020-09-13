@@ -1,15 +1,12 @@
 #[derive(Debug)]
-pub struct InputStream{
+pub struct InputStream {
     input: String,
-    index: usize
+    index: usize,
 }
 
 impl InputStream {
     pub fn new(input: String) -> Self {
-        Self {
-            input,
-            index: 0
-        }
+        Self { input, index: 0 }
     }
 
     pub fn next(&mut self) -> Option<char> {

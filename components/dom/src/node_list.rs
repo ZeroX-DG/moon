@@ -2,14 +2,12 @@ use super::dom_ref::NodeRef;
 
 #[derive(Debug)]
 pub struct NodeList {
-    start: Option<NodeRef>
+    start: Option<NodeRef>,
 }
 
 impl NodeList {
     pub fn new(start: Option<NodeRef>) -> Self {
-        Self {
-            start
-        }
+        Self { start }
     }
 
     pub fn item(&self, index: usize) -> Option<NodeRef> {
@@ -17,7 +15,7 @@ impl NodeList {
         let mut current_idx = index;
         while let Some(node_ref) = &node {
             if current_idx == 0 {
-                break
+                break;
             }
             node = node_ref.clone().borrow().as_node().next_sibling();
             current_idx -= 1;

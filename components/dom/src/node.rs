@@ -1,4 +1,4 @@
-use super::dom_ref::{WeakNodeRef, NodeRef};
+use super::dom_ref::{NodeRef, WeakNodeRef};
 
 #[derive(Debug)]
 pub struct Node {
@@ -18,7 +18,7 @@ impl Node {
             last_child: None,
             next_sibling: None,
             prev_sibling: None,
-            owner_document: None
+            owner_document: None,
         }
     }
 
@@ -36,7 +36,7 @@ impl Node {
     pub fn last_child(&self) -> Option<NodeRef> {
         match &self.last_child {
             Some(node) => node.clone().upgrade(),
-            _ => None
+            _ => None,
         }
     }
 
@@ -49,7 +49,7 @@ impl Node {
     pub fn prev_sibling(&self) -> Option<NodeRef> {
         match &self.prev_sibling {
             Some(node) => node.clone().upgrade(),
-            _ => None
+            _ => None,
         }
     }
 
@@ -57,7 +57,7 @@ impl Node {
     pub fn owner_document(&self) -> Option<NodeRef> {
         match &self.owner_document {
             Some(node) => node.clone().upgrade(),
-            _ => None
+            _ => None,
         }
     }
 
@@ -75,11 +75,11 @@ impl Node {
         }
 
         child.borrow_mut().as_node_mut().parent_node = Some(parent.clone().downgrade());
-        
+
         if parent.borrow().as_node().first_child().is_none() {
             parent.borrow_mut().as_node_mut().first_child = Some(child.clone());
         }
-        
+
         parent.borrow_mut().as_node_mut().last_child = Some(child.downgrade());
     }
 

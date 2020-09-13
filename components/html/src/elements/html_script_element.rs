@@ -1,7 +1,7 @@
 use super::HTMLElement;
 use dom::dom_ref::{DOMObject, NodeRef};
-use dom::node::Node;
 use dom::element::Element;
+use dom::node::Node;
 use std::any::Any;
 
 pub struct HTMLScriptElement {
@@ -9,7 +9,7 @@ pub struct HTMLScriptElement {
     src: String,
     type_: String,
     non_blocking: bool,
-    parser_document: Option<NodeRef>
+    parser_document: Option<NodeRef>,
 }
 
 impl HTMLScriptElement {
@@ -19,7 +19,7 @@ impl HTMLScriptElement {
             src: String::new(),
             type_: String::new(),
             non_blocking: true,
-            parser_document: None
+            parser_document: None,
         }
     }
 

@@ -1,9 +1,9 @@
-use std::rc::{Weak, Rc};
+use super::element::Element;
+use super::node::Node;
+use std::any::Any;
 use std::cell::RefCell;
 use std::ops::Deref;
-use std::any::Any;
-use super::node::Node;
-use super::element::Element;
+use std::rc::{Rc, Weak};
 
 pub trait DOMObject {
     fn as_node(&self) -> &Node;
@@ -41,13 +41,13 @@ impl Deref for NodeRef {
 
 impl Clone for WeakNodeRef {
     fn clone(&self) -> Self {
-        Self(self.0.clone())        
+        Self(self.0.clone())
     }
 }
 
 impl Clone for NodeRef {
     fn clone(&self) -> Self {
-        Self(self.0.clone())        
+        Self(self.0.clone())
     }
 }
 
@@ -55,7 +55,7 @@ impl WeakNodeRef {
     pub fn upgrade(self) -> Option<NodeRef> {
         match self.0.upgrade() {
             Some(node) => Some(NodeRef(node)),
-            _ => None
+            _ => None,
         }
     }
 }
@@ -69,4 +69,3 @@ impl NodeRef {
         WeakNodeRef(Rc::downgrade(&self.0))
     }
 }
-

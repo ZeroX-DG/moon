@@ -1,7 +1,7 @@
 #[derive(Clone, Debug, PartialEq)]
 pub struct Attribute {
     pub name: String,
-    pub value: String
+    pub value: String,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -10,18 +10,18 @@ pub enum Token {
         name: Option<String>,
         public_identifier: Option<String>,
         system_identifier: Option<String>,
-        force_quirks: bool
+        force_quirks: bool,
     },
     Tag {
         tag_name: String,
         self_closing: bool,
         attributes: Vec<Attribute>,
         is_end_tag: bool,
-        self_closing_acknowledged: bool
+        self_closing_acknowledged: bool,
     },
     Comment(String),
     Character(char),
-    EOF
+    EOF,
 }
 
 impl Token {
@@ -31,7 +31,7 @@ impl Token {
             is_end_tag: false,
             self_closing: false,
             attributes: Vec::new(),
-            self_closing_acknowledged: false
+            self_closing_acknowledged: false,
         }
     }
 
@@ -41,7 +41,7 @@ impl Token {
             is_end_tag: true,
             self_closing: false,
             attributes: Vec::new(),
-            self_closing_acknowledged: false
+            self_closing_acknowledged: false,
         }
     }
 
@@ -54,18 +54,27 @@ impl Token {
             name: None,
             public_identifier: None,
             system_identifier: None,
-            force_quirks: false
+            force_quirks: false,
         }
     }
 
     pub fn set_force_quirks(&mut self, value: bool) {
-        if let Token::DOCTYPE { ref mut force_quirks, .. } = self {
+        if let Token::DOCTYPE {
+            ref mut force_quirks,
+            ..
+        } = self
+        {
             *force_quirks = value;
         }
     }
 
     pub fn acknowledge_self_closing_if_set(&mut self) {
-        if let Token::Tag { ref mut self_closing_acknowledged, self_closing, .. } = self {
+        if let Token::Tag {
+            ref mut self_closing_acknowledged,
+            self_closing,
+            ..
+        } = self
+        {
             if self_closing {
                 *self_closing_acknowledged = true;
             }
@@ -77,7 +86,7 @@ impl Attribute {
     pub fn new() -> Self {
         Self {
             name: String::new(),
-            value: String::new()
+            value: String::new(),
         }
     }
 }

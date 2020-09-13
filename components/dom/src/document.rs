@@ -3,20 +3,20 @@ use super::node::Node;
 pub struct Document {
     pub node: Node,
     doctype: Option<DocumentType>,
-    mode: QuirksMode
+    mode: QuirksMode,
 }
 
 pub struct DocumentType {
     pub node: Node,
     name: String,
     public_id: String,
-    system_id: String
+    system_id: String,
 }
 
 pub enum QuirksMode {
     Quirks,
     NoQuirks,
-    LimitedQuirks
+    LimitedQuirks,
 }
 
 impl Document {
@@ -24,7 +24,7 @@ impl Document {
         Self {
             node: Node::new(),
             doctype: None,
-            mode: QuirksMode::NoQuirks
+            mode: QuirksMode::NoQuirks,
         }
     }
 
@@ -43,7 +43,7 @@ impl DocumentType {
             node: Node::new(),
             name,
             public_id: public_id.unwrap_or_default(),
-            system_id: system_id.unwrap_or_default()
+            system_id: system_id.unwrap_or_default(),
         }
     }
 }

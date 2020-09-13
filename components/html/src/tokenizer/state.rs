@@ -79,5 +79,5 @@ pub enum State {
     DecimalCharacterReferenceStart,
     HexadecimalCharacterReference,
     DecimalCharacterReference,
-    NumericCharacterReferenceEnd
+    NumericCharacterReferenceEnd,
 }

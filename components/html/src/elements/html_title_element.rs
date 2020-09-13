@@ -1,19 +1,19 @@
 use super::HTMLElement;
 use dom::dom_ref::DOMObject;
-use dom::node::Node;
 use dom::element::Element;
+use dom::node::Node;
 use std::any::Any;
 
 pub struct HTMLTitleElement {
     html_element: HTMLElement,
-    text: String
+    text: String,
 }
 
 impl HTMLTitleElement {
     pub fn new(html_element: HTMLElement) -> Self {
         Self {
             html_element,
-            text: String::new()
+            text: String::new(),
         }
     }
 }

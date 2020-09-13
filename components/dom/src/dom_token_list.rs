@@ -1,13 +1,11 @@
 #[derive(Debug)]
 pub struct DOMTokenList {
-    items: Vec<String>
+    items: Vec<String>,
 }
 
 impl DOMTokenList {
     pub fn new() -> Self {
-        Self {
-            items: Vec::new()
-        }
+        Self { items: Vec::new() }
     }
 
     pub fn length(&self) -> usize {
@@ -17,7 +15,7 @@ impl DOMTokenList {
     pub fn item(&self, index: usize) -> Option<String> {
         match self.items.get(index) {
             Some(item) => Some(item.clone()),
-            _ => None
+            _ => None,
         }
     }
 

@@ -1,14 +1,14 @@
 use dom::dom_ref::{NodeRef, WeakNodeRef};
 use dom::element::Element;
 
-use super::elements::HTMLElement;
-use super::elements::HTMLScriptElement;
-use super::elements::HTMLHtmlElement;
-use super::elements::HTMLHeadElement;
-use super::elements::HTMLBodyElement;
-use super::elements::HTMLTitleElement;
-use super::elements::HTMLDivElement;
 use super::elements::HTMLBaseElement;
+use super::elements::HTMLBodyElement;
+use super::elements::HTMLDivElement;
+use super::elements::HTMLElement;
+use super::elements::HTMLHeadElement;
+use super::elements::HTMLHtmlElement;
+use super::elements::HTMLScriptElement;
+use super::elements::HTMLTitleElement;
 
 pub fn create_element(document: WeakNodeRef, tag_name: &str) -> NodeRef {
     let mut element = Element::new(tag_name.to_owned());
@@ -22,6 +22,6 @@ pub fn create_element(document: WeakNodeRef, tag_name: &str) -> NodeRef {
         "body" => NodeRef::new(HTMLBodyElement::new(HTMLElement::new(element))),
         "div" => NodeRef::new(HTMLDivElement::new(HTMLElement::new(element))),
         "script" => NodeRef::new(HTMLScriptElement::new(HTMLElement::new(element))),
-        _ => NodeRef::new(element)
+        _ => NodeRef::new(element),
     }
 }

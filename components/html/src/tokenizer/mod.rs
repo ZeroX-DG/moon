@@ -1,26 +1,26 @@
+pub mod input_stream;
 pub mod state;
 pub mod token;
-pub mod input_stream;
 
-use std::collections::{VecDeque, HashSet};
-use std::env;
-use state::State;
-use token::Token;
-use token::Attribute;
-use input_stream::InputStream;
 use super::entities::ENTITIES;
+use input_stream::InputStream;
+use state::State;
+use std::collections::{HashSet, VecDeque};
+use std::env;
+use token::Attribute;
+use token::Token;
 
 fn is_trace() -> bool {
     match env::var("TRACE_TOKENIZER") {
         Ok(s) => s == "true",
-        _ => false
+        _ => false,
     }
 }
 
 macro_rules! trace {
     ($err:expr) => {
         println!("[ParseError][Tokenization]: {}", $err);
-    }
+    };
 }
 
 macro_rules! emit_error {
@@ -28,13 +28,13 @@ macro_rules! emit_error {
         if is_trace() {
             trace!($err)
         }
-    }
+    };
 }
 
 fn is_surrogate(n: u32) -> bool {
     match n {
         0xD800..=0xDFFF => true,
-        _ => false
+        _ => false,
     }
 }
 
@@ -58,7 +58,7 @@ fn is_nonecharacter(n: u32) -> bool {
         | 0xE_fffe..=0xE_ffff
         | 0xF_fffe..=0xF_ffff
         | 0x10_fffe..=0x10_ffff => true,
-        _ => false
+        _ => false,
     }
 }
 
@@ -66,14 +66,14 @@ fn is_control(n: u32) -> bool {
     match n {
         0x0000..=0x001F => true,
         0x007F..=0x009F => true,
-        _ => false
+        _ => false,
     }
 }
 
 fn is_whitespace(n: u32) -> bool {
     match n {
         0x0009 | 0x000A | 0x000C | 0x000D | 0x0020 => true,
-        _ => false
+        _ => false,
     }
 }
 
@@ -106,7 +106,7 @@ pub fn replace_control_codes(n: u32) -> Option<u32> {
         0x9C => Some(0x0153),
         0x9E => Some(0x017E),
         0x9F => Some(0x0178),
-        _ => None
+        _ => None,
     }
 }
 
@@ -119,7 +119,7 @@ pub enum Char {
     ch(char),
     eof,
     null,
-    whitespace
+    whitespace,
 }
 
 pub struct Tokenizer {
@@ -151,7 +151,7 @@ pub struct Tokenizer {
     last_emitted_start_tag: Option<Token>,
 
     // Code for a character reference. Example: &#228;
-    character_reference_code: u32
+    character_reference_code: u32,
 }
 
 impl Tokenizer {
@@ -160,10 +160,13 @@ impl Tokenizer {
             input: InputStream::new(input),
             output: VecDeque::new(),
             current_character: '\0',
-            state: State::Data, return_state: None, current_token: None, reconsume_char: false,
+            state: State::Data,
+            return_state: None,
+            current_token: None,
+            reconsume_char: false,
             temp_buffer: String::new(),
             last_emitted_start_tag: None,
-            character_reference_code: 0
+            character_reference_code: 0,
         }
     }
 
@@ -186,7 +189,7 @@ impl Tokenizer {
                             return self.emit_current_char();
                         }
                         Char::eof => return self.emit_eof(),
-                        _ => return self.emit_current_char()
+                        _ => return self.emit_current_char(),
                     }
                 }
                 State::RCDATA => {
@@ -202,7 +205,7 @@ impl Tokenizer {
                             return self.emit_char(REPLACEMENT_CHARACTER);
                         }
                         Char::eof => return self.emit_eof(),
-                        _ => return self.emit_current_char()
+                        _ => return self.emit_current_char(),
                     }
                 }
                 State::RAWTEXT => {
@@ -214,7 +217,7 @@ impl Tokenizer {
                             return self.emit_char(REPLACEMENT_CHARACTER);
                         }
                         Char::eof => return self.emit_eof(),
-                        _ => return self.emit_current_char()
+                        _ => return self.emit_current_char(),
                     }
                 }
                 State::ScriptData => {
@@ -226,7 +229,7 @@ impl Tokenizer {
                             self.emit_char(REPLACEMENT_CHARACTER);
                         }
                         Char::eof => return self.emit_eof(),
-                        _ => return self.emit_current_char()
+                        _ => return self.emit_current_char(),
                     }
                 }
                 State::PLAINTEXT => {
@@ -237,7 +240,7 @@ impl Tokenizer {
                             return self.emit_char(REPLACEMENT_CHARACTER);
                         }
                         Char::eof => return self.emit_eof(),
-                        _ => return self.emit_current_char()
+                        _ => return self.emit_current_char(),
                     }
                 }
                 State::TagOpen => {
@@ -309,7 +312,9 @@ impl Tokenizer {
                         Char::null => {
                             emit_error!("unexpected-null-character");
                             self.append_character_to_tag_name(REPLACEMENT_CHARACTER);
-                        } Char::eof => { emit_error!("eof-in-tag");
+                        }
+                        Char::eof => {
+                            emit_error!("eof-in-tag");
                             return self.emit_eof();
                         }
                         _ => {
@@ -365,7 +370,7 @@ impl Tokenizer {
                                 self.reconsume_in(State::RCDATA);
                             } else {
                                 self.switch_to(State::SelfClosingStartTag);
-                            } 
+                            }
                         }
                         Char::ch('>') => {
                             if !self.is_end_tag_appropriate() {
@@ -692,8 +697,7 @@ impl Tokenizer {
                                 self.will_emit(Token::Character('/'));
                                 self.emit_temp_buffer();
                                 self.reconsume_in(State::ScriptDataEscaped);
-                            }
-                            else {
+                            } else {
                                 self.switch_to(State::BeforeAttributeName);
                             }
                         }
@@ -703,8 +707,7 @@ impl Tokenizer {
                                 self.will_emit(Token::Character('/'));
                                 self.emit_temp_buffer();
                                 self.reconsume_in(State::ScriptDataEscaped);
-                            }
-                            else {
+                            } else {
                                 self.switch_to(State::SelfClosingStartTag);
                             }
                         }
@@ -714,8 +717,7 @@ impl Tokenizer {
                                 self.will_emit(Token::Character('/'));
                                 self.emit_temp_buffer();
                                 self.reconsume_in(State::ScriptDataEscaped);
-                            }
-                            else {
+                            } else {
                                 self.switch_to(State::Data);
                                 return self.emit_current_token();
                             }
@@ -1031,7 +1033,11 @@ impl Tokenizer {
                             emit_error!("unexpected-null-character");
                             self.append_character_to_attribute_value(REPLACEMENT_CHARACTER);
                         }
-                        Char::ch('"') | Char::ch('\'') | Char::ch('<') | Char::ch('=') | Char::ch('`') =>  {
+                        Char::ch('"')
+                        | Char::ch('\'')
+                        | Char::ch('<')
+                        | Char::ch('=')
+                        | Char::ch('`') => {
                             emit_error!("unexpected-character-in-unquoted-attribute-value");
                             self.append_character_to_attribute_value(self.current_character);
                         }
@@ -1072,7 +1078,11 @@ impl Tokenizer {
                     match ch {
                         Char::ch('>') => {
                             let tag = self.current_token.as_mut().unwrap();
-                            if let Token::Tag { ref mut self_closing, .. } = tag {
+                            if let Token::Tag {
+                                ref mut self_closing,
+                                ..
+                            } = tag
+                            {
                                 *self_closing = true;
                             }
                             self.switch_to(State::Data);
@@ -1399,7 +1409,11 @@ impl Tokenizer {
                         Char::eof => {
                             emit_error!("eof-in-doctype");
                             let token = self.current_token.as_mut().unwrap();
-                            if let Token::DOCTYPE { ref mut force_quirks, .. } = token {
+                            if let Token::DOCTYPE {
+                                ref mut force_quirks,
+                                ..
+                            } = token
+                            {
                                 *force_quirks = true;
                             }
                             self.will_emit(self.current_token.clone().unwrap());
@@ -1421,7 +1435,11 @@ impl Tokenizer {
                         Char::eof => {
                             emit_error!("eof-in-doctype");
                             let token = self.current_token.as_mut().unwrap();
-                            if let Token::DOCTYPE { ref mut force_quirks, .. } = token {
+                            if let Token::DOCTYPE {
+                                ref mut force_quirks,
+                                ..
+                            } = token
+                            {
                                 *force_quirks = true;
                             }
                             self.will_emit(self.current_token.clone().unwrap());
@@ -1435,7 +1453,11 @@ impl Tokenizer {
                             } else {
                                 emit_error!("invalid-character-sequence-after-doctype-name");
                                 let token = self.current_token.as_mut().unwrap();
-                                if let Token::DOCTYPE { ref mut force_quirks, .. } = token {
+                                if let Token::DOCTYPE {
+                                    ref mut force_quirks,
+                                    ..
+                                } = token
+                                {
                                     *force_quirks = true;
                                 }
                                 self.reconsume_in(State::BogusDOCTYPE);
@@ -1452,7 +1474,11 @@ impl Tokenizer {
                         Char::ch('"') => {
                             emit_error!("missing-whitespace-after-doctype-public-keyword");
                             let token = self.current_token.as_mut().unwrap();
-                            if let Token::DOCTYPE { ref mut public_identifier, .. } = token {
+                            if let Token::DOCTYPE {
+                                ref mut public_identifier,
+                                ..
+                            } = token
+                            {
                                 *public_identifier = Some(String::new());
                             }
                             self.switch_to(State::DOCTYPEPublicIdentifierDoubleQuoted);
@@ -1460,7 +1486,11 @@ impl Tokenizer {
                         Char::ch('\'') => {
                             emit_error!("missing-whitespace-after-doctype-public-keyword");
                             let token = self.current_token.as_mut().unwrap();
-                            if let Token::DOCTYPE { ref mut public_identifier, .. } = token {
+                            if let Token::DOCTYPE {
+                                ref mut public_identifier,
+                                ..
+                            } = token
+                            {
                                 *public_identifier = Some(String::new());
                             }
                             self.switch_to(State::DOCTYPEPublicIdentifierSingleQuoted);
@@ -1468,7 +1498,11 @@ impl Tokenizer {
                         Char::ch('>') => {
                             emit_error!("missing-doctype-public-identifier");
                             let token = self.current_token.as_mut().unwrap();
-                            if let Token::DOCTYPE { ref mut force_quirks, .. } = token {
+                            if let Token::DOCTYPE {
+                                ref mut force_quirks,
+                                ..
+                            } = token
+                            {
                                 *force_quirks = true;
                             }
                             self.switch_to(State::Data);
@@ -1477,7 +1511,11 @@ impl Tokenizer {
                         Char::eof => {
                             emit_error!("eof-in-doctype");
                             let token = self.current_token.as_mut().unwrap();
-                            if let Token::DOCTYPE { ref mut force_quirks, .. } = token {
+                            if let Token::DOCTYPE {
+                                ref mut force_quirks,
+                                ..
+                            } = token
+                            {
                                 *force_quirks = true;
                             }
                             self.will_emit(self.current_token.clone().unwrap());
@@ -1486,7 +1524,11 @@ impl Tokenizer {
                         _ => {
                             emit_error!("missing-quote-before-doctype-public-identifier");
                             let token = self.current_token.as_mut().unwrap();
-                            if let Token::DOCTYPE { ref mut force_quirks, .. } = token {
+                            if let Token::DOCTYPE {
+                                ref mut force_quirks,
+                                ..
+                            } = token
+                            {
                                 *force_quirks = true;
                             }
                             self.reconsume_in(State::BogusDOCTYPE);
@@ -1499,14 +1541,22 @@ impl Tokenizer {
                         Char::whitespace => continue,
                         Char::ch('"') => {
                             let token = self.current_token.as_mut().unwrap();
-                            if let Token::DOCTYPE { ref mut public_identifier, .. } = token {
+                            if let Token::DOCTYPE {
+                                ref mut public_identifier,
+                                ..
+                            } = token
+                            {
                                 *public_identifier = Some(String::new());
                             }
                             self.switch_to(State::DOCTYPEPublicIdentifierDoubleQuoted);
                         }
                         Char::ch('\'') => {
                             let token = self.current_token.as_mut().unwrap();
-                            if let Token::DOCTYPE { ref mut public_identifier, .. } = token {
+                            if let Token::DOCTYPE {
+                                ref mut public_identifier,
+                                ..
+                            } = token
+                            {
                                 *public_identifier = Some(String::new());
                             }
                             self.switch_to(State::DOCTYPEPublicIdentifierSingleQuoted);
@@ -1514,7 +1564,11 @@ impl Tokenizer {
                         Char::ch('>') => {
                             emit_error!("missing-doctype-public-identifier");
                             let token = self.current_token.as_mut().unwrap();
-                            if let Token::DOCTYPE { ref mut force_quirks, .. } = token {
+                            if let Token::DOCTYPE {
+                                ref mut force_quirks,
+                                ..
+                            } = token
+                            {
                                 *force_quirks = true;
                             }
                             self.switch_to(State::Data);
@@ -1523,7 +1577,11 @@ impl Tokenizer {
                         Char::eof => {
                             emit_error!("eof-in-doctype");
                             let token = self.current_token.as_mut().unwrap();
-                            if let Token::DOCTYPE { ref mut force_quirks, .. } = token {
+                            if let Token::DOCTYPE {
+                                ref mut force_quirks,
+                                ..
+                            } = token
+                            {
                                 *force_quirks = true;
                             }
                             self.will_emit(self.current_token.clone().unwrap());
@@ -1532,7 +1590,11 @@ impl Tokenizer {
                         _ => {
                             emit_error!("missing-quote-before-doctype-public-identifier");
                             let token = self.current_token.as_mut().unwrap();
-                            if let Token::DOCTYPE { ref mut force_quirks, .. } = token {
+                            if let Token::DOCTYPE {
+                                ref mut force_quirks,
+                                ..
+                            } = token
+                            {
                                 *force_quirks = true;
                             }
                             self.reconsume_in(State::BogusDOCTYPE);
@@ -1547,12 +1609,18 @@ impl Tokenizer {
                         }
                         Char::null => {
                             emit_error!("unexpected-null-character");
-                            self.append_character_to_doctype_public_identifier(REPLACEMENT_CHARACTER);
+                            self.append_character_to_doctype_public_identifier(
+                                REPLACEMENT_CHARACTER,
+                            );
                         }
                         Char::ch('>') => {
                             emit_error!("abrupt-doctype-public-identifier");
                             let token = self.current_token.as_mut().unwrap();
-                            if let Token::DOCTYPE { ref mut force_quirks, .. } = token {
+                            if let Token::DOCTYPE {
+                                ref mut force_quirks,
+                                ..
+                            } = token
+                            {
                                 *force_quirks = true;
                             }
                             self.switch_to(State::Data);
@@ -1561,14 +1629,20 @@ impl Tokenizer {
                         Char::eof => {
                             emit_error!("eof-in-doctype");
                             let token = self.current_token.as_mut().unwrap();
-                            if let Token::DOCTYPE { ref mut force_quirks, .. } = token {
+                            if let Token::DOCTYPE {
+                                ref mut force_quirks,
+                                ..
+                            } = token
+                            {
                                 *force_quirks = true;
                             }
                             self.will_emit(self.current_token.clone().unwrap());
                             return self.emit_eof();
                         }
                         _ => {
-                            self.append_character_to_doctype_public_identifier(self.current_character);
+                            self.append_character_to_doctype_public_identifier(
+                                self.current_character,
+                            );
                         }
                     }
                 }
@@ -1580,12 +1654,18 @@ impl Tokenizer {
                         }
                         Char::null => {
                             emit_error!("unexpected-null-character");
-                            self.append_character_to_doctype_public_identifier(REPLACEMENT_CHARACTER);
+                            self.append_character_to_doctype_public_identifier(
+                                REPLACEMENT_CHARACTER,
+                            );
                         }
                         Char::ch('>') => {
                             emit_error!("abrupt-doctype-public-identifier");
                             let token = self.current_token.as_mut().unwrap();
-                            if let Token::DOCTYPE { ref mut force_quirks, .. } = token {
+                            if let Token::DOCTYPE {
+                                ref mut force_quirks,
+                                ..
+                            } = token
+                            {
                                 *force_quirks = true;
                             }
                             self.switch_to(State::Data);
@@ -1594,14 +1674,20 @@ impl Tokenizer {
                         Char::eof => {
                             emit_error!("eof-in-doctype");
                             let token = self.current_token.as_mut().unwrap();
-                            if let Token::DOCTYPE { ref mut force_quirks, .. } = token {
+                            if let Token::DOCTYPE {
+                                ref mut force_quirks,
+                                ..
+                            } = token
+                            {
                                 *force_quirks = true;
                             }
                             self.will_emit(self.current_token.clone().unwrap());
                             return self.emit_eof();
                         }
                         _ => {
-                            self.append_character_to_doctype_public_identifier(self.current_character);
+                            self.append_character_to_doctype_public_identifier(
+                                self.current_character,
+                            );
                         }
                     }
                 }
@@ -1616,17 +1702,29 @@ impl Tokenizer {
                             return self.emit_current_token();
                         }
                         Char::ch('"') => {
-                            emit_error!("missing-whitespace-between-doctype-public-and-system-identifiers");
+                            emit_error!(
+                                "missing-whitespace-between-doctype-public-and-system-identifiers"
+                            );
                             let token = self.current_token.as_mut().unwrap();
-                            if let Token::DOCTYPE { ref mut system_identifier, .. } = token {
+                            if let Token::DOCTYPE {
+                                ref mut system_identifier,
+                                ..
+                            } = token
+                            {
                                 *system_identifier = Some(String::new());
                             }
                             self.switch_to(State::DOCTYPESytemIdentifierDoubleQuoted);
                         }
                         Char::ch('\'') => {
-                            emit_error!("missing-whitespace-between-doctype-public-and-system-identifiers");
+                            emit_error!(
+                                "missing-whitespace-between-doctype-public-and-system-identifiers"
+                            );
                             let token = self.current_token.as_mut().unwrap();
-                            if let Token::DOCTYPE { ref mut system_identifier, .. } = token {
+                            if let Token::DOCTYPE {
+                                ref mut system_identifier,
+                                ..
+                            } = token
+                            {
                                 *system_identifier = Some(String::new());
                             }
                             self.switch_to(State::DOCTYPESytemIdentifierSingleQuoted);
@@ -1634,7 +1732,11 @@ impl Tokenizer {
                         Char::eof => {
                             emit_error!("eof-in-doctype");
                             let token = self.current_token.as_mut().unwrap();
-                            if let Token::DOCTYPE { ref mut force_quirks, .. } = token {
+                            if let Token::DOCTYPE {
+                                ref mut force_quirks,
+                                ..
+                            } = token
+                            {
                                 *force_quirks = true;
                             }
                             self.will_emit(self.current_token.clone().unwrap());
@@ -1643,7 +1745,11 @@ impl Tokenizer {
                         _ => {
                             emit_error!("missing-quote-before-doctype-system-identifier");
                             let token = self.current_token.as_mut().unwrap();
-                            if let Token::DOCTYPE { ref mut force_quirks, .. } = token {
+                            if let Token::DOCTYPE {
+                                ref mut force_quirks,
+                                ..
+                            } = token
+                            {
                                 *force_quirks = true;
                             }
                             self.reconsume_in(State::BogusDOCTYPE);
@@ -1660,14 +1766,22 @@ impl Tokenizer {
                         }
                         Char::ch('"') => {
                             let token = self.current_token.as_mut().unwrap();
-                            if let Token::DOCTYPE { ref mut system_identifier, .. } = token {
+                            if let Token::DOCTYPE {
+                                ref mut system_identifier,
+                                ..
+                            } = token
+                            {
                                 *system_identifier = Some(String::new());
                             }
                             self.switch_to(State::DOCTYPESytemIdentifierDoubleQuoted);
                         }
                         Char::ch('\'') => {
                             let token = self.current_token.as_mut().unwrap();
-                            if let Token::DOCTYPE { ref mut system_identifier, .. } = token {
+                            if let Token::DOCTYPE {
+                                ref mut system_identifier,
+                                ..
+                            } = token
+                            {
                                 *system_identifier = Some(String::new());
                             }
                             self.switch_to(State::DOCTYPESytemIdentifierSingleQuoted);
@@ -1675,7 +1789,11 @@ impl Tokenizer {
                         Char::eof => {
                             emit_error!("eof-in-doctype");
                             let token = self.current_token.as_mut().unwrap();
-                            if let Token::DOCTYPE { ref mut force_quirks, .. } = token {
+                            if let Token::DOCTYPE {
+                                ref mut force_quirks,
+                                ..
+                            } = token
+                            {
                                 *force_quirks = true;
                             }
                             self.will_emit(self.current_token.clone().unwrap());
@@ -1684,7 +1802,11 @@ impl Tokenizer {
                         _ => {
                             emit_error!("missing-quote-before-doctype-system-identifier");
                             let token = self.current_token.as_mut().unwrap();
-                            if let Token::DOCTYPE { ref mut force_quirks, .. } = token {
+                            if let Token::DOCTYPE {
+                                ref mut force_quirks,
+                                ..
+                            } = token
+                            {
                                 *force_quirks = true;
                             }
                             self.reconsume_in(State::BogusDOCTYPE);
@@ -1696,11 +1818,15 @@ impl Tokenizer {
                     match ch {
                         Char::whitespace => {
                             self.switch_to(State::BeforeDOCTYPESystemIdentifier);
-                        },
+                        }
                         Char::ch('"') => {
                             emit_error!("missing-whitespace-after-doctype-system-keyword");
                             let token = self.current_token.as_mut().unwrap();
-                            if let Token::DOCTYPE { ref mut system_identifier, .. } = token {
+                            if let Token::DOCTYPE {
+                                ref mut system_identifier,
+                                ..
+                            } = token
+                            {
                                 *system_identifier = Some(String::new());
                             }
                             self.switch_to(State::DOCTYPESytemIdentifierDoubleQuoted);
@@ -1708,7 +1834,11 @@ impl Tokenizer {
                         Char::ch('\'') => {
                             emit_error!("missing-whitespace-after-doctype-system-keyword");
                             let token = self.current_token.as_mut().unwrap();
-                            if let Token::DOCTYPE { ref mut system_identifier, .. } = token {
+                            if let Token::DOCTYPE {
+                                ref mut system_identifier,
+                                ..
+                            } = token
+                            {
                                 *system_identifier = Some(String::new());
                             }
                             self.switch_to(State::DOCTYPESytemIdentifierSingleQuoted);
@@ -1716,7 +1846,11 @@ impl Tokenizer {
                         Char::ch('>') => {
                             emit_error!("missing-doctype-system-identifier");
                             let token = self.current_token.as_mut().unwrap();
-                            if let Token::DOCTYPE { ref mut force_quirks, .. } = token {
+                            if let Token::DOCTYPE {
+                                ref mut force_quirks,
+                                ..
+                            } = token
+                            {
                                 *force_quirks = true;
                             }
                             self.switch_to(State::Data);
@@ -1725,7 +1859,11 @@ impl Tokenizer {
                         Char::eof => {
                             emit_error!("eof-in-doctype");
                             let token = self.current_token.as_mut().unwrap();
-                            if let Token::DOCTYPE { ref mut force_quirks, .. } = token {
+                            if let Token::DOCTYPE {
+                                ref mut force_quirks,
+                                ..
+                            } = token
+                            {
                                 *force_quirks = true;
                             }
                             self.will_emit(self.current_token.clone().unwrap());
@@ -1734,7 +1872,11 @@ impl Tokenizer {
                         _ => {
                             emit_error!("missing-quote-before-doctype-system-identifier");
                             let token = self.current_token.as_mut().unwrap();
-                            if let Token::DOCTYPE { ref mut force_quirks, .. } = token {
+                            if let Token::DOCTYPE {
+                                ref mut force_quirks,
+                                ..
+                            } = token
+                            {
                                 *force_quirks = true;
                             }
                             self.reconsume_in(State::BogusDOCTYPE);
@@ -1747,14 +1889,22 @@ impl Tokenizer {
                         Char::whitespace => continue,
                         Char::ch('"') => {
                             let token = self.current_token.as_mut().unwrap();
-                            if let Token::DOCTYPE { ref mut system_identifier, .. } = token {
+                            if let Token::DOCTYPE {
+                                ref mut system_identifier,
+                                ..
+                            } = token
+                            {
                                 *system_identifier = Some(String::new());
                             }
                             self.switch_to(State::DOCTYPESytemIdentifierDoubleQuoted);
                         }
                         Char::ch('\'') => {
                             let token = self.current_token.as_mut().unwrap();
-                            if let Token::DOCTYPE { ref mut system_identifier, .. } = token {
+                            if let Token::DOCTYPE {
+                                ref mut system_identifier,
+                                ..
+                            } = token
+                            {
                                 *system_identifier = Some(String::new());
                             }
                             self.switch_to(State::DOCTYPESytemIdentifierSingleQuoted);
@@ -1762,7 +1912,11 @@ impl Tokenizer {
                         Char::ch('>') => {
                             emit_error!("missing-doctype-system-identifier");
                             let token = self.current_token.as_mut().unwrap();
-                            if let Token::DOCTYPE { ref mut force_quirks, .. } = token {
+                            if let Token::DOCTYPE {
+                                ref mut force_quirks,
+                                ..
+                            } = token
+                            {
                                 *force_quirks = true;
                             }
                             self.switch_to(State::Data);
@@ -1771,7 +1925,11 @@ impl Tokenizer {
                         Char::eof => {
                             emit_error!("eof-in-doctype");
                             let token = self.current_token.as_mut().unwrap();
-                            if let Token::DOCTYPE { ref mut force_quirks, .. } = token {
+                            if let Token::DOCTYPE {
+                                ref mut force_quirks,
+                                ..
+                            } = token
+                            {
                                 *force_quirks = true;
                             }
                             self.will_emit(self.current_token.clone().unwrap());
@@ -1780,7 +1938,11 @@ impl Tokenizer {
                         _ => {
                             emit_error!("missing-quote-before-doctype-system-identifier");
                             let token = self.current_token.as_mut().unwrap();
-                            if let Token::DOCTYPE { ref mut force_quirks, .. } = token {
+                            if let Token::DOCTYPE {
+                                ref mut force_quirks,
+                                ..
+                            } = token
+                            {
                                 *force_quirks = true;
                             }
                             self.reconsume_in(State::BogusDOCTYPE);
@@ -1795,12 +1957,18 @@ impl Tokenizer {
                         }
                         Char::null => {
                             emit_error!("unexpected-null-character");
-                            self.append_character_to_doctype_system_identifier(REPLACEMENT_CHARACTER);
+                            self.append_character_to_doctype_system_identifier(
+                                REPLACEMENT_CHARACTER,
+                            );
                         }
                         Char::ch('>') => {
                             emit_error!("abrupt-doctype-system-identifier");
                             let token = self.current_token.as_mut().unwrap();
-                            if let Token::DOCTYPE { ref mut force_quirks, .. } = token {
+                            if let Token::DOCTYPE {
+                                ref mut force_quirks,
+                                ..
+                            } = token
+                            {
                                 *force_quirks = true;
                             }
                             self.switch_to(State::Data);
@@ -1809,14 +1977,20 @@ impl Tokenizer {
                         Char::eof => {
                             emit_error!("eof-in-doctype");
                             let token = self.current_token.as_mut().unwrap();
-                            if let Token::DOCTYPE { ref mut force_quirks, .. } = token {
+                            if let Token::DOCTYPE {
+                                ref mut force_quirks,
+                                ..
+                            } = token
+                            {
                                 *force_quirks = true;
                             }
                             self.will_emit(self.current_token.clone().unwrap());
                             return self.emit_eof();
                         }
                         _ => {
-                            self.append_character_to_doctype_system_identifier(self.current_character);
+                            self.append_character_to_doctype_system_identifier(
+                                self.current_character,
+                            );
                         }
                     }
                 }
@@ -1828,12 +2002,18 @@ impl Tokenizer {
                         }
                         Char::null => {
                             emit_error!("unexpected-null-character");
-                            self.append_character_to_doctype_system_identifier(REPLACEMENT_CHARACTER);
+                            self.append_character_to_doctype_system_identifier(
+                                REPLACEMENT_CHARACTER,
+                            );
                         }
                         Char::ch('>') => {
                             emit_error!("abrupt-doctype-system-identifier");
                             let token = self.current_token.as_mut().unwrap();
-                            if let Token::DOCTYPE { ref mut force_quirks, .. } = token {
+                            if let Token::DOCTYPE {
+                                ref mut force_quirks,
+                                ..
+                            } = token
+                            {
                                 *force_quirks = true;
                             }
                             self.switch_to(State::Data);
@@ -1842,14 +2022,20 @@ impl Tokenizer {
                         Char::eof => {
                             emit_error!("eof-in-doctype");
                             let token = self.current_token.as_mut().unwrap();
-                            if let Token::DOCTYPE { ref mut force_quirks, .. } = token {
+                            if let Token::DOCTYPE {
+                                ref mut force_quirks,
+                                ..
+                            } = token
+                            {
                                 *force_quirks = true;
                             }
                             self.will_emit(self.current_token.clone().unwrap());
                             return self.emit_eof();
                         }
                         _ => {
-                            self.append_character_to_doctype_system_identifier(self.current_character);
+                            self.append_character_to_doctype_system_identifier(
+                                self.current_character,
+                            );
                         }
                     }
                 }
@@ -1864,7 +2050,11 @@ impl Tokenizer {
                         Char::eof => {
                             emit_error!("eof-in-doctype");
                             let token = self.current_token.as_mut().unwrap();
-                            if let Token::DOCTYPE { ref mut force_quirks, .. } = token {
+                            if let Token::DOCTYPE {
+                                ref mut force_quirks,
+                                ..
+                            } = token
+                            {
                                 *force_quirks = true;
                             }
                             self.will_emit(self.current_token.clone().unwrap());
@@ -1998,9 +2188,11 @@ impl Tokenizer {
                         }
 
                         self.temp_buffer.clear();
-                        self.temp_buffer.push(std::char::from_u32(charcode_1).unwrap());
+                        self.temp_buffer
+                            .push(std::char::from_u32(charcode_1).unwrap());
                         if charcode_2 != 0 {
-                            self.temp_buffer.push(std::char::from_u32(charcode_2).unwrap());
+                            self.temp_buffer
+                                .push(std::char::from_u32(charcode_2).unwrap());
                         }
                         self.flush_code_points_consumed_as_a_character_reference();
                         self.switch_to_return_state();
@@ -2159,7 +2351,10 @@ impl Tokenizer {
 
     fn new_attribute(&mut self, attribute: Attribute) {
         let token = self.current_token.as_mut().unwrap();
-        if let Token::Tag { ref mut attributes, .. } = token {
+        if let Token::Tag {
+            ref mut attributes, ..
+        } = token
+        {
             attributes.push(attribute);
         }
     }
@@ -2172,7 +2367,7 @@ impl Tokenizer {
             }
         } else {
             self.emit_temp_buffer();
-        } 
+        }
     }
 
     fn is_character_part_of_attribute(&self) -> bool {
@@ -2181,8 +2376,8 @@ impl Tokenizer {
                 State::AttributeValueDoubleQuoted => true,
                 State::AttributeValueSingleQuoted => true,
                 State::AttributeValueUnQuoted => true,
-                _ => false
-            }
+                _ => false,
+            };
         }
         emit_error!("No return state found");
         false
@@ -2204,7 +2399,11 @@ impl Tokenizer {
 
     fn append_character_to_doctype_public_identifier(&mut self, ch: char) {
         let token = self.current_token.as_mut().unwrap();
-        if let Token::DOCTYPE { ref mut public_identifier, .. } = token {
+        if let Token::DOCTYPE {
+            ref mut public_identifier,
+            ..
+        } = token
+        {
             let public_identifier = public_identifier.as_mut().unwrap();
             public_identifier.push(ch);
         }
@@ -2212,7 +2411,11 @@ impl Tokenizer {
 
     fn append_character_to_doctype_system_identifier(&mut self, ch: char) {
         let token = self.current_token.as_mut().unwrap();
-        if let Token::DOCTYPE { ref mut system_identifier, .. } = token {
+        if let Token::DOCTYPE {
+            ref mut system_identifier,
+            ..
+        } = token
+        {
             let system_identifier = system_identifier.as_mut().unwrap();
             system_identifier.push(ch);
         }
@@ -2241,7 +2444,10 @@ impl Tokenizer {
 
     fn append_character_to_attribute_name(&mut self, ch: char) {
         let current_tag = self.current_token.as_mut().unwrap();
-        if let Token::Tag { ref mut attributes, .. } = current_tag {
+        if let Token::Tag {
+            ref mut attributes, ..
+        } = current_tag
+        {
             let attribute = attributes.last_mut().unwrap();
             attribute.name.push(ch);
         }
@@ -2249,7 +2455,10 @@ impl Tokenizer {
 
     fn append_character_to_attribute_value(&mut self, ch: char) {
         let current_tag = self.current_token.as_mut().unwrap();
-        if let Token::Tag { ref mut attributes, .. } = current_tag {
+        if let Token::Tag {
+            ref mut attributes, ..
+        } = current_tag
+        {
             let attribute = attributes.last_mut().unwrap();
             attribute.value.push(ch);
         }
@@ -2280,7 +2489,12 @@ impl Tokenizer {
 
     fn will_emit(&mut self, token: Token) {
         let mut token = token;
-        if let Token::Tag { is_end_tag, ref mut attributes, .. } = token {
+        if let Token::Tag {
+            is_end_tag,
+            ref mut attributes,
+            ..
+        } = token
+        {
             let mut seen = HashSet::new();
             let mut remove_indexes = Vec::new();
             for (index, attribute) in attributes.iter().enumerate() {
@@ -2380,10 +2594,10 @@ impl Tokenizer {
                 match c {
                     '\0' => Char::null,
                     '\t' | '\n' | '\x0C' | ' ' => Char::whitespace,
-                    _ => Char::ch(c)
+                    _ => Char::ch(c),
                 }
             }
-            None => Char::eof
+            None => Char::eof,
         }
     }
 }
@@ -2396,98 +2610,130 @@ mod tests {
     fn parse_comment() {
         let html = "<!--xin chao-->".to_owned();
         let mut tokenizer = Tokenizer::new(html);
-        assert_eq!(Token::Comment("xin chao".to_owned()), tokenizer.next_token());
+        assert_eq!(
+            Token::Comment("xin chao".to_owned()),
+            tokenizer.next_token()
+        );
     }
 
     #[test]
     fn parse_tag() {
         let html = "<html>".to_owned();
         let mut tokenizer = Tokenizer::new(html);
-        assert_eq!(Token::Tag {
-            tag_name: "html".to_owned(),
-            self_closing: false,
-            attributes: Vec::new(),
-            is_end_tag: false
-        }, tokenizer.next_token());
+        assert_eq!(
+            Token::Tag {
+                tag_name: "html".to_owned(),
+                self_closing: false,
+                attributes: Vec::new(),
+                is_end_tag: false
+            },
+            tokenizer.next_token()
+        );
     }
 
     #[test]
     fn parse_tag_self_closing() {
         let html = "<div />".to_owned();
         let mut tokenizer = Tokenizer::new(html);
-        assert_eq!(Token::Tag {
-            tag_name: "div".to_owned(),
-            self_closing: true,
-            attributes: Vec::new(),
-            is_end_tag: false
-        }, tokenizer.next_token());
+        assert_eq!(
+            Token::Tag {
+                tag_name: "div".to_owned(),
+                self_closing: true,
+                attributes: Vec::new(),
+                is_end_tag: false
+            },
+            tokenizer.next_token()
+        );
     }
 
     #[test]
     fn parse_tag_attribute_double_quote() {
         let html = "<div name=\"hello\" />".to_owned();
         let mut tokenizer = Tokenizer::new(html);
-        assert_eq!(Token::Tag {
-            tag_name: "div".to_owned(),
-            self_closing: true,
-            attributes: vec![
-                Attribute { name: "name".to_owned(), value: "hello".to_owned() }
-            ],
-            is_end_tag: false
-        }, tokenizer.next_token());
+        assert_eq!(
+            Token::Tag {
+                tag_name: "div".to_owned(),
+                self_closing: true,
+                attributes: vec![Attribute {
+                    name: "name".to_owned(),
+                    value: "hello".to_owned()
+                }],
+                is_end_tag: false
+            },
+            tokenizer.next_token()
+        );
     }
 
     #[test]
     fn parse_tag_attribute_single_quote() {
         let html = "<div name='hello' />".to_owned();
         let mut tokenizer = Tokenizer::new(html);
-        assert_eq!(Token::Tag {
-            tag_name: "div".to_owned(),
-            self_closing: true,
-            attributes: vec![
-                Attribute { name: "name".to_owned(), value: "hello".to_owned() }
-            ],
-            is_end_tag: false
-        }, tokenizer.next_token());
+        assert_eq!(
+            Token::Tag {
+                tag_name: "div".to_owned(),
+                self_closing: true,
+                attributes: vec![Attribute {
+                    name: "name".to_owned(),
+                    value: "hello".to_owned()
+                }],
+                is_end_tag: false
+            },
+            tokenizer.next_token()
+        );
     }
 
     #[test]
     fn parse_tag_attribute_unquote() {
         let html = "<div name=hello world />".to_owned();
         let mut tokenizer = Tokenizer::new(html);
-        assert_eq!(Token::Tag {
-            tag_name: "div".to_owned(),
-            self_closing: true,
-            attributes: vec![
-                Attribute { name: "name".to_owned(), value: "hello".to_owned() },
-                Attribute { name: "world".to_owned(), value: "".to_owned() }
-            ],
-            is_end_tag: false
-        }, tokenizer.next_token());
+        assert_eq!(
+            Token::Tag {
+                tag_name: "div".to_owned(),
+                self_closing: true,
+                attributes: vec![
+                    Attribute {
+                        name: "name".to_owned(),
+                        value: "hello".to_owned()
+                    },
+                    Attribute {
+                        name: "world".to_owned(),
+                        value: "".to_owned()
+                    }
+                ],
+                is_end_tag: false
+            },
+            tokenizer.next_token()
+        );
     }
 
     #[test]
     fn parse_doctype() {
         let html = "<!DOCTYPE html>".to_owned();
         let mut tokenizer = Tokenizer::new(html);
-        assert_eq!(Token::DOCTYPE {
-            name: Some("html".to_owned()),
-            force_quirks: false,
-            public_identifier: None,
-            system_identifier: None
-        }, tokenizer.next_token());
+        assert_eq!(
+            Token::DOCTYPE {
+                name: Some("html".to_owned()),
+                force_quirks: false,
+                public_identifier: None,
+                system_identifier: None
+            },
+            tokenizer.next_token()
+        );
     }
 
     #[test]
     fn parse_doctype_with_identifiers() {
         let html = r#"<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">"#.to_owned();
         let mut tokenizer = Tokenizer::new(html);
-        assert_eq!(Token::DOCTYPE {
-            name: Some("html".to_owned()),
-            force_quirks: false,
-            public_identifier: Some("-//W3C//DTD HTML 4.01 Transitional//EN".to_owned()),
-            system_identifier: Some("http://www.w3.org/TR/html4/loose.dtd".to_owned())
-        }, tokenizer.next_token());
+        assert_eq!(
+            Token::DOCTYPE {
+                name: Some("html".to_owned()),
+                force_quirks: false,
+                public_identifier: Some("-//W3C//DTD HTML 4.01 Transitional//EN".to_owned()),
+                system_identifier: Some("http://www.w3.org/TR/html4/loose.dtd".to_owned())
+            },
+            tokenizer.next_token()
+        );
     }
 
     #[test]
@@ -2536,41 +2782,53 @@ mod tests {
     fn parse_named_character_reference_in_attribute_name() {
         let html = "<br &block;=\"name\" />".to_owned();
         let mut tokenizer = Tokenizer::new(html);
-        assert_eq!(Token::Tag {
-            tag_name: "br".to_owned(),
-            self_closing: true,
-            is_end_tag: false,
-            attributes: vec![
-                Attribute { name: "&block;".to_owned(), value: "name".to_owned() }
-            ]
-        }, tokenizer.next_token());
+        assert_eq!(
+            Token::Tag {
+                tag_name: "br".to_owned(),
+                self_closing: true,
+                is_end_tag: false,
+                attributes: vec![Attribute {
+                    name: "&block;".to_owned(),
+                    value: "name".to_owned()
+                }]
+            },
+            tokenizer.next_token()
+        );
     }
 
     #[test]
     fn parse_named_character_reference_in_attribute_value() {
         let html = "<br name=\"&block;\" />".to_owned();
         let mut tokenizer = Tokenizer::new(html);
-        assert_eq!(Token::Tag {
-            tag_name: "br".to_owned(),
-            self_closing: true,
-            is_end_tag: false,
-            attributes: vec![
-                Attribute { name: "name".to_owned(), value: "█".to_owned() }
-            ]
-        }, tokenizer.next_token());
+        assert_eq!(
+            Token::Tag {
+                tag_name: "br".to_owned(),
+                self_closing: true,
+                is_end_tag: false,
+                attributes: vec![Attribute {
+                    name: "name".to_owned(),
+                    value: "█".to_owned()
+                }]
+            },
+            tokenizer.next_token()
+        );
     }
 
     #[test]
     fn parse_duplicate_attribute() {
         let html = "<div attr attr />".to_owned();
         let mut tokenizer = Tokenizer::new(html);
-        assert_eq!(Token::Tag {
-            tag_name: "div".to_owned(),
-            self_closing: true,
-            is_end_tag: false,
-            attributes: vec![
-                Attribute { name: "attr".to_owned(), value: "".to_owned() }
-            ]
-        }, tokenizer.next_token());
+        assert_eq!(
+            Token::Tag {
+                tag_name: "div".to_owned(),
+                self_closing: true,
+                is_end_tag: false,
+                attributes: vec![Attribute {
+                    name: "attr".to_owned(),
+                    value: "".to_owned()
+                }]
+            },
+            tokenizer.next_token()
+        );
     }
 }

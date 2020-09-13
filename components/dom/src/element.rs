@@ -1,6 +1,6 @@
-use std::collections::HashMap;
 use super::dom_token_list::DOMTokenList;
 use super::node::Node;
+use std::collections::HashMap;
 
 #[derive(Debug)]
 pub struct Element {
@@ -18,7 +18,7 @@ impl Element {
             attributes: HashMap::new(),
             id: String::new(),
             class_list: DOMTokenList::new(),
-            tag_name
+            tag_name,
         }
     }
 

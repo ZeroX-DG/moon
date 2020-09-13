@@ -27,7 +27,7 @@ impl StackOfOpenElements {
         for (i, node) in self.0.iter().rev().enumerate() {
             let element = node.borrow().as_element().unwrap();
             if element.tag_name() == tag_name {
-                return Some((&node, i))
+                return Some((&node, i));
             }
         }
         None
@@ -38,7 +38,7 @@ impl StackOfOpenElements {
             let element = node.borrow().as_element().unwrap();
             if element.tag_name() == tag_name {
                 self.pop();
-                break
+                break;
             }
             self.pop();
         }
