@@ -52,6 +52,9 @@ pub struct TreeBuilder {
     // stack of open elements as mentioned in specs
     open_elements: StackOfOpenElements,
 
+    // indicate if the tree builder should stop
+    should_stop: bool,
+
     // current insertion mode
     insert_mode: InsertMode,
 
@@ -90,12 +93,6 @@ enum TextOnlyElementParsingAlgo {
     GenericRCDataElement,
 }
 
-#[derive(Debug, PartialEq)]
-pub enum ProcessingResult {
-    Continue,
-    Stop,
-}
-
 fn is_whitespace(c: char) -> bool {
     match c {
         '\t' | '\n' | '\x0C' | ' ' => true,
@@ -117,6 +114,7 @@ impl TreeBuilder {
             active_formatting_elements: ListOfActiveFormattingElements::new(),
             frameset_ok: true,
             stack_of_template_insert_mode: Vec::new(),
+            should_stop: false
         }
     }
 
@@ -126,20 +124,21 @@ impl TreeBuilder {
             if let Token::EOF = token {
                 break;
             }
-            match self.process(token) {
-                ProcessingResult::Continue => {}
-                ProcessingResult::Stop => break,
+            self.process(token);
+            if self.should_stop {
+                break
             }
         }
     }
 
-    pub fn process(&mut self, token: Token) -> ProcessingResult {
+    pub fn process(&mut self, token: Token) {
         match self.insert_mode {
             InsertMode::Initial => self.handle_initial(token),
             InsertMode::BeforeHtml => self.handle_before_html(token),
             InsertMode::BeforeHead => self.handle_before_head(token),
             InsertMode::InHead => self.handle_in_head(token),
             InsertMode::InHeadNoScript => self.handle_in_head_no_script(token),
+            InsertMode::AfterHead => self.handle_after_head(token),
             _ => unimplemented!(),
         }
     }
@@ -295,13 +294,12 @@ impl TreeBuilder {
 }
 
 impl TreeBuilder {
-    fn handle_initial(&mut self, token: Token) -> ProcessingResult {
+    fn handle_initial(&mut self, token: Token) {
         match token.clone() {
-            Token::Character(c) if is_whitespace(c) => ProcessingResult::Continue,
+            Token::Character(c) if is_whitespace(c) => return,
             Token::Comment(data) => {
                 let comment = NodeRef::new(Comment::new(data));
                 Node::append_child(self.document.clone(), comment);
-                ProcessingResult::Continue
             }
             Token::DOCTYPE {
                 name,
@@ -338,8 +336,6 @@ impl TreeBuilder {
                 }
 
                 self.switch_to(InsertMode::BeforeHtml);
-
-                ProcessingResult::Continue
             }
             _ => {
                 emit_error!("Bad token");
@@ -349,8 +345,8 @@ impl TreeBuilder {
         }
     }
 
-    fn handle_before_html(&mut self, token: Token) -> ProcessingResult {
-        fn anything_else(this: &mut TreeBuilder, token: Token) -> ProcessingResult {
+    fn handle_before_html(&mut self, token: Token) {
+        fn anything_else(this: &mut TreeBuilder, token: Token) {
             let element = this.create_element_from_tag_name("html");
             Node::append_child(this.document.clone(), element.clone());
             this.open_elements.push(element.clone());
@@ -362,14 +358,12 @@ impl TreeBuilder {
         match token.clone() {
             Token::DOCTYPE { .. } => {
                 emit_error!("Unexpected doctype");
-                ProcessingResult::Continue
             }
             Token::Comment(data) => {
                 let comment = NodeRef::new(Comment::new(data));
                 Node::append_child(self.document.clone(), comment);
-                ProcessingResult::Continue
             }
-            Token::Character(c) if is_whitespace(c) => ProcessingResult::Continue,
+            Token::Character(c) if is_whitespace(c) => return,
             Token::Tag {
                 tag_name,
                 is_end_tag,
@@ -381,13 +375,12 @@ impl TreeBuilder {
                     self.open_elements.push(element.clone());
                     // TODO: implement additional steps in specs
                     self.switch_to(InsertMode::BeforeHead);
-                    ProcessingResult::Continue
                 } else if match_any!(tag_name, "head", "body", "html", "br") && is_end_tag {
                     anything_else(self, token)
                 } else {
                     if is_end_tag {
                         emit_error!("Invalid end tag");
-                        return ProcessingResult::Continue;
+                        return
                     }
                     anything_else(self, token)
                 }
@@ -396,8 +389,8 @@ impl TreeBuilder {
         }
     }
 
-    fn handle_before_head(&mut self, token: Token) -> ProcessingResult {
-        fn anything_else(this: &mut TreeBuilder, token: Token) -> ProcessingResult {
+    fn handle_before_head(&mut self, token: Token) {
+        fn anything_else(this: &mut TreeBuilder, token: Token) {
             let head_element = this.insert_html_element(Token::Tag {
                 tag_name: "head".to_owned(),
                 attributes: Vec::new(),
@@ -410,14 +403,12 @@ impl TreeBuilder {
             this.process(token)
         }
         match token.clone() {
-            Token::Character(c) if is_whitespace(c) => ProcessingResult::Continue,
+            Token::Character(c) if is_whitespace(c) => return,
             Token::Comment(data) => {
                 self.insert_comment(data);
-                ProcessingResult::Continue
             }
             Token::DOCTYPE { .. } => {
                 emit_error!("Unexpected doctype");
-                ProcessingResult::Continue
             }
             Token::Tag {
                 tag_name,
@@ -431,14 +422,14 @@ impl TreeBuilder {
                     let head_element = self.insert_html_element(token);
                     self.head_pointer = Some(head_element);
                     self.switch_to(InsertMode::InHead);
-                    return ProcessingResult::Continue;
+                    return
                 }
                 if is_end_tag && match_any!(tag_name, "head", "body", "html", "br") {
                     return anything_else(self, token);
                 }
                 if is_end_tag {
                     emit_error!("Invalid end tag");
-                    return ProcessingResult::Continue;
+                    return
                 }
                 anything_else(self, token)
             }
@@ -446,19 +437,16 @@ impl TreeBuilder {
         }
     }
 
-    fn handle_in_head(&mut self, mut token: Token) -> ProcessingResult {
+    fn handle_in_head(&mut self, mut token: Token) {
         match token.clone() {
             Token::Character(c) if is_whitespace(c) => {
                 self.insert_character(c);
-                ProcessingResult::Continue
             }
             Token::Comment(data) => {
                 self.insert_comment(data);
-                ProcessingResult::Continue
             }
             Token::DOCTYPE { .. } => {
                 emit_error!("Unexpected doctype");
-                ProcessingResult::Continue
             }
             Token::Tag {
                 tag_name,
@@ -472,39 +460,39 @@ impl TreeBuilder {
                     self.insert_html_element(token.clone());
                     self.open_elements.pop();
                     token.acknowledge_self_closing_if_set();
-                    return ProcessingResult::Continue;
+                    return
                 }
                 if !is_end_tag && tag_name == "meta" {
                     self.insert_html_element(token.clone());
                     self.open_elements.pop();
                     token.acknowledge_self_closing_if_set();
-                    return ProcessingResult::Continue;
+                    return
                 }
                 if !is_end_tag && tag_name == "title" {
                     self.handle_text_only_element(
                         token,
                         TextOnlyElementParsingAlgo::GenericRCDataElement,
                     );
-                    return ProcessingResult::Continue;
+                    return
                 }
                 if !is_end_tag && tag_name == "noscript" && self.scripting {
                     self.handle_text_only_element(
                         token,
                         TextOnlyElementParsingAlgo::GenericRawText,
                     );
-                    return ProcessingResult::Continue;
+                    return
                 }
                 if !is_end_tag && match_any!(tag_name, "noframes", "style") {
                     self.handle_text_only_element(
                         token,
                         TextOnlyElementParsingAlgo::GenericRawText,
                     );
-                    return ProcessingResult::Continue;
+                    return
                 }
                 if !is_end_tag && tag_name == "noscript" && !self.scripting {
                     self.insert_html_element(token);
                     self.switch_to(InsertMode::InHeadNoScript);
-                    return ProcessingResult::Continue;
+                    return
                 }
                 if !is_end_tag && tag_name == "script" {
                     let insert_position = self.get_appropriate_place_for_inserting_a_node();
@@ -529,19 +517,19 @@ impl TreeBuilder {
                     self.tokenizer.switch_to(State::ScriptData);
                     self.original_insert_mode = Some(self.insert_mode.clone());
                     self.switch_to(InsertMode::Text);
-                    return ProcessingResult::Continue;
+                    return
                 }
 
                 if is_end_tag && tag_name == "head" {
                     self.open_elements.pop();
                     self.switch_to(InsertMode::AfterHead);
-                    return ProcessingResult::Continue;
+                    return
                 }
 
                 if is_end_tag && match_any!(tag_name, "body", "html", "br") {
                     self.open_elements.pop();
                     self.switch_to(InsertMode::AfterHead);
-                    return self.process(token);
+                    return
                 }
 
                 if !is_end_tag && tag_name == "template" {
@@ -551,13 +539,13 @@ impl TreeBuilder {
                     self.switch_to(InsertMode::InTemplate);
                     self.stack_of_template_insert_mode
                         .push(InsertMode::InTemplate);
-                    return ProcessingResult::Continue;
+                    return
                 }
 
                 if is_end_tag && tag_name == "template" {
                     if !self.open_elements.contains("template") {
                         emit_error!("No template tag found");
-                        return ProcessingResult::Continue;
+                        return
                     }
 
                     self.generate_all_implied_end_tags_thoroughly();
@@ -578,7 +566,7 @@ impl TreeBuilder {
 
                 if (!is_end_tag && tag_name == "head") || !is_end_tag {
                     emit_error!("Unexpected tag token");
-                    return ProcessingResult::Continue;
+                    return
                 }
 
                 self.open_elements.pop();
@@ -593,11 +581,10 @@ impl TreeBuilder {
         }
     }
 
-    fn handle_in_head_no_script(&mut self, token: Token) -> ProcessingResult {
+    fn handle_in_head_no_script(&mut self, token: Token) {
         match token.clone() {
             Token::DOCTYPE { .. } => {
                 emit_error!("Unexpected doctype");
-                ProcessingResult::Continue
             }
             Token::Tag {
                 is_end_tag,
@@ -611,7 +598,7 @@ impl TreeBuilder {
                 if is_end_tag && tag_name == "noscript" {
                     self.open_elements.pop();
                     self.switch_to(InsertMode::InHead);
-                    return ProcessingResult::Continue;
+                    return
                 }
 
                 if !is_end_tag
@@ -631,7 +618,7 @@ impl TreeBuilder {
 
                 if (!is_end_tag && match_any!(tag_name, "head", "noscript")) || is_end_tag {
                     emit_error!("Unexpected tag token");
-                    return ProcessingResult::Continue;
+                    return
                 }
 
                 emit_error!("Unexpected tag token");
@@ -650,8 +637,68 @@ impl TreeBuilder {
         }
     }
 
-    fn handle_in_body(&mut self, token: Token) -> ProcessingResult {
-        ProcessingResult::Continue
+    fn handle_after_head(&mut self, token: Token) {
+        fn anything_else(this: &mut TreeBuilder, token: Token) {
+            this.insert_html_element(Token::Tag {
+                is_end_tag: false,
+                tag_name: "body".to_owned(),
+                self_closing: false,
+                self_closing_acknowledged: false,
+                attributes: Vec::new()
+            });
+            this.switch_to(InsertMode::InBody);
+            return this.process(token);
+        }
+        match token.clone() {
+            Token::Character(c) if is_whitespace(c) => {
+                self.insert_character(c);
+            }
+            Token::Comment(data) => {
+                self.insert_comment(data);
+            }
+            Token::DOCTYPE { .. } => {
+                emit_error!("Unexpected doctype");
+            }
+            Token::Tag { is_end_tag, tag_name, .. } => {
+                if !is_end_tag && tag_name == "html" {
+                    return self.handle_in_body(token);
+                }
+                if !is_end_tag && tag_name == "body" {
+                    self.insert_html_element(token);
+                    self.frameset_ok = false;
+                    self.switch_to(InsertMode::InBody);
+                    return
+                }
+                if !is_end_tag && tag_name == "framset" {
+                    self.insert_html_element(token);
+                    self.switch_to(InsertMode::InFrameset);
+                    return
+                }
+                if !is_end_tag && match_any!(tag_name, "base", "basefont", "bgsound", "link", "meta", "noframes", "script", "style", "template", "title") {
+                    emit_error!("Unexpected tag");
+                    let head = self.head_pointer.clone().unwrap();
+                    self.open_elements.push(head.clone());
+                    self.handle_in_head(token);
+                    self.open_elements.remove_first_matching(|node| node.clone() == head);
+                    return
+                }
+                if is_end_tag && tag_name == "template" {
+                    return self.handle_in_head(token);
+                }
+                if is_end_tag && match_any!(tag_name, "body", "html", "br") {
+                    return anything_else(self, token);
+                }
+                if (!is_end_tag && tag_name == "head") || is_end_tag {
+                    emit_error!("Unexpected tag");
+                    return
+                }
+                anything_else(self, token)
+            }
+            _ => anything_else(self, token)
+        }
+    }
+
+    fn handle_in_body(&mut self, token: Token) {
     }
 }
 
@@ -668,26 +715,19 @@ mod test {
 
         tree_builder.run();
 
-        println!("{:#?}", tree_builder.get_document().borrow().as_node());
-
-        if let Some(child) = tree_builder.get_document().borrow().as_node().first_child() {
-            if let Some(comment) = child.borrow().as_any().downcast_ref::<Comment>() {
-                assert_ne!(comment.get_data(), "this is a test");
-            } else {
-                panic!("First child is not a comment");
-            }
-        } else {
-            panic!("There is no first child");
-        }
-
-        if let Some(child) = tree_builder.get_document().borrow().as_node().last_child() {
-            if let Some(comment) = child.borrow().as_any().downcast_ref::<Comment>() {
-                assert_ne!(comment.get_data(), "this is a test");
-            } else {
-                panic!("Last child is not a comment");
-            }
-        } else {
-            panic!("There is no last child");
-        }
+        assert_eq!(
+            tree_builder
+                .get_document()
+                .borrow()
+                .as_node()
+                .first_child()
+                .unwrap()
+                .borrow()
+                .as_any()
+                .downcast_ref::<Comment>()
+                .unwrap()
+                .get_data(),
+            " this is a test "
+        );
     }
 }

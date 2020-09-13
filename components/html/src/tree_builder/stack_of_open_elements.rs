@@ -46,6 +46,16 @@ impl StackOfOpenElements {
         }
     }
 
+    pub fn remove_first_matching<F>(&mut self, test: F) where
+        F: Fn(&NodeRef) -> bool {
+        for (i, node) in self.0.iter().rev().enumerate() {
+            if test(node) {
+                self.0.remove(i);
+                return
+            }
+        }
+    }
+
     pub fn contains(&self, tag_name: &str) -> bool {
         self.0.iter().any(|node| {
             let node = node.borrow();
