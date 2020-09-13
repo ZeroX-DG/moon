@@ -51,6 +51,12 @@ impl Clone for NodeRef {
     }
 }
 
+impl PartialEq for NodeRef {
+    fn eq(&self, other: &NodeRef) -> bool {
+        self.as_ptr().eq(&other.as_ptr())
+    }
+}
+
 impl WeakNodeRef {
     pub fn upgrade(self) -> Option<NodeRef> {
         match self.0.upgrade() {

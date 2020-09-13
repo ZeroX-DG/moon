@@ -53,6 +53,14 @@ impl Node {
         }
     }
 
+    /// Parent of the node
+    pub fn parent(&self) -> Option<NodeRef> {
+        match &self.parent_node {
+            Some(node) => node.clone().upgrade(),
+            _ => None
+        }
+    }
+
     /// Owner document of the node
     pub fn owner_document(&self) -> Option<NodeRef> {
         match &self.owner_document {
@@ -72,6 +80,7 @@ impl Node {
     pub fn append_child(parent: NodeRef, child: NodeRef) {
         if let Some(last_child) = parent.borrow().as_node().last_child() {
             last_child.borrow_mut().as_node_mut().next_sibling = Some(child.clone());
+            child.borrow_mut().as_node_mut().prev_sibling = Some(last_child.clone().downgrade());
         }
 
         child.borrow_mut().as_node_mut().parent_node = Some(parent.clone().downgrade());
@@ -106,5 +115,44 @@ impl Node {
         } else {
             Node::append_child(parent, child);
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn append_child_first_child() {
+        let parent = NodeRef::new(Node::new());
+        let child = NodeRef::new(Node::new());
+
+        Node::append_child(parent.clone(), child.clone());
+
+        assert_eq!(parent.borrow().as_node().first_child(), Some(child.clone()));
+        assert_eq!(parent.borrow().as_node().last_child(), Some(child.clone()));
+        assert_eq!(child.borrow().as_node().parent(), Some(parent.clone()));
+        assert_eq!(child.borrow().as_node().prev_sibling(), None);
+        assert_eq!(child.borrow().as_node().next_sibling(), None);
+    }
+
+    #[test]
+    fn append_child_normal() {
+        let parent = NodeRef::new(Node::new());
+        let child1 = NodeRef::new(Node::new());
+        let child2 = NodeRef::new(Node::new());
+
+        Node::append_child(parent.clone(), child1.clone());
+        Node::append_child(parent.clone(), child2.clone());
+
+        assert_eq!(parent.borrow().as_node().first_child(), Some(child1.clone()));
+        assert_eq!(parent.borrow().as_node().last_child(), Some(child2.clone()));
+        assert_eq!(child1.borrow().as_node().next_sibling(), Some(child2.clone()));
+        assert_eq!(child2.borrow().as_node().prev_sibling(), Some(child1.clone()));
+        assert_eq!(child1.borrow().as_node().prev_sibling(), None);
+        assert_eq!(child2.borrow().as_node().next_sibling(), None);
+
+        assert_eq!(child1.borrow().as_node().parent(), Some(parent.clone()));
+        assert_eq!(child2.borrow().as_node().parent(), Some(parent.clone()));
     }
 }
