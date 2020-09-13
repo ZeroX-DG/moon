@@ -75,7 +75,7 @@ impl Token {
             ..
         } = self
         {
-            if self_closing {
+            if *self_closing {
                 *self_closing_acknowledged = true;
             }
         }

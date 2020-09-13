@@ -2624,6 +2624,7 @@ mod tests {
             Token::Tag {
                 tag_name: "html".to_owned(),
                 self_closing: false,
+                self_closing_acknowledged: false,
                 attributes: Vec::new(),
                 is_end_tag: false
             },
@@ -2639,6 +2640,7 @@ mod tests {
             Token::Tag {
                 tag_name: "div".to_owned(),
                 self_closing: true,
+                self_closing_acknowledged: false,
                 attributes: Vec::new(),
                 is_end_tag: false
             },
@@ -2654,6 +2656,7 @@ mod tests {
             Token::Tag {
                 tag_name: "div".to_owned(),
                 self_closing: true,
+                self_closing_acknowledged: false,
                 attributes: vec![Attribute {
                     name: "name".to_owned(),
                     value: "hello".to_owned()
@@ -2672,6 +2675,7 @@ mod tests {
             Token::Tag {
                 tag_name: "div".to_owned(),
                 self_closing: true,
+                self_closing_acknowledged: false,
                 attributes: vec![Attribute {
                     name: "name".to_owned(),
                     value: "hello".to_owned()
@@ -2690,6 +2694,7 @@ mod tests {
             Token::Tag {
                 tag_name: "div".to_owned(),
                 self_closing: true,
+                self_closing_acknowledged: false,
                 attributes: vec![
                     Attribute {
                         name: "name".to_owned(),
@@ -2787,6 +2792,7 @@ mod tests {
                 tag_name: "br".to_owned(),
                 self_closing: true,
                 is_end_tag: false,
+                self_closing_acknowledged: false,
                 attributes: vec![Attribute {
                     name: "&block;".to_owned(),
                     value: "name".to_owned()
@@ -2805,6 +2811,7 @@ mod tests {
                 tag_name: "br".to_owned(),
                 self_closing: true,
                 is_end_tag: false,
+                self_closing_acknowledged: false,
                 attributes: vec![Attribute {
                     name: "name".to_owned(),
                     value: "█".to_owned()
@@ -2823,6 +2830,7 @@ mod tests {
                 tag_name: "div".to_owned(),
                 self_closing: true,
                 is_end_tag: false,
+                self_closing_acknowledged: false,
                 attributes: vec![Attribute {
                     name: "attr".to_owned(),
                     value: "".to_owned()
