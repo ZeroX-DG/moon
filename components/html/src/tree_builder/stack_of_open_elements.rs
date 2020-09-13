@@ -25,7 +25,8 @@ impl StackOfOpenElements {
 
     pub fn last_element_with_tag_name(&self, tag_name: &str) -> Option<(&NodeRef, usize)> {
         for (i, node) in self.0.iter().rev().enumerate() {
-            let element = node.borrow().as_element().unwrap();
+            let node_borrow = node.borrow();
+            let element = node_borrow.as_element().unwrap();
             if element.tag_name() == tag_name {
                 return Some((&node, i));
             }
@@ -35,7 +36,8 @@ impl StackOfOpenElements {
 
     pub fn pop_until(&mut self, tag_name: &str) {
         while let Some(node) = self.current_node() {
-            let element = node.borrow().as_element().unwrap();
+            let node = node.borrow();
+            let element = node.as_element().unwrap();
             if element.tag_name() == tag_name {
                 self.pop();
                 break;
@@ -46,7 +48,8 @@ impl StackOfOpenElements {
 
     pub fn contains(&self, tag_name: &str) -> bool {
         self.0.iter().any(|node| {
-            let element = node.borrow().as_element().unwrap();
+            let node = node.borrow();
+            let element = node.as_element().unwrap();
             if element.tag_name() == tag_name {
                 return true;
             }

@@ -275,7 +275,8 @@ impl TreeBuilder {
 
     fn generate_all_implied_end_tags_thoroughly(&mut self) {
         while let Some(node) = self.open_elements.current_node() {
-            let element = node.borrow().as_element().unwrap();
+            let node = node.borrow();
+            let element = node.as_element().unwrap();
             let tag_name = element.tag_name();
             if match_any!(
                 tag_name, "caption", "colgroup", "dd", "dt", "li", "optgroup", "option", "p", "rb",
@@ -445,7 +446,7 @@ impl TreeBuilder {
         }
     }
 
-    fn handle_in_head(&mut self, token: Token) -> ProcessingResult {
+    fn handle_in_head(&mut self, mut token: Token) -> ProcessingResult {
         match token.clone() {
             Token::Character(c) if is_whitespace(c) => {
                 self.insert_character(c);
@@ -468,13 +469,13 @@ impl TreeBuilder {
                     return self.handle_in_body(token);
                 }
                 if !is_end_tag && match_any!(tag_name, "base", "basefont", "bgsound", "link") {
-                    self.insert_html_element(token);
+                    self.insert_html_element(token.clone());
                     self.open_elements.pop();
                     token.acknowledge_self_closing_if_set();
                     return ProcessingResult::Continue;
                 }
                 if !is_end_tag && tag_name == "meta" {
-                    self.insert_html_element(token);
+                    self.insert_html_element(token.clone());
                     self.open_elements.pop();
                     token.acknowledge_self_closing_if_set();
                     return ProcessingResult::Continue;
@@ -562,7 +563,8 @@ impl TreeBuilder {
                     self.generate_all_implied_end_tags_thoroughly();
 
                     if let Some(node) = self.open_elements.current_node() {
-                        let element = node.borrow().as_element().unwrap();
+                        let node = node.borrow();
+                        let element = node.as_element().unwrap();
                         if element.tag_name() != "template" {
                             emit_error!("Expected current node to be template");
                         }
@@ -592,7 +594,7 @@ impl TreeBuilder {
     }
 
     fn handle_in_head_no_script(&mut self, token: Token) -> ProcessingResult {
-        match token {
+        match token.clone() {
             Token::DOCTYPE { .. } => {
                 emit_error!("Unexpected doctype");
                 ProcessingResult::Continue
