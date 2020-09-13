@@ -357,7 +357,8 @@ impl TreeBuilder {
                 tag_name: "head".to_owned(),
                 attributes: Vec::new(),
                 is_end_tag: false,
-                self_closing: false
+                self_closing: false,
+                self_closing_acknowledged: false
             });
             this.head_pointer = Some(head_element.clone());
             this.switch_to(InsertMode::InHead);
@@ -530,7 +531,7 @@ impl TreeBuilder {
 
     fn handle_in_head_no_script(&mut self, token: Token) -> ProcessingResult {
         match token {
-            Token::DOCTYPE => {
+            Token::DOCTYPE { .. } => {
                 emit_error!("Unexpected doctype");
                 ProcessingResult::Continue
             }
