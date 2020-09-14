@@ -68,6 +68,34 @@ impl Token {
         }
     }
 
+    pub fn is_start_tag(&self) -> bool {
+        if let Token::Tag { is_end_tag, .. } = self {
+            return !*is_end_tag;
+        }
+        return false;
+    }
+
+    pub fn is_end_tag(&self) -> bool {
+        if let Token::Tag { is_end_tag, .. } = self {
+            return *is_end_tag;
+        }
+        return false;
+    }
+
+    pub fn tag_name(&self) -> &String {
+        if let Token::Tag { tag_name, .. } = self {
+            return tag_name;
+        }
+        panic!("Token is not a tag");
+    }
+
+    pub fn attributes(&self) -> &Vec<Attribute> {
+        if let Token::Tag { attributes, .. } = self {
+            return attributes;
+        }
+        panic!("Token is not a tag");
+    }
+
     pub fn acknowledge_self_closing_if_set(&mut self) {
         if let Token::Tag {
             ref mut self_closing_acknowledged,

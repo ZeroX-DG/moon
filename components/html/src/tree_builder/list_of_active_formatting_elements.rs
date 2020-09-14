@@ -1,4 +1,5 @@
 use dom::dom_ref::NodeRef;
+use std::ops::{Deref, DerefMut};
 
 pub struct ListOfActiveFormattingElements {
     entries: Vec<Entry>,
@@ -27,5 +28,19 @@ impl ListOfActiveFormattingElements {
                 _ => continue,
             }
         }
+    }
+}
+
+impl Deref for ListOfActiveFormattingElements {
+    type Target = Vec<Entry>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.entries
+    }
+}
+
+impl DerefMut for ListOfActiveFormattingElements {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.entries
     }
 }
