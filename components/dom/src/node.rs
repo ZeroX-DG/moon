@@ -57,7 +57,7 @@ impl Node {
     pub fn parent(&self) -> Option<NodeRef> {
         match &self.parent_node {
             Some(node) => node.clone().upgrade(),
-            _ => None
+            _ => None,
         }
     }
 
@@ -145,10 +145,19 @@ mod test {
         Node::append_child(parent.clone(), child1.clone());
         Node::append_child(parent.clone(), child2.clone());
 
-        assert_eq!(parent.borrow().as_node().first_child(), Some(child1.clone()));
+        assert_eq!(
+            parent.borrow().as_node().first_child(),
+            Some(child1.clone())
+        );
         assert_eq!(parent.borrow().as_node().last_child(), Some(child2.clone()));
-        assert_eq!(child1.borrow().as_node().next_sibling(), Some(child2.clone()));
-        assert_eq!(child2.borrow().as_node().prev_sibling(), Some(child1.clone()));
+        assert_eq!(
+            child1.borrow().as_node().next_sibling(),
+            Some(child2.clone())
+        );
+        assert_eq!(
+            child2.borrow().as_node().prev_sibling(),
+            Some(child1.clone())
+        );
         assert_eq!(child1.borrow().as_node().prev_sibling(), None);
         assert_eq!(child2.borrow().as_node().next_sibling(), None);
 

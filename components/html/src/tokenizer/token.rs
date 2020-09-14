@@ -89,6 +89,13 @@ impl Token {
         panic!("Token is not a tag");
     }
 
+    pub fn is_eof(&self) -> bool {
+        if let Token::EOF = self {
+            return true;
+        }
+        return false;
+    }
+
     pub fn attributes(&self) -> &Vec<Attribute> {
         if let Token::Tag { attributes, .. } = self {
             return attributes;

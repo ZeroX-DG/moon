@@ -5,8 +5,8 @@ mod stack_of_open_elements;
 use super::element_factory::create_element;
 use super::elements::HTMLScriptElement;
 use super::tokenizer::state::State;
-use super::tokenizer::token::Token;
 use super::tokenizer::token::Attribute;
+use super::tokenizer::token::Token;
 use super::tokenizer::Tokenizer;
 use dom::comment::Comment;
 use dom::document::{Document, DocumentType, QuirksMode};
@@ -15,8 +15,8 @@ use dom::element::Element;
 use dom::node::Node;
 use dom::text::Text;
 use insert_mode::InsertMode;
-use list_of_active_formatting_elements::ListOfActiveFormattingElements;
 use list_of_active_formatting_elements::Entry;
+use list_of_active_formatting_elements::ListOfActiveFormattingElements;
 use stack_of_open_elements::StackOfOpenElements;
 use std::env;
 
@@ -81,7 +81,7 @@ pub struct TreeBuilder {
     // list of active formatting elements
     active_formatting_elements: ListOfActiveFormattingElements,
 
-    // framset ok flag
+    // frameset ok flag
     frameset_ok: bool,
 
     // stack of template insert mode to parse nested template
@@ -119,7 +119,7 @@ impl TreeBuilder {
             active_formatting_elements: ListOfActiveFormattingElements::new(),
             frameset_ok: true,
             stack_of_template_insert_mode: Vec::new(),
-            should_stop: false
+            should_stop: false,
         }
     }
 
@@ -131,7 +131,7 @@ impl TreeBuilder {
             }
             self.process(token);
             if self.should_stop {
-                break
+                break;
             }
         }
     }
@@ -168,6 +168,10 @@ impl TreeBuilder {
 
     fn switch_to(&mut self, mode: InsertMode) {
         self.insert_mode = mode;
+    }
+
+    fn stop_parsing(&mut self) {
+        self.should_stop = true;
     }
 
     fn create_element(&self, tag_token: Token) -> NodeRef {
@@ -318,33 +322,69 @@ impl TreeBuilder {
             Token::DOCTYPE { .. } => emit_error!("Unexpected DOCTYPE"),
             Token::Comment(_) => emit_error!("Unexpected comment"),
             Token::Character(_) => emit_error!("Unexpected character"),
-            Token::EOF => emit_error!("Unexpected EOF")
+            Token::EOF => emit_error!("Unexpected EOF"),
+        }
+    }
+
+    fn close_p_element(&mut self) {
+        self.generate_implied_end_tags("p");
+
+        if self
+            .open_elements
+            .current_node()
+            .unwrap()
+            .borrow()
+            .as_element()
+            .unwrap()
+            .tag_name()
+            != "p"
+        {
+            emit_error!("Expected p element");
+        }
+
+        self.open_elements.pop_until("p");
+    }
+
+    fn generate_implied_end_tags(&mut self, exclude: &str) {
+        while let Some(node) = self.open_elements.current_node() {
+            let node = node.borrow();
+            let element = node.as_element().unwrap();
+            let tag_name = element.tag_name();
+            if tag_name != exclude
+                && match_any!(
+                    tag_name, "dd", "dt", "li", "optgroup", "option", "p", "rb", "rt", "rtc", "rp"
+                )
+            {
+                self.open_elements.pop();
+            } else {
+                break;
+            }
         }
     }
 
     fn reconstruct_active_formatting_elements(&mut self) {
         if self.active_formatting_elements.len() == 0 {
-            return
+            return;
         }
 
         let last_active_element = self.active_formatting_elements.last().unwrap();
-        
+
         if self.is_marker_or_open_element(last_active_element) {
-            return
+            return;
         }
 
         let mut last_index = self.active_formatting_elements.len() - 1;
 
         loop {
             if last_index == 0 {
-                break
+                break;
             }
 
             last_index -= 1;
             let entry = &self.active_formatting_elements[last_index];
-            
+
             if self.is_marker_or_open_element(entry) {
-                break
+                break;
             }
         }
 
@@ -354,7 +394,7 @@ impl TreeBuilder {
         loop {
             let element = match &self.active_formatting_elements[last_index] {
                 Entry::Element(element) => element.clone(),
-                Entry::Marker => panic!("Unexpected marker while building DOM tree!")
+                Entry::Marker => panic!("Unexpected marker while building DOM tree!"),
             };
 
             let element = element.borrow();
@@ -365,16 +405,20 @@ impl TreeBuilder {
                 self_closing: false,
                 self_closing_acknowledged: false,
                 tag_name: tag.tag_name(),
-                attributes: tag.attributes()
+                attributes: tag
+                    .attributes()
                     .iter()
-                    .map(|entry| Attribute { name: entry.0.clone(), value: entry.1.clone() })
-                    .collect()
+                    .map(|entry| Attribute {
+                        name: entry.0.clone(),
+                        value: entry.1.clone(),
+                    })
+                    .collect(),
             });
 
             self.active_formatting_elements[last_index] = Entry::Element(new_element);
 
             if last_index == self.active_formatting_elements.len() - 1 {
-                break
+                break;
             }
             last_index += 1;
         }
@@ -385,17 +429,23 @@ impl TreeBuilder {
     fn handle_initial(&mut self, token: Token) {
         if let Token::Character(c) = token {
             if is_whitespace(c) {
-                return
+                return;
             }
         }
 
         if let Token::Comment(data) = token {
             let comment = NodeRef::new(Comment::new(data));
             Node::append_child(self.document.clone(), comment);
-            return
+            return;
         }
 
-        if let Token::DOCTYPE { name, public_identifier, system_identifier, .. } = token.clone() {
+        if let Token::DOCTYPE {
+            name,
+            public_identifier,
+            system_identifier,
+            ..
+        } = token.clone()
+        {
             let name = name.unwrap_or_default();
 
             let error = match (
@@ -425,7 +475,7 @@ impl TreeBuilder {
             }
 
             self.switch_to(InsertMode::BeforeHtml);
-            return
+            return;
         }
 
         self.unexpected(&token);
@@ -445,13 +495,13 @@ impl TreeBuilder {
 
         if let Token::DOCTYPE { .. } = token {
             self.unexpected(&token);
-            return
+            return;
         }
 
         if let Token::Comment(data) = token {
             let comment = NodeRef::new(Comment::new(data));
             Node::append_child(self.document.clone(), comment);
-            return
+            return;
         }
 
         if token.is_start_tag() && token.tag_name() == "html" {
@@ -460,18 +510,18 @@ impl TreeBuilder {
             self.open_elements.push(element.clone());
             // TODO: implement additional steps in specs
             self.switch_to(InsertMode::BeforeHead);
-            return
+            return;
         }
 
         if token.is_end_tag() && match_any!(token.tag_name(), "head", "body", "html", "br") {
             anything_else(self, token);
-            return
+            return;
         }
 
         if token.is_end_tag() {
             self.unexpected(&token);
             anything_else(self, token);
-            return
+            return;
         }
 
         anything_else(self, token);
@@ -493,18 +543,18 @@ impl TreeBuilder {
 
         if let Token::Character(c) = token {
             if is_whitespace(c) {
-                return
+                return;
             }
         }
 
         if let Token::Comment(data) = token {
             self.insert_comment(data);
-            return
+            return;
         }
 
         if let Token::DOCTYPE { .. } = token {
             self.unexpected(&token);
-            return
+            return;
         }
 
         if token.is_start_tag() && token.tag_name() == "html" {
@@ -515,7 +565,7 @@ impl TreeBuilder {
             let head_element = self.insert_html_element(token);
             self.head_pointer = Some(head_element);
             self.switch_to(InsertMode::InHead);
-            return
+            return;
         }
 
         if token.is_end_tag() && match_any!(token.tag_name(), "head", "body", "html", "br") {
@@ -524,7 +574,7 @@ impl TreeBuilder {
 
         if token.is_end_tag() {
             self.unexpected(&token);
-            return
+            return;
         }
 
         anything_else(self, token);
@@ -534,66 +584,59 @@ impl TreeBuilder {
         if let Token::Character(c) = token {
             if is_whitespace(c) {
                 self.insert_character(c);
-                return
+                return;
             }
         }
 
         if let Token::Comment(data) = token {
             self.insert_comment(data);
-            return
+            return;
         }
 
         if let Token::DOCTYPE { .. } = token {
             self.unexpected(&token);
-            return
+            return;
         }
 
         if token.is_start_tag() && token.tag_name() == "html" {
             return self.handle_in_body(token);
         }
 
-        if token.is_start_tag() && match_any!(token.tag_name(), "base", "basefont", "bgsound", "link") {
+        if token.is_start_tag()
+            && match_any!(token.tag_name(), "base", "basefont", "bgsound", "link")
+        {
             self.insert_html_element(token.clone());
             self.open_elements.pop();
             token.acknowledge_self_closing_if_set();
-            return
+            return;
         }
 
         if token.is_start_tag() && token.tag_name() == "meta" {
             self.insert_html_element(token.clone());
             self.open_elements.pop();
             token.acknowledge_self_closing_if_set();
-            return
+            return;
         }
 
         if token.is_start_tag() && token.tag_name() == "title" {
-            self.handle_text_only_element(
-                token,
-                TextOnlyElementParsingAlgo::GenericRCDataElement,
-            );
-            return
+            self.handle_text_only_element(token, TextOnlyElementParsingAlgo::GenericRCDataElement);
+            return;
         }
 
         if token.is_start_tag() && token.tag_name() == "noscript" && self.scripting {
-            self.handle_text_only_element(
-                token,
-                TextOnlyElementParsingAlgo::GenericRawText,
-            );
-            return
+            self.handle_text_only_element(token, TextOnlyElementParsingAlgo::GenericRawText);
+            return;
         }
 
         if token.is_start_tag() && match_any!(token.tag_name(), "noframes", "style") {
-            self.handle_text_only_element(
-                token,
-                TextOnlyElementParsingAlgo::GenericRawText,
-            );
-            return
+            self.handle_text_only_element(token, TextOnlyElementParsingAlgo::GenericRawText);
+            return;
         }
 
         if token.is_start_tag() && token.tag_name() == "noscript" && !self.scripting {
             self.insert_html_element(token);
             self.switch_to(InsertMode::InHeadNoScript);
-            return
+            return;
         }
 
         if token.is_start_tag() && token.tag_name() == "script" {
@@ -619,19 +662,19 @@ impl TreeBuilder {
             self.tokenizer.switch_to(State::ScriptData);
             self.original_insert_mode = Some(self.insert_mode.clone());
             self.switch_to(InsertMode::Text);
-            return
+            return;
         }
 
         if token.is_end_tag() && token.tag_name() == "head" {
             self.open_elements.pop();
             self.switch_to(InsertMode::AfterHead);
-            return
+            return;
         }
 
         if token.is_end_tag() && match_any!(token.tag_name(), "body", "html", "br") {
             self.open_elements.pop();
             self.switch_to(InsertMode::AfterHead);
-            return
+            return;
         }
 
         if token.is_start_tag() && token.tag_name() == "template" {
@@ -641,13 +684,13 @@ impl TreeBuilder {
             self.switch_to(InsertMode::InTemplate);
             self.stack_of_template_insert_mode
                 .push(InsertMode::InTemplate);
-            return
+            return;
         }
 
         if token.is_end_tag() && token.tag_name() == "template" {
             if !self.open_elements.contains("template") {
                 emit_error!("No template tag found");
-                return
+                return;
             }
 
             self.generate_all_implied_end_tags_thoroughly();
@@ -664,17 +707,17 @@ impl TreeBuilder {
             self.active_formatting_elements.clear_up_to_last_marker();
             self.stack_of_template_insert_mode.pop();
             self.reset_insertion_mode_appropriately();
-            return
+            return;
         }
 
         if token.is_start_tag() && token.tag_name() == "head" {
             self.unexpected(&token);
-            return
+            return;
         }
 
         if token.is_end_tag() {
             self.unexpected(&token);
-            return
+            return;
         }
 
         self.open_elements.pop();
@@ -692,9 +735,9 @@ impl TreeBuilder {
 
         if let Token::DOCTYPE { .. } = token {
             self.unexpected(&token);
-            return
+            return;
         }
-        
+
         if token.is_start_tag() && token.tag_name() == "html" {
             return self.handle_in_body(token);
         }
@@ -702,7 +745,7 @@ impl TreeBuilder {
         if token.is_end_tag() && token.tag_name() == "noscript" {
             self.open_elements.pop();
             self.switch_to(InsertMode::InHead);
-            return
+            return;
         }
 
         if let Token::Character(c) = token {
@@ -717,7 +760,13 @@ impl TreeBuilder {
 
         if token.is_start_tag()
             && match_any!(
-                token.tag_name(), "basefont", "bgsound", "link", "meta", "noframes", "style"
+                token.tag_name(),
+                "basefont",
+                "bgsound",
+                "link",
+                "meta",
+                "noframes",
+                "style"
             )
         {
             return self.handle_in_head(token);
@@ -729,12 +778,12 @@ impl TreeBuilder {
 
         if token.is_start_tag() && match_any!(token.tag_name(), "head", "noscript") {
             self.unexpected(&token);
-            return
+            return;
         }
 
         if token.is_end_tag() {
             self.unexpected(&token);
-            return
+            return;
         }
 
         anything_else(self, token)
@@ -747,7 +796,7 @@ impl TreeBuilder {
                 tag_name: "body".to_owned(),
                 self_closing: false,
                 self_closing_acknowledged: false,
-                attributes: Vec::new()
+                attributes: Vec::new(),
             });
             this.switch_to(InsertMode::InBody);
             this.process(token)
@@ -756,18 +805,18 @@ impl TreeBuilder {
         if let Token::Character(c) = token {
             if is_whitespace(c) {
                 self.insert_character(c);
-                return
+                return;
             }
         }
 
         if let Token::Comment(data) = token {
             self.insert_comment(data);
-            return
+            return;
         }
 
         if let Token::DOCTYPE { .. } = token {
             self.unexpected(&token);
-            return
+            return;
         }
 
         if token.is_start_tag() && token.tag_name() == "html" {
@@ -778,22 +827,37 @@ impl TreeBuilder {
             self.insert_html_element(token);
             self.frameset_ok = false;
             self.switch_to(InsertMode::InBody);
-            return
+            return;
         }
 
         if token.is_start_tag() && token.tag_name() == "frameset" {
             self.insert_html_element(token);
             self.switch_to(InsertMode::InFrameset);
-            return
+            return;
         }
 
-        if token.is_start_tag() && match_any!(token.tag_name(), "base", "basefont", "bgsound", "link", "meta", "noframes", "script", "style", "template", "title") {
+        if token.is_start_tag()
+            && match_any!(
+                token.tag_name(),
+                "base",
+                "basefont",
+                "bgsound",
+                "link",
+                "meta",
+                "noframes",
+                "script",
+                "style",
+                "template",
+                "title"
+            )
+        {
             self.unexpected(&token);
             let head = self.head_pointer.clone().unwrap();
             self.open_elements.push(head.clone());
             self.handle_in_head(token);
-            self.open_elements.remove_first_matching(|node| node.clone() == head);
-            return
+            self.open_elements
+                .remove_first_matching(|node| node.clone() == head);
+            return;
         }
 
         if token.is_end_tag() && token.tag_name() == "template" {
@@ -806,12 +870,12 @@ impl TreeBuilder {
 
         if token.is_start_tag() && token.tag_name() == "head" {
             self.unexpected(&token);
-            return
+            return;
         }
 
         if token.is_end_tag() {
             self.unexpected(&token);
-            return
+            return;
         }
 
         anything_else(self, token)
@@ -821,43 +885,41 @@ impl TreeBuilder {
         if let Token::Character(c) = token {
             if c == '\0' {
                 emit_error!("Unexpected null character");
-                return
+                return;
             }
 
             if is_whitespace(c) {
                 self.reconstruct_active_formatting_elements();
                 self.insert_character(c);
-                return
+                return;
             }
 
             self.reconstruct_active_formatting_elements();
             self.insert_character(c);
             self.frameset_ok = false;
-            return
+            return;
         }
 
         if let Token::Comment(data) = token {
             self.insert_comment(data);
-            return
+            return;
         }
 
         if let Token::DOCTYPE { .. } = token {
             emit_error!("Unexpected DOCTYPE");
-            return
+            return;
         }
 
         if token.is_start_tag() && token.tag_name() == "html" {
             emit_error!("Unexpected HTML tag");
             if self.open_elements.contains("template") {
-                return
+                return;
             }
 
             let current_node = self.open_elements.current_node().unwrap();
             let mut current_node = current_node.borrow_mut();
 
-            let current_element = current_node
-                .as_element_mut()
-                .unwrap();
+            let current_element = current_node.as_element_mut().unwrap();
 
             for attribute in token.attributes() {
                 if current_element.has_attribute(&attribute.name) {
@@ -865,17 +927,264 @@ impl TreeBuilder {
                 }
                 current_element.set_attribute(&attribute.name, &attribute.value);
             }
-            return
+            return;
         }
 
-        if token.is_start_tag() && match_any!(token.tag_name(), "base", "basefont", "bgsound", "link", "meta", "noframes", "script", "style", "template", "title") {
+        if token.is_start_tag()
+            && match_any!(
+                token.tag_name(),
+                "base",
+                "basefont",
+                "bgsound",
+                "link",
+                "meta",
+                "noframes",
+                "script",
+                "style",
+                "template",
+                "title"
+            )
+        {
             return self.handle_in_head(token);
         }
 
         if token.is_end_tag() && token.tag_name() == "template" {
             return self.handle_in_head(token);
         }
+
+        if token.is_start_tag() && token.tag_name() == "body" {
+            self.unexpected(&token);
+            if self.open_elements.len() == 1 {
+                return;
+            }
+
+            if let Some(element) = self.open_elements.get(1).borrow().as_element() {
+                if element.tag_name() != "body" {
+                    return;
+                }
+            }
+
+            if self.open_elements.contains("template") {
+                return;
+            }
+
+            self.frameset_ok = false;
+            let body = self.open_elements.get(1);
+            let mut body = body.borrow_mut();
+            let body = body.as_element_mut().unwrap();
+            for attribute in token.attributes() {
+                if body.has_attribute(&attribute.name) {
+                    continue;
+                }
+                body.set_attribute(&attribute.name, &attribute.value);
+            }
+        }
+
+        if token.is_start_tag() && token.tag_name() == "frameset" {
+            self.unexpected(&token);
+            if self.open_elements.len() == 1 {
+                return;
+            }
+
+            if let Some(element) = self.open_elements.get(1).borrow().as_element() {
+                if element.tag_name() != "body" {
+                    return;
+                }
+            }
+
+            if !self.frameset_ok {
+                return;
+            }
+
+            // TODO: implement the rest of specs
+        }
+
+        if token.is_eof() {
+            if self.stack_of_template_insert_mode.len() > 0 {
+                return self.handle_in_template(token);
+            }
+
+            if self.open_elements.any(|node| {
+                !(match_any!(
+                    node.borrow().as_element().unwrap().tag_name(),
+                    "dd",
+                    "dt",
+                    "li",
+                    "optgroup",
+                    "option",
+                    "p",
+                    "rb",
+                    "rp",
+                    "rt",
+                    "rtc",
+                    "tbody",
+                    "td",
+                    "tfoot",
+                    "th",
+                    "thead",
+                    "tr",
+                    "body",
+                    "html"
+                ))
+            }) {
+                self.unexpected(&token);
+            }
+
+            self.stop_parsing();
+            return;
+        }
+
+        if token.is_end_tag() && token.tag_name() == "body" {
+            if self.open_elements.has_element_name_in_scope("body") {
+                self.unexpected(&token);
+                return;
+            }
+            if self.open_elements.any(|node| {
+                !(match_any!(
+                    node.borrow().as_element().unwrap().tag_name(),
+                    "dd",
+                    "dt",
+                    "li",
+                    "optgroup",
+                    "option",
+                    "p",
+                    "rb",
+                    "rp",
+                    "rt",
+                    "rtc",
+                    "tbody",
+                    "td",
+                    "tfoot",
+                    "th",
+                    "thead",
+                    "tr",
+                    "body",
+                    "html"
+                ))
+            }) {
+                self.unexpected(&token);
+            }
+            self.switch_to(InsertMode::AfterBody);
+            return;
+        }
+
+        if token.is_end_tag() && token.tag_name() == "html" {
+            if self.open_elements.has_element_name_in_scope("body") {
+                self.unexpected(&token);
+                return;
+            }
+            if self.open_elements.any(|node| {
+                !(match_any!(
+                    node.borrow().as_element().unwrap().tag_name(),
+                    "dd",
+                    "dt",
+                    "li",
+                    "optgroup",
+                    "option",
+                    "p",
+                    "rb",
+                    "rp",
+                    "rt",
+                    "rtc",
+                    "tbody",
+                    "td",
+                    "tfoot",
+                    "th",
+                    "thead",
+                    "tr",
+                    "body",
+                    "html"
+                ))
+            }) {
+                self.unexpected(&token);
+            }
+            self.switch_to(InsertMode::AfterBody);
+            return self.process(token);
+        }
+
+        if token.is_start_tag()
+            && match_any!(
+                token.tag_name(),
+                "address",
+                "article",
+                "aside",
+                "blockquote",
+                "center",
+                "details",
+                "dialog",
+                "dir",
+                "div",
+                "dl",
+                "fieldset",
+                "figcaption",
+                "figure",
+                "footer",
+                "header",
+                "hgroup",
+                "main",
+                "menu",
+                "nav",
+                "ol",
+                "p",
+                "section",
+                "summary",
+                "ul"
+            )
+        {
+            if self.open_elements.has_element_name_in_button_scope("p") {
+                self.close_p_element();
+            }
+
+            self.insert_html_element(token);
+            return;
+        }
+
+        if token.is_start_tag() && match_any!(token.tag_name(), "h1", "h2", "h3", "h4", "h5", "h6")
+        {
+            if self.open_elements.has_element_name_in_button_scope("p") {
+                self.close_p_element();
+            }
+
+            let current_tag_name = self
+                .open_elements
+                .current_node()
+                .unwrap()
+                .borrow()
+                .as_element()
+                .unwrap()
+                .tag_name();
+
+            if match_any!(current_tag_name, "h1", "h2", "h3", "h4", "h5", "h6") {
+                self.unexpected(&token);
+                self.open_elements.pop();
+            }
+
+            self.insert_html_element(token);
+            return;
+        }
+
+        if token.is_start_tag() && match_any!(token.tag_name(), "pre", "listing") {
+            if self.open_elements.has_element_name_in_button_scope("p") {
+                self.close_p_element();
+            }
+
+            self.insert_html_element(token);
+
+            let next_token = self.tokenizer.next_token();
+
+            self.frameset_ok = false;
+
+            if let Token::Character(c) = next_token {
+                if c == '\n' {
+                    // ignore the token
+                } else {
+                    self.process(next_token);
+                }
+            }
+        }
     }
+
+    fn handle_in_template(&mut self, token: Token) {}
 }
 
 #[cfg(test)]
