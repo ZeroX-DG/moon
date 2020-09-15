@@ -5,7 +5,7 @@ const BASE_LIST: [&str; 9] = [
 ];
 
 #[derive(Debug)]
-pub struct StackOfOpenElements(Vec<NodeRef>);
+pub struct StackOfOpenElements(pub Vec<NodeRef>);
 
 impl StackOfOpenElements {
     pub fn new() -> Self {

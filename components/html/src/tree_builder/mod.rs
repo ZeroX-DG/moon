@@ -1,6 +1,7 @@
 mod insert_mode;
 mod list_of_active_formatting_elements;
 mod stack_of_open_elements;
+mod open_element_types;
 
 use super::element_factory::create_element;
 use super::elements::HTMLScriptElement;
@@ -18,6 +19,7 @@ use insert_mode::InsertMode;
 use list_of_active_formatting_elements::Entry;
 use list_of_active_formatting_elements::ListOfActiveFormattingElements;
 use stack_of_open_elements::StackOfOpenElements;
+use open_element_types::is_special_element;
 use std::env;
 
 fn is_trace() -> bool {
@@ -50,6 +52,16 @@ macro_rules! match_any {
     };
 }
 
+/// Cast a node_ref to an Element. Only use when it is safe
+macro_rules! get_element {
+    ($target:ident) => {
+        $target.borrow().as_element().expect("Node is not an element")
+    };
+    ($target:expr) => {
+        $target.borrow().as_element().expect("Node is not an element")
+    };
+}
+
 /// The DOM tree builder
 pub struct TreeBuilder {
     /// The tokenizer controlled by TreeBuilder
@@ -75,6 +87,9 @@ pub struct TreeBuilder {
 
     /// Element pointer to head element
     head_pointer: Option<NodeRef>,
+
+    /// Element pointer to last open form element
+    form_pointer: Option<NodeRef>,
 
     /// Is scripting enable?
     scripting: bool,
@@ -118,6 +133,7 @@ impl TreeBuilder {
             document: NodeRef::new(Document::new()),
             foster_parenting: false,
             head_pointer: None,
+            form_pointer: None,
             original_insert_mode: None,
             scripting: false,
             active_formatting_elements: ListOfActiveFormattingElements::new(),
@@ -336,16 +352,7 @@ impl TreeBuilder {
     fn close_p_element(&mut self) {
         self.generate_implied_end_tags("p");
 
-        if self
-            .open_elements
-            .current_node()
-            .unwrap()
-            .borrow()
-            .as_element()
-            .unwrap()
-            .tag_name()
-            != "p"
-        {
+        if get_element!(self.open_elements.current_node().unwrap()).tag_name() != "p" {
             emit_error!("Expected p element");
         }
 
@@ -367,6 +374,10 @@ impl TreeBuilder {
                 break;
             }
         }
+    }
+
+    fn current_node(&self) -> NodeRef {
+        self.open_elements.current_node().unwrap()
     }
 
     fn reconstruct_active_formatting_elements(&mut self) {
@@ -1048,7 +1059,7 @@ impl TreeBuilder {
             }
             if self.open_elements.any(|node| {
                 !(match_any!(
-                    node.borrow().as_element().unwrap().tag_name(),
+                    get_element!(node).tag_name(),
                     "dd",
                     "dt",
                     "li",
@@ -1082,7 +1093,7 @@ impl TreeBuilder {
             }
             if self.open_elements.any(|node| {
                 !(match_any!(
-                    node.borrow().as_element().unwrap().tag_name(),
+                    get_element!(node).tag_name(),
                     "dd",
                     "dt",
                     "li",
@@ -1152,13 +1163,10 @@ impl TreeBuilder {
                 self.close_p_element();
             }
 
-            let current_tag_name = self
+            let current_tag_name = get_element!(self
                 .open_elements
                 .current_node()
-                .unwrap()
-                .borrow()
-                .as_element()
-                .unwrap()
+                .unwrap())
                 .tag_name();
 
             if match_any!(current_tag_name, "h1", "h2", "h3", "h4", "h5", "h6") {
@@ -1188,6 +1196,51 @@ impl TreeBuilder {
                     self.process(next_token);
                 }
             }
+            return
+        }
+
+        if token.is_start_tag() && token.tag_name() == "form" {
+            let has_template_on_stack = self.open_elements.contains("template");
+            if self.form_pointer.is_some() && !has_template_on_stack {
+                self.unexpected(&token);
+                return
+            }
+
+            if self.open_elements.has_element_name_in_button_scope("p") {
+                self.close_p_element();
+            }
+
+            let form_element = self.insert_html_element(token);
+            if !has_template_on_stack {
+                self.form_pointer = Some(form_element);
+            }
+            return
+        }
+
+        if token.is_start_tag() && token.tag_name() == "li" {
+            self.frameset_ok = false;
+            for node in self.open_elements.0.iter().rev() {
+                let element_tag_name = get_element!(node).tag_name();
+                if element_tag_name == "li" {
+                    self.generate_implied_end_tags("li");
+                    if get_element!(self.current_node()).tag_name() != "li" {
+                        emit_error!("Expected 'li' tag");
+                    }
+                    self.open_elements.pop_until("li");
+                    break
+                }
+                
+                if !match_any!(element_tag_name, "address", "div", "p") &&
+                    is_special_element(&element_tag_name) {
+                    break
+                }
+            }
+
+            if self.open_elements.has_element_name_in_button_scope("p") {
+                self.close_p_element();
+            }
+            self.insert_html_element(token);
+            return
         }
     }
 
@@ -1221,5 +1274,12 @@ mod test {
                 .get_data(),
             " this is a test "
         );
+    }
+
+    #[test]
+    fn get_element_success() {
+        let element = Element::new("div".to_owned());
+        let node = NodeRef::new(element);
+        assert!(get_element!(node).tag_name() == "div");
     }
 }
