@@ -50,54 +50,58 @@ macro_rules! match_any {
     };
 }
 
+/// The DOM tree builder
 pub struct TreeBuilder {
-    // the tokenizer
+    /// The tokenizer controlled by TreeBuilder
     tokenizer: Tokenizer,
 
-    // stack of open elements as mentioned in specs
+    /// Stack of open elements as mentioned in specs
     open_elements: StackOfOpenElements,
 
-    // indicate if the tree builder should stop
+    /// Indicate if the tree builder should stop parsing
     should_stop: bool,
 
-    // current insertion mode
+    /// Current insertion mode
     insert_mode: InsertMode,
 
-    // the insert mode that the builder will return
+    /// The insert mode that the builder will return
     original_insert_mode: Option<InsertMode>,
 
-    // the result document
+    /// The result document
     document: NodeRef,
 
-    // enable or disable foster parenting
+    /// Enable or disable foster parenting
     foster_parenting: bool,
 
-    // element pointer to head element
+    /// Element pointer to head element
     head_pointer: Option<NodeRef>,
 
-    // is scripting enable?
+    /// Is scripting enable?
     scripting: bool,
 
-    // list of active formatting elements
+    /// List of active formatting elements
     active_formatting_elements: ListOfActiveFormattingElements,
 
-    // frameset ok flag
+    /// `frameset_ok` flag
     frameset_ok: bool,
 
-    // stack of template insert mode to parse nested template
+    /// Stack of template insert mode to parse nested template
     stack_of_template_insert_mode: Vec<InsertMode>,
 }
 
+/// The adjusted location to insert a node as mentioned the specs
 pub struct AdjustedInsertionLocation {
     pub parent: NodeRef,
     pub insert_before_sibling: Option<NodeRef>,
 }
 
+/// The parsing algorithm to be used for parsing text-only element
 enum TextOnlyElementParsingAlgo {
     GenericRawText,
     GenericRCDataElement,
 }
 
+/// Check if the character is a whitespace character according to specs
 fn is_whitespace(c: char) -> bool {
     match c {
         '\t' | '\n' | '\x0C' | ' ' => true,
@@ -123,6 +127,7 @@ impl TreeBuilder {
         }
     }
 
+    /// Start the main loop for parsing DOM tree
     pub fn run(&mut self) {
         loop {
             let token = self.tokenizer.next_token();
@@ -136,6 +141,7 @@ impl TreeBuilder {
         }
     }
 
+    /// (Re)process a token in the current insert mode
     pub fn process(&mut self, token: Token) {
         match self.insert_mode {
             InsertMode::Initial => self.handle_initial(token),
@@ -149,6 +155,7 @@ impl TreeBuilder {
         }
     }
 
+    /// Get the current parsing document
     pub fn get_document(&self) -> NodeRef {
         self.document.clone()
     }
