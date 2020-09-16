@@ -129,8 +129,8 @@ impl StackOfOpenElements {
         })
     }
 
-    pub fn contains_node(&self, node: NodeRef) -> bool {
-        self.any(|fnode| *fnode == node)
+    pub fn contains_node(&self, node: &NodeRef) -> bool {
+        self.any(|fnode| *fnode == *node)
     }
 
     pub fn len(&self) -> usize {

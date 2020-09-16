@@ -332,7 +332,7 @@ impl TreeBuilder {
         }
 
         if let Entry::Element(element) = entry {
-            if self.open_elements.contains_node(element.clone()) {
+            if self.open_elements.contains_node(&element) {
                 return true;
             }
         }
