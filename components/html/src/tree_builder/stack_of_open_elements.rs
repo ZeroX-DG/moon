@@ -66,16 +66,11 @@ impl StackOfOpenElements {
         }
     }
 
-    pub fn any<F>(&mut self, test: F) -> bool
+    pub fn any<F>(&self, test: F) -> bool
     where
         F: Fn(&NodeRef) -> bool,
     {
-        for node in self.0.iter().rev() {
-            if test(node) {
-                return true;
-            }
-        }
-        false
+        self.0.iter().any(test)
     }
 
     pub fn has_element_name_in_specific_scope(&self, target: &str, list: Vec<&str>) -> bool {
@@ -104,7 +99,7 @@ impl StackOfOpenElements {
     }
 
     pub fn contains(&self, tag_name: &str) -> bool {
-        self.0.iter().any(|node| {
+        self.any(|node| {
             let node = node.borrow();
             let element = node.as_element().unwrap();
             if element.tag_name() == tag_name {
@@ -115,7 +110,7 @@ impl StackOfOpenElements {
     }
 
     pub fn contains_node(&self, node: NodeRef) -> bool {
-        self.0.iter().any(|fnode| *fnode == node)
+        self.any(|fnode| *fnode == node)
     }
 
     pub fn len(&self) -> usize {
