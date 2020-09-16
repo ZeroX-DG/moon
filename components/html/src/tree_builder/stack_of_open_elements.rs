@@ -98,6 +98,26 @@ impl StackOfOpenElements {
         return self.has_element_name_in_specific_scope(target, list);
     }
 
+    pub fn has_element_in_specific_scope(&self, target: &NodeRef, list: Vec<&str>) -> bool {
+        for node in self.0.iter().rev() {
+            if node == target {
+                return true;
+            }
+
+            let node = node.borrow();
+            let element = node.as_element().unwrap();
+
+            if list.contains(&element.tag_name().as_str()) {
+                return false;
+            }
+        }
+        return false;
+    }
+
+    pub fn has_element_in_scope(&self, target: &NodeRef) -> bool {
+        self.has_element_in_specific_scope(target, BASE_LIST.to_vec())
+    }
+
     pub fn contains(&self, tag_name: &str) -> bool {
         self.any(|node| {
             let node = node.borrow();

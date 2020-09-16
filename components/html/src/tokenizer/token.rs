@@ -45,6 +45,16 @@ impl Token {
         }
     }
 
+    pub fn new_start_tag_with_name(name: &str) -> Self {
+        Token::Tag {
+            tag_name: name.to_owned(),
+            is_end_tag: false,
+            self_closing: false,
+            attributes: Vec::new(),
+            self_closing_acknowledged: false,
+        }
+    }
+
     pub fn new_comment(data: &str) -> Self {
         Token::Comment(data.to_owned())
     }

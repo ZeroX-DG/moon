@@ -190,6 +190,7 @@ impl TreeBuilder {
     }
 
     fn switch_to(&mut self, mode: InsertMode) {
+        println!("Switch to: {:#?}", mode);
         self.insert_mode = mode;
     }
 
@@ -1240,6 +1241,124 @@ impl TreeBuilder {
                 self.close_p_element();
             }
             self.insert_html_element(token);
+            return
+        }
+
+        if token.is_start_tag() && match_any!(token.tag_name(), "dd", "dt") {
+            self.frameset_ok = false;
+            for node in self.open_elements.0.iter().rev() {
+                let element_tag_name = get_element!(node).tag_name();
+                if element_tag_name == "dd" {
+                    self.generate_implied_end_tags("dd");
+                    if get_element!(self.current_node()).tag_name() != "dd" {
+                        emit_error!("Expected 'dd' tag");
+                    }
+                    self.open_elements.pop_until("dd");
+                    break
+                }
+
+                if element_tag_name == "dt" {
+                    self.generate_implied_end_tags("dt");
+                    if get_element!(self.current_node()).tag_name() != "dt" {
+                        emit_error!("Expected 'dt' tag");
+                    }
+                    self.open_elements.pop_until("dt");
+                    break
+                }
+                
+                if !match_any!(element_tag_name, "address", "div", "p") &&
+                    is_special_element(&element_tag_name) {
+                    break
+                }
+            } 
+
+            if self.open_elements.has_element_name_in_button_scope("p") {
+                self.close_p_element();
+            }
+            self.insert_html_element(token);
+            return
+        }
+
+        if token.is_start_tag() && token.tag_name() == "plaintext" {
+            if self.open_elements.has_element_name_in_button_scope("p") {
+                self.close_p_element();
+            }
+            self.insert_html_element(token);
+            self.tokenizer.switch_to(State::PLAINTEXT);
+            return
+        }
+
+        if token.is_start_tag() && token.tag_name() == "button" {
+            if self.open_elements.has_element_name_in_scope("button") {
+                self.unexpected(&token);
+                self.generate_implied_end_tags("");
+                self.open_elements.pop_until("button");
+            }
+            self.reconstruct_active_formatting_elements();
+            self.insert_html_element(token);
+            self.frameset_ok = false;
+            return
+        }
+
+        if token.is_end_tag() && match_any!(token.tag_name(), "address", "article", "aside", "blockquote", "button", "center", "details", "dialog", "dir", "div", "dl", "fieldset", "figcaption", "figure", "footer", "header", "hgroup", "listing", "main", "menu", "nav", "ol", "pre", "section", "summary", "ul") {
+            if self.open_elements.has_element_name_in_scope(&token.tag_name()) {
+                self.unexpected(&token);
+                return
+            }
+
+            self.generate_implied_end_tags("");
+            if get_element!(self.current_node()).tag_name() != *token.tag_name() {
+                self.unexpected(&token);
+                return
+            }
+            self.open_elements.pop_until(&token.tag_name());
+            return
+        }
+
+        if token.is_end_tag() && token.tag_name() == "form" {
+            if !self.open_elements.contains("template") {
+                let node = self.form_pointer.clone();
+                self.form_pointer = None;
+
+                if node.is_none() {
+                    self.unexpected(&token);
+                    return
+                }
+
+                let node = node.unwrap();
+
+                if self.open_elements.has_element_in_scope(&node) {
+                    self.unexpected(&token);
+                    return
+                }
+
+                self.generate_implied_end_tags("");
+
+                if self.current_node() != node {
+                    self.unexpected(&token);
+                }
+
+                self.open_elements.remove_first_matching(|fnode| *fnode == node);
+            } else {
+                if !self.open_elements.has_element_name_in_scope("form") {
+                    self.unexpected(&token);
+                    return
+                }
+                self.generate_implied_end_tags("");
+                if get_element!(self.current_node()).tag_name() != "form" {
+                    self.unexpected(&token);
+                }
+                self.open_elements.pop_until("form");
+            }
+            return
+        }
+
+        if token.is_end_tag() && token.tag_name() == "p" {
+            if !self.open_elements.has_element_name_in_button_scope("p") {
+                self.unexpected(&token);
+                self.insert_html_element(Token::new_start_tag_with_name("p"));
+            }
+            self.close_p_element();
             return
         }
     }
