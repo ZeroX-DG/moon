@@ -22,14 +22,21 @@ To fit with the "make from scratch" spirit, I'll limit the use of external libra
 - [ ] :memo: HTML Parsing
   - [x] HTML tokenizer
   - [ ] HTML dom tree builder
+- [ ] :triangular_ruler: CSS
+  - [ ] CSS tokenizer
+  - [ ] CSSOM builder
+  - [ ] Selector matching
+    - [ ] Element selector
+    - [ ] Id selector
+    - [ ] Class selector
+  - [ ] Box model
+  - [ ] Block layut
+  - [ ] Inline layout
+  - [ ] Flexbox
+  - [ ] CSS Grid
 - [ ] :art: Rendering
   - [ ] GPU rendering
   - [ ] Font rendering
-  - [ ] Box model
-  - [ ] CSS selectors
-    - [ ] Tag selectors
-    - [ ] Id selectors
-    - [ ] Class selectors
 - [ ] :earth_americas: Networking
   - [ ] URL parsing
   - [ ] DNS resolving
