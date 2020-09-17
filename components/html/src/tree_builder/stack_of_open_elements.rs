@@ -1,4 +1,5 @@
 use super::NodeRef;
+use super::Element;
 
 const BASE_LIST: [&str; 9] = [
     "applet", "caption", "html", "table", "td", "th", "marquee", "object", "template",
@@ -54,6 +55,19 @@ impl StackOfOpenElements {
         }
     }
 
+    pub fn pop_until_match<F>(&mut self, test: F)
+    where F: Fn(&Element) -> bool {
+        while let Some(node) = self.current_node() {
+            let node = node.borrow();
+            let element = node.as_element().unwrap();
+            if test(element) {
+                self.pop();
+                break;
+            }
+            self.pop();
+        }
+    }
+
     pub fn remove_first_matching<F>(&mut self, test: F)
     where
         F: Fn(&NodeRef) -> bool,
@@ -95,6 +109,13 @@ impl StackOfOpenElements {
     pub fn has_element_name_in_button_scope(&self, target: &str) -> bool {
         let mut list = BASE_LIST.to_vec();
         list.push("button");
+        return self.has_element_name_in_specific_scope(target, list);
+    }
+
+    pub fn has_element_name_in_list_item_scope(&self, target: &str) -> bool {
+        let mut list = BASE_LIST.to_vec();
+        list.push("ol");
+        list.push("ul");
         return self.has_element_name_in_specific_scope(target, list);
     }
 

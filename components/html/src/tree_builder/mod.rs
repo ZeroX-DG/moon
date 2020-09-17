@@ -1361,6 +1361,51 @@ impl TreeBuilder {
             self.close_p_element();
             return
         }
+
+        if token.is_end_tag() && token.tag_name() == "li" {
+            if !self.open_elements.has_element_name_in_list_item_scope("li") {
+                self.unexpected(&token);
+                return
+            }
+
+            self.generate_implied_end_tags("li");
+            if get_element!(self.current_node()).tag_name() != "li" {
+                self.unexpected(&token);
+            }
+            self.open_elements.pop_until("li");
+            return
+        }
+
+        if token.is_end_tag() && match_any!(token.tag_name(), "dd", "dt") {
+            if !self.open_elements.has_element_name_in_scope(&token.tag_name()) {
+                self.unexpected(&token);
+                return
+            }
+            self.generate_implied_end_tags(&token.tag_name());
+            if get_element!(self.current_node()).tag_name() != *token.tag_name() {
+                self.unexpected(&token);
+            }
+            self.open_elements.pop_until(&token.tag_name());
+            return
+        }
+
+        if token.is_end_tag() && match_any!(token.tag_name(), "h1", "h2", "h3", "h4", "h5", "h6") {
+            if !self.open_elements.has_element_name_in_scope("h1") &&
+                !self.open_elements.has_element_name_in_scope("h2") &&
+                !self.open_elements.has_element_name_in_scope("h3") &&
+                !self.open_elements.has_element_name_in_scope("h4") &&
+                !self.open_elements.has_element_name_in_scope("h5") &&
+                !self.open_elements.has_element_name_in_scope("h6") {
+                self.unexpected(&token);
+                return
+            }
+            self.generate_implied_end_tags("");
+            if get_element!(self.current_node()).tag_name() != *token.tag_name() {
+                self.unexpected(&token);
+            }
+            self.open_elements.pop_until_match(|element| match_any!(element.tag_name(), "h1", "h2", "h3", "h4", "h5", "h6"));
+            return
+        }
     }
 
     fn handle_in_template(&mut self, token: Token) {}
