@@ -1,5 +1,5 @@
-use super::NodeRef;
 use super::Element;
+use super::NodeRef;
 
 const BASE_LIST: [&str; 9] = [
     "applet", "caption", "html", "table", "td", "th", "marquee", "object", "template",
@@ -56,7 +56,9 @@ impl StackOfOpenElements {
     }
 
     pub fn pop_until_match<F>(&mut self, test: F)
-    where F: Fn(&Element) -> bool {
+    where
+        F: Fn(&Element) -> bool,
+    {
         while let Some(node) = self.current_node() {
             let node = node.borrow();
             let element = node.as_element().unwrap();

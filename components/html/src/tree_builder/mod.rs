@@ -1,7 +1,7 @@
 mod insert_mode;
 mod list_of_active_formatting_elements;
-mod stack_of_open_elements;
 mod open_element_types;
+mod stack_of_open_elements;
 
 use super::element_factory::create_element;
 use super::elements::HTMLScriptElement;
@@ -18,8 +18,8 @@ use dom::text::Text;
 use insert_mode::InsertMode;
 use list_of_active_formatting_elements::Entry;
 use list_of_active_formatting_elements::ListOfActiveFormattingElements;
-use stack_of_open_elements::StackOfOpenElements;
 use open_element_types::is_special_element;
+use stack_of_open_elements::StackOfOpenElements;
 use std::env;
 
 fn is_trace() -> bool {
@@ -55,10 +55,16 @@ macro_rules! match_any {
 /// Cast a node_ref to an Element. Only use when it is safe
 macro_rules! get_element {
     ($target:ident) => {
-        $target.borrow().as_element().expect("Node is not an element")
+        $target
+            .borrow()
+            .as_element()
+            .expect("Node is not an element")
     };
     ($target:expr) => {
-        $target.borrow().as_element().expect("Node is not an element")
+        $target
+            .borrow()
+            .as_element()
+            .expect("Node is not an element")
     };
 }
 
@@ -338,6 +344,11 @@ impl TreeBuilder {
         }
 
         false
+    }
+
+    fn adoption_agency_algo(&self, token: &Token) {
+        // TODO: implement this
+        unimplemented!();
     }
 
     fn unexpected(&self, token: &Token) {
@@ -1164,11 +1175,8 @@ impl TreeBuilder {
                 self.close_p_element();
             }
 
-            let current_tag_name = get_element!(self
-                .open_elements
-                .current_node()
-                .unwrap())
-                .tag_name();
+            let current_tag_name =
+                get_element!(self.open_elements.current_node().unwrap()).tag_name();
 
             if match_any!(current_tag_name, "h1", "h2", "h3", "h4", "h5", "h6") {
                 self.unexpected(&token);
@@ -1197,14 +1205,14 @@ impl TreeBuilder {
                     self.process(next_token);
                 }
             }
-            return
+            return;
         }
 
         if token.is_start_tag() && token.tag_name() == "form" {
             let has_template_on_stack = self.open_elements.contains("template");
             if self.form_pointer.is_some() && !has_template_on_stack {
                 self.unexpected(&token);
-                return
+                return;
             }
 
             if self.open_elements.has_element_name_in_button_scope("p") {
@@ -1215,7 +1223,7 @@ impl TreeBuilder {
             if !has_template_on_stack {
                 self.form_pointer = Some(form_element);
             }
-            return
+            return;
         }
 
         if token.is_start_tag() && token.tag_name() == "li" {
@@ -1228,12 +1236,13 @@ impl TreeBuilder {
                         emit_error!("Expected 'li' tag");
                     }
                     self.open_elements.pop_until("li");
-                    break
+                    break;
                 }
-                
-                if !match_any!(element_tag_name, "address", "div", "p") &&
-                    is_special_element(&element_tag_name) {
-                    break
+
+                if !match_any!(element_tag_name, "address", "div", "p")
+                    && is_special_element(&element_tag_name)
+                {
+                    break;
                 }
             }
 
@@ -1241,7 +1250,7 @@ impl TreeBuilder {
                 self.close_p_element();
             }
             self.insert_html_element(token);
-            return
+            return;
         }
 
         if token.is_start_tag() && match_any!(token.tag_name(), "dd", "dt") {
@@ -1254,7 +1263,7 @@ impl TreeBuilder {
                         emit_error!("Expected 'dd' tag");
                     }
                     self.open_elements.pop_until("dd");
-                    break
+                    break;
                 }
 
                 if element_tag_name == "dt" {
@@ -1263,20 +1272,21 @@ impl TreeBuilder {
                         emit_error!("Expected 'dt' tag");
                     }
                     self.open_elements.pop_until("dt");
-                    break
+                    break;
                 }
-                
-                if !match_any!(element_tag_name, "address", "div", "p") &&
-                    is_special_element(&element_tag_name) {
-                    break
+
+                if !match_any!(element_tag_name, "address", "div", "p")
+                    && is_special_element(&element_tag_name)
+                {
+                    break;
                 }
-            } 
+            }
 
             if self.open_elements.has_element_name_in_button_scope("p") {
                 self.close_p_element();
             }
             self.insert_html_element(token);
-            return
+            return;
         }
 
         if token.is_start_tag() && token.tag_name() == "plaintext" {
@@ -1285,7 +1295,7 @@ impl TreeBuilder {
             }
             self.insert_html_element(token);
             self.tokenizer.switch_to(State::PLAINTEXT);
-            return
+            return;
         }
 
         if token.is_start_tag() && token.tag_name() == "button" {
@@ -1297,22 +1307,55 @@ impl TreeBuilder {
             self.reconstruct_active_formatting_elements();
             self.insert_html_element(token);
             self.frameset_ok = false;
-            return
+            return;
         }
 
-        if token.is_end_tag() && match_any!(token.tag_name(), "address", "article", "aside", "blockquote", "button", "center", "details", "dialog", "dir", "div", "dl", "fieldset", "figcaption", "figure", "footer", "header", "hgroup", "listing", "main", "menu", "nav", "ol", "pre", "section", "summary", "ul") {
-            if self.open_elements.has_element_name_in_scope(&token.tag_name()) {
+        if token.is_end_tag()
+            && match_any!(
+                token.tag_name(),
+                "address",
+                "article",
+                "aside",
+                "blockquote",
+                "button",
+                "center",
+                "details",
+                "dialog",
+                "dir",
+                "div",
+                "dl",
+                "fieldset",
+                "figcaption",
+                "figure",
+                "footer",
+                "header",
+                "hgroup",
+                "listing",
+                "main",
+                "menu",
+                "nav",
+                "ol",
+                "pre",
+                "section",
+                "summary",
+                "ul"
+            )
+        {
+            if self
+                .open_elements
+                .has_element_name_in_scope(&token.tag_name())
+            {
                 self.unexpected(&token);
-                return
+                return;
             }
 
             self.generate_implied_end_tags("");
             if get_element!(self.current_node()).tag_name() != *token.tag_name() {
                 self.unexpected(&token);
-                return
+                return;
             }
             self.open_elements.pop_until(&token.tag_name());
-            return
+            return;
         }
 
         if token.is_end_tag() && token.tag_name() == "form" {
@@ -1322,14 +1365,14 @@ impl TreeBuilder {
 
                 if node.is_none() {
                     self.unexpected(&token);
-                    return
+                    return;
                 }
 
                 let node = node.unwrap();
 
                 if self.open_elements.has_element_in_scope(&node) {
                     self.unexpected(&token);
-                    return
+                    return;
                 }
 
                 self.generate_implied_end_tags("");
@@ -1338,11 +1381,12 @@ impl TreeBuilder {
                     self.unexpected(&token);
                 }
 
-                self.open_elements.remove_first_matching(|fnode| *fnode == node);
+                self.open_elements
+                    .remove_first_matching(|fnode| *fnode == node);
             } else {
                 if !self.open_elements.has_element_name_in_scope("form") {
                     self.unexpected(&token);
-                    return
+                    return;
                 }
                 self.generate_implied_end_tags("");
                 if get_element!(self.current_node()).tag_name() != "form" {
@@ -1350,7 +1394,7 @@ impl TreeBuilder {
                 }
                 self.open_elements.pop_until("form");
             }
-            return
+            return;
         }
 
         if token.is_end_tag() && token.tag_name() == "p" {
@@ -1359,13 +1403,13 @@ impl TreeBuilder {
                 self.insert_html_element(Token::new_start_tag_with_name("p"));
             }
             self.close_p_element();
-            return
+            return;
         }
 
         if token.is_end_tag() && token.tag_name() == "li" {
             if !self.open_elements.has_element_name_in_list_item_scope("li") {
                 self.unexpected(&token);
-                return
+                return;
             }
 
             self.generate_implied_end_tags("li");
@@ -1373,38 +1417,147 @@ impl TreeBuilder {
                 self.unexpected(&token);
             }
             self.open_elements.pop_until("li");
-            return
+            return;
         }
 
         if token.is_end_tag() && match_any!(token.tag_name(), "dd", "dt") {
-            if !self.open_elements.has_element_name_in_scope(&token.tag_name()) {
+            if !self
+                .open_elements
+                .has_element_name_in_scope(&token.tag_name())
+            {
                 self.unexpected(&token);
-                return
+                return;
             }
             self.generate_implied_end_tags(&token.tag_name());
             if get_element!(self.current_node()).tag_name() != *token.tag_name() {
                 self.unexpected(&token);
             }
             self.open_elements.pop_until(&token.tag_name());
-            return
+            return;
         }
 
         if token.is_end_tag() && match_any!(token.tag_name(), "h1", "h2", "h3", "h4", "h5", "h6") {
-            if !self.open_elements.has_element_name_in_scope("h1") &&
-                !self.open_elements.has_element_name_in_scope("h2") &&
-                !self.open_elements.has_element_name_in_scope("h3") &&
-                !self.open_elements.has_element_name_in_scope("h4") &&
-                !self.open_elements.has_element_name_in_scope("h5") &&
-                !self.open_elements.has_element_name_in_scope("h6") {
+            if !self.open_elements.has_element_name_in_scope("h1")
+                && !self.open_elements.has_element_name_in_scope("h2")
+                && !self.open_elements.has_element_name_in_scope("h3")
+                && !self.open_elements.has_element_name_in_scope("h4")
+                && !self.open_elements.has_element_name_in_scope("h5")
+                && !self.open_elements.has_element_name_in_scope("h6")
+            {
                 self.unexpected(&token);
-                return
+                return;
             }
             self.generate_implied_end_tags("");
             if get_element!(self.current_node()).tag_name() != *token.tag_name() {
                 self.unexpected(&token);
             }
-            self.open_elements.pop_until_match(|element| match_any!(element.tag_name(), "h1", "h2", "h3", "h4", "h5", "h6"));
-            return
+            self.open_elements.pop_until_match(|element| {
+                match_any!(element.tag_name(), "h1", "h2", "h3", "h4", "h5", "h6")
+            });
+            return;
+        }
+
+        if token.is_start_tag() && token.tag_name() == "a" {
+            if let Some(el) = self
+                .active_formatting_elements
+                .get_element_after_last_marker("a")
+            {
+                self.unexpected(&token);
+                self.adoption_agency_algo(&token);
+                self.active_formatting_elements.remove_element(&el);
+                self.open_elements
+                    .remove_first_matching(|fnode| *fnode == el);
+            }
+            self.reconstruct_active_formatting_elements();
+            let element = self.insert_html_element(token);
+            self.active_formatting_elements
+                .push(Entry::Element(element));
+            return;
+        }
+
+        if token.is_start_tag()
+            && match_any!(
+                token.tag_name(),
+                "b",
+                "big",
+                "code",
+                "em",
+                "font",
+                "i",
+                "s",
+                "small",
+                "strike",
+                "strong",
+                "tt",
+                "u"
+            )
+        {
+            self.reconstruct_active_formatting_elements();
+            let element = self.insert_html_element(token);
+            self.active_formatting_elements
+                .push(Entry::Element(element));
+            return;
+        }
+
+        if token.is_start_tag() && token.tag_name() == "nobr" {
+            self.reconstruct_active_formatting_elements();
+            if self.open_elements.has_element_name_in_scope("nobr") {
+                self.unexpected(&token);
+                self.adoption_agency_algo(&token);
+                self.reconstruct_active_formatting_elements();
+            }
+            let element = self.insert_html_element(token);
+            self.active_formatting_elements
+                .push(Entry::Element(element));
+            return;
+        }
+
+        if token.is_end_tag()
+            && match_any!(
+                token.tag_name(),
+                "a",
+                "b",
+                "big",
+                "code",
+                "em",
+                "font",
+                "i",
+                "nobr",
+                "s",
+                "small",
+                "strike",
+                "strong",
+                "tt",
+                "u"
+            )
+        {
+            self.adoption_agency_algo(&token);
+            return;
+        }
+
+        if token.is_start_tag() && match_any!(token.tag_name(), "applet", "marquee", "object") {
+            self.reconstruct_active_formatting_elements();
+            self.insert_html_element(token);
+            self.active_formatting_elements.add_marker();
+            self.frameset_ok = false;
+            return;
+        }
+
+        if token.is_end_tag() && match_any!(token.tag_name(), "applet", "marquee", "object") {
+            if !self
+                .open_elements
+                .has_element_name_in_scope(&token.tag_name())
+            {
+                self.unexpected(&token);
+                return;
+            }
+            self.generate_implied_end_tags("");
+            if get_element!(self.current_node()).tag_name() != *token.tag_name() {
+                self.unexpected(&token);
+            }
+            self.open_elements.pop_until(token.tag_name());
+            self.active_formatting_elements.clear_up_to_last_marker();
+            return;
         }
     }
 

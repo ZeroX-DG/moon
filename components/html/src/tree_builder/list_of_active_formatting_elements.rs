@@ -29,6 +29,31 @@ impl ListOfActiveFormattingElements {
             }
         }
     }
+
+    pub fn get_element_after_last_marker(&self, element: &str) -> Option<NodeRef> {
+        for entry in self.entries.iter().rev() {
+            if let Entry::Marker = entry {
+                return None;
+            }
+            if let Entry::Element(el) = entry {
+                if el.borrow().as_element().unwrap().tag_name() == element {
+                    return Some(el.clone());
+                }
+            }
+        }
+        None
+    }
+
+    pub fn remove_element(&mut self, element: &NodeRef) {
+        for (index, entry) in self.entries.iter().rev().enumerate() {
+            if let Entry::Element(el) = entry {
+                if el == element {
+                    self.entries.remove(index);
+                    return;
+                }
+            }
+        }
+    }
 }
 
 impl Deref for ListOfActiveFormattingElements {
