@@ -23,6 +23,7 @@ To fit with the "make from scratch" spirit, I'll limit the use of external libra
   - [x] HTML tokenizer
   - [ ] HTML dom tree builder
 - [ ] :triangular_ruler: CSS
+  - [ ] CSSOM API
   - [ ] CSS tokenizer
   - [ ] CSSOM builder
   - [ ] Selector matching
@@ -30,7 +31,7 @@ To fit with the "make from scratch" spirit, I'll limit the use of external libra
     - [ ] Id selector
     - [ ] Class selector
   - [ ] Box model
-  - [ ] Block layut
+  - [ ] Block layout
   - [ ] Inline layout
   - [ ] Flexbox
   - [ ] CSS Grid
