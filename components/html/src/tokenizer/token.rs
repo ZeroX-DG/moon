@@ -100,7 +100,10 @@ impl Token {
     }
 
     pub fn set_tag_name(&mut self, new_name: &str) {
-        if let Token::Tag { ref mut tag_name, .. } = self {
+        if let Token::Tag {
+            ref mut tag_name, ..
+        } = self
+        {
             *tag_name = new_name.to_owned();
         }
         panic!("Token is not a tag");
@@ -124,14 +127,17 @@ impl Token {
         if let Token::Tag { attributes, .. } = self {
             return match attributes.iter().find(|attr| attr.name == name) {
                 Some(attr) => Some(&attr.name),
-                _ => None
-            }
+                _ => None,
+            };
         }
         panic!("Token is not a tag");
     }
 
     pub fn drop_attributes(&mut self) {
-        if let Token::Tag { ref mut attributes, .. } = self {
+        if let Token::Tag {
+            ref mut attributes, ..
+        } = self
+        {
             *attributes = Vec::new();
         }
         panic!("Token is not a tag");

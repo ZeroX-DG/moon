@@ -54,6 +54,17 @@ impl ListOfActiveFormattingElements {
             }
         }
     }
+
+    pub fn contains_node(&self, node: &NodeRef) -> bool {
+        for (index, entry) in self.entries.iter().rev().enumerate() {
+            if let Entry::Element(el) = entry {
+                if el == node {
+                    return true;
+                }
+            }
+        }
+        false
+    }
 }
 
 impl Deref for ListOfActiveFormattingElements {

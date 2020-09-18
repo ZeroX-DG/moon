@@ -69,6 +69,12 @@ impl Node {
         }
     }
 
+    pub fn detach(&mut self) {
+        self.parent_node = None;
+        self.prev_sibling = None;
+        self.next_sibling = None;
+    }
+
     /// Append a child node to a parent node
     ///
     /// **Ensure that:**
