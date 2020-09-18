@@ -35,6 +35,10 @@ impl Document {
     pub fn set_mode(&mut self, mode: QuirksMode) {
         self.mode = mode;
     }
+
+    pub fn get_mode(&self) -> &QuirksMode {
+        &self.mode
+    }
 }
 
 impl DocumentType {
