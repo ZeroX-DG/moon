@@ -911,7 +911,7 @@ impl TreeBuilder {
         anything_else(self, token)
     }
 
-    fn handle_in_body(&mut self, token: Token) {
+    fn handle_in_body(&mut self, mut token: Token) {
         if let Token::Character(c) = token {
             if c == '\0' {
                 emit_error!("Unexpected null character");
@@ -1558,6 +1558,193 @@ impl TreeBuilder {
             self.open_elements.pop_until(token.tag_name());
             self.active_formatting_elements.clear_up_to_last_marker();
             return;
+        }
+
+        if token.is_start_tag() && token.tag_name() == "table" {
+            let document = self.document.clone();
+            let document = document.borrow();
+            let document = document.as_any().downcast_ref::<Document>().unwrap();
+            if let QuirksMode::NoQuirks = document.get_mode() {
+                if self.open_elements.has_element_name_in_button_scope("p") {
+                    self.close_p_element();
+                }
+            }
+            self.insert_html_element(token);
+            self.frameset_ok = false;
+            self.switch_to(InsertMode::InTable);
+            return
+        }
+
+        if token.is_end_tag() && token.tag_name() == "br" {
+            self.unexpected(&token);
+            token.drop_attributes();
+            self.reconstruct_active_formatting_elements();
+            token.acknowledge_self_closing_if_set();
+            self.insert_html_element(token);
+            self.open_elements.pop();
+            self.frameset_ok = false;
+            return
+        }
+
+        if token.is_start_tag() && match_any!(token.tag_name(), "area", "br", "embed", "img", "keygen", "wbr") {
+            self.reconstruct_active_formatting_elements();
+            token.acknowledge_self_closing_if_set();
+            self.insert_html_element(token);
+            self.open_elements.pop();
+            self.frameset_ok = false;
+            return
+        }
+
+        if token.is_start_tag() && token.tag_name() == "input" {
+            self.reconstruct_active_formatting_elements();
+            token.acknowledge_self_closing_if_set();
+            self.insert_html_element(token.clone());
+            self.open_elements.pop();
+            if token.attribute("type").is_none() {
+                self.frameset_ok = false;
+                return
+            }
+
+            if let Some(value) = token.attribute("type") {
+                if !value.eq_ignore_ascii_case("hidden") {
+                    self.frameset_ok = false;
+                }
+            }
+            return
+        }
+
+        if token.is_start_tag() && match_any!(token.tag_name(), "param", "source", "track") {
+
+            token.acknowledge_self_closing_if_set();
+            self.insert_html_element(token);
+            self.open_elements.pop();
+            return
+        }
+
+        if token.is_start_tag() && token.tag_name() == "hr" {
+            if self.open_elements.has_element_name_in_button_scope("p") {
+                self.close_p_element();
+            }
+            token.acknowledge_self_closing_if_set();
+            self.insert_html_element(token);
+            self.open_elements.pop();
+            self.frameset_ok = false;
+            return
+        }
+
+        if token.is_start_tag() && token.tag_name() == "image" {
+            self.unexpected(&token);
+            token.set_tag_name("img"); // But why?? :troll:
+            return self.process(token);
+        }
+
+        if token.is_start_tag() && token.tag_name() == "textarea" {
+            self.insert_html_element(token);
+            let next_token = self.tokenizer.next_token();
+            self.tokenizer.switch_to(State::RCDATA);
+            self.original_insert_mode = Some(self.insert_mode.clone());
+            self.frameset_ok = false;
+            self.switch_to(InsertMode::Text);
+            if let Token::Character(c) = next_token {
+                if c == '\n' {
+                    return
+                }
+            }
+            return self.process(next_token);
+        }
+
+        if token.is_start_tag() && token.tag_name() == "xmp" {
+            if self.open_elements.has_element_name_in_button_scope("p") {
+                self.close_p_element();
+            }
+            self.reconstruct_active_formatting_elements();
+            self.frameset_ok = false;
+            self.handle_text_only_element(token, TextOnlyElementParsingAlgo::GenericRawText);
+            return
+        }
+
+        if token.is_start_tag() && token.tag_name() == "iframe" {
+            self.frameset_ok = false;
+            self.handle_text_only_element(token, TextOnlyElementParsingAlgo::GenericRawText);
+            return
+        }
+
+        if token.is_start_tag() && token.tag_name() == "noembed" {
+            self.handle_text_only_element(token, TextOnlyElementParsingAlgo::GenericRawText);
+            return
+        }
+
+        if token.is_start_tag() && token.tag_name() == "noscript" && self.scripting {
+            self.handle_text_only_element(token, TextOnlyElementParsingAlgo::GenericRawText);
+            return
+        }
+
+        if token.is_start_tag() && token.tag_name() == "select" {
+            self.reconstruct_active_formatting_elements();
+            self.insert_html_element(token);
+            self.frameset_ok = false;
+            match self.insert_mode {
+                InsertMode::InTable
+                | InsertMode::InCaption
+                | InsertMode::InTableBody
+                | InsertMode::InRow
+                | InsertMode::InCell => self.switch_to(InsertMode::InSelectInTable),
+                _ => self.switch_to(InsertMode::InSelect)
+            }
+            return
+        }
+
+        if token.is_start_tag() && match_any!(token.tag_name(), "optgroup", "option") {
+            if get_element!(self.current_node()).tag_name() == "option" {
+                self.open_elements.pop();
+            }
+            self.reconstruct_active_formatting_elements();
+            self.insert_html_element(token);
+            return
+        }
+
+        if token.is_start_tag() && match_any!(token.tag_name(), "rb", "rtc") {
+            if self.open_elements.has_element_name_in_scope("ruby") {
+                self.generate_implied_end_tags("");
+                if get_element!(self.current_node()).tag_name() != "ruby" {
+                    self.unexpected(&token);
+                }
+            }
+            self.insert_html_element(token);
+            return
+        }
+
+        if token.is_start_tag() && match_any!(token.tag_name(), "rp", "rt") {
+            if self.open_elements.has_element_name_in_scope("ruby") {
+                self.generate_implied_end_tags("rtc");
+                let current_tag_name = get_element!(self.current_node()).tag_name();
+                if current_tag_name != "ruby" || current_tag_name != "rtc" {
+                    self.unexpected(&token);
+                }
+            }
+            self.insert_html_element(token);
+            return
+        }
+
+        if token.is_start_tag() && token.tag_name() == "math" {
+            // TODO: support math
+            unimplemented!();
+        }
+        
+        if token.is_start_tag() && token.tag_name() == "svg" {
+            // TODO: support svg
+            unimplemented!();
+        }
+
+        if token.is_start_tag() && match_any!(token.tag_name(), "caption", "col", "colgroup", "frame", "head", "tbody", "td", "tfoot", "th", "thead", "tr") {
+            self.unexpected(&token);
+            return
+        }
+
+        if token.is_start_tag() {
+            self.reconstruct_active_formatting_elements();
+            self.insert_html_element(token);
+            return
         }
     }
 

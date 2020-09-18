@@ -99,6 +99,13 @@ impl Token {
         panic!("Token is not a tag");
     }
 
+    pub fn set_tag_name(&mut self, new_name: &str) {
+        if let Token::Tag { ref mut tag_name, .. } = self {
+            *tag_name = new_name.to_owned();
+        }
+        panic!("Token is not a tag");
+    }
+
     pub fn is_eof(&self) -> bool {
         if let Token::EOF = self {
             return true;
@@ -109,6 +116,23 @@ impl Token {
     pub fn attributes(&self) -> &Vec<Attribute> {
         if let Token::Tag { attributes, .. } = self {
             return attributes;
+        }
+        panic!("Token is not a tag");
+    }
+
+    pub fn attribute(&self, name: &str) -> Option<&String> {
+        if let Token::Tag { attributes, .. } = self {
+            return match attributes.iter().find(|attr| attr.name == name) {
+                Some(attr) => Some(&attr.name),
+                _ => None
+            }
+        }
+        panic!("Token is not a tag");
+    }
+
+    pub fn drop_attributes(&mut self) {
+        if let Token::Tag { ref mut attributes, .. } = self {
+            *attributes = Vec::new();
         }
         panic!("Token is not a tag");
     }
