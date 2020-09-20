@@ -181,6 +181,7 @@ impl TreeBuilder {
             InsertMode::InTable => self.handle_in_table(token),
             InsertMode::InTableText => self.handle_in_table_text(token),
             InsertMode::AfterBody => self.handle_after_body(token),
+            InsertMode::AfterAfterBody => self.handle_after_after_body(token),
             _ => unimplemented!(),
         }
     }
@@ -2204,6 +2205,37 @@ impl TreeBuilder {
         if token.is_end_tag() && token.tag_name() == "html" {
             // TODO: handle fragment case
             self.switch_to(InsertMode::AfterAfterBody);
+        }
+
+        if let Token::EOF = token {
+            self.stop_parsing();
+            return
+        }
+
+        self.unexpected(&token);
+        self.switch_to(InsertMode::InBody);
+        return self.process(token);
+    }
+
+    fn handle_after_after_body(&mut self, token: Token) {
+        if let Token::Comment(data) = token {
+            let comment = NodeRef::new(Comment::new(data));
+            Node::append_child(self.document.clone(), comment);
+            return
+        }
+
+        if let Token::DOCTYPE { .. } = token {
+            return self.handle_in_body(token);
+        }
+
+        if let Token::Character(c) = token {
+            if is_whitespace(c) {
+                return self.handle_in_body(token);
+            }
+        }
+
+        if token.is_start_tag() && token.tag_name() == "html" {
+            return self.handle_in_body(token);
         }
 
         if let Token::EOF = token {
