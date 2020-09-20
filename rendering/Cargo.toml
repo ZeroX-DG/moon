@@ -8,3 +8,5 @@ edition = "2018"
 
 [dependencies]
 html = { version="*", path="../components/html" }
+dom = { version="*", path="../components/dom" }
+

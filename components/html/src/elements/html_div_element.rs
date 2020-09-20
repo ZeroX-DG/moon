@@ -8,6 +8,12 @@ pub struct HTMLDivElement {
     html_element: HTMLElement,
 }
 
+impl core::fmt::Debug for HTMLDivElement {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "{:#?}", self.html_element)
+    }
+}
+
 impl HTMLDivElement {
     pub fn new(html_element: HTMLElement) -> Self {
         Self { html_element }

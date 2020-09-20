@@ -10,6 +10,12 @@ pub struct HTMLBaseElement {
     target: String,
 }
 
+impl core::fmt::Debug for HTMLBaseElement {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "{:#?}", self.html_element)
+    }
+}
+
 impl HTMLBaseElement {
     pub fn new(html_element: HTMLElement) -> Self {
         Self {

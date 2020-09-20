@@ -12,6 +12,12 @@ pub struct HTMLScriptElement {
     parser_document: Option<NodeRef>,
 }
 
+impl core::fmt::Debug for HTMLScriptElement {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "{:#?}", self.html_element)
+    }
+}
+
 impl HTMLScriptElement {
     pub fn new(html_element: HTMLElement) -> Self {
         Self {

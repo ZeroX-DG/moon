@@ -8,6 +8,12 @@ pub struct HTMLHeadElement {
     html_element: HTMLElement,
 }
 
+impl core::fmt::Debug for HTMLHeadElement {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "{:#?}", self.html_element)
+    }
+}
+
 impl HTMLHeadElement {
     pub fn new(html_element: HTMLElement) -> Self {
         Self { html_element }

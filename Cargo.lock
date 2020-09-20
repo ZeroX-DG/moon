@@ -19,5 +19,6 @@ version = "0.1.0"
 name = "rendering"
 version = "0.1.0"
 dependencies = [
+ "dom",
  "html",
 ]

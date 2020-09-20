@@ -33,3 +33,30 @@ impl NodeList {
         length
     }
 }
+
+pub struct NodeListIterator {
+    node_list: NodeList,
+    index: usize
+}
+
+impl Iterator for NodeListIterator {
+    type Item = NodeRef;
+
+    fn next(&mut self) -> Option<NodeRef> {
+        let result = self.node_list.item(self.index);
+        self.index += 1;
+        result
+    }
+}
+
+impl IntoIterator for NodeList {
+    type Item = NodeRef;
+    type IntoIter = NodeListIterator;
+
+    fn into_iter(self) -> Self::IntoIter {
+        NodeListIterator {
+            node_list: self,
+            index: 0,
+        }
+    }
+}

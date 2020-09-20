@@ -4,13 +4,18 @@ use std::collections::HashMap;
 
 type AttributeMap = HashMap<String, String>;
 
-#[derive(Debug)]
 pub struct Element {
     pub node: Node,
     attributes: AttributeMap,
     id: String,
     class_list: DOMTokenList,
     tag_name: String,
+}
+
+impl core::fmt::Debug for Element {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "Element({:?}) at {:#?}", self.tag_name(), self as *const Element)
+    }
 }
 
 impl Element {

@@ -5,7 +5,7 @@ use std::cell::RefCell;
 use std::ops::Deref;
 use std::rc::{Rc, Weak};
 
-pub trait DOMObject {
+pub trait DOMObject: core::fmt::Debug {
     fn as_node(&self) -> &Node;
     fn as_node_mut(&mut self) -> &mut Node;
     fn as_any(&self) -> &dyn Any;
@@ -14,20 +14,18 @@ pub trait DOMObject {
     fn as_element_mut(&mut self) -> Option<&mut Element>;
 }
 
-#[derive(Debug)]
 pub struct NodeRef(Rc<RefCell<dyn DOMObject>>);
-#[derive(Debug)]
 pub struct WeakNodeRef(Weak<RefCell<dyn DOMObject>>);
 
-impl core::fmt::Display for dyn DOMObject {
+impl core::fmt::Debug for NodeRef {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "DOMObject at {:?}", self as *const dyn DOMObject)
+        write!(f, "NodeRef({:#?})", self.borrow().deref())
     }
 }
 
-impl core::fmt::Debug for dyn DOMObject {
+impl core::fmt::Debug for WeakNodeRef {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "DOMObject at {:?}", self as *const dyn DOMObject)
+        write!(f, "WeakNodeRef({:#?})", self.0.upgrade().unwrap().borrow().deref())
     }
 }
 

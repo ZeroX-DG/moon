@@ -9,6 +9,12 @@ pub struct HTMLTitleElement {
     text: String,
 }
 
+impl core::fmt::Debug for HTMLTitleElement {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "{:#?}", self.html_element)
+    }
+}
+
 impl HTMLTitleElement {
     pub fn new(html_element: HTMLElement) -> Self {
         Self {

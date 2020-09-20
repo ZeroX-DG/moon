@@ -1,6 +1,6 @@
 use super::dom_ref::{NodeRef, WeakNodeRef};
+use super::node_list::NodeList;
 
-#[derive(Debug)]
 pub struct Node {
     parent_node: Option<WeakNodeRef>,
     first_child: Option<NodeRef>,
@@ -8,6 +8,12 @@ pub struct Node {
     next_sibling: Option<NodeRef>,
     prev_sibling: Option<WeakNodeRef>,
     owner_document: Option<WeakNodeRef>,
+}
+
+impl core::fmt::Debug for Node {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "Node at {:#?}", self as *const Node)
+    }
 }
 
 impl Node {
@@ -25,6 +31,11 @@ impl Node {
     /// Set the owner document for node
     pub fn set_document(&mut self, doc: WeakNodeRef) {
         self.owner_document = Some(doc);
+    }
+
+    /// Children list
+    pub fn child_nodes(&self) -> NodeList {
+        NodeList::new(self.first_child())
     }
 
     /// First child of the node

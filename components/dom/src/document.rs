@@ -19,6 +19,12 @@ pub enum QuirksMode {
     LimitedQuirks,
 }
 
+impl core::fmt::Debug for Document {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "Document at {:#?}", self as *const Document)
+    }
+}
+
 impl Document {
     pub fn new() -> Self {
         Self {
@@ -38,6 +44,12 @@ impl Document {
 
     pub fn get_mode(&self) -> &QuirksMode {
         &self.mode
+    }
+}
+
+impl core::fmt::Debug for DocumentType {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "Doctype at {:#?}", self as *const DocumentType)
     }
 }
 
