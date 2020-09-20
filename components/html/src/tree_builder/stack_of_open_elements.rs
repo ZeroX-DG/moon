@@ -77,7 +77,8 @@ impl StackOfOpenElements {
             let element_tag_name = element.tag_name();
             if element_tag_name == "table"
                 || element_tag_name == "template"
-                || element_tag_name == "html" {
+                || element_tag_name == "html"
+            {
                 break;
             }
             self.pop();

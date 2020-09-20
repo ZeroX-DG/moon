@@ -1,14 +1,16 @@
-use html::tree_builder::TreeBuilder;
-use html::tokenizer::Tokenizer;
 use dom::dom_ref::NodeRef;
+use html::tokenizer::Tokenizer;
+use html::tree_builder::TreeBuilder;
 
 fn print_tree(root: NodeRef, level: usize) {
-    if level == 0 {
-        println!(" {:#?}", root);
-    } else {
-        println!("{}└{:#?}", " ".repeat(level), root);
-    }
-    for node in root.borrow().as_node().child_nodes() {
+    let child_nodes = root.borrow().as_node().child_nodes();
+    println!(
+        "{}{:#?}({} child)",
+        "    ".repeat(level),
+        root,
+        child_nodes.length()
+    );
+    for node in child_nodes {
         print_tree(node, level + 1);
     }
 }

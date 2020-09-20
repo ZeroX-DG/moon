@@ -25,7 +25,11 @@ impl core::fmt::Debug for NodeRef {
 
 impl core::fmt::Debug for WeakNodeRef {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "WeakNodeRef({:#?})", self.0.upgrade().unwrap().borrow().deref())
+        write!(
+            f,
+            "WeakNodeRef({:#?})",
+            self.0.upgrade().unwrap().borrow().deref()
+        )
     }
 }
 

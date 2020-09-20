@@ -110,13 +110,22 @@ pub struct TreeBuilder {
     stack_of_template_insert_mode: Vec<InsertMode>,
 
     /// Pending table character tokens
-    table_character_tokens: Vec<Token>
+    table_character_tokens: Vec<Token>,
 }
 
 /// The adjusted location to insert a node as mentioned the specs
-pub struct AdjustedInsertionLocation {
-    pub parent: NodeRef,
-    pub insert_before_sibling: Option<NodeRef>,
+pub enum AdjustedInsertionLocation {
+    LastChild(NodeRef),
+    BeforeSibling(NodeRef, NodeRef),
+}
+
+impl AdjustedInsertionLocation {
+    pub fn parent(&self) -> &NodeRef {
+        match self {
+            AdjustedInsertionLocation::LastChild(parent) => parent,
+            AdjustedInsertionLocation::BeforeSibling(parent, _) => parent,
+        }
+    }
 }
 
 /// The parsing algorithm to be used for parsing text-only element
@@ -149,7 +158,7 @@ impl TreeBuilder {
             frameset_ok: true,
             stack_of_template_insert_mode: Vec::new(),
             should_stop: false,
-            table_character_tokens: Vec::new()
+            table_character_tokens: Vec::new(),
         }
     }
 
@@ -205,7 +214,9 @@ impl TreeBuilder {
     }
 
     fn switch_to(&mut self, mode: InsertMode) {
-        println!("Switch to: {:#?}", mode);
+        if is_trace() {
+            println!("Switch to: {:#?}", mode);
+        }
         self.insert_mode = mode;
     }
 
@@ -251,10 +262,7 @@ impl TreeBuilder {
         let target = self.open_elements.current_node().unwrap();
 
         // TODO: implement full specs
-        return AdjustedInsertionLocation {
-            parent: target.clone(),
-            insert_before_sibling: target.borrow().as_node().last_child(),
-        };
+        return AdjustedInsertionLocation::LastChild(target.clone());
     }
 
     fn insert_html_element(&mut self, token: Token) -> NodeRef {
@@ -264,18 +272,23 @@ impl TreeBuilder {
 
         // TODO: check if location is possible to insert node (Idk why so we just leave it for now)
         self.open_elements.push(element.clone());
-        Node::insert_before(
-            insert_position.parent,
-            element,
-            insert_position.insert_before_sibling,
-        );
+        self.insert_at(insert_position, element);
         return_ref
+    }
+
+    fn insert_at(&mut self, location: AdjustedInsertionLocation, child: NodeRef) {
+        match location {
+            AdjustedInsertionLocation::LastChild(parent) => Node::append_child(parent, child),
+            AdjustedInsertionLocation::BeforeSibling(parent, sibling) => {
+                Node::insert_before(parent, child, Some(sibling))
+            }
+        }
     }
 
     fn insert_character(&mut self, ch: char) {
         let insert_position = self.get_appropriate_place_for_inserting_a_node();
         if insert_position
-            .parent
+            .parent()
             .borrow()
             .as_any()
             .downcast_ref::<Document>()
@@ -283,28 +296,38 @@ impl TreeBuilder {
         {
             return;
         }
-        if let Some(sibling) = insert_position.insert_before_sibling.clone() {
-            if let Some(text) = sibling.borrow_mut().as_any_mut().downcast_mut::<Text>() {
-                text.character_data.append_data(&ch.to_string());
-                return;
+        match &insert_position {
+            AdjustedInsertionLocation::LastChild(parent) => {
+                let parent_node = parent.borrow();
+                if let Some(last_child) = parent_node.as_node().last_child() {
+                    if let Some(text) = last_child.borrow_mut().as_any_mut().downcast_mut::<Text>()
+                    {
+                        text.character_data.append_data(&ch.to_string());
+                        return;
+                    }
+                }
+            }
+            AdjustedInsertionLocation::BeforeSibling(_, sibling) => {
+                if let Some(prev_sibling) = sibling.borrow().as_node().prev_sibling() {
+                    if let Some(text) = prev_sibling
+                        .borrow_mut()
+                        .as_any_mut()
+                        .downcast_mut::<Text>()
+                    {
+                        text.character_data.append_data(&ch.to_string());
+                        return;
+                    }
+                }
             }
         }
         let text = NodeRef::new(Text::new(ch.to_string()));
-        Node::insert_before(
-            insert_position.parent,
-            text,
-            insert_position.insert_before_sibling,
-        );
+        self.insert_at(insert_position, text);
     }
 
     fn insert_comment(&mut self, data: String) {
         let insert_position = self.get_appropriate_place_for_inserting_a_node();
         let comment = NodeRef::new(Comment::new(data));
-        Node::insert_before(
-            insert_position.parent,
-            comment,
-            insert_position.insert_before_sibling,
-        );
+        self.insert_at(insert_position, comment);
     }
 
     fn handle_text_only_element(&mut self, token: Token, algorithm: TextOnlyElementParsingAlgo) {
@@ -839,11 +862,7 @@ impl TreeBuilder {
 
             // TODO: implement steps 4 and 5
 
-            Node::insert_before(
-                insert_position.parent,
-                element.clone(),
-                insert_position.insert_before_sibling,
-            );
+            self.insert_at(insert_position, element.clone());
             self.open_elements.push(element.clone());
             self.tokenizer.switch_to(State::ScriptData);
             self.original_insert_mode = Some(self.insert_mode.clone());
@@ -1974,7 +1993,7 @@ impl TreeBuilder {
     fn handle_text(&mut self, token: Token) {
         if let Token::Character(c) = token {
             self.insert_character(c);
-            return
+            return;
         }
 
         if let Token::EOF = token {
@@ -2000,13 +2019,20 @@ impl TreeBuilder {
         if token.is_end_tag() {
             self.open_elements.pop();
             self.switch_to(self.original_insert_mode.clone().unwrap());
-            return
+            return;
         }
     }
 
     fn handle_in_table(&mut self, mut token: Token) {
         if let Token::Character(_) = token {
-            if match_any!(get_element!(self.current_node()).tag_name(), "table", "tbody", "tfoot", "thead", "tr") {
+            if match_any!(
+                get_element!(self.current_node()).tag_name(),
+                "table",
+                "tbody",
+                "tfoot",
+                "thead",
+                "tr"
+            ) {
                 self.table_character_tokens.clear();
                 self.original_insert_mode = Some(self.insert_mode.clone());
                 self.switch_to(InsertMode::InTableText);
@@ -2016,12 +2042,12 @@ impl TreeBuilder {
 
         if let Token::Comment(data) = token {
             self.insert_comment(data);
-            return
+            return;
         }
 
-        if let Token::DOCTYPE {..} = token {
+        if let Token::DOCTYPE { .. } = token {
             self.unexpected(&token);
-            return
+            return;
         }
 
         if token.is_start_tag() && token.tag_name() == "caption" {
@@ -2029,14 +2055,14 @@ impl TreeBuilder {
             self.active_formatting_elements.add_marker();
             self.insert_html_element(token);
             self.switch_to(InsertMode::InCaption);
-            return
+            return;
         }
 
         if token.is_start_tag() && token.tag_name() == "colgroup" {
             self.open_elements.clear_back_to_table_context();
             self.insert_html_element(token);
             self.switch_to(InsertMode::InColumnGroup);
-            return
+            return;
         }
 
         if token.is_start_tag() && token.tag_name() == "col" {
@@ -2050,7 +2076,7 @@ impl TreeBuilder {
             self.open_elements.clear_back_to_table_context();
             self.insert_html_element(token);
             self.switch_to(InsertMode::InTableBody);
-            return
+            return;
         }
 
         if token.is_start_tag() && match_any!(token.tag_name(), "td", "th", "tr") {
@@ -2063,7 +2089,7 @@ impl TreeBuilder {
         if token.is_start_tag() && token.tag_name() == "table" {
             self.unexpected(&token);
             if !self.open_elements.has_element_name_in_table_scope("table") {
-                return
+                return;
             }
             self.open_elements.pop_until("table");
             self.reset_insertion_mode_appropriately();
@@ -2073,26 +2099,41 @@ impl TreeBuilder {
         if token.is_end_tag() && token.tag_name() == "table" {
             if !self.open_elements.has_element_name_in_table_scope("table") {
                 self.unexpected(&token);
-                return
+                return;
             }
             self.open_elements.pop_until("table");
             self.reset_insertion_mode_appropriately();
-            return
+            return;
         }
 
-        if token.is_end_tag() && match_any!(token.tag_name(), "body", "caption", "col", "colgroup", "html", "tbody", "td", "tfoot", "th", "thead", "tr") {
+        if token.is_end_tag()
+            && match_any!(
+                token.tag_name(),
+                "body",
+                "caption",
+                "col",
+                "colgroup",
+                "html",
+                "tbody",
+                "td",
+                "tfoot",
+                "th",
+                "thead",
+                "tr"
+            )
+        {
             self.unexpected(&token);
-            return
+            return;
         }
 
         if token.is_start_tag() && match_any!(token.tag_name(), "style", "script", "template") {
             self.handle_in_head(token);
-            return
+            return;
         }
 
         if token.is_end_tag() && token.tag_name() == "template" {
             self.handle_in_head(token);
-            return
+            return;
         }
 
         if token.is_start_tag() && token.tag_name() == "input" {
@@ -2102,33 +2143,35 @@ impl TreeBuilder {
                     self.foster_parenting = true;
                     self.handle_in_body(token);
                     self.foster_parenting = false;
-                    return
+                    return;
                 }
             } else {
                 self.unexpected(&token);
                 self.foster_parenting = true;
                 self.handle_in_body(token);
                 self.foster_parenting = false;
-                return
+                return;
             }
 
             self.unexpected(&token);
             token.acknowledge_self_closing_if_set();
             let element = self.insert_html_element(token);
-            self.open_elements.remove_first_matching(|el| *el == element);
-            return
+            self.open_elements
+                .remove_first_matching(|el| *el == element);
+            return;
         }
 
         if token.is_start_tag() && token.tag_name() == "form" {
             self.unexpected(&token);
             if self.open_elements.contains("template") || self.form_pointer.is_some() {
-                return
+                return;
             }
 
             let element = self.insert_html_element(token);
             self.form_pointer = Some(element.clone());
-            self.open_elements.remove_first_matching(|el| *el == element);
-            return
+            self.open_elements
+                .remove_first_matching(|el| *el == element);
+            return;
         }
 
         if let Token::EOF = token {
@@ -2145,19 +2188,18 @@ impl TreeBuilder {
         if let Token::Character(c) = token {
             if c == '\0' {
                 self.unexpected(&token);
-                return
+                return;
             }
             self.table_character_tokens.push(token);
-            return
+            return;
         }
-        let has_non_whitespace_char = self.table_character_tokens
-            .iter()
-            .any(|c_token| {
-                match c_token {
+        let has_non_whitespace_char =
+            self.table_character_tokens
+                .iter()
+                .any(|c_token| match c_token {
                     Token::Character(c) if !is_whitespace(*c) => true,
-                    _ => false
-                }
-            });
+                    _ => false,
+                });
 
         if has_non_whitespace_char {
             emit_error!("Non-whitespace in table text");
@@ -2190,12 +2232,12 @@ impl TreeBuilder {
             let comment = NodeRef::new(Comment::new(data));
             let html_el = self.open_elements.get(0);
             Node::append_child(html_el, comment);
-            return
+            return;
         }
 
         if let Token::DOCTYPE { .. } = token {
             self.unexpected(&token);
-            return
+            return;
         }
 
         if token.is_start_tag() && token.tag_name() == "html" {
@@ -2209,7 +2251,7 @@ impl TreeBuilder {
 
         if let Token::EOF = token {
             self.stop_parsing();
-            return
+            return;
         }
 
         self.unexpected(&token);
@@ -2221,7 +2263,7 @@ impl TreeBuilder {
         if let Token::Comment(data) = token {
             let comment = NodeRef::new(Comment::new(data));
             Node::append_child(self.document.clone(), comment);
-            return
+            return;
         }
 
         if let Token::DOCTYPE { .. } = token {
@@ -2240,7 +2282,7 @@ impl TreeBuilder {
 
         if let Token::EOF = token {
             self.stop_parsing();
-            return
+            return;
         }
 
         self.unexpected(&token);

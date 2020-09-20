@@ -31,7 +31,12 @@ impl HTMLElement {
 
 impl core::fmt::Debug for HTMLElement {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "HTMLElement({:?}) at {:#?}", self.element.tag_name(), self as *const HTMLElement)
+        write!(
+            f,
+            "HTMLElement({:?}) at {:#?}",
+            self.element.tag_name(),
+            self as *const HTMLElement
+        )
     }
 }
 

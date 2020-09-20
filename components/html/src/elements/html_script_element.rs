@@ -10,7 +10,7 @@ pub struct HTMLScriptElement {
     type_: String,
     non_blocking: bool,
     parser_document: Option<NodeRef>,
-    already_started: bool
+    already_started: bool,
 }
 
 impl core::fmt::Debug for HTMLScriptElement {
@@ -27,7 +27,7 @@ impl HTMLScriptElement {
             type_: String::new(),
             non_blocking: true,
             parser_document: None,
-            already_started: false
+            already_started: false,
         }
     }
 

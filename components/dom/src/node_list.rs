@@ -36,7 +36,7 @@ impl NodeList {
 
 pub struct NodeListIterator {
     node_list: NodeList,
-    index: usize
+    index: usize,
 }
 
 impl Iterator for NodeListIterator {
