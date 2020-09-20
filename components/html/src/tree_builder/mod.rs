@@ -179,6 +179,7 @@ impl TreeBuilder {
             InsertMode::InBody => self.handle_in_body(token),
             InsertMode::Text => self.handle_text(token),
             InsertMode::InTable => self.handle_in_table(token),
+            InsertMode::InTableText => self.handle_in_table_text(token),
             _ => unimplemented!(),
         }
     }
@@ -2136,6 +2137,44 @@ impl TreeBuilder {
         self.foster_parenting = true;
         self.handle_in_body(token);
         self.foster_parenting = false;
+    }
+
+    fn handle_in_table_text(&mut self, token: Token) {
+        if let Token::Character(c) = token {
+            if c == '\0' {
+                self.unexpected(&token);
+                return
+            }
+            self.table_character_tokens.push(token);
+            return
+        }
+        let has_non_whitespace_char = self.table_character_tokens
+            .iter()
+            .any(|c_token| {
+                match c_token {
+                    Token::Character(c) if !is_whitespace(*c) => true,
+                    _ => false
+                }
+            });
+
+        if has_non_whitespace_char {
+            emit_error!("Non-whitespace in table text");
+            let table_character_tokens = self.table_character_tokens.clone();
+            for c_token in table_character_tokens {
+                self.foster_parenting = true;
+                self.handle_in_body(c_token.clone());
+                self.foster_parenting = false;
+            }
+        } else {
+            let table_character_tokens = self.table_character_tokens.clone();
+            for c_token in table_character_tokens {
+                if let Token::Character(c) = c_token {
+                    self.insert_character(c);
+                }
+            }
+        }
+
+        self.switch_to(self.original_insert_mode.clone().unwrap());
     }
 
     fn handle_in_template(&mut self, token: Token) {}
