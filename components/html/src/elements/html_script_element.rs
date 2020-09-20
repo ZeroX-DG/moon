@@ -10,6 +10,7 @@ pub struct HTMLScriptElement {
     type_: String,
     non_blocking: bool,
     parser_document: Option<NodeRef>,
+    already_started: bool
 }
 
 impl HTMLScriptElement {
@@ -20,11 +21,16 @@ impl HTMLScriptElement {
             type_: String::new(),
             non_blocking: true,
             parser_document: None,
+            already_started: false
         }
     }
 
     pub fn set_non_blocking(&mut self, value: bool) {
         self.set_non_blocking(value);
+    }
+
+    pub fn started(&mut self) {
+        self.already_started = true;
     }
 
     pub fn set_parser_document(&mut self, parser_document: NodeRef) {

@@ -70,6 +70,20 @@ impl StackOfOpenElements {
         }
     }
 
+    pub fn clear_back_to_table_context(&mut self) {
+        while let Some(node) = self.current_node() {
+            let node = node.borrow();
+            let element = node.as_element().unwrap();
+            let element_tag_name = element.tag_name();
+            if element_tag_name == "table"
+                || element_tag_name == "template"
+                || element_tag_name == "html" {
+                break;
+            }
+            self.pop();
+        }
+    }
+
     pub fn remove_first_matching<F>(&mut self, test: F)
     where
         F: Fn(&NodeRef) -> bool,
@@ -118,6 +132,14 @@ impl StackOfOpenElements {
         let mut list = BASE_LIST.to_vec();
         list.push("ol");
         list.push("ul");
+        return self.has_element_name_in_specific_scope(target, list);
+    }
+
+    pub fn has_element_name_in_table_scope(&self, target: &str) -> bool {
+        let mut list = BASE_LIST.to_vec();
+        list.push("html");
+        list.push("table");
+        list.push("template");
         return self.has_element_name_in_specific_scope(target, list);
     }
 
