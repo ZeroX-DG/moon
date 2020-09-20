@@ -14,3 +14,10 @@ dependencies = [
 [[package]]
 name = "moon"
 version = "0.1.0"
+
+[[package]]
+name = "rendering"
+version = "0.1.0"
+dependencies = [
+ "html",
+]
