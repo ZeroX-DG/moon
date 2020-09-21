@@ -190,6 +190,7 @@ impl TreeBuilder {
             InsertMode::Text => self.handle_text(token),
             InsertMode::InTable => self.handle_in_table(token),
             InsertMode::InTableText => self.handle_in_table_text(token),
+            InsertMode::InCaption => self.handle_in_caption(token),
             InsertMode::AfterBody => self.handle_after_body(token),
             InsertMode::AfterAfterBody => self.handle_after_after_body(token),
             _ => unimplemented!(),
@@ -2220,6 +2221,45 @@ impl TreeBuilder {
         }
 
         self.switch_to(self.original_insert_mode.clone().unwrap());
+    }
+
+    fn handle_in_caption(&mut self, token: Token) {
+        if token.is_end_tag() && token.tag_name() == "caption" {
+            if self.open_elements.has_element_name_in_table_scope("caption") {
+                self.unexpected(&token);
+                return
+            }
+            self.generate_implied_end_tags("");
+            if get_element!(self.current_node()).tag_name() != "caption" {
+                self.unexpected(&token);
+            }
+            self.open_elements.pop_until("caption");
+            self.active_formatting_elements.clear_up_to_last_marker();
+            self.switch_to(InsertMode::InTable);
+            return
+        }
+
+        if (token.is_start_tag() && match_any!(token.tag_name(), "caption", "col", "colgroup", "tbody", "td", "tfoot", "th", "thead", "tr")) || (token.is_end_tag() && token.tag_name() == "table"){
+            if self.open_elements.has_element_name_in_table_scope("caption") {
+                self.unexpected(&token);
+                return
+            }
+            self.generate_implied_end_tags("");
+            if get_element!(self.current_node()).tag_name() != "caption" {
+                self.unexpected(&token);
+            }
+            self.open_elements.pop_until("caption");
+            self.active_formatting_elements.clear_up_to_last_marker();
+            self.switch_to(InsertMode::InTable);
+            return self.process(token);
+        }
+
+        if token.is_end_tag() && match_any!(token.tag_name(), "body", "col", "colgroup", "html", "tbody", "td", "tfoot", "th", "thead", "tr") {
+            self.unexpected(&token);
+            return
+        }
+
+        return self.handle_in_body(token);
     }
 
     fn handle_after_body(&mut self, token: Token) {
