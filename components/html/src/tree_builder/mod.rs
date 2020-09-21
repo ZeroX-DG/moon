@@ -31,7 +31,7 @@ fn is_trace() -> bool {
 
 macro_rules! trace {
     ($err:expr) => {
-        println!("[ParseError][TreeBuilding]: {}", $err);
+        println!("[ParseError][TreeBuilding]({}:{}): {}", line!(), column!(), $err);
     };
 }
 
@@ -132,6 +132,11 @@ impl AdjustedInsertionLocation {
 enum TextOnlyElementParsingAlgo {
     GenericRawText,
     GenericRCDataElement,
+}
+
+enum AdoptionAgencyOutcome {
+    DoNothing,
+    RunAnyOtherEndTags
 }
 
 /// Check if the character is a whitespace character according to specs
@@ -467,14 +472,14 @@ impl TreeBuilder {
         false
     }
 
-    fn adoption_agency_algo(&mut self, token: &Token) {
+    fn adoption_agency_algo(&mut self, token: &Token) -> AdoptionAgencyOutcome {
         let subject = token.tag_name();
 
         let current_node = self.current_node();
         if get_element!(current_node).tag_name() == *subject {
             if !self.active_formatting_elements.contains_node(&current_node) {
                 self.open_elements.pop();
-                return;
+                return AdoptionAgencyOutcome::DoNothing;
             }
         }
 
@@ -484,7 +489,7 @@ impl TreeBuilder {
                 .get_element_after_last_marker(token.tag_name());
 
             if formatting_element.is_none() {
-                return;
+                return AdoptionAgencyOutcome::RunAnyOtherEndTags;
             }
 
             let fmt_element = formatting_element.unwrap();
@@ -492,12 +497,12 @@ impl TreeBuilder {
             if !self.open_elements.contains_node(&fmt_element) {
                 self.unexpected(&token);
                 self.active_formatting_elements.remove_element(&fmt_element);
-                return;
+                return AdoptionAgencyOutcome::DoNothing;
             }
 
             if !self.open_elements.has_element_in_scope(&fmt_element) {
                 self.unexpected(&token);
-                return;
+                return AdoptionAgencyOutcome::DoNothing;
             }
 
             if fmt_element != self.current_node() {
@@ -523,17 +528,24 @@ impl TreeBuilder {
                 }
                 self.open_elements.pop();
                 self.active_formatting_elements.remove_element(&fmt_element);
-                return;
+                return AdoptionAgencyOutcome::DoNothing;
             }
 
             // TODO: implement the rest of the algo
             unimplemented!();
         }
+        AdoptionAgencyOutcome::DoNothing
     }
 
     fn unexpected(&self, token: &Token) {
         match token {
-            Token::Tag { .. } => emit_error!("Unexpected tag"),
+            Token::Tag { tag_name, is_end_tag, .. } => {
+                if *is_end_tag {
+                    emit_error!(format!("Unexpected end tag: {}", tag_name))
+                } else {
+                    emit_error!(format!("Unexpected start tag: {}", tag_name))
+                }
+            }
             Token::DOCTYPE { .. } => emit_error!("Unexpected DOCTYPE"),
             Token::Comment(_) => emit_error!("Unexpected comment"),
             Token::Character(_) => emit_error!("Unexpected character"),
@@ -594,12 +606,10 @@ impl TreeBuilder {
             let entry = &self.active_formatting_elements[last_index];
 
             if self.is_marker_or_open_element(entry) {
+                last_index += 1;
                 break;
             }
         }
-
-        // advance step
-        last_index += 1;
 
         loop {
             let element = match &self.active_formatting_elements[last_index] {
@@ -607,20 +617,23 @@ impl TreeBuilder {
                 Entry::Marker => panic!("Unexpected marker while building DOM tree!"),
             };
 
-            let element = element.borrow();
-            let tag = element.as_element().unwrap();
+            let (tag_name, attributes) = {
+                let element = element.borrow();
+                let element = element.as_element();
+                let element = element.unwrap();
+                (element.tag_name().clone(), element.attributes().clone())
+            };
 
             let new_element = self.insert_html_element(Token::Tag {
                 is_end_tag: false,
                 self_closing: false,
                 self_closing_acknowledged: false,
-                tag_name: tag.tag_name(),
-                attributes: tag
-                    .attributes()
-                    .iter()
+                tag_name,
+                attributes: attributes
+                    .into_iter()
                     .map(|entry| Attribute {
-                        name: entry.0.clone(),
-                        value: entry.1.clone(),
+                        name: entry.0,
+                        value: entry.1,
                     })
                     .collect(),
             });
@@ -1088,6 +1101,39 @@ impl TreeBuilder {
     }
 
     fn handle_in_body(&mut self, mut token: Token) {
+        fn any_other_end_tags(this: &mut TreeBuilder, token: Token) {
+            let mut index: Option<usize> = None;
+            for (idx, node) in this.open_elements.0.iter().enumerate().rev() {
+                let current_tag_name = get_element!(node).tag_name();
+                if current_tag_name == *token.tag_name() {
+                    if *node != this.current_node() {
+                        this.unexpected(&token);
+                    }
+                    index = Some(idx);
+                    break;
+                }
+
+                if is_special_element(&current_tag_name) {
+                    emit_error!("Unexpected special element");
+                    return;
+                }
+            }
+
+            let match_idx = match index {
+                Some(idx) => idx,
+                None => {
+                    this.unexpected(&token);
+                    return;
+                }
+            };
+
+            this.generate_implied_end_tags(token.tag_name());
+
+            while this.open_elements.len() > match_idx {
+                this.open_elements.pop();
+            }
+        }
+
         if let Token::Character(c) = token {
             if c == '\0' {
                 emit_error!("Unexpected null character");
@@ -1648,7 +1694,12 @@ impl TreeBuilder {
                 .get_element_after_last_marker("a")
             {
                 self.unexpected(&token);
-                self.adoption_agency_algo(&token);
+                match self.adoption_agency_algo(&token) {
+                    AdoptionAgencyOutcome::DoNothing => {}
+                    AdoptionAgencyOutcome::RunAnyOtherEndTags => {
+                        return any_other_end_tags(self, token);
+                    }
+                }
                 self.active_formatting_elements.remove_element(&el);
                 self.open_elements
                     .remove_first_matching(|fnode| *fnode == el);
@@ -1688,7 +1739,12 @@ impl TreeBuilder {
             self.reconstruct_active_formatting_elements();
             if self.open_elements.has_element_name_in_scope("nobr") {
                 self.unexpected(&token);
-                self.adoption_agency_algo(&token);
+                match self.adoption_agency_algo(&token) {
+                    AdoptionAgencyOutcome::DoNothing => {}
+                    AdoptionAgencyOutcome::RunAnyOtherEndTags => {
+                        return any_other_end_tags(self, token);
+                    }
+                }
                 self.reconstruct_active_formatting_elements();
             }
             let element = self.insert_html_element(token);
@@ -1716,7 +1772,11 @@ impl TreeBuilder {
                 "u"
             )
         {
-            self.adoption_agency_algo(&token);
+            match self.adoption_agency_algo(&token) {
+                AdoptionAgencyOutcome::RunAnyOtherEndTags => any_other_end_tags(self, token),
+                _ => {}
+            }
+
             return;
         }
 
@@ -1957,37 +2017,7 @@ impl TreeBuilder {
         }
 
         if token.is_end_tag() {
-            let mut index: Option<usize> = None;
-            for (idx, node) in self.open_elements.0.iter().enumerate().rev() {
-                let current_tag_name = get_element!(node).tag_name();
-                if current_tag_name == *token.tag_name() {
-                    if *node != self.current_node() {
-                        self.unexpected(&token);
-                    }
-                    index = Some(idx);
-                    break;
-                }
-
-                if is_special_element(&current_tag_name) {
-                    emit_error!("Unexpected special element");
-                    return;
-                }
-            }
-
-            let match_idx = match index {
-                Some(idx) => idx,
-                None => {
-                    self.unexpected(&token);
-                    return;
-                }
-            };
-
-            self.generate_implied_end_tags(token.tag_name());
-
-            while self.open_elements.len() > match_idx {
-                self.open_elements.pop();
-            }
-            return;
+            return any_other_end_tags(self, token);
         }
     }
 

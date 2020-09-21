@@ -1,10 +1,12 @@
 use dom::dom_ref::NodeRef;
 use std::ops::{Deref, DerefMut};
 
+#[derive(Debug)]
 pub struct ListOfActiveFormattingElements {
     entries: Vec<Entry>,
 }
 
+#[derive(Debug)]
 pub enum Entry {
     Element(NodeRef),
     Marker,
@@ -56,7 +58,7 @@ impl ListOfActiveFormattingElements {
     }
 
     pub fn contains_node(&self, node: &NodeRef) -> bool {
-        for (index, entry) in self.entries.iter().rev().enumerate() {
+        for entry in self.entries.iter().rev() {
             if let Entry::Element(el) = entry {
                 if el == node {
                     return true;
