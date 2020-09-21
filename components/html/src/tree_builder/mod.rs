@@ -191,6 +191,7 @@ impl TreeBuilder {
             InsertMode::InTable => self.handle_in_table(token),
             InsertMode::InTableText => self.handle_in_table_text(token),
             InsertMode::InCaption => self.handle_in_caption(token),
+            InsertMode::InColumnGroup => self.handle_in_column_group(token),
             InsertMode::AfterBody => self.handle_after_body(token),
             InsertMode::AfterAfterBody => self.handle_after_after_body(token),
             _ => unimplemented!(),
@@ -2328,6 +2329,66 @@ impl TreeBuilder {
 
         self.unexpected(&token);
         self.switch_to(InsertMode::InBody);
+        return self.process(token);
+    }
+
+    fn handle_in_column_group(&mut self, mut token: Token) {
+        if let Token::Character(c) = token {
+            if is_whitespace(c) {
+                return self.insert_character(c);
+            }
+        }
+
+        if let Token::Comment(data) = token {
+            return self.insert_comment(data);
+        }
+
+        if let Token::DOCTYPE { .. } = token {
+            self.unexpected(&token);
+            return
+        }
+
+        if token.is_start_tag() && token.tag_name() == "html" {
+            return self.handle_in_body(token);
+        }
+
+        if token.is_start_tag() && token.tag_name() == "col" {
+            token.acknowledge_self_closing_if_set();
+            self.insert_html_element(token);
+            self.open_elements.pop();
+            return
+        }
+
+        if token.is_end_tag() && token.tag_name() == "colgroup" {
+            if get_element!(self.current_node()).tag_name() != "colgroup" {
+                return self.unexpected(&token);
+            }
+
+            self.open_elements.pop();
+            self.switch_to(InsertMode::InTable);
+            return
+        }
+
+        if token.is_end_tag() && token.tag_name() == "col" {
+            return self.unexpected(&token);
+        }
+
+        if (token.is_start_tag() || token.is_end_tag()) && token.tag_name() == "template" {
+            self.handle_in_head(token);
+            return
+        }
+
+        if let Token::EOF = token {
+            self.handle_in_body(token);
+            return
+        }
+
+        if get_element!(self.current_node()).tag_name() != "colgroup" {
+            return self.unexpected(&token);
+        }
+
+        self.open_elements.pop();
+        self.switch_to(InsertMode::InTable);
         return self.process(token);
     }
 
