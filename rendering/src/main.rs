@@ -18,10 +18,9 @@ fn print_tree(root: NodeRef, level: usize) {
 fn main() {
     let html = include_str!("../fixtures/test.html");
     let tokenizer = Tokenizer::new(html.to_owned());
-    let mut tree_builder = TreeBuilder::new(tokenizer);
-    tree_builder.run();
+    let tree_builder = TreeBuilder::new(tokenizer);
+    let document = tree_builder.run();
 
-    let document = tree_builder.get_document();
     println!("-----------------------");
     print_tree(document, 0);
 }

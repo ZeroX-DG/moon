@@ -163,17 +163,18 @@ impl TreeBuilder {
     }
 
     /// Start the main loop for parsing DOM tree
-    pub fn run(&mut self) {
+    pub fn run(mut self) -> NodeRef {
         loop {
             let token = self.tokenizer.next_token();
             if let Token::EOF = token {
-                break;
+                break
             }
             self.process(token);
             if self.should_stop {
-                break;
+                break
             }
         }
+        return self.document
     }
 
     /// (Re)process a token in the current insert mode
@@ -2302,13 +2303,11 @@ mod test {
     fn handle_initial_correctly() {
         let html = "<!-- this is a test -->".to_owned();
         let tokenizer = Tokenizer::new(html);
-        let mut tree_builder = TreeBuilder::new(tokenizer);
-
-        tree_builder.run();
+        let tree_builder = TreeBuilder::new(tokenizer);
 
         assert_eq!(
             tree_builder
-                .get_document()
+                .run()
                 .borrow()
                 .as_node()
                 .first_child()
