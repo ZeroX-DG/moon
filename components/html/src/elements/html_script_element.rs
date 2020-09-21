@@ -32,7 +32,7 @@ impl HTMLScriptElement {
     }
 
     pub fn set_non_blocking(&mut self, value: bool) {
-        self.set_non_blocking(value);
+        self.non_blocking = value;
     }
 
     pub fn started(&mut self) {
