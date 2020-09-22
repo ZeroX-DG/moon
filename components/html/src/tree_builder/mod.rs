@@ -199,6 +199,7 @@ impl TreeBuilder {
             InsertMode::InColumnGroup => self.handle_in_column_group(token),
             InsertMode::InTableBody => self.handle_in_table_body(token),
             InsertMode::InRow => self.handle_in_row(token),
+            InsertMode::InCell => self.handle_in_cell(token),
             InsertMode::AfterBody => self.handle_after_body(token),
             InsertMode::AfterAfterBody => self.handle_after_after_body(token),
             _ => unimplemented!(),
@@ -649,6 +650,20 @@ impl TreeBuilder {
             }
             last_index += 1;
         }
+    }
+
+    fn close_cell(&mut self) {
+        self.generate_implied_end_tags("");
+        let current_tag_name = get_element!(self.current_node()).tag_name();
+        if current_tag_name != "td" || current_tag_name != "th" {
+            emit_error!("Unexpected node encountered while closing cell");
+        }
+        self.open_elements.pop_until_match(|element| {
+            let tag_name = element.tag_name();
+            return tag_name == "td" || tag_name == "th";
+        });
+        self.active_formatting_elements.clear_up_to_last_marker();
+        self.switch_to(InsertMode::InRow);
     }
 }
 
@@ -2527,6 +2542,51 @@ impl TreeBuilder {
         }
 
         return self.handle_in_table(token);
+    }
+
+    fn handle_in_cell(&mut self, token: Token) {
+        if token.is_end_tag() && match_any!(token.tag_name(), "td", "th") {
+            if !self.open_elements.has_element_name_in_table_scope(&token.tag_name()) {
+                self.unexpected(&token);
+                return
+            }
+
+            self.generate_implied_end_tags("");
+
+            if get_element!(self.current_node()).tag_name() != *token.tag_name() {
+                emit_error!("Expected current node to have same tag name as token");
+            }
+            self.open_elements.pop_until(token.tag_name());
+            self.active_formatting_elements.clear_up_to_last_marker();
+            self.switch_to(InsertMode::InRow);
+            return
+        }
+
+        if token.is_start_tag() && match_any!(token.tag_name(), "caption", "col", "colgroup", "tbody", "td", "tfoot", "th", "thead", "tr") {
+            if !self.open_elements.has_element_name_in_table_scope("td") || !self.open_elements.has_element_name_in_table_scope("th") {
+                self.unexpected(&token);
+                return
+            }
+
+            self.close_cell();
+            return self.process(token);
+        }
+
+        if token.is_end_tag() && match_any!(token.tag_name(), "body", "caption", "col", "colgroup", "html") {
+            self.unexpected(&token);
+            return
+        }
+
+        if token.is_end_tag() && match_any!(token.tag_name(), "table", "tbody", "tfoot", "thead", "tr") {
+            if !self.open_elements.has_element_name_in_table_scope(&token.tag_name()) {
+                self.unexpected(&token);
+                return
+            }
+            self.close_cell();
+            return self.process(token);
+        }
+
+        return self.handle_in_body(token);
     }
 
     fn handle_in_template(&mut self, token: Token) {}
