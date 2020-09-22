@@ -18,12 +18,14 @@ To fit with the "make from scratch" spirit, I'll limit the use of external libra
 
 ## Features
 
+Bold text is what I'm working on
+
 - [x] :electric_plug: DOM API
-- [ ] :memo: HTML Parsing
+- [x] :memo: HTML Parsing
   - [x] HTML tokenizer
-  - [ ] HTML dom tree builder
+  - [x] **HTML dom tree builder (70% complete)**
 - [ ] :triangular_ruler: CSS
-  - [ ] CSSOM API
+  - [ ] **CSSOM API**
   - [ ] CSS tokenizer
   - [ ] CSSOM builder
   - [ ] Selector matching
