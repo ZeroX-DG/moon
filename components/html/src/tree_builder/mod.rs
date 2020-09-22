@@ -198,6 +198,7 @@ impl TreeBuilder {
             InsertMode::InCaption => self.handle_in_caption(token),
             InsertMode::InColumnGroup => self.handle_in_column_group(token),
             InsertMode::InTableBody => self.handle_in_table_body(token),
+            InsertMode::InRow => self.handle_in_row(token),
             InsertMode::AfterBody => self.handle_after_body(token),
             InsertMode::AfterAfterBody => self.handle_after_after_body(token),
             _ => unimplemented!(),
@@ -2466,6 +2467,61 @@ impl TreeBuilder {
         }
 
         if token.is_end_tag() && match_any!(token.tag_name(), "body", "caption", "col", "colgroup", "html", "td", "th", "tr") {
+            self.unexpected(&token);
+            return
+        }
+
+        return self.handle_in_table(token);
+    }
+
+    fn handle_in_row(&mut self, token: Token) {
+        if token.is_start_tag() && match_any!(token.tag_name(), "th", "td") {
+            self.open_elements.clear_back_to_table_context();
+            self.insert_html_element(token);
+            self.switch_to(InsertMode::InCell);
+            self.active_formatting_elements.add_marker();
+            return
+        }
+
+        if token.is_end_tag() && token.tag_name() == "tr" {
+            if !self.open_elements.has_element_name_in_table_scope("tr") {
+                self.unexpected(&token);
+                return
+            }
+
+            self.open_elements.clear_back_to_table_context();
+            self.open_elements.pop();
+            self.switch_to(InsertMode::InTableBody);
+            return
+        }
+
+        if (token.is_start_tag() && match_any!(token.tag_name(), "caption", "col", "colgroup", "tbody", "tfoot", "thead", "tr")) || (token.is_end_tag() && token.tag_name() == "table") {
+            if !self.open_elements.has_element_name_in_table_scope("tr") {
+                self.unexpected(&token);
+                return
+            }
+            self.open_elements.clear_back_to_table_context();
+            self.open_elements.pop();
+            self.switch_to(InsertMode::InTableBody);
+            return self.process(token);
+        }
+
+        if token.is_end_tag() && match_any!(token.tag_name(), "tbody", "tfoot", "thead") {
+            if !self.open_elements.has_element_name_in_table_scope(&token.tag_name()) {
+                self.unexpected(&token);
+                return
+            }
+            if !self.open_elements.has_element_name_in_table_scope("tr") {
+                self.unexpected(&token);
+                return
+            }
+            self.open_elements.clear_back_to_table_context();
+            self.open_elements.pop();
+            self.switch_to(InsertMode::InTableBody);
+            return self.process(token);
+        }
+
+        if token.is_end_tag() && match_any!(token.tag_name(), "body", "caption", "col", "colgroup", "html", "td", "th") {
             self.unexpected(&token);
             return
         }
