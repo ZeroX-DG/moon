@@ -197,6 +197,7 @@ impl TreeBuilder {
             InsertMode::InTableText => self.handle_in_table_text(token),
             InsertMode::InCaption => self.handle_in_caption(token),
             InsertMode::InColumnGroup => self.handle_in_column_group(token),
+            InsertMode::InTableBody => self.handle_in_table_body(token),
             InsertMode::AfterBody => self.handle_after_body(token),
             InsertMode::AfterAfterBody => self.handle_after_after_body(token),
             _ => unimplemented!(),
@@ -2420,6 +2421,56 @@ impl TreeBuilder {
         self.open_elements.pop();
         self.switch_to(InsertMode::InTable);
         return self.process(token);
+    }
+
+    fn handle_in_table_body(&mut self, token: Token) {
+        if token.is_start_tag() && token.tag_name() == "tr" {
+            self.open_elements.clear_back_to_table_context();
+            self.insert_html_element(token);
+            self.switch_to(InsertMode::InRow);
+            return
+        }
+
+        if token.is_start_tag() && match_any!(token.tag_name(), "th", "td") {
+            self.unexpected(&token);
+            self.open_elements.clear_back_to_table_context();
+            self.insert_html_element(Token::new_start_tag_with_name("tr"));
+            self.switch_to(InsertMode::InRow);
+            return self.process(token);
+        }
+
+        if token.is_end_tag() && match_any!(token.tag_name(), "tbody", "tfoot", "thead") {
+            if !self.open_elements.has_element_name_in_table_scope(&token.tag_name()) {
+                self.unexpected(&token);
+                return
+            }
+
+            self.open_elements.clear_back_to_table_context();
+            self.open_elements.pop();
+            self.switch_to(InsertMode::InTable);
+            return
+        }
+
+        if (token.is_start_tag() && match_any!(token.tag_name(), "caption", "col", "colgroup", "tbody", "tfoot", "thead")) || (token.is_end_tag() && token.tag_name() == "table") {
+            if !self.open_elements.has_element_name_in_table_scope("tbody") &&
+                !self.open_elements.has_element_name_in_table_scope("thead") &&
+                !self.open_elements.has_element_name_in_table_scope("tfoot") {
+                self.unexpected(&token);
+                return
+            }
+
+            self.open_elements.clear_back_to_table_context();
+            self.open_elements.pop();
+            self.switch_to(InsertMode::InTable);
+            return self.process(token);
+        }
+
+        if token.is_end_tag() && match_any!(token.tag_name(), "body", "caption", "col", "colgroup", "html", "td", "th", "tr") {
+            self.unexpected(&token);
+            return
+        }
+
+        return self.handle_in_table(token);
     }
 
     fn handle_in_template(&mut self, token: Token) {}
