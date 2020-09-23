@@ -2723,7 +2723,69 @@ impl TreeBuilder {
         return self.handle_in_select(token);
     }
 
-    fn handle_in_template(&mut self, token: Token) {}
+    fn handle_in_template(&mut self, token: Token) {
+        if let Token::Character(_) = token {
+            return self.handle_in_body(token);
+        }
+        if let Token::Comment(_) = token {
+            return self.handle_in_body(token);
+        }
+        if let Token::DOCTYPE { .. } = token {
+            return self.handle_in_body(token);
+        }
+        if token.is_start_tag() && match_any!(token.tag_name(), "base", "basefont", "bgsound", "link", "meta", "noframes", "script", "style", "template", "title") {
+            return self.handle_in_head(token);
+        }
+        if token.is_end_tag() && token.tag_name() == "template" {
+            return self.handle_in_head(token);
+        }
+        if token.is_start_tag() && match_any!(token.tag_name(), "caption", "colgroup", "tbody", "tfoot", "thead") {
+            self.stack_of_template_insert_mode.pop();
+            self.stack_of_template_insert_mode.push(InsertMode::InTable);
+            self.switch_to(InsertMode::InTable);
+            return self.process(token);
+        }
+        if token.is_start_tag() && token.tag_name() == "col" {
+            self.stack_of_template_insert_mode.pop();
+            self.stack_of_template_insert_mode.push(InsertMode::InColumnGroup);
+            self.switch_to(InsertMode::InColumnGroup);
+            return self.process(token);
+        }
+        if token.is_start_tag() && token.tag_name() == "tr" {
+            self.stack_of_template_insert_mode.pop();
+            self.stack_of_template_insert_mode.push(InsertMode::InTableBody);
+            self.switch_to(InsertMode::InTableBody);
+            return self.process(token);
+        }
+        if token.is_start_tag() && match_any!(token.tag_name(), "td", "th") {
+            self.stack_of_template_insert_mode.pop();
+            self.stack_of_template_insert_mode.push(InsertMode::InRow);
+            self.switch_to(InsertMode::InRow);
+            return self.process(token);
+        }
+        if token.is_start_tag() {
+            self.stack_of_template_insert_mode.pop();
+            self.stack_of_template_insert_mode.push(InsertMode::InBody);
+            self.switch_to(InsertMode::InBody);
+            return self.process(token);
+        }
+        if token.is_end_tag() {
+            self.unexpected(&token);
+            return
+        }
+        if token.is_eof() {
+            if !self.open_elements.contains("template") {
+                self.stop_parsing();
+                return
+            }
+            self.unexpected(&token);
+            self.open_elements.pop_until("template");
+            self.active_formatting_elements.clear_up_to_last_marker();
+            self.stack_of_template_insert_mode.pop();
+            self.reset_insertion_mode_appropriately();
+            return self.process(token);
+        }
+    }
 }
 
 #[cfg(test)]
