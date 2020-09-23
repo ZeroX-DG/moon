@@ -145,7 +145,8 @@ impl StackOfOpenElements {
     }
 
     pub fn has_element_name_in_select_scope(&self, target: &str) -> bool {
-        let list = BASE_LIST.to_vec()
+        let list = BASE_LIST
+            .to_vec()
             .iter()
             .filter(|item| **item != "option" || **item != "optgroup")
             .map(|item| *item)
