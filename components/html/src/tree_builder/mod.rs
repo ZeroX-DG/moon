@@ -111,6 +111,12 @@ pub struct TreeBuilder {
 
     /// Pending table character tokens
     table_character_tokens: Vec<Token>,
+
+    /// Is created to parse fragment html
+    is_fragment_case: bool,
+
+    /// Context element for fragment html
+    context_element: Option<NodeRef>,
 }
 
 /// The adjusted location to insert a node as mentioned the specs
@@ -164,6 +170,8 @@ impl TreeBuilder {
             stack_of_template_insert_mode: Vec::new(),
             should_stop: false,
             table_character_tokens: Vec::new(),
+            is_fragment_case: false,
+            context_element: None
         }
     }
 
@@ -376,7 +384,11 @@ impl TreeBuilder {
         for (index, node) in self.open_elements.0.iter().enumerate().rev() {
             let last = index == 0;
 
-            // TODO: check for fragment case
+            let node = if self.is_fragment_case {
+                self.context_element.clone().unwrap()
+            } else {
+                node.clone()
+            };
 
             let node_clone = node.clone();
             let node_clone = node_clone.borrow();
@@ -892,9 +904,12 @@ impl TreeBuilder {
             {
                 script_element.set_non_blocking(false);
                 script_element.set_parser_document(self.get_document());
+                if self.is_fragment_case {
+                    script_element.started();
+                }
             }
 
-            // TODO: implement steps 4 and 5
+            // TODO: implement step 5
 
             self.insert_at(insert_position, element.clone());
             self.open_elements.push(element.clone());
@@ -2335,7 +2350,10 @@ impl TreeBuilder {
         }
 
         if token.is_end_tag() && token.tag_name() == "html" {
-            // TODO: handle fragment case
+            if self.is_fragment_case {
+                self.unexpected(&token);
+                return
+            }
             self.switch_to(InsertMode::AfterAfterBody);
         }
 
