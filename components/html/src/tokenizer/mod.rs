@@ -2661,7 +2661,9 @@ mod tests {
                 self_closing_acknowledged: false,
                 attributes: vec![Attribute {
                     name: "name".to_owned(),
-                    value: "hello".to_owned()
+                    value: "hello".to_owned(),
+                    prefix: "".to_owned(),
+                    namespace: "".to_owned()
                 }],
                 is_end_tag: false
             },
@@ -2680,7 +2682,9 @@ mod tests {
                 self_closing_acknowledged: false,
                 attributes: vec![Attribute {
                     name: "name".to_owned(),
-                    value: "hello".to_owned()
+                    value: "hello".to_owned(),
+                    prefix: "".to_owned(),
+                    namespace: "".to_owned()
                 }],
                 is_end_tag: false
             },
@@ -2700,11 +2704,15 @@ mod tests {
                 attributes: vec![
                     Attribute {
                         name: "name".to_owned(),
-                        value: "hello".to_owned()
+                        value: "hello".to_owned(),
+                        prefix: "".to_owned(),
+                        namespace: "".to_owned()
                     },
                     Attribute {
                         name: "world".to_owned(),
-                        value: "".to_owned()
+                        value: "".to_owned(),
+                        prefix: "".to_owned(),
+                        namespace: "".to_owned()
                     }
                 ],
                 is_end_tag: false
@@ -2797,7 +2805,9 @@ mod tests {
                 self_closing_acknowledged: false,
                 attributes: vec![Attribute {
                     name: "&block;".to_owned(),
-                    value: "name".to_owned()
+                    value: "name".to_owned(),
+                    prefix: "".to_owned(),
+                    namespace: "".to_owned()
                 }]
             },
             tokenizer.next_token()
@@ -2816,7 +2826,9 @@ mod tests {
                 self_closing_acknowledged: false,
                 attributes: vec![Attribute {
                     name: "name".to_owned(),
-                    value: "█".to_owned()
+                    value: "█".to_owned(),
+                    prefix: "".to_owned(),
+                    namespace: "".to_owned()
                 }]
             },
             tokenizer.next_token()
@@ -2835,7 +2847,9 @@ mod tests {
                 self_closing_acknowledged: false,
                 attributes: vec![Attribute {
                     name: "attr".to_owned(),
-                    value: "".to_owned()
+                    value: "".to_owned(),
+                    prefix: "".to_owned(),
+                    namespace: "".to_owned()
                 }]
             },
             tokenizer.next_token()

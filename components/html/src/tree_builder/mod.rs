@@ -21,9 +21,10 @@ use list_of_active_formatting_elements::ListOfActiveFormattingElements;
 use open_element_types::is_special_element;
 use stack_of_open_elements::StackOfOpenElements;
 use std::env;
+use phf::phf_map;
 
 fn is_trace() -> bool {
-    match env::var("TRACE_TREE_BUILDER") {
+    match env::var("TRACE_HTML_TREE_BUILDER") {
         Ok(s) => s == "true",
         _ => false,
     }
@@ -31,12 +32,7 @@ fn is_trace() -> bool {
 
 macro_rules! trace {
     ($err:expr) => {
-        println!(
-            "[ParseError][TreeBuilding]({}:{}): {}",
-            line!(),
-            column!(),
-            $err
-        );
+        println!("[ParseError][HTML TreeBuilding]: {}", $err);
     };
 }
 
@@ -155,6 +151,104 @@ fn is_whitespace(c: char) -> bool {
     match c {
         '\t' | '\n' | '\x0C' | ' ' => true,
         _ => false,
+    }
+}
+
+static SVG_ATTRIBUTE_MAP: phf::Map<&str, &str> = phf_map! {
+    "attributename" => "attributeName",
+    "attributetype" => "attributeType",
+    "basefrequency" => "baseFrequency",
+    "baseprofile" => "baseProfile",
+    "calcmode" => "calcMode",
+    "clippathunits" => "clipPathUnits",
+    "diffuseconstant" => "diffuseConstant",
+    "edgemode" => "edgeMode",
+    "filterunits" => "filterUnits",
+    "glyphref" => "glyphRef",
+    "gradienttransform" => "gradientTransform",
+    "gradientunits" => "gradientUnits",
+    "kernelmatrix" => "kernelMatrix",
+    "kernelunitlength" => "kernelUnitLength",
+    "keypoints" => "keyPoints",
+    "keysplines" => "keySplines",
+    "keytimes" => "keyTimes",
+    "lengthadjust" => "lengthAdjust",
+    "limitingconeangle" => "limitingConeAngle",
+    "markerheight" => "markerHeight",
+    "markerunits" => "markerUnits",
+    "markerwidth" => "markerWidth",
+    "maskcontentunits" => "maskContentUnits",
+    "maskunits" => "maskUnits",
+    "numoctaves" => "numOctaves",
+    "pathlength" => "pathLength",
+    "patterncontentunits" => "patternContentUnits",
+    "patterntransform" => "patternTransform",
+    "patternunits" => "patternUnits",
+    "pointsatx" => "pointsAtX",
+    "pointsaty" => "pointsAtY",
+    "pointsatz" => "pointsAtZ",
+    "preservealpha" => "preserveAlpha",
+    "preserveaspectratio" => "preserveAspectRatio",
+    "primitiveunits" => "primitiveUnits",
+    "refx" => "refX",
+    "refy" => "refY",
+    "repeatcount" => "repeatCount",
+    "repeatdur" => "repeatDur",
+    "requiredextensions" => "requiredExtensions",
+    "requiredfeatures" => "requiredFeatures",
+    "specularconstant" => "specularConstant",
+    "specularexponent" => "specularExponent",
+    "spreadmethod" => "spreadMethod",
+    "startoffset" => "startOffset",
+    "stddeviation" => "stdDeviation",
+    "stitchtiles" => "stitchTiles",
+    "surfacescale" => "surfaceScale",
+    "systemlanguage" => "systemLanguage",
+    "tablevalues" => "tableValues",
+    "targetx" => "targetX",
+    "targety" => "targetY",
+    "textlength" => "textLength",
+    "viewbox" => "viewBox",
+    "viewtarget" => "viewTarget",
+    "xchannelselector" => "xChannelSelector",
+    "ychannelselector" => "yChannelSelector",
+    "zoomandpan" => "zoomAndPan",
+};
+
+fn adjust_svg_attributes(token: &mut Token) {
+    for attr in token.attributes_mut() {
+        if let Some(rname) = SVG_ATTRIBUTE_MAP.get(attr.name.as_str()) {
+            attr.name = rname.to_string();
+        }
+    }
+}
+
+const XLINK_NAMESPACE: &str = "http://www.w3.org/1999/xlink";
+const XML_NAMESPACE: &str = "http://www.w3.org/XML/1998/namespace";
+const XMLNS_NAMESPACE: &str = "http://www.w3.org/2000/xmlns/";
+
+static FOREIGN_ATTRIBUTE_MAP: phf::Map<&str, (&str, &str, &str)> = phf_map! {
+    "xlink:actuate" => ("xlink", "actuate", XLINK_NAMESPACE),
+    "xlink:arcrole" => ("xlink", "arcrole", XLINK_NAMESPACE),
+    "xlink:href" => ("xlink", "href", XLINK_NAMESPACE),
+    "xlink:role" => ("xlink", "role", XLINK_NAMESPACE),
+    "xlink:show" => ("xlink", "show", XLINK_NAMESPACE),
+    "xlink:title" => ("xlink", "title", XLINK_NAMESPACE),
+    "xlink:type" => ("xlink", "type", XLINK_NAMESPACE),
+    "xml:lang" => ("xml", "lang", XML_NAMESPACE),
+    "xml:space" => ("xml", "space", XML_NAMESPACE),
+    "xmlns" => ("", "xmlns", XMLNS_NAMESPACE),
+    "xmlns:xlink" => ("xmlns", "xlink", XMLNS_NAMESPACE),
+};
+
+fn adjust_foreign_attributes(token: &mut Token) {
+    for attr in token.attributes_mut() {
+        if let Some(data) = FOREIGN_ATTRIBUTE_MAP.get(attr.name.as_str()) {
+            let (prefix, name, namespace) = data;
+            attr.name = name.to_string();
+            attr.prefix = prefix.to_string();
+            attr.namespace = namespace.to_string();
+        }
     }
 }
 
@@ -661,6 +755,8 @@ impl TreeBuilder {
                     .map(|entry| Attribute {
                         name: entry.0,
                         value: entry.1,
+                        prefix: String::new(),
+                        namespace: String::new()
                     })
                     .collect(),
             });
@@ -2030,8 +2126,18 @@ impl TreeBuilder {
         }
 
         if token.is_start_tag() && token.tag_name() == "svg" {
-            // TODO: support svg
-            unimplemented!();
+            self.reconstruct_active_formatting_elements();
+            adjust_svg_attributes(&mut token);
+            adjust_foreign_attributes(&mut token);
+
+            if token.is_self_closing() {
+                self.open_elements.pop();
+                token.acknowledge_self_closing_if_set();
+            }
+
+            // TODO: change this to insert foreign element
+            self.insert_html_element(token);
+            return
         }
 
         if token.is_start_tag()

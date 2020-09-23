@@ -2,6 +2,8 @@
 pub struct Attribute {
     pub name: String,
     pub value: String,
+    pub prefix: String,
+    pub namespace: String
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -78,6 +80,13 @@ impl Token {
         }
     }
 
+    pub fn is_self_closing(&self) -> bool {
+        if let Token::Tag { self_closing, .. } = self {
+            return *self_closing;
+        }
+        return false;
+    }
+
     pub fn is_start_tag(&self) -> bool {
         if let Token::Tag { is_end_tag, .. } = self {
             return !*is_end_tag;
@@ -123,6 +132,13 @@ impl Token {
         panic!("Token is not a tag");
     }
 
+    pub fn attributes_mut(&mut self) -> &mut Vec<Attribute> {
+        if let Token::Tag { ref mut attributes, .. } = self {
+            return attributes;
+        }
+        panic!("Token is not a tag");
+    }
+
     pub fn attribute(&self, name: &str) -> Option<&String> {
         if let Token::Tag { attributes, .. } = self {
             return match attributes.iter().find(|attr| attr.name == name) {
@@ -162,6 +178,8 @@ impl Attribute {
         Self {
             name: String::new(),
             value: String::new(),
+            prefix: String::new(),
+            namespace: String::new()
         }
     }
 }
