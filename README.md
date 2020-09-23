@@ -23,11 +23,12 @@ Bold text is what I'm working on
 - [x] :electric_plug: DOM API
 - [x] :memo: HTML Parsing
   - [x] HTML tokenizer
-  - [x] **HTML dom tree builder (70% complete)**
+  - [x] **HTML DOM tree builder (70% complete)**
+- [ ] :electric_plug: **CSSOM API**
+- [x] :memo: CSS Parsing
+  - [ ] **CSS tokenizer**
+  - [ ] CSSOM tree builder
 - [ ] :triangular_ruler: CSS
-  - [ ] **CSSOM API**
-  - [ ] CSS tokenizer
-  - [ ] CSSOM builder
   - [ ] Selector matching
     - [ ] Element selector
     - [ ] Id selector
