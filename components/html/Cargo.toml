@@ -8,3 +8,4 @@ edition = "2018"
 
 [dependencies]
 dom = { path = "../dom", version = "*" }
+io = { path = "../io", version = "*" }
