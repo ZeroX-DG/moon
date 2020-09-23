@@ -1,16 +1,16 @@
 pub enum Token {
-    Ident,
-    Function,
-    AtWord,
-    Hash,
-    Str,
+    Ident(String),
+    Function(String),
+    AtKeyword(String),
+    Hash(String, HashType),
+    Str(String),
     BadStr,
-    Url,
+    Url(String),
     BadUrl,
-    Delim,
-    Number,
-    Percentage,
-    Dimension,
+    Delim(char),
+    Number(usize),
+    Percentage(usize),
+    Dimension(usize, String),
     Whitespace,
     CDO,
     CDC,
@@ -24,4 +24,9 @@ pub enum Token {
     BraceOpen,
     BraceClose,
     EOF
+}
+
+pub enum HashType {
+    Id,
+    Unrestricted
 }

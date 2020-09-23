@@ -19,6 +19,14 @@ impl InputStream {
         None
     }
 
+    pub fn peek(&self, len: usize) -> Option<String> {
+        if len == 0 {
+            return None
+        }
+        let chars = self.input[self.index..].chars();
+        return Some(chars.take(len).collect());
+    }
+
     pub fn as_str(&self) -> String {
         self.input[self.index..].to_string()
     }
