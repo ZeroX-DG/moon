@@ -144,6 +144,16 @@ impl StackOfOpenElements {
         return self.has_element_name_in_specific_scope(target, list);
     }
 
+    pub fn has_element_name_in_select_scope(&self, target: &str) -> bool {
+        let list = BASE_LIST
+            .to_vec()
+            .iter()
+            .filter(|item| **item != "option" || **item != "optgroup")
+            .map(|item| *item)
+            .collect();
+        return self.has_element_name_in_specific_scope(target, list);
+    }
+
     pub fn has_element_in_specific_scope(&self, target: &NodeRef, list: Vec<&str>) -> bool {
         for node in self.0.iter().rev() {
             if node == target {

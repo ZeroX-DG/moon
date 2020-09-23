@@ -23,7 +23,7 @@ Bold text is what I'm working on
 - [x] :electric_plug: DOM API
 - [x] :memo: HTML Parsing
   - [x] HTML tokenizer
-  - [x] **HTML DOM tree builder (70% complete)**
+  - [x] HTML dom tree builder (85% specs)
 - [ ] :electric_plug: **CSSOM API**
 - [ ] :memo: CSS Parsing
   - [ ] **CSS tokenizer**

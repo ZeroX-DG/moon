@@ -31,7 +31,12 @@ fn is_trace() -> bool {
 
 macro_rules! trace {
     ($err:expr) => {
-        println!("[ParseError][TreeBuilding]({}:{}): {}", line!(), column!(), $err);
+        println!(
+            "[ParseError][TreeBuilding]({}:{}): {}",
+            line!(),
+            column!(),
+            $err
+        );
     };
 }
 
@@ -111,6 +116,12 @@ pub struct TreeBuilder {
 
     /// Pending table character tokens
     table_character_tokens: Vec<Token>,
+
+    /// Is created to parse fragment html
+    is_fragment_case: bool,
+
+    /// Context element for fragment html
+    context_element: Option<NodeRef>,
 }
 
 /// The adjusted location to insert a node as mentioned the specs
@@ -136,7 +147,7 @@ enum TextOnlyElementParsingAlgo {
 
 enum AdoptionAgencyOutcome {
     DoNothing,
-    RunAnyOtherEndTags
+    RunAnyOtherEndTags,
 }
 
 /// Check if the character is a whitespace character according to specs
@@ -164,6 +175,8 @@ impl TreeBuilder {
             stack_of_template_insert_mode: Vec::new(),
             should_stop: false,
             table_character_tokens: Vec::new(),
+            is_fragment_case: false,
+            context_element: None,
         }
     }
 
@@ -171,15 +184,14 @@ impl TreeBuilder {
     pub fn run(mut self) -> NodeRef {
         loop {
             let token = self.tokenizer.next_token();
-            if let Token::EOF = token {
-                break
-            }
+
             self.process(token);
+
             if self.should_stop {
-                break
+                break;
             }
         }
-        return self.document
+        return self.document;
     }
 
     /// (Re)process a token in the current insert mode
@@ -195,6 +207,13 @@ impl TreeBuilder {
             InsertMode::Text => self.handle_text(token),
             InsertMode::InTable => self.handle_in_table(token),
             InsertMode::InTableText => self.handle_in_table_text(token),
+            InsertMode::InCaption => self.handle_in_caption(token),
+            InsertMode::InColumnGroup => self.handle_in_column_group(token),
+            InsertMode::InTableBody => self.handle_in_table_body(token),
+            InsertMode::InRow => self.handle_in_row(token),
+            InsertMode::InCell => self.handle_in_cell(token),
+            InsertMode::InSelect => self.handle_in_select(token),
+            InsertMode::InSelectInTable => self.handle_in_select_in_table(token),
             InsertMode::AfterBody => self.handle_after_body(token),
             InsertMode::AfterAfterBody => self.handle_after_after_body(token),
             _ => unimplemented!(),
@@ -370,7 +389,11 @@ impl TreeBuilder {
         for (index, node) in self.open_elements.0.iter().enumerate().rev() {
             let last = index == 0;
 
-            // TODO: check for fragment case
+            let node = if self.is_fragment_case {
+                self.context_element.clone().unwrap()
+            } else {
+                node.clone()
+            };
 
             let node_clone = node.clone();
             let node_clone = node_clone.borrow();
@@ -539,7 +562,11 @@ impl TreeBuilder {
 
     fn unexpected(&self, token: &Token) {
         match token {
-            Token::Tag { tag_name, is_end_tag, .. } => {
+            Token::Tag {
+                tag_name,
+                is_end_tag,
+                ..
+            } => {
                 if *is_end_tag {
                     emit_error!(format!("Unexpected end tag: {}", tag_name))
                 } else {
@@ -645,6 +672,20 @@ impl TreeBuilder {
             }
             last_index += 1;
         }
+    }
+
+    fn close_cell(&mut self) {
+        self.generate_implied_end_tags("");
+        let current_tag_name = get_element!(self.current_node()).tag_name();
+        if current_tag_name != "td" || current_tag_name != "th" {
+            emit_error!("Unexpected node encountered while closing cell");
+        }
+        self.open_elements.pop_until_match(|element| {
+            let tag_name = element.tag_name();
+            return tag_name == "td" || tag_name == "th";
+        });
+        self.active_formatting_elements.clear_up_to_last_marker();
+        self.switch_to(InsertMode::InRow);
     }
 }
 
@@ -872,9 +913,12 @@ impl TreeBuilder {
             {
                 script_element.set_non_blocking(false);
                 script_element.set_parser_document(self.get_document());
+                if self.is_fragment_case {
+                    script_element.started();
+                }
             }
 
-            // TODO: implement steps 4 and 5
+            // TODO: implement step 5
 
             self.insert_at(insert_position, element.clone());
             self.open_elements.push(element.clone());
@@ -2252,6 +2296,79 @@ impl TreeBuilder {
         self.switch_to(self.original_insert_mode.clone().unwrap());
     }
 
+    fn handle_in_caption(&mut self, token: Token) {
+        if token.is_end_tag() && token.tag_name() == "caption" {
+            if self
+                .open_elements
+                .has_element_name_in_table_scope("caption")
+            {
+                self.unexpected(&token);
+                return;
+            }
+            self.generate_implied_end_tags("");
+            if get_element!(self.current_node()).tag_name() != "caption" {
+                self.unexpected(&token);
+            }
+            self.open_elements.pop_until("caption");
+            self.active_formatting_elements.clear_up_to_last_marker();
+            self.switch_to(InsertMode::InTable);
+            return;
+        }
+
+        if (token.is_start_tag()
+            && match_any!(
+                token.tag_name(),
+                "caption",
+                "col",
+                "colgroup",
+                "tbody",
+                "td",
+                "tfoot",
+                "th",
+                "thead",
+                "tr"
+            ))
+            || (token.is_end_tag() && token.tag_name() == "table")
+        {
+            if self
+                .open_elements
+                .has_element_name_in_table_scope("caption")
+            {
+                self.unexpected(&token);
+                return;
+            }
+            self.generate_implied_end_tags("");
+            if get_element!(self.current_node()).tag_name() != "caption" {
+                self.unexpected(&token);
+            }
+            self.open_elements.pop_until("caption");
+            self.active_formatting_elements.clear_up_to_last_marker();
+            self.switch_to(InsertMode::InTable);
+            return self.process(token);
+        }
+
+        if token.is_end_tag()
+            && match_any!(
+                token.tag_name(),
+                "body",
+                "col",
+                "colgroup",
+                "html",
+                "tbody",
+                "td",
+                "tfoot",
+                "th",
+                "thead",
+                "tr"
+            )
+        {
+            self.unexpected(&token);
+            return;
+        }
+
+        return self.handle_in_body(token);
+    }
+
     fn handle_after_body(&mut self, token: Token) {
         if let Token::Character(c) = token {
             if is_whitespace(c) {
@@ -2276,7 +2393,10 @@ impl TreeBuilder {
         }
 
         if token.is_end_tag() && token.tag_name() == "html" {
-            // TODO: handle fragment case
+            if self.is_fragment_case {
+                self.unexpected(&token);
+                return;
+            }
             self.switch_to(InsertMode::AfterAfterBody);
         }
 
@@ -2321,7 +2441,557 @@ impl TreeBuilder {
         return self.process(token);
     }
 
-    fn handle_in_template(&mut self, token: Token) {}
+    fn handle_in_column_group(&mut self, mut token: Token) {
+        if let Token::Character(c) = token {
+            if is_whitespace(c) {
+                return self.insert_character(c);
+            }
+        }
+
+        if let Token::Comment(data) = token {
+            return self.insert_comment(data);
+        }
+
+        if let Token::DOCTYPE { .. } = token {
+            self.unexpected(&token);
+            return;
+        }
+
+        if token.is_start_tag() && token.tag_name() == "html" {
+            return self.handle_in_body(token);
+        }
+
+        if token.is_start_tag() && token.tag_name() == "col" {
+            token.acknowledge_self_closing_if_set();
+            self.insert_html_element(token);
+            self.open_elements.pop();
+            return;
+        }
+
+        if token.is_end_tag() && token.tag_name() == "colgroup" {
+            if get_element!(self.current_node()).tag_name() != "colgroup" {
+                return self.unexpected(&token);
+            }
+
+            self.open_elements.pop();
+            self.switch_to(InsertMode::InTable);
+            return;
+        }
+
+        if token.is_end_tag() && token.tag_name() == "col" {
+            return self.unexpected(&token);
+        }
+
+        if (token.is_start_tag() || token.is_end_tag()) && token.tag_name() == "template" {
+            self.handle_in_head(token);
+            return;
+        }
+
+        if let Token::EOF = token {
+            self.handle_in_body(token);
+            return;
+        }
+
+        if get_element!(self.current_node()).tag_name() != "colgroup" {
+            return self.unexpected(&token);
+        }
+
+        self.open_elements.pop();
+        self.switch_to(InsertMode::InTable);
+        return self.process(token);
+    }
+
+    fn handle_in_table_body(&mut self, token: Token) {
+        if token.is_start_tag() && token.tag_name() == "tr" {
+            self.open_elements.clear_back_to_table_context();
+            self.insert_html_element(token);
+            self.switch_to(InsertMode::InRow);
+            return;
+        }
+
+        if token.is_start_tag() && match_any!(token.tag_name(), "th", "td") {
+            self.unexpected(&token);
+            self.open_elements.clear_back_to_table_context();
+            self.insert_html_element(Token::new_start_tag_with_name("tr"));
+            self.switch_to(InsertMode::InRow);
+            return self.process(token);
+        }
+
+        if token.is_end_tag() && match_any!(token.tag_name(), "tbody", "tfoot", "thead") {
+            if !self
+                .open_elements
+                .has_element_name_in_table_scope(&token.tag_name())
+            {
+                self.unexpected(&token);
+                return;
+            }
+
+            self.open_elements.clear_back_to_table_context();
+            self.open_elements.pop();
+            self.switch_to(InsertMode::InTable);
+            return;
+        }
+
+        if (token.is_start_tag()
+            && match_any!(
+                token.tag_name(),
+                "caption",
+                "col",
+                "colgroup",
+                "tbody",
+                "tfoot",
+                "thead"
+            ))
+            || (token.is_end_tag() && token.tag_name() == "table")
+        {
+            if !self.open_elements.has_element_name_in_table_scope("tbody")
+                && !self.open_elements.has_element_name_in_table_scope("thead")
+                && !self.open_elements.has_element_name_in_table_scope("tfoot")
+            {
+                self.unexpected(&token);
+                return;
+            }
+
+            self.open_elements.clear_back_to_table_context();
+            self.open_elements.pop();
+            self.switch_to(InsertMode::InTable);
+            return self.process(token);
+        }
+
+        if token.is_end_tag()
+            && match_any!(
+                token.tag_name(),
+                "body",
+                "caption",
+                "col",
+                "colgroup",
+                "html",
+                "td",
+                "th",
+                "tr"
+            )
+        {
+            self.unexpected(&token);
+            return;
+        }
+
+        return self.handle_in_table(token);
+    }
+
+    fn handle_in_row(&mut self, token: Token) {
+        if token.is_start_tag() && match_any!(token.tag_name(), "th", "td") {
+            self.open_elements.clear_back_to_table_context();
+            self.insert_html_element(token);
+            self.switch_to(InsertMode::InCell);
+            self.active_formatting_elements.add_marker();
+            return;
+        }
+
+        if token.is_end_tag() && token.tag_name() == "tr" {
+            if !self.open_elements.has_element_name_in_table_scope("tr") {
+                self.unexpected(&token);
+                return;
+            }
+
+            self.open_elements.clear_back_to_table_context();
+            self.open_elements.pop();
+            self.switch_to(InsertMode::InTableBody);
+            return;
+        }
+
+        if (token.is_start_tag()
+            && match_any!(
+                token.tag_name(),
+                "caption",
+                "col",
+                "colgroup",
+                "tbody",
+                "tfoot",
+                "thead",
+                "tr"
+            ))
+            || (token.is_end_tag() && token.tag_name() == "table")
+        {
+            if !self.open_elements.has_element_name_in_table_scope("tr") {
+                self.unexpected(&token);
+                return;
+            }
+            self.open_elements.clear_back_to_table_context();
+            self.open_elements.pop();
+            self.switch_to(InsertMode::InTableBody);
+            return self.process(token);
+        }
+
+        if token.is_end_tag() && match_any!(token.tag_name(), "tbody", "tfoot", "thead") {
+            if !self
+                .open_elements
+                .has_element_name_in_table_scope(&token.tag_name())
+            {
+                self.unexpected(&token);
+                return;
+            }
+            if !self.open_elements.has_element_name_in_table_scope("tr") {
+                self.unexpected(&token);
+                return;
+            }
+            self.open_elements.clear_back_to_table_context();
+            self.open_elements.pop();
+            self.switch_to(InsertMode::InTableBody);
+            return self.process(token);
+        }
+
+        if token.is_end_tag()
+            && match_any!(
+                token.tag_name(),
+                "body",
+                "caption",
+                "col",
+                "colgroup",
+                "html",
+                "td",
+                "th"
+            )
+        {
+            self.unexpected(&token);
+            return;
+        }
+
+        return self.handle_in_table(token);
+    }
+
+    fn handle_in_cell(&mut self, token: Token) {
+        if token.is_end_tag() && match_any!(token.tag_name(), "td", "th") {
+            if !self
+                .open_elements
+                .has_element_name_in_table_scope(&token.tag_name())
+            {
+                self.unexpected(&token);
+                return;
+            }
+
+            self.generate_implied_end_tags("");
+
+            if get_element!(self.current_node()).tag_name() != *token.tag_name() {
+                emit_error!("Expected current node to have same tag name as token");
+            }
+            self.open_elements.pop_until(token.tag_name());
+            self.active_formatting_elements.clear_up_to_last_marker();
+            self.switch_to(InsertMode::InRow);
+            return;
+        }
+
+        if token.is_start_tag()
+            && match_any!(
+                token.tag_name(),
+                "caption",
+                "col",
+                "colgroup",
+                "tbody",
+                "td",
+                "tfoot",
+                "th",
+                "thead",
+                "tr"
+            )
+        {
+            if !self.open_elements.has_element_name_in_table_scope("td")
+                || !self.open_elements.has_element_name_in_table_scope("th")
+            {
+                self.unexpected(&token);
+                return;
+            }
+
+            self.close_cell();
+            return self.process(token);
+        }
+
+        if token.is_end_tag()
+            && match_any!(
+                token.tag_name(),
+                "body",
+                "caption",
+                "col",
+                "colgroup",
+                "html"
+            )
+        {
+            self.unexpected(&token);
+            return;
+        }
+
+        if token.is_end_tag()
+            && match_any!(token.tag_name(), "table", "tbody", "tfoot", "thead", "tr")
+        {
+            if !self
+                .open_elements
+                .has_element_name_in_table_scope(&token.tag_name())
+            {
+                self.unexpected(&token);
+                return;
+            }
+            self.close_cell();
+            return self.process(token);
+        }
+
+        return self.handle_in_body(token);
+    }
+
+    fn handle_in_select(&mut self, token: Token) {
+        if let Token::Character(c) = token {
+            if c == '\0' {
+                self.unexpected(&token);
+                return;
+            }
+            return self.insert_character(c);
+        }
+
+        if let Token::Comment(data) = token {
+            self.insert_comment(data);
+            return;
+        }
+
+        if let Token::DOCTYPE { .. } = token {
+            self.unexpected(&token);
+            return;
+        }
+
+        if token.is_start_tag() && token.tag_name() == "html" {
+            return self.handle_in_body(token);
+        }
+
+        if token.is_start_tag() && token.tag_name() == "option" {
+            if get_element!(self.current_node()).tag_name() == "option" {
+                self.open_elements.pop();
+            }
+            self.insert_html_element(token);
+            return;
+        }
+
+        if token.is_start_tag() && token.tag_name() == "optgroup" {
+            if get_element!(self.current_node()).tag_name() == "option" {
+                self.open_elements.pop();
+            }
+            if get_element!(self.current_node()).tag_name() == "optgroup" {
+                self.open_elements.pop();
+            }
+            self.insert_html_element(token);
+            return;
+        }
+
+        if token.is_end_tag() && token.tag_name() == "optgroup" {
+            if get_element!(self.current_node()).tag_name() == "option" {
+                let el = self.open_elements.get(self.open_elements.len() - 1);
+                if get_element!(el).tag_name() == "optgroup" {
+                    self.open_elements.pop();
+                }
+            }
+            if get_element!(self.current_node()).tag_name() == "optgroup" {
+                self.open_elements.pop();
+            } else {
+                emit_error!("expected optgroup");
+            }
+            return;
+        }
+
+        if token.is_end_tag() && token.tag_name() == "option" {
+            if get_element!(self.current_node()).tag_name() == "option" {
+                self.open_elements.pop();
+            } else {
+                self.unexpected(&token);
+            }
+            return;
+        }
+
+        if token.is_end_tag() && token.tag_name() == "select" {
+            if !self
+                .open_elements
+                .has_element_name_in_select_scope("select")
+            {
+                self.unexpected(&token);
+                return;
+            }
+            self.open_elements.pop_until("select");
+            self.reset_insertion_mode_appropriately();
+            return;
+        }
+
+        if token.is_start_tag() && token.tag_name() == "select" {
+            self.unexpected(&token);
+            if !self
+                .open_elements
+                .has_element_name_in_select_scope("select")
+            {
+                return;
+            }
+            self.open_elements.pop_until("select");
+            self.reset_insertion_mode_appropriately();
+            return;
+        }
+
+        if token.is_start_tag() && match_any!(token.tag_name(), "input", "keygen", "textarea") {
+            self.unexpected(&token);
+            if !self
+                .open_elements
+                .has_element_name_in_select_scope("select")
+            {
+                return;
+            }
+            self.open_elements.pop_until("select");
+            self.reset_insertion_mode_appropriately();
+            return self.process(token);
+        }
+
+        if token.is_start_tag() && match_any!(token.tag_name(), "script", "template") {
+            return self.handle_in_head(token);
+        }
+
+        if token.is_end_tag() && token.tag_name() == "template" {
+            return self.handle_in_head(token);
+        }
+
+        if token.is_eof() {
+            return self.handle_in_body(token);
+        }
+
+        self.unexpected(&token);
+        return;
+    }
+
+    fn handle_in_select_in_table(&mut self, token: Token) {
+        if token.is_start_tag()
+            && match_any!(
+                token.tag_name(),
+                "caption",
+                "table",
+                "tbody",
+                "tfoot",
+                "thead",
+                "tr",
+                "td",
+                "th"
+            )
+        {
+            self.unexpected(&token);
+            self.open_elements.pop_until("select");
+            self.reset_insertion_mode_appropriately();
+            return self.process(token);
+        }
+
+        if token.is_end_tag()
+            && match_any!(
+                token.tag_name(),
+                "caption",
+                "table",
+                "tbody",
+                "tfoot",
+                "thead",
+                "tr",
+                "td",
+                "th"
+            )
+        {
+            self.unexpected(&token);
+            if !self
+                .open_elements
+                .has_element_name_in_table_scope(&token.tag_name())
+            {
+                return;
+            }
+            self.open_elements.pop_until("select");
+            self.reset_insertion_mode_appropriately();
+            return self.process(token);
+        }
+        return self.handle_in_select(token);
+    }
+
+    fn handle_in_template(&mut self, token: Token) {
+        if let Token::Character(_) = token {
+            return self.handle_in_body(token);
+        }
+        if let Token::Comment(_) = token {
+            return self.handle_in_body(token);
+        }
+        if let Token::DOCTYPE { .. } = token {
+            return self.handle_in_body(token);
+        }
+        if token.is_start_tag()
+            && match_any!(
+                token.tag_name(),
+                "base",
+                "basefont",
+                "bgsound",
+                "link",
+                "meta",
+                "noframes",
+                "script",
+                "style",
+                "template",
+                "title"
+            )
+        {
+            return self.handle_in_head(token);
+        }
+        if token.is_end_tag() && token.tag_name() == "template" {
+            return self.handle_in_head(token);
+        }
+        if token.is_start_tag()
+            && match_any!(
+                token.tag_name(),
+                "caption",
+                "colgroup",
+                "tbody",
+                "tfoot",
+                "thead"
+            )
+        {
+            self.stack_of_template_insert_mode.pop();
+            self.stack_of_template_insert_mode.push(InsertMode::InTable);
+            self.switch_to(InsertMode::InTable);
+            return self.process(token);
+        }
+        if token.is_start_tag() && token.tag_name() == "col" {
+            self.stack_of_template_insert_mode.pop();
+            self.stack_of_template_insert_mode
+                .push(InsertMode::InColumnGroup);
+            self.switch_to(InsertMode::InColumnGroup);
+            return self.process(token);
+        }
+        if token.is_start_tag() && token.tag_name() == "tr" {
+            self.stack_of_template_insert_mode.pop();
+            self.stack_of_template_insert_mode
+                .push(InsertMode::InTableBody);
+            self.switch_to(InsertMode::InTableBody);
+            return self.process(token);
+        }
+        if token.is_start_tag() && match_any!(token.tag_name(), "td", "th") {
+            self.stack_of_template_insert_mode.pop();
+            self.stack_of_template_insert_mode.push(InsertMode::InRow);
+            self.switch_to(InsertMode::InRow);
+            return self.process(token);
+        }
+        if token.is_start_tag() {
+            self.stack_of_template_insert_mode.pop();
+            self.stack_of_template_insert_mode.push(InsertMode::InBody);
+            self.switch_to(InsertMode::InBody);
+            return self.process(token);
+        }
+        if token.is_end_tag() {
+            self.unexpected(&token);
+            return;
+        }
+        if token.is_eof() {
+            if !self.open_elements.contains("template") {
+                self.stop_parsing();
+                return;
+            }
+            self.unexpected(&token);
+            self.open_elements.pop_until("template");
+            self.active_formatting_elements.clear_up_to_last_marker();
+            self.stack_of_template_insert_mode.pop();
+            self.reset_insertion_mode_appropriately();
+            return self.process(token);
+        }
+    }
 }
 
 #[cfg(test)]
