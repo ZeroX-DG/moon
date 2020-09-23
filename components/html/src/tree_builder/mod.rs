@@ -201,6 +201,7 @@ impl TreeBuilder {
             InsertMode::InRow => self.handle_in_row(token),
             InsertMode::InCell => self.handle_in_cell(token),
             InsertMode::InSelect => self.handle_in_select(token),
+            InsertMode::InSelectInTable => self.handle_in_select_in_table(token),
             InsertMode::AfterBody => self.handle_after_body(token),
             InsertMode::AfterAfterBody => self.handle_after_after_body(token),
             _ => unimplemented!(),
@@ -2700,6 +2701,26 @@ impl TreeBuilder {
 
         self.unexpected(&token);
         return
+    }
+
+    fn handle_in_select_in_table(&mut self, token: Token) {
+        if token.is_start_tag() && match_any!(token.tag_name(), "caption", "table", "tbody", "tfoot", "thead", "tr", "td", "th") {
+            self.unexpected(&token);
+            self.open_elements.pop_until("select");
+            self.reset_insertion_mode_appropriately();
+            return self.process(token);
+        }
+
+        if token.is_end_tag() && match_any!(token.tag_name(), "caption", "table", "tbody", "tfoot", "thead", "tr", "td", "th") {
+            self.unexpected(&token);
+            if !self.open_elements.has_element_name_in_table_scope(&token.tag_name()) {
+                return
+            }
+            self.open_elements.pop_until("select");
+            self.reset_insertion_mode_appropriately();
+            return self.process(token);
+        }
+        return self.handle_in_select(token);
     }
 
     fn handle_in_template(&mut self, token: Token) {}
