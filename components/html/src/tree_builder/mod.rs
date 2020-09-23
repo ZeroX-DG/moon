@@ -200,6 +200,7 @@ impl TreeBuilder {
             InsertMode::InTableBody => self.handle_in_table_body(token),
             InsertMode::InRow => self.handle_in_row(token),
             InsertMode::InCell => self.handle_in_cell(token),
+            InsertMode::InSelect => self.handle_in_select(token),
             InsertMode::AfterBody => self.handle_after_body(token),
             InsertMode::AfterAfterBody => self.handle_after_after_body(token),
             _ => unimplemented!(),
@@ -2587,6 +2588,118 @@ impl TreeBuilder {
         }
 
         return self.handle_in_body(token);
+    }
+
+    fn handle_in_select(&mut self, token: Token) {
+        if let Token::Character(c) = token {
+            if c == '\0' {
+                self.unexpected(&token);
+                return
+            }
+            return self.insert_character(c);
+        }
+
+        if let Token::Comment(data) = token {
+            self.insert_comment(data);
+            return
+        }
+
+        if let Token::DOCTYPE { .. } = token {
+            self.unexpected(&token);
+            return
+        }
+
+        if token.is_start_tag() && token.tag_name() == "html" {
+            return self.handle_in_body(token);
+        }
+
+        if token.is_start_tag() && token.tag_name() == "option" {
+            if get_element!(self.current_node()).tag_name() == "option" {
+                self.open_elements.pop();
+            }
+            self.insert_html_element(token);
+            return
+        }
+
+        if token.is_start_tag() && token.tag_name() == "optgroup" {
+            if get_element!(self.current_node()).tag_name() == "option" {
+                self.open_elements.pop();
+            }
+            if get_element!(self.current_node()).tag_name() == "optgroup" {
+                self.open_elements.pop();
+            }
+            self.insert_html_element(token);
+            return
+        }
+
+        if token.is_end_tag() && token.tag_name() == "optgroup" {
+            if get_element!(self.current_node()).tag_name() == "option" {
+                let el = self.open_elements.get(self.open_elements.len() - 1);
+                if get_element!(el).tag_name() == "optgroup" {
+                    self.open_elements.pop();
+                }
+            }
+            if get_element!(self.current_node()).tag_name() == "optgroup" {
+                self.open_elements.pop();
+            } else {
+                emit_error!("expected optgroup");
+            }
+            return
+        }
+
+        if token.is_end_tag() && token.tag_name() == "option" {
+            if get_element!(self.current_node()).tag_name() == "option" {
+                self.open_elements.pop();
+            } else {
+                self.unexpected(&token);
+            }
+            return
+        }
+
+        if token.is_end_tag() && token.tag_name() == "select" {
+            if !self.open_elements.has_element_name_in_select_scope("select") {
+                self.unexpected(&token);
+                return
+            }
+            self.open_elements.pop_until("select");
+            self.reset_insertion_mode_appropriately();
+            return
+        }
+
+        if token.is_start_tag() && token.tag_name() == "select" {
+            self.unexpected(&token);
+            if !self.open_elements.has_element_name_in_select_scope("select") {
+                return
+            }
+            self.open_elements.pop_until("select");
+            self.reset_insertion_mode_appropriately();
+            return
+        }
+
+        if token.is_start_tag() && match_any!(token.tag_name(), "input", "keygen", "textarea") {
+            self.unexpected(&token);
+            if !self.open_elements.has_element_name_in_select_scope("select") {
+                return
+            }
+            self.open_elements.pop_until("select");
+            self.reset_insertion_mode_appropriately();
+            return self.process(token);
+        }
+
+        if token.is_start_tag() && match_any!(token.tag_name(), "script", "template") {
+            return self.handle_in_head(token);
+        }
+
+        if token.is_end_tag() && token.tag_name() == "template" {
+            return self.handle_in_head(token);
+        }
+
+        if token.is_eof() {
+            return self.handle_in_body(token);
+        }
+
+        self.unexpected(&token);
+        return
     }
 
     fn handle_in_template(&mut self, token: Token) {}
