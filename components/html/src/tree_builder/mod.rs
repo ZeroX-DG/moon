@@ -171,10 +171,9 @@ impl TreeBuilder {
     pub fn run(mut self) -> NodeRef {
         loop {
             let token = self.tokenizer.next_token();
-            if let Token::EOF = token {
-                break
-            }
+
             self.process(token);
+            
             if self.should_stop {
                 break
             }
