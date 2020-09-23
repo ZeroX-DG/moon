@@ -24,10 +24,11 @@ Bold text is what I'm working on
 - [x] :memo: HTML Parsing
   - [x] HTML tokenizer
   - [x] HTML dom tree builder (85% specs)
+- [ ] :electric_plug: **CSSOM API**
+- [ ] :memo: CSS Parsing
+  - [ ] **CSS tokenizer**
+  - [ ] CSSOM tree builder
 - [ ] :triangular_ruler: CSS
-  - [ ] **CSSOM API**
-  - [ ] CSS tokenizer
-  - [ ] CSSOM builder
   - [ ] Selector matching
     - [ ] Element selector
     - [ ] Id selector
