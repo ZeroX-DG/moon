@@ -380,8 +380,35 @@ impl TreeBuilder {
     fn get_appropriate_place_for_inserting_a_node(&self) -> AdjustedInsertionLocation {
         let target = self.open_elements.current_node().unwrap();
 
-        // TODO: implement full specs
-        return AdjustedInsertionLocation::LastChild(target.clone());
+        let adjusted_location = if self.foster_parenting && match_any!(get_element!(target).tag_name(), "table", "tbody", "tfoot", "thead", "tr") {
+            let last_template = self.open_elements.last_element_with_tag_name("template");
+            let last_table = self.open_elements.last_element_with_tag_name("table");
+
+            if last_template.is_some() && (last_table.is_none() || last_template.unwrap().1 > last_table.unwrap().1) {
+                // TODO: Fix this to insert to template content when support template tag
+                AdjustedInsertionLocation::LastChild(target)
+            } else {
+                if last_table.is_none() {
+                    AdjustedInsertionLocation::LastChild(self.open_elements.get(0))
+                } else {
+                    if let Some((table, table_index)) = last_table {
+                        if let Some(table_parent) = table.borrow().as_node().parent() {
+                            AdjustedInsertionLocation::LastChild(table_parent)
+                        } else {
+                            let previous_element = self.open_elements.get(table_index - 1);
+                            AdjustedInsertionLocation::LastChild(previous_element)
+                        }
+                    } else {
+                        AdjustedInsertionLocation::LastChild(target)
+                    }
+                }
+            }
+        } else {
+            AdjustedInsertionLocation::LastChild(target)
+        };
+
+        // TODO: Fix this to insert to template content when support template tag
+        return adjusted_location;
     }
 
     fn insert_html_element(&mut self, token: Token) -> NodeRef {
