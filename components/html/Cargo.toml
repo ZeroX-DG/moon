@@ -9,3 +9,4 @@ edition = "2018"
 [dependencies]
 dom = { path = "../dom", version = "*" }
 phf = { version = "0.8.0", features = ["macros"] }
+io  = { path = "../io", version = "*" }

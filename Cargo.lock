@@ -26,8 +26,13 @@ name = "html"
 version = "0.1.0"
 dependencies = [
  "dom",
+ "io",
  "phf",
 ]
+
+[[package]]
+name = "io"
+version = "0.1.0"
 
 [[package]]
 name = "libc"

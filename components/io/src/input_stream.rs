@@ -19,7 +19,7 @@ impl InputStream {
         None
     }
 
-    pub fn as_str(&self) -> String {
-        self.input[self.index..].to_string()
+    pub fn as_str(&self) -> &str {
+        &self.input[self.index..]
     }
 }

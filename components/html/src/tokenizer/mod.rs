@@ -1,9 +1,8 @@
-pub mod input_stream;
 pub mod state;
 pub mod token;
 
 use super::entities::ENTITIES;
-use input_stream::InputStream;
+use io::input_stream::InputStream;
 use state::State;
 use std::collections::{HashSet, VecDeque};
 use std::env;
