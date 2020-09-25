@@ -19,6 +19,14 @@ impl InputStream {
         None
     }
 
+    pub fn peek_next(&mut self, len: usize) -> String {
+        self.as_str().chars().take(len).collect()
+    }
+
+    pub fn peek_next_char(&mut self) -> Option<char> {
+        self.as_str().chars().next()
+    }
+
     pub fn as_str(&self) -> &str {
         &self.input[self.index..]
     }

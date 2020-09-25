@@ -42,3 +42,11 @@ pub enum NumberType {
     Integer,
     Number
 }
+
+impl Token {
+    pub fn append_to_string_token(&mut self, ch: char) {
+        if let Token::Str(ref mut data) = self {
+            data.push(ch);
+        }
+    }
+}
