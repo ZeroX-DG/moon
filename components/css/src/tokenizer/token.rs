@@ -1,3 +1,4 @@
+#[derive(Debug, PartialEq)]
 pub enum Token {
     Ident(String),
     Function(String),
@@ -33,11 +34,13 @@ pub enum Token {
     EOF
 }
 
+#[derive(Debug, PartialEq)]
 pub enum HashType {
     Id,
     Unrestricted
 }
 
+#[derive(Debug, PartialEq)]
 pub enum NumberType {
     Integer,
     Number

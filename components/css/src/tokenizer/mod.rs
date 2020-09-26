@@ -70,10 +70,7 @@ fn is_surrogate(n: u32) -> bool {
 /// Check if a codepoint is a name code point
 /// https://www.w3.org/TR/css-syntax-3/#name-code-point
 fn is_named(ch: char) -> bool {
-    if ch == '-' {
-        return true
-    }
-    return ch.is_ascii_digit();
+    return is_name_start(ch) || ch.is_ascii_digit() || ch == '-';
 }
 
 /// Check if 2 codepoints are valid escape
@@ -96,7 +93,7 @@ fn is_valid_escape(value: &str) -> bool {
 /// Check if a codepoint is a name-start codepoint
 /// https://www.w3.org/TR/css-syntax-3/#name-start-code-point
 fn is_name_start(ch: char) -> bool {
-    return ch.is_ascii() || ch >= '\u{0080}' || ch == '_';
+    return ch.is_ascii_alphabetic() || ch >= '\u{0080}' || ch == '_';
 }
 
 /// Check if 3 codepoints would start an identifier
@@ -157,9 +154,6 @@ pub struct Tokenizer {
     /// chars input stream for tokenizer
     input: InputStream,
 
-    /// should the tokenizer reconsume the current char
-    reconsume_char: bool,
-
     /// current processing character
     current_character: char
 }
@@ -168,20 +162,12 @@ impl Tokenizer {
     pub fn new(input: String) -> Self {
         Self {
             input: InputStream::new(input),
-            reconsume_char: false,
             current_character: '\0'
         }
     }
 
     fn consume_next(&mut self) -> Char {
-        let ch = if self.reconsume_char {
-            // reset reconsume flag
-            self.reconsume_char = false;
-
-            Some(self.current_character)
-        } else {
-            self.input.next()
-        };
+        let ch = self.input.next();
 
         match ch {
             Some(c) => {
@@ -202,7 +188,7 @@ impl Tokenizer {
     }
 
     fn reconsume(&mut self) {
-        self.reconsume_char = true;
+        self.input.reconsume();
     }
 }
 
@@ -456,29 +442,29 @@ impl Tokenizer {
         if string.eq_ignore_ascii_case("url") {
             if let Some('(') = self.input.peek_next_char() {
                 self.consume_next();
-            }
-            loop {
-                if let Some(next_2_chars) = self.input.peek_next(2) {
-                    let mut chars = next_2_chars.chars();
-                    let first = chars.next().unwrap();
-                    let second = chars.next().unwrap();
-                    if is_whitespace(first) && is_whitespace(second) {
-                        self.consume_next();
-                    } else {
-                        break
+                loop {
+                    if let Some(next_2_chars) = self.input.peek_next(2) {
+                        let mut chars = next_2_chars.chars();
+                        let first = chars.next().unwrap();
+                        let second = chars.next().unwrap();
+                        if is_whitespace(first) && is_whitespace(second) {
+                            self.consume_next();
+                        } else {
+                            break
+                        }
                     }
                 }
-            }
-            if let Some(next_2_chars) = self.input.peek_next(2) {
-                let re = Regex::new("^ ?('|\")$").unwrap();
-                if re.is_match(next_2_chars) {
-                    return Token::Function(string);
+                if let Some(next_2_chars) = self.input.peek_next(2) {
+                    let re = Regex::new("^ ?('|\")$").unwrap();
+                    if re.is_match(next_2_chars) {
+                        return Token::Function(string);
+                    }
+                    return self.consume_url();
                 }
-                return self.consume_url();
             }
-            if let Some('(') = self.input.peek_next_char() {
-                return Token::Function(string);
-            }
+        }
+        if let Some('(') = self.input.peek_next_char() {
+            return Token::Function(string);
         }
         return Token::Ident(string);
     }
@@ -635,3 +621,45 @@ impl Tokenizer {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn tokenize_simple_css() {
+        let css = r"#id_selector .class_selector {
+            color: red;
+            background: url(https://example.com/image.jpg);
+        }".to_string();
+        let mut tokenizer = Tokenizer::new(css);
+        assert_eq!(tokenizer.consume_token(), Token::Hash("id_selector".to_string(), HashType::Id));
+        assert_eq!(tokenizer.consume_token(), Token::Whitespace);
+        
+        assert_eq!(tokenizer.consume_token(), Token::Delim('.'));
+        assert_eq!(tokenizer.consume_token(), Token::Ident("class_selector".to_string()));
+        assert_eq!(tokenizer.consume_token(), Token::Whitespace);
+
+        assert_eq!(tokenizer.consume_token(), Token::BraceOpen);
+
+        assert_eq!(tokenizer.consume_token(), Token::Whitespace);
+
+        assert_eq!(tokenizer.consume_token(), Token::Ident("color".to_string()));
+        assert_eq!(tokenizer.consume_token(), Token::Colon);
+        assert_eq!(tokenizer.consume_token(), Token::Whitespace);
+        assert_eq!(tokenizer.consume_token(), Token::Ident("red".to_string()));
+        assert_eq!(tokenizer.consume_token(), Token::Semicolon);
+
+        assert_eq!(tokenizer.consume_token(), Token::Whitespace);
+
+        assert_eq!(tokenizer.consume_token(), Token::Ident("background".to_string()));
+        assert_eq!(tokenizer.consume_token(), Token::Colon);
+        assert_eq!(tokenizer.consume_token(), Token::Whitespace);
+        assert_eq!(tokenizer.consume_token(), Token::Url("https://example.com/image.jpg".to_string()));
+        assert_eq!(tokenizer.consume_token(), Token::Semicolon);
+
+        assert_eq!(tokenizer.consume_token(), Token::Whitespace);
+        
+        assert_eq!(tokenizer.consume_token(), Token::BraceClose);
+        assert_eq!(tokenizer.consume_token(), Token::EOF);
+    }
+}
