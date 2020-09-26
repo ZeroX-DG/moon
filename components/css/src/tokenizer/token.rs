@@ -9,12 +9,12 @@ pub enum Token {
     BadUrl,
     Delim(char),
     Number {
-        value: usize,
+        value: i32,
         type_: NumberType
     },
-    Percentage(usize),
+    Percentage(i32),
     Dimension {
-        value: usize,
+        value: i32,
         type_: NumberType,
         unit: String
     },
@@ -63,6 +63,12 @@ impl Token {
     pub fn set_hash_value(&mut self, new_value: String) {
         if let Token::Hash(ref mut value, _) = self {
             *value = new_value;
+        }
+    }
+
+    pub fn append_to_url_token(&mut self, ch: char) {
+        if let Token::Url(ref mut data) = self {
+            data.push(ch);
         }
     }
 }
