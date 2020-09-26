@@ -79,7 +79,7 @@ fn is_named(ch: char) -> bool {
 /// Check if 2 codepoints are valid escape
 /// https://www.w3.org/TR/css-syntax-3/#starts-with-a-valid-escape
 fn is_valid_escape(value: &str) -> bool {
-    let chars = value.chars();
+    let mut chars = value.chars();
     if let Some(c) = chars.next() {
         if c != '\\' {
             return false;
@@ -102,7 +102,7 @@ fn is_name_start(ch: char) -> bool {
 /// Check if 3 codepoints would start an identifier
 /// https://www.w3.org/TR/css-syntax-3/#would-start-an-identifier
 fn is_start_identifier(value: &str) -> bool {
-    let chars = value.chars();
+    let mut chars = value.chars();
 
     match chars.next() {
         Some('-') => {
@@ -129,7 +129,7 @@ fn is_start_identifier(value: &str) -> bool {
 /// Check if 3 codepoints would start a number
 /// https://www.w3.org/TR/css-syntax-3/#starts-with-a-number
 fn is_start_number(value: &str) -> bool {
-    let chars = value.chars();
+    let mut chars = value.chars();
     let first = chars.next().unwrap();
     let second = chars.next().unwrap();
     let third = chars.next().unwrap();
@@ -422,7 +422,7 @@ impl Tokenizer {
         }
         consume_while_number_and_append_to_repr(self, &mut repr);
         if let Some(next_2_chars) = self.input.peek_next(2) {
-            let chars = next_2_chars.chars();
+            let mut chars = next_2_chars.chars();
             let first = chars.next().unwrap();
             let last = chars.next().unwrap();
             if first == '.' && last.is_ascii_digit() {
@@ -459,7 +459,7 @@ impl Tokenizer {
             }
             loop {
                 if let Some(next_2_chars) = self.input.peek_next(2) {
-                    let chars = next_2_chars.chars();
+                    let mut chars = next_2_chars.chars();
                     let first = chars.next().unwrap();
                     let second = chars.next().unwrap();
                     if is_whitespace(first) && is_whitespace(second) {
@@ -489,7 +489,7 @@ impl Tokenizer {
         } else {
             self.current_character
         };
-        let token = Token::Str(String::new());
+        let mut token = Token::Str(String::new());
         loop {
             let ch = self.consume_next();
             match ch {
@@ -524,7 +524,7 @@ impl Tokenizer {
     }
 
     fn consume_url(&mut self) -> Token {
-        let token = Token::Url(String::new());
+        let mut token = Token::Url(String::new());
         self.consume_while(is_whitespace);
         loop {
             match self.consume_next() {
