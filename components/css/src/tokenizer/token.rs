@@ -49,4 +49,20 @@ impl Token {
             data.push(ch);
         }
     }
+
+    pub fn new_hash() -> Self {
+        Token::Hash(String::new(), HashType::Unrestricted)
+    }
+
+    pub fn set_hash_type(&mut self, new_type: HashType) {
+        if let Token::Hash(_, ref mut type_) = self {
+            *type_ = new_type;
+        }
+    }
+
+    pub fn set_hash_value(&mut self, new_value: String) {
+        if let Token::Hash(ref mut value, _) = self {
+            *value = new_value;
+        }
+    }
 }

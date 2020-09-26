@@ -3,6 +3,7 @@ pub mod token;
 use std::env;
 use io::input_stream::InputStream;
 use token::Token;
+use token::HashType;
 
 fn is_trace() -> bool {
     match env::var("TRACE_TOKENIZER") {
@@ -39,6 +40,71 @@ fn is_whitespace(ch: char) -> bool {
     match ch {
         '\t' | '\n' | '\x0C' | ' ' => true,
         _ => false
+    }
+}
+
+fn is_surrogate(n: u32) -> bool {
+    match n {
+        0xD800..=0xDFFF => true,
+        _ => false,
+    }
+}
+
+fn is_named(ch: char) -> bool {
+    if ch == '-' {
+        return true
+    }
+    return ch.is_ascii_digit();
+}
+
+fn is_valid_escape(value: String) -> bool {
+    if value.len() < 2 {
+        return false;
+    }
+    let chars = value.chars();
+    if let Some(c) = chars.next() {
+        if c != '\\' {
+            return false;
+        }
+    }
+    if let Some(c) = chars.next() {
+        if c == '\n' {
+            return false;
+        }
+    }
+    return true;
+}
+
+fn is_name_start(ch: char) -> bool {
+    return ch.is_ascii() || ch >= '\u{0080}' || ch == '_';
+}
+
+fn is_start_identifier(value: String) -> bool {
+    if value.len() < 3 {
+        return false;
+    }
+
+    let chars = value.chars();
+
+    match chars.next() {
+        Some('-') => {
+            let second = chars.next().unwrap();
+            let third = chars.next().unwrap();
+            if is_name_start(second) || second == '-' {
+                return true;
+            }
+            if is_valid_escape(format!("{}{}", second, third)) {
+                return true;
+            }
+            return false;
+        }
+        Some(c) if is_name_start(c) => {
+            return true;
+        }
+        Some('\\') => {
+            return is_valid_escape(format!("{}{}", '\\', chars.next().unwrap()));
+        }
+        _ => return false
     }
 }
 
@@ -107,6 +173,35 @@ impl Tokenizer {
             Char::ch('"') => {
                 self.consume_string(None)
             }
+            Char::ch('#') => {
+                let is_hash = if let Some(ch) = self.input.peek_next_char() {
+                    if is_named(ch) {
+                        true
+                    } else {
+                        false
+                    }
+                } else {
+                    if is_valid_escape(self.input.peek_next(2)) {
+                        true
+                    } else {
+                        false
+                    }
+                };
+                if is_hash {
+                    let mut token = Token::new_hash();
+                    if is_start_identifier(self.input.peek_next(3)) {
+                        token.set_hash_type(HashType::Id);
+                    }
+                    token.set_hash_value(self.consume_name());
+                    return token
+                }
+                return Token::Delim(self.current_character);
+            }
+            Char::ch('\'') => {
+                self.consume_string(None)
+            }
+            Char::ch('(') => Token::ParentheseOpen,
+            Char::ch(')') => Token::ParentheseClose,
             _ => {}
         }
     }
@@ -129,6 +224,27 @@ impl Tokenizer {
             } else {
                 return
             }
+        }
+    }
+    fn consume_name(&mut self) -> String {
+        let mut result = String::new();
+        loop {
+            let ch = self.consume_next();
+            if let Char::ch(c) = ch {
+                if is_named(c) {
+                    result.push(c);
+                    continue;
+                }
+                let next_ch = self.input.peek_next_char();
+                if let Some(next_c) = next_ch {
+                    if is_valid_escape(format!("{}{}", c, next_c)) {
+                        result.push(self.consume_escaped());
+                        continue;
+                    }
+                }
+            }
+            self.reconsume();
+            return result;
         }
     }
     fn consume_numeric() {}
@@ -174,7 +290,49 @@ impl Tokenizer {
     }
     fn consume_url() {}
     fn consume_escaped(&mut self) -> char {
-
+        let ch = self.consume_next();
+        match ch {
+            Char::eof => {
+                emit_error!("Unexpected EOF");
+                REPLACEMENT_CHARACTER
+            }
+            Char::ch(c) if c.is_ascii_hexdigit() => {
+                let mut hex_value: u32 = c.to_digit(16).unwrap();
+                for _ in 0..5 {
+                    match self.consume_next() {
+                        Char::ch(c) => {
+                            if c.is_ascii_hexdigit() {
+                                hex_value *= 16;
+                                hex_value += c.to_digit(16).unwrap();
+                                continue
+                            }
+                            break
+                        }
+                        Char::eof => {
+                            emit_error!("Unexpected EOF");
+                            hex_value = 0xFFFD;
+                            break
+                        }
+                    }
+                }
+                if let Some(c) = self.input.peek_next_char() {
+                    if is_whitespace(c) {
+                        self.consume_next();
+                    }
+                }
+                if hex_value == 0x00 {
+                    hex_value = 0xFFFD;
+                }
+                if hex_value > 0x10FFFF {
+                    hex_value = 0xFFFD;
+                }
+                if is_surrogate(hex_value) {
+                    hex_value = 0xFFFD;
+                }
+                return std::char::from_u32(hex_value).unwrap_or(REPLACEMENT_CHARACTER);
+            }
+            Char::ch(c) => c
+        }
     }
 }
 
