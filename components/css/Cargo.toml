@@ -9,3 +9,4 @@ edition = "2018"
 [dependencies]
 io = { path = "../io", version = "*" }
 regex = "*"
+cssom = { path ="../cssom", version = "*" }
