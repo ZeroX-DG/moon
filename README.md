@@ -27,7 +27,7 @@ Bold text is what I'm working on
 - [ ] :electric_plug: **CSSOM API**
 - [ ] :memo: CSS Parsing
   - [x] CSS tokenizer
-  - [ ] CSSOM tree builder
+  - [ ] **CSSOM tree builder**
 - [ ] :triangular_ruler: CSS
   - [ ] Selector matching
     - [ ] Element selector
