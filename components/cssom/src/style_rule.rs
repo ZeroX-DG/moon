@@ -3,9 +3,9 @@ use super::selector::Selector;
 
 pub struct StyleRule {
     selector: Selector,
-    style: StyleDeclaration
+    style: StyleDeclarations
 }
 
-pub struct StyleDeclaration {
+pub struct StyleDeclarations {
     properties: HashMap<String, String>
 }
