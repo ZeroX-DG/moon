@@ -37,12 +37,17 @@ pub struct Parser {
     current_token: Option<Token>
 }
 
-// TODO: support at-rule too
 #[derive(Debug, PartialEq)]
 pub enum Rule {
-    QualifiedRule(QualifiedRule)
+    QualifiedRule(QualifiedRule),
+    AtRule(AtRule)
 }
 pub type ListOfRules = Vec<Rule>;
+
+pub enum DeclarationOrAtRule {
+    Declaration(Declaration),
+    AtRule(AtRule)
+}
 
 /// A temporary stylesheet to store rules before
 /// transforming it into CSSStyleSheet
@@ -76,12 +81,22 @@ pub struct QualifiedRule {
     block: Option<SimpleBlock>
 }
 
+/// AtRule
+/// https://www.w3.org/TR/css-syntax-3/#at-rule
+#[derive(Debug, PartialEq)]
+pub struct AtRule {
+    name: String,
+    prelude: Vec<ComponentValue>,
+    block: Option<SimpleBlock>
+}
+
 /// Declaration
 /// https://www.w3.org/TR/css-syntax-3/#declaration
 pub struct Declaration {
     name: String,
     value: Vec<ComponentValue>,
-    important: bool }
+    important: bool
+}
 
 /// ComponentValue
 /// https://www.w3.org/TR/css-syntax-3/#component-value
@@ -95,6 +110,24 @@ pub enum ComponentValue {
 impl QualifiedRule {
     pub fn new() -> Self {
         Self {
+            prelude: Vec::new(),
+            block: None
+        }
+    }
+
+    pub fn set_block(&mut self, block: SimpleBlock) {
+        self.block = Some(block);
+    }
+
+    pub fn append_prelude(&mut self, value: ComponentValue) {
+        self.prelude.push(value);
+    }
+}
+
+impl AtRule {
+    pub fn new(name: String) -> Self {
+        Self {
+            name,
             prelude: Vec::new(),
             block: None
         }
@@ -255,7 +288,7 @@ impl Parser {
         }
     }
 
-    fn consume_a_list_of_declarations(&mut self) -> Vec<Declaration> {
+    fn consume_a_list_of_declarations(&mut self) -> Vec<DeclarationOrAtRule> {
         let mut result = Vec::new();
 
         loop {
@@ -266,7 +299,11 @@ impl Parser {
                 Token::EOF => {
                     return result;
                 }
-                // TODO: support at-rule too
+                Token::AtKeyword(_) => {
+                    self.reconsume();
+                    let rule = self.consume_an_at_rule();
+                    result.push(DeclarationOrAtRule::AtRule(rule));
+                }
                 Token::Ident(_) => {
                     let mut tmp = vec![ComponentValue::PerservedToken(self.current_token.clone().unwrap())];
                     loop {
@@ -278,7 +315,7 @@ impl Parser {
                         }
                     }
                     if let Some(declaration) = self.consume_a_declaration_from_list(OutputStream::new(tmp)) {
-                        result.push(declaration);
+                        result.push(DeclarationOrAtRule::Declaration(declaration));
                     }
                 }
                 _ => {
@@ -346,6 +383,38 @@ impl Parser {
         }
     }
 
+    fn consume_an_at_rule(&mut self) -> AtRule {
+        self.consume_next_token();
+        let current_token = self.current_token.clone().unwrap();
+        let keyword_name = if let Token::AtKeyword(name) = current_token {
+            name
+        } else {
+            panic!("The current token is not a function");
+        };
+        let mut at_rule = AtRule::new(keyword_name);
+
+        loop {
+            let next_token = self.consume_next_token();
+            
+            match next_token {
+                Token::Semicolon => return at_rule,
+                Token::EOF => {
+                    emit_error!("Unexpected EOF while consuming an at-rule");
+                    return at_rule;
+                }
+                Token::BraceOpen => {
+                    at_rule.set_block(self.consume_a_simple_block());
+                    return at_rule;
+                }
+                // TODO: How is a simple block a token?
+                _ => {
+                    self.reconsume();
+                    at_rule.append_prelude(self.consume_a_component_value());
+                }
+            }
+        }
+    }
+
     fn consume_a_list_of_rules(&mut self) -> ListOfRules {
         let mut rules = Vec::new();
         loop {
@@ -362,7 +431,11 @@ impl Parser {
                         rules.push(Rule::QualifiedRule(rule));
                     }
                 }
-                // TODO: impl support for @ rules
+                Token::AtKeyword(_) => {
+                    self.reconsume();
+                    let at_rule = self.consume_an_at_rule();
+                    rules.push(Rule::AtRule(at_rule));
+                }
                 _ => {
                     self.reconsume();
                     if let Some(rule) = self.consume_a_qualified_rule() {
@@ -504,9 +577,10 @@ impl Parser {
         #[allow(unused_assignments)]
         let mut return_rule = None;
 
-        // TODO: support at-rule too
         if let Token::EOF = self.peek_next_token() {
             return Err(SyntaxError);
+        } else if let Token::AtKeyword(_) = self.peek_next_token() {
+            return_rule = Some(Rule::AtRule(self.consume_an_at_rule()));
         } else {
             if let Some(rule) = self.consume_a_qualified_rule() {
                 return_rule = Some(Rule::QualifiedRule(rule));
