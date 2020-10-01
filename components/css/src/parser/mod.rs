@@ -1,8 +1,7 @@
 use std::env;
-use super::tokenizer::Tokenizer;
+use io::output_stream::OutputStream;
 use super::tokenizer::token::Token;
 use cssom::stylesheet::StyleSheet;
-use cssom::css_rule::CSSRule;
 
 fn is_trace() -> bool {
     match env::var("TRACE_CSS_PARSER") {
@@ -25,10 +24,12 @@ macro_rules! emit_error {
     };
 }
 
+pub struct SyntaxError;
+
 /// CSS Parser
 pub struct Parser {
-    /// Tokenizer to receive CSS token
-    tokenizer: Tokenizer,
+    /// Stream of output tokens from tokenizer
+    tokens: OutputStream<Token>,
     /// Top level flag
     top_level: bool,
     /// Reconsume current input token
@@ -37,9 +38,11 @@ pub struct Parser {
     current_token: Option<Token>
 }
 
-// TODO: Support at-rule too
-type Rule = QualifiedRule;
-type ListOfRules = Vec<Rule>;
+// TODO: support at-rule too
+pub enum Rule {
+    QualifiedRule(QualifiedRule)
+}
+pub type ListOfRules = Vec<Rule>;
 
 /// A simple block
 /// https://www.w3.org/TR/css-syntax-3/#simple-block
@@ -62,6 +65,14 @@ pub struct Function {
 pub struct QualifiedRule {
     prelude: Vec<ComponentValue>,
     block: Option<SimpleBlock>
+}
+
+/// Declaration
+/// https://www.w3.org/TR/css-syntax-3/#declaration
+pub struct Declaration {
+    name: String,
+    value: Vec<ComponentValue>,
+    important: bool
 }
 
 /// ComponentValue
@@ -102,6 +113,47 @@ impl SimpleBlock {
     }
 }
 
+impl Declaration {
+    pub fn new(name: String) -> Self {
+        Self {
+            name,
+            value: Vec::new(),
+            important: false
+        }
+    }
+
+    pub fn append_value(&mut self, value: ComponentValue) {
+        self.value.push(value);
+    }
+
+    pub fn last_values(&self, len: usize) -> Vec<&ComponentValue> {
+        self.value.iter().rev().take(len).collect()
+    }
+
+    pub fn last_token(&self) -> Option<(usize, &Token)> {
+        for (index, value) in self.value.iter().rev().enumerate() {
+            if let ComponentValue::PerservedToken(token) = value {
+                return Some((index, token));
+            }
+        }
+        return None;
+    }
+
+    pub fn pop_last(&mut self, len: usize) {
+        for _ in 0..len {
+            self.value.pop();
+        }
+    }
+
+    pub fn remove(&mut self, index: usize) {
+        self.value.remove(index);
+    }
+
+    pub fn important(&mut self) {
+        self.important = true;
+    }
+}
+
 impl Function {
     pub fn new(name: String) -> Self {
         Self {
@@ -116,9 +168,9 @@ impl Function {
 }
 
 impl Parser {
-    pub fn new(tokenizer: Tokenizer) -> Self {
+    pub fn new(tokens: OutputStream<Token>) -> Self {
         Self {
-            tokenizer,
+            tokens,
             top_level: false,
             reconsume: false,
             current_token: None
@@ -130,9 +182,16 @@ impl Parser {
             self.reconsume = false;
             return self.current_token.clone().unwrap();
         }
-        let token = self.tokenizer.consume_token();
+        let token = self.tokens.next().unwrap_or(&Token::EOF);
         self.current_token = Some(token.clone());
-        return token;
+        return token.clone();
+    }
+
+    fn peek_next_token(&mut self) -> Token {
+        if self.reconsume {
+            return self.current_token.clone().unwrap();
+        }
+        return self.tokens.next().unwrap_or(&Token::EOF).clone();
     }
 
     fn reconsume(&mut self) {
@@ -249,17 +308,73 @@ impl Parser {
                     }
                     self.reconsume();
                     if let Some(rule) = self.consume_a_qualified_rule() {
-                        rules.push(rule);
+                        rules.push(Rule::QualifiedRule(rule));
                     }
                 }
                 // TODO: impl support for @ rules
                 _ => {
                     self.reconsume();
                     if let Some(rule) = self.consume_a_qualified_rule() {
-                        rules.push(rule);
+                        rules.push(Rule::QualifiedRule(rule));
                     }
                 }
             }
+        }
+    }
+
+    fn consume_a_declaration(&mut self) -> Option<Declaration> {
+        let next_token = self.consume_next_token();
+        let declaration_name = if let Token::Ident(name) = next_token {
+            name
+        } else {
+            panic!("Token is not a indent token");
+        };
+        let mut declaration = Declaration::new(declaration_name);
+        self.consume_while_next_token_is(Token::Whitespace);
+
+        match self.peek_next_token() {
+            Token::Colon => {
+                self.consume_next_token();
+            }
+            _ => {
+                emit_error!("Expected Colon in declaration");
+                return None
+            }
+        }
+
+        self.consume_while_next_token_is(Token::Whitespace);
+
+        loop {
+            let token = self.peek_next_token();
+            if let Token::EOF = token {
+                break
+            }
+            declaration.append_value(self.consume_a_component_value());
+        }
+
+        let last_two_tokens = declaration.last_values(2);
+
+        if last_two_tokens.len() == 2 {
+            if let ComponentValue::PerservedToken(Token::Delim('!')) = last_two_tokens[0] {
+                if let ComponentValue::PerservedToken(Token::Ident(data)) = last_two_tokens[1] {
+                    if data.eq_ignore_ascii_case("important") {
+                        declaration.pop_last(2);
+                        declaration.important();
+                    }
+                }
+            }
+        }
+
+        while let Some((index, Token::Whitespace)) = declaration.last_token() {
+            declaration.remove(index);
+        }
+
+        return Some(declaration);
+    }
+
+    fn consume_while_next_token_is(&mut self, token: Token) {
+        while self.peek_next_token() == token {
+            self.consume_next_token();
         }
     }
 }
@@ -275,5 +390,41 @@ impl Parser {
         self.top_level = false;
         let rules = self.consume_a_list_of_rules();
         return rules;
+    }
+
+    pub fn parse_a_rule(&mut self) -> Result<Rule, SyntaxError> {
+        self.consume_while_next_token_is(Token::Whitespace);
+
+        let mut return_rule = None;
+
+        // TODO: support at-rule too
+        if let Token::EOF = self.peek_next_token() {
+            return Err(SyntaxError);
+        } else {
+            if let Some(rule) = self.consume_a_qualified_rule() {
+                return_rule = Some(Rule::QualifiedRule(rule));
+            } else {
+                return Err(SyntaxError);
+            }
+        }
+
+        self.consume_while_next_token_is(Token::Whitespace);
+
+        if let Token::EOF = self.peek_next_token() {
+            return Ok(return_rule.unwrap());
+        }
+        return Err(SyntaxError);
+    }
+
+    pub fn parse_a_declaration(&mut self) -> Result<Declaration, SyntaxError> {
+        self.consume_while_next_token_is(Token::Whitespace);
+        if let Token::Ident(_) = self.peek_next_token() {
+            if let Some(declaration) = self.consume_a_declaration() {
+                return Ok(declaration);
+            } else {
+                return Err(SyntaxError);
+            }
+        }
+        return Err(SyntaxError);
     }
 }
