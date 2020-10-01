@@ -38,6 +38,7 @@ pub struct Parser {
 }
 
 // TODO: support at-rule too
+#[derive(Debug, PartialEq)]
 pub enum Rule {
     QualifiedRule(QualifiedRule)
 }
@@ -51,7 +52,7 @@ pub struct StyleSheet {
 
 /// A simple block
 /// https://www.w3.org/TR/css-syntax-3/#simple-block
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct SimpleBlock {
     /// Associated token (either a <[-token>, <(-token>, or <{-token>)
     token: Token,
@@ -61,7 +62,7 @@ pub struct SimpleBlock {
 
 /// Function
 /// https://www.w3.org/TR/css-syntax-3/#function
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Function {
     name: String,
     value: Vec<ComponentValue>
@@ -69,6 +70,7 @@ pub struct Function {
 
 /// QualifiedRule
 /// https://www.w3.org/TR/css-syntax-3/#qualified-rule
+#[derive(Debug, PartialEq)]
 pub struct QualifiedRule {
     prelude: Vec<ComponentValue>,
     block: Option<SimpleBlock>
@@ -83,7 +85,7 @@ pub struct Declaration {
 
 /// ComponentValue
 /// https://www.w3.org/TR/css-syntax-3/#component-value
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum ComponentValue {
     PerservedToken(Token),
     Function(Function),
@@ -348,7 +350,6 @@ impl Parser {
         let mut rules = Vec::new();
         loop {
             let next_token = self.consume_next_token();
-            
             match next_token {
                 Token::Whitespace => continue,
                 Token::EOF => return rules,
@@ -580,5 +581,41 @@ impl Parser {
             values.push(value);
         }
         return return_values;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::tokenizer::Tokenizer;
+
+    #[test]
+    fn parse_a_stylesheet() {
+        let css = "div { color: black; }";
+        let tokenizer = Tokenizer::new(css.to_string());
+        let tokens = tokenizer.run();
+        let mut parser = Parser::new(tokens);
+        let stylesheet = parser.parse_a_stylesheet();
+        let rules = stylesheet.rules;
+
+        assert_eq!(rules.len(), 1);
+        assert_eq!(rules[0], Rule::QualifiedRule(QualifiedRule {
+            prelude: vec![
+                ComponentValue::PerservedToken(Token::Ident("div".to_string())),
+                ComponentValue::PerservedToken(Token::Whitespace)
+            ],
+            block: Some(SimpleBlock {
+                token: Token::BraceOpen,
+                value: vec![
+                    ComponentValue::PerservedToken(Token::Whitespace),
+                    ComponentValue::PerservedToken(Token::Ident("color".to_string())),
+                    ComponentValue::PerservedToken(Token::Colon),
+                    ComponentValue::PerservedToken(Token::Whitespace),
+                    ComponentValue::PerservedToken(Token::Ident("black".to_string())),
+                    ComponentValue::PerservedToken(Token::Semicolon),
+                    ComponentValue::PerservedToken(Token::Whitespace),
+                ]
+            })
+        }));
     }
 }

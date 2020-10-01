@@ -15,7 +15,8 @@ impl<T> OutputStream<T> {
     }
 
     pub fn next(&mut self) -> Option<&T> {
+        let current = self.output.get(self.index);
         self.index += 1;
-        self.output.get(self.index)
+        return current;
     }
 }
