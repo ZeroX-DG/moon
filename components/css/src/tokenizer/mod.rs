@@ -8,15 +8,15 @@ use token::NumberType;
 use regex::Regex;
 
 fn is_trace() -> bool {
-    match env::var("TRACE_TOKENIZER") {
-        Ok(s) => s == "true",
+    match env::var("TRACE_CSS_TOKENIZER") {
+        Ok(s) => s == "true" || s == "",
         _ => false,
     }
 }
 
 macro_rules! trace {
     ($err:expr) => {
-        println!("[ParseError][Tokenization]: {}", $err);
+        println!("[ParseError][CSS Tokenization]: {}", $err);
     };
 }
 
