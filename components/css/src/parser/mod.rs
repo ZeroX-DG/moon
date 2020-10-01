@@ -246,6 +246,49 @@ impl Parser {
         }
     }
 
+    fn consume_a_list_of_declarations(&mut self) -> Vec<Declaration> {
+        let mut result = Vec::new();
+
+        loop {
+            let next_token = self.consume_next_token();
+
+            match next_token {
+                Token::Whitespace | Token::Semicolon => {}
+                Token::EOF => {
+                    return result;
+                }
+                // TODO: support at-rule too
+                Token::Ident(_) => {
+                    let mut tmp = vec![ComponentValue::PerservedToken(self.current_token.clone().unwrap())];
+                    loop {
+                        match self.peek_next_token() {
+                            Token::Semicolon | Token::EOF => break,
+                            _ => {
+                                tmp.push(self.consume_a_component_value());
+                            }
+                        }
+                    }
+                    if let Some(declaration) = self.consume_a_declaration_from_list(OutputStream::new(tmp)) {
+                        result.push(declaration);
+                    }
+                }
+                _ => {
+                    emit_error!("Unexpected token while consuming a list of declarations");
+                    self.reconsume();
+                    loop {
+                        match self.peek_next_token() {
+                            Token::Semicolon | Token::EOF => break,
+                            _ => {
+                                // throw away
+                                self.consume_a_component_value();
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     fn consume_a_function(&mut self) -> Function {
         let current_token = self.current_token.clone().unwrap();
         let function_name = if let Token::Function(name) = current_token {
@@ -320,6 +363,61 @@ impl Parser {
                 }
             }
         }
+    }
+
+    fn consume_a_declaration_from_list(&mut self, mut tokens: OutputStream<ComponentValue>) -> Option<Declaration> {
+        let next_token = tokens.next().unwrap();
+        let declaration_name = if let ComponentValue::PerservedToken(Token::Ident(name)) = next_token {
+            name.clone()
+        } else {
+            panic!("Token is not a indent token");
+        };
+        let mut declaration = Declaration::new(declaration_name);
+
+        while let Some(ComponentValue::PerservedToken(Token::Whitespace)) = tokens.peek() {
+            tokens.next();
+        }
+
+        match tokens.peek().unwrap() {
+            ComponentValue::PerservedToken(Token::Colon) => {
+                tokens.next();
+            }
+            _ => {
+                emit_error!("Expected Colon in declaration");
+                return None
+            }
+        }
+
+        while let Some(ComponentValue::PerservedToken(Token::Whitespace)) = tokens.peek() {
+            tokens.next();
+        }
+
+        loop {
+            let token = tokens.peek().unwrap();
+            if let ComponentValue::PerservedToken(Token::EOF) = token {
+                break
+            }
+            declaration.append_value(self.consume_a_component_value());
+        }
+
+        let last_two_tokens = declaration.last_values(2);
+
+        if last_two_tokens.len() == 2 {
+            if let ComponentValue::PerservedToken(Token::Delim('!')) = last_two_tokens[0] {
+                if let ComponentValue::PerservedToken(Token::Ident(data)) = last_two_tokens[1] {
+                    if data.eq_ignore_ascii_case("important") {
+                        declaration.pop_last(2);
+                        declaration.important();
+                    }
+                }
+            }
+        }
+
+        while let Some((index, Token::Whitespace)) = declaration.last_token() {
+            declaration.remove(index);
+        }
+
+        return Some(declaration);
     }
 
     fn consume_a_declaration(&mut self) -> Option<Declaration> {
@@ -426,5 +524,9 @@ impl Parser {
             }
         }
         return Err(SyntaxError);
+    }
+
+    pub fn parse_a_list_of_declarations(&mut self) -> Vec<Declaration> {
+        return self.consume_a_list_of_declarations();
     }
 }
