@@ -588,6 +588,7 @@ impl Parser {
 mod tests {
     use super::*;
     use crate::tokenizer::Tokenizer;
+    use crate::tokenizer::token::HashType;
 
     #[test]
     fn parse_a_stylesheet() {
@@ -602,6 +603,67 @@ mod tests {
         assert_eq!(rules[0], Rule::QualifiedRule(QualifiedRule {
             prelude: vec![
                 ComponentValue::PerservedToken(Token::Ident("div".to_string())),
+                ComponentValue::PerservedToken(Token::Whitespace)
+            ],
+            block: Some(SimpleBlock {
+                token: Token::BraceOpen,
+                value: vec![
+                    ComponentValue::PerservedToken(Token::Whitespace),
+                    ComponentValue::PerservedToken(Token::Ident("color".to_string())),
+                    ComponentValue::PerservedToken(Token::Colon),
+                    ComponentValue::PerservedToken(Token::Whitespace),
+                    ComponentValue::PerservedToken(Token::Ident("black".to_string())),
+                    ComponentValue::PerservedToken(Token::Semicolon),
+                    ComponentValue::PerservedToken(Token::Whitespace),
+                ]
+            })
+        }));
+    }
+
+    #[test]
+    fn parse_a_class() {
+        let css = ".className { color: black; }";
+        let tokenizer = Tokenizer::new(css.to_string());
+        let tokens = tokenizer.run();
+        let mut parser = Parser::new(tokens);
+        let stylesheet = parser.parse_a_stylesheet();
+        let rules = stylesheet.rules;
+
+        assert_eq!(rules.len(), 1);
+        assert_eq!(rules[0], Rule::QualifiedRule(QualifiedRule {
+            prelude: vec![
+                ComponentValue::PerservedToken(Token::Delim('.')),
+                ComponentValue::PerservedToken(Token::Ident("className".to_string())),
+                ComponentValue::PerservedToken(Token::Whitespace)
+            ],
+            block: Some(SimpleBlock {
+                token: Token::BraceOpen,
+                value: vec![
+                    ComponentValue::PerservedToken(Token::Whitespace),
+                    ComponentValue::PerservedToken(Token::Ident("color".to_string())),
+                    ComponentValue::PerservedToken(Token::Colon),
+                    ComponentValue::PerservedToken(Token::Whitespace),
+                    ComponentValue::PerservedToken(Token::Ident("black".to_string())),
+                    ComponentValue::PerservedToken(Token::Semicolon),
+                    ComponentValue::PerservedToken(Token::Whitespace),
+                ]
+            })
+        }));
+    }
+
+    #[test]
+    fn parse_an_id() {
+        let css = "#elementId { color: black; }";
+        let tokenizer = Tokenizer::new(css.to_string());
+        let tokens = tokenizer.run();
+        let mut parser = Parser::new(tokens);
+        let stylesheet = parser.parse_a_stylesheet();
+        let rules = stylesheet.rules;
+
+        assert_eq!(rules.len(), 1);
+        assert_eq!(rules[0], Rule::QualifiedRule(QualifiedRule {
+            prelude: vec![
+                ComponentValue::PerservedToken(Token::Hash("elementId".to_string(), HashType::Id)),
                 ComponentValue::PerservedToken(Token::Whitespace)
             ],
             block: Some(SimpleBlock {
