@@ -46,15 +46,7 @@ pub type ListOfRules = Vec<Rule>;
 /// A temporary stylesheet to store rules before
 /// transforming it into CSSStyleSheet
 pub struct StyleSheet {
-    rules: ListOfRules
-}
-
-impl StyleSheet {
-    pub fn new(rules: ListOfRules) -> Self {
-        Self {
-            rules
-        }
-    }
+    pub rules: ListOfRules
 }
 
 /// A simple block
@@ -496,7 +488,7 @@ impl Parser {
     pub fn parse_a_stylesheet(&mut self) -> StyleSheet {
         self.top_level = true;
         let rules = self.consume_a_list_of_rules();
-        return StyleSheet::new(rules);
+        return StyleSheet { rules }
     }
 
     pub fn parse_a_list_of_rules(&mut self) -> ListOfRules {
@@ -508,6 +500,7 @@ impl Parser {
     pub fn parse_a_rule(&mut self) -> Result<Rule, SyntaxError> {
         self.consume_while_next_token_is(Token::Whitespace);
 
+        #[allow(unused_assignments)]
         let mut return_rule = None;
 
         // TODO: support at-rule too
