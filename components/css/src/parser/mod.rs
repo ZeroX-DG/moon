@@ -1,7 +1,6 @@
 use std::env;
 use io::output_stream::OutputStream;
 use super::tokenizer::token::Token;
-use cssom::stylesheet::StyleSheet;
 
 fn is_trace() -> bool {
     match env::var("TRACE_CSS_PARSER") {
@@ -44,6 +43,20 @@ pub enum Rule {
 }
 pub type ListOfRules = Vec<Rule>;
 
+/// A temporary stylesheet to store rules before
+/// transforming it into CSSStyleSheet
+pub struct StyleSheet {
+    rules: ListOfRules
+}
+
+impl StyleSheet {
+    pub fn new(rules: ListOfRules) -> Self {
+        Self {
+            rules
+        }
+    }
+}
+
 /// A simple block
 /// https://www.w3.org/TR/css-syntax-3/#simple-block
 #[derive(Clone)]
@@ -74,8 +87,7 @@ pub struct QualifiedRule {
 pub struct Declaration {
     name: String,
     value: Vec<ComponentValue>,
-    important: bool
-}
+    important: bool }
 
 /// ComponentValue
 /// https://www.w3.org/TR/css-syntax-3/#component-value
@@ -484,7 +496,7 @@ impl Parser {
     pub fn parse_a_stylesheet(&mut self) -> StyleSheet {
         self.top_level = true;
         let rules = self.consume_a_list_of_rules();
-        unimplemented!()
+        return StyleSheet::new(rules);
     }
 
     pub fn parse_a_list_of_rules(&mut self) -> ListOfRules {
