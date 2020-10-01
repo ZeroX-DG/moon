@@ -46,6 +46,7 @@ pub type ListOfRules = Vec<Rule>;
 
 /// A simple block
 /// https://www.w3.org/TR/css-syntax-3/#simple-block
+#[derive(Clone)]
 pub struct SimpleBlock {
     /// Associated token (either a <[-token>, <(-token>, or <{-token>)
     token: Token,
@@ -55,6 +56,7 @@ pub struct SimpleBlock {
 
 /// Function
 /// https://www.w3.org/TR/css-syntax-3/#function
+#[derive(Clone)]
 pub struct Function {
     name: String,
     value: Vec<ComponentValue>
@@ -77,6 +79,7 @@ pub struct Declaration {
 
 /// ComponentValue
 /// https://www.w3.org/TR/css-syntax-3/#component-value
+#[derive(Clone)]
 pub enum ComponentValue {
     PerservedToken(Token),
     Function(Function),
@@ -528,5 +531,49 @@ impl Parser {
 
     pub fn parse_a_list_of_declarations(&mut self) -> Vec<Declaration> {
         return self.consume_a_list_of_declarations();
+    }
+
+    pub fn parse_a_component_value(&mut self) -> Result<ComponentValue, SyntaxError> {
+        self.consume_while_next_token_is(Token::Whitespace);
+        if let Token::EOF = self.peek_next_token() {
+            return Err(SyntaxError);
+        }
+        let value = self.consume_a_component_value();
+        self.consume_while_next_token_is(Token::Whitespace);
+        if let Token::EOF = self.peek_next_token() {
+            return Ok(value);
+        } 
+        return Err(SyntaxError);
+    }
+
+    pub fn parse_a_list_of_component_values(&mut self) -> Vec<ComponentValue> {
+        let mut values = Vec::new();
+        loop {
+            let value = self.consume_a_component_value();
+            if let ComponentValue::PerservedToken(Token::EOF) = value {
+                break
+            }
+            values.push(value);
+        }
+        return values;
+    }
+
+    pub fn parse_a_comma_separated_list_of_component_values(&mut self) -> Vec<Vec<ComponentValue>> {
+        let mut return_values = Vec::new();
+        let mut values = Vec::new();
+        loop {
+            let value = self.consume_a_component_value();
+            if let ComponentValue::PerservedToken(Token::EOF) = value {
+                return_values.push(values.clone());
+                break;
+            }
+            if let ComponentValue::PerservedToken(Token::Comma) = value {
+                return_values.push(values.clone());
+                values.clear();
+                continue;
+            }
+            values.push(value);
+        }
+        return return_values;
     }
 }
