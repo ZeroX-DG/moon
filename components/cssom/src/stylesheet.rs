@@ -11,12 +11,8 @@ impl StyleSheet {
             css_rules: CSSRuleList::new()
         }
     }
-}
 
-impl From<Vec<CSSRule>> for StyleSheet {
-    fn from(rules: Vec<CSSRule>) -> Self {
-        Self {
-            css_rules: CSSRuleList::from(rules)
-        }
+    pub fn append_rule(&mut self, rule: CSSRule) {
+        self.css_rules.append_rule(rule);
     }
 }

@@ -390,10 +390,10 @@ impl Parser {
 }
 
 impl Parser {
-    pub fn parse_a_stylesheet(&mut self) -> StyleSheet {
+    pub fn parse_a_stylesheet(&mut self) -> ListOfRules {
         self.top_level = true;
         let rules = self.consume_a_list_of_rules();
-        return StyleSheet { rules }
+        return rules;
     }
 
     pub fn parse_a_list_of_rules(&mut self) -> ListOfRules {
@@ -501,8 +501,7 @@ mod tests {
         let tokenizer = Tokenizer::new(css.to_string());
         let tokens = tokenizer.run();
         let mut parser = Parser::new(tokens);
-        let stylesheet = parser.parse_a_stylesheet();
-        let rules = stylesheet.rules;
+        let rules = parser.parse_a_stylesheet();
 
         assert_eq!(rules.len(), 1);
         assert_eq!(rules[0], Rule::QualifiedRule(QualifiedRule {
@@ -531,8 +530,7 @@ mod tests {
         let tokenizer = Tokenizer::new(css.to_string());
         let tokens = tokenizer.run();
         let mut parser = Parser::new(tokens);
-        let stylesheet = parser.parse_a_stylesheet();
-        let rules = stylesheet.rules;
+        let rules = parser.parse_a_stylesheet();
 
         assert_eq!(rules.len(), 1);
         assert_eq!(rules[0], Rule::QualifiedRule(QualifiedRule {
@@ -562,8 +560,7 @@ mod tests {
         let tokenizer = Tokenizer::new(css.to_string());
         let tokens = tokenizer.run();
         let mut parser = Parser::new(tokens);
-        let stylesheet = parser.parse_a_stylesheet();
-        let rules = stylesheet.rules;
+        let rules = parser.parse_a_stylesheet();
 
         assert_eq!(rules.len(), 1);
         assert_eq!(rules[0], Rule::QualifiedRule(QualifiedRule {

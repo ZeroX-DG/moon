@@ -6,10 +6,9 @@ impl CSSRuleList {
     pub fn new() -> Self {
         Self(Vec::new())
     }
-}
 
-impl From<Vec<CSSRule>> for CSSRuleList {
-    fn from(rules: Vec<CSSRule>) -> Self {
-        Self(rules)
+    pub fn append_rule(&mut self, rule: CSSRule) {
+        self.0.push(rule);
     }
 }
+

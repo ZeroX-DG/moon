@@ -1,3 +1,5 @@
+use crate::tokenizer::token::Token;
+
 #[derive(Debug, PartialEq)]
 pub enum Rule {
     QualifiedRule(QualifiedRule),
@@ -10,53 +12,47 @@ pub enum DeclarationOrAtRule {
     AtRule(AtRule)
 }
 
-/// A temporary stylesheet to store rules before
-/// transforming it into CSSStyleSheet
-pub struct StyleSheet {
-    pub rules: ListOfRules
-}
-
 /// A simple block
 /// https://www.w3.org/TR/css-syntax-3/#simple-block
 #[derive(Clone, Debug, PartialEq)]
 pub struct SimpleBlock {
     /// Associated token (either a <[-token>, <(-token>, or <{-token>)
-    token: Token,
+    pub token: Token,
     /// Block value
-    value: Vec<ComponentValue>
+    pub value: Vec<ComponentValue>
 }
 
 /// Function
 /// https://www.w3.org/TR/css-syntax-3/#function
 #[derive(Clone, Debug, PartialEq)]
 pub struct Function {
-    name: String,
-    value: Vec<ComponentValue>
+    pub name: String,
+    pub value: Vec<ComponentValue>
 }
 
 /// QualifiedRule
 /// https://www.w3.org/TR/css-syntax-3/#qualified-rule
 #[derive(Debug, PartialEq)]
 pub struct QualifiedRule {
-    prelude: Vec<ComponentValue>,
-    block: Option<SimpleBlock>
+    pub prelude: Vec<ComponentValue>,
+    pub block: Option<SimpleBlock>
 }
 
 /// AtRule
 /// https://www.w3.org/TR/css-syntax-3/#at-rule
 #[derive(Debug, PartialEq)]
 pub struct AtRule {
-    name: String,
-    prelude: Vec<ComponentValue>,
-    block: Option<SimpleBlock>
+    pub name: String,
+    pub prelude: Vec<ComponentValue>,
+    pub block: Option<SimpleBlock>
 }
 
 /// Declaration
 /// https://www.w3.org/TR/css-syntax-3/#declaration
 pub struct Declaration {
-    name: String,
-    value: Vec<ComponentValue>,
-    important: bool
+    pub name: String,
+    pub value: Vec<ComponentValue>,
+    pub important: bool
 }
 
 /// ComponentValue
