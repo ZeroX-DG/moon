@@ -609,7 +609,7 @@ impl Parser {
         return Err(SyntaxError);
     }
 
-    pub fn parse_a_list_of_declarations(&mut self) -> Vec<Declaration> {
+    pub fn parse_a_list_of_declarations(&mut self) -> Vec<DeclarationOrAtRule> {
         return self.consume_a_list_of_declarations();
     }
 
