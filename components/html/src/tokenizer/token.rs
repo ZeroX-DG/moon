@@ -3,7 +3,7 @@ pub struct Attribute {
     pub name: String,
     pub value: String,
     pub prefix: String,
-    pub namespace: String
+    pub namespace: String,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -133,7 +133,10 @@ impl Token {
     }
 
     pub fn attributes_mut(&mut self) -> &mut Vec<Attribute> {
-        if let Token::Tag { ref mut attributes, .. } = self {
+        if let Token::Tag {
+            ref mut attributes, ..
+        } = self
+        {
             return attributes;
         }
         panic!("Token is not a tag");
@@ -179,7 +182,7 @@ impl Attribute {
             name: String::new(),
             value: String::new(),
             prefix: String::new(),
-            namespace: String::new()
+            namespace: String::new(),
         }
     }
 }

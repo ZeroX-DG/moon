@@ -3,13 +3,13 @@ use crate::tokenizer::token::Token;
 #[derive(Debug, PartialEq)]
 pub enum Rule {
     QualifiedRule(QualifiedRule),
-    AtRule(AtRule)
+    AtRule(AtRule),
 }
 pub type ListOfRules = Vec<Rule>;
 
 pub enum DeclarationOrAtRule {
     Declaration(Declaration),
-    AtRule(AtRule)
+    AtRule(AtRule),
 }
 
 /// A simple block
@@ -19,7 +19,7 @@ pub struct SimpleBlock {
     /// Associated token (either a <[-token>, <(-token>, or <{-token>)
     pub token: Token,
     /// Block value
-    pub value: Vec<ComponentValue>
+    pub value: Vec<ComponentValue>,
 }
 
 /// Function
@@ -27,7 +27,7 @@ pub struct SimpleBlock {
 #[derive(Clone, Debug, PartialEq)]
 pub struct Function {
     pub name: String,
-    pub value: Vec<ComponentValue>
+    pub value: Vec<ComponentValue>,
 }
 
 /// QualifiedRule
@@ -35,7 +35,7 @@ pub struct Function {
 #[derive(Debug, PartialEq)]
 pub struct QualifiedRule {
     pub prelude: Vec<ComponentValue>,
-    pub block: Option<SimpleBlock>
+    pub block: Option<SimpleBlock>,
 }
 
 /// AtRule
@@ -44,7 +44,7 @@ pub struct QualifiedRule {
 pub struct AtRule {
     pub name: String,
     pub prelude: Vec<ComponentValue>,
-    pub block: Option<SimpleBlock>
+    pub block: Option<SimpleBlock>,
 }
 
 /// Declaration
@@ -52,7 +52,7 @@ pub struct AtRule {
 pub struct Declaration {
     pub name: String,
     pub value: Vec<ComponentValue>,
-    pub important: bool
+    pub important: bool,
 }
 
 /// ComponentValue
@@ -61,14 +61,14 @@ pub struct Declaration {
 pub enum ComponentValue {
     PerservedToken(Token),
     Function(Function),
-    SimpleBlock(SimpleBlock)
+    SimpleBlock(SimpleBlock),
 }
 
 impl QualifiedRule {
     pub fn new() -> Self {
         Self {
             prelude: Vec::new(),
-            block: None
+            block: None,
         }
     }
 
@@ -86,7 +86,7 @@ impl AtRule {
         Self {
             name,
             prelude: Vec::new(),
-            block: None
+            block: None,
         }
     }
 
@@ -103,7 +103,7 @@ impl SimpleBlock {
     pub fn new(token: Token) -> Self {
         Self {
             token,
-            value: Vec::new()
+            value: Vec::new(),
         }
     }
 
@@ -117,7 +117,7 @@ impl Declaration {
         Self {
             name,
             value: Vec::new(),
-            important: false
+            important: false,
         }
     }
 
@@ -157,7 +157,7 @@ impl Function {
     pub fn new(name: String) -> Self {
         Self {
             name,
-            value: Vec::new()
+            value: Vec::new(),
         }
     }
 

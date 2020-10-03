@@ -19,9 +19,9 @@ use insert_mode::InsertMode;
 use list_of_active_formatting_elements::Entry;
 use list_of_active_formatting_elements::ListOfActiveFormattingElements;
 use open_element_types::is_special_element;
+use phf::phf_map;
 use stack_of_open_elements::StackOfOpenElements;
 use std::env;
-use phf::phf_map;
 
 fn is_trace() -> bool {
     match env::var("TRACE_HTML_TREE_BUILDER") {
@@ -380,11 +380,21 @@ impl TreeBuilder {
     fn get_appropriate_place_for_inserting_a_node(&self) -> AdjustedInsertionLocation {
         let target = self.open_elements.current_node().unwrap();
 
-        let adjusted_location = if self.foster_parenting && match_any!(get_element!(target).tag_name(), "table", "tbody", "tfoot", "thead", "tr") {
+        let adjusted_location = if self.foster_parenting
+            && match_any!(
+                get_element!(target).tag_name(),
+                "table",
+                "tbody",
+                "tfoot",
+                "thead",
+                "tr"
+            ) {
             let last_template = self.open_elements.last_element_with_tag_name("template");
             let last_table = self.open_elements.last_element_with_tag_name("table");
 
-            if last_template.is_some() && (last_table.is_none() || last_template.unwrap().1 > last_table.unwrap().1) {
+            if last_template.is_some()
+                && (last_table.is_none() || last_template.unwrap().1 > last_table.unwrap().1)
+            {
                 // TODO: Fix this to insert to template content when support template tag
                 AdjustedInsertionLocation::LastChild(target)
             } else {
@@ -783,7 +793,7 @@ impl TreeBuilder {
                         name: entry.0,
                         value: entry.1,
                         prefix: String::new(),
-                        namespace: String::new()
+                        namespace: String::new(),
                     })
                     .collect(),
             });
@@ -2164,7 +2174,7 @@ impl TreeBuilder {
 
             // TODO: change this to insert foreign element
             self.insert_html_element(token);
-            return
+            return;
         }
 
         if token.is_start_tag()

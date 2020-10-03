@@ -11,4 +11,3 @@ impl CSSRuleList {
         self.0.push(rule);
     }
 }
-

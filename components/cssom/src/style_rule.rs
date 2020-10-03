@@ -1,11 +1,11 @@
-use std::collections::HashMap;
 use super::selector::Selector;
+use std::collections::HashMap;
 
 pub struct StyleRule {
     selector: Selector,
-    style: StyleDeclarations
+    style: StyleDeclarations,
 }
 
 pub struct StyleDeclarations {
-    properties: HashMap<String, String>
+    properties: HashMap<String, String>,
 }

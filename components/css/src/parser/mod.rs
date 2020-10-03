@@ -1,8 +1,8 @@
 pub mod structs;
 
-use std::env;
-use io::output_stream::OutputStream;
 use super::tokenizer::token::Token;
+use io::data_stream::DataStream;
+use std::env;
 use structs::*;
 
 fn is_trace() -> bool {
@@ -31,22 +31,22 @@ pub struct SyntaxError;
 /// CSS Parser
 pub struct Parser {
     /// Stream of output tokens from tokenizer
-    tokens: OutputStream<Token>,
+    tokens: DataStream<Token>,
     /// Top level flag
     top_level: bool,
     /// Reconsume current input token
     reconsume: bool,
     /// Current token to return if being reconsumed
-    current_token: Option<Token>
+    current_token: Option<Token>,
 }
 
 impl Parser {
-    pub fn new(tokens: OutputStream<Token>) -> Self {
+    pub fn new(tokens: DataStream<Token>) -> Self {
         Self {
             tokens,
             top_level: false,
             reconsume: false,
-            current_token: None
+            current_token: None,
         }
     }
 
@@ -76,7 +76,7 @@ impl Parser {
             Some(Token::BracketOpen) => Token::BracketClose,
             Some(Token::BraceOpen) => Token::BraceClose,
             Some(Token::ParentheseOpen) => Token::ParentheseClose,
-            _ => panic!("Can't get ending token")
+            _ => panic!("Can't get ending token"),
         }
     }
 
@@ -113,9 +113,7 @@ impl Parser {
             Token::Function(_) => {
                 return ComponentValue::Function(self.consume_a_function());
             }
-            t => {
-                return ComponentValue::PerservedToken(t)
-            }
+            t => return ComponentValue::PerservedToken(t),
         }
     }
 
@@ -136,7 +134,9 @@ impl Parser {
                     result.push(DeclarationOrAtRule::AtRule(rule));
                 }
                 Token::Ident(_) => {
-                    let mut tmp = vec![ComponentValue::PerservedToken(self.current_token.clone().unwrap())];
+                    let mut tmp = vec![ComponentValue::PerservedToken(
+                        self.current_token.clone().unwrap(),
+                    )];
                     loop {
                         match self.peek_next_token() {
                             Token::Semicolon | Token::EOF => break,
@@ -145,7 +145,9 @@ impl Parser {
                             }
                         }
                     }
-                    if let Some(declaration) = self.consume_a_declaration_from_list(OutputStream::new(tmp)) {
+                    if let Some(declaration) =
+                        self.consume_a_declaration_from_list(DataStream::new(tmp))
+                    {
                         result.push(DeclarationOrAtRule::Declaration(declaration));
                     }
                 }
@@ -196,7 +198,7 @@ impl Parser {
     fn consume_a_simple_block(&mut self) -> SimpleBlock {
         let ending_token = self.ending_token();
         let mut simple_block = SimpleBlock::new(self.current_token.clone().unwrap());
-        
+
         loop {
             let next_token = self.consume_next_token();
 
@@ -226,7 +228,7 @@ impl Parser {
 
         loop {
             let next_token = self.consume_next_token();
-            
+
             match next_token {
                 Token::Semicolon => return at_rule,
                 Token::EOF => {
@@ -277,13 +279,17 @@ impl Parser {
         }
     }
 
-    fn consume_a_declaration_from_list(&mut self, mut tokens: OutputStream<ComponentValue>) -> Option<Declaration> {
+    fn consume_a_declaration_from_list(
+        &mut self,
+        mut tokens: DataStream<ComponentValue>,
+    ) -> Option<Declaration> {
         let next_token = tokens.next().unwrap();
-        let declaration_name = if let ComponentValue::PerservedToken(Token::Ident(name)) = next_token {
-            name.clone()
-        } else {
-            panic!("Token is not a indent token");
-        };
+        let declaration_name =
+            if let ComponentValue::PerservedToken(Token::Ident(name)) = next_token {
+                name.clone()
+            } else {
+                panic!("Token is not a indent token");
+            };
         let mut declaration = Declaration::new(declaration_name);
 
         while let Some(ComponentValue::PerservedToken(Token::Whitespace)) = tokens.peek() {
@@ -296,7 +302,7 @@ impl Parser {
             }
             _ => {
                 emit_error!("Expected Colon in declaration");
-                return None
+                return None;
             }
         }
 
@@ -307,7 +313,7 @@ impl Parser {
         loop {
             let token = tokens.peek().unwrap();
             if let ComponentValue::PerservedToken(Token::EOF) = token {
-                break
+                break;
             }
             declaration.append_value(self.consume_a_component_value());
         }
@@ -348,7 +354,7 @@ impl Parser {
             }
             _ => {
                 emit_error!("Expected Colon in declaration");
-                return None
+                return None;
             }
         }
 
@@ -357,7 +363,7 @@ impl Parser {
         loop {
             let token = self.peek_next_token();
             if let Token::EOF = token {
-                break
+                break;
             }
             declaration.append_value(self.consume_a_component_value());
         }
@@ -453,7 +459,7 @@ impl Parser {
         self.consume_while_next_token_is(Token::Whitespace);
         if let Token::EOF = self.peek_next_token() {
             return Ok(value);
-        } 
+        }
         return Err(SyntaxError);
     }
 
@@ -462,7 +468,7 @@ impl Parser {
         loop {
             let value = self.consume_a_component_value();
             if let ComponentValue::PerservedToken(Token::EOF) = value {
-                break
+                break;
             }
             values.push(value);
         }
@@ -492,8 +498,8 @@ impl Parser {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::tokenizer::Tokenizer;
     use crate::tokenizer::token::HashType;
+    use crate::tokenizer::Tokenizer;
 
     #[test]
     fn parse_a_stylesheet() {
@@ -504,24 +510,27 @@ mod tests {
         let rules = parser.parse_a_stylesheet();
 
         assert_eq!(rules.len(), 1);
-        assert_eq!(rules[0], Rule::QualifiedRule(QualifiedRule {
-            prelude: vec![
-                ComponentValue::PerservedToken(Token::Ident("div".to_string())),
-                ComponentValue::PerservedToken(Token::Whitespace)
-            ],
-            block: Some(SimpleBlock {
-                token: Token::BraceOpen,
-                value: vec![
-                    ComponentValue::PerservedToken(Token::Whitespace),
-                    ComponentValue::PerservedToken(Token::Ident("color".to_string())),
-                    ComponentValue::PerservedToken(Token::Colon),
-                    ComponentValue::PerservedToken(Token::Whitespace),
-                    ComponentValue::PerservedToken(Token::Ident("black".to_string())),
-                    ComponentValue::PerservedToken(Token::Semicolon),
-                    ComponentValue::PerservedToken(Token::Whitespace),
-                ]
+        assert_eq!(
+            rules[0],
+            Rule::QualifiedRule(QualifiedRule {
+                prelude: vec![
+                    ComponentValue::PerservedToken(Token::Ident("div".to_string())),
+                    ComponentValue::PerservedToken(Token::Whitespace)
+                ],
+                block: Some(SimpleBlock {
+                    token: Token::BraceOpen,
+                    value: vec![
+                        ComponentValue::PerservedToken(Token::Whitespace),
+                        ComponentValue::PerservedToken(Token::Ident("color".to_string())),
+                        ComponentValue::PerservedToken(Token::Colon),
+                        ComponentValue::PerservedToken(Token::Whitespace),
+                        ComponentValue::PerservedToken(Token::Ident("black".to_string())),
+                        ComponentValue::PerservedToken(Token::Semicolon),
+                        ComponentValue::PerservedToken(Token::Whitespace),
+                    ]
+                })
             })
-        }));
+        );
     }
 
     #[test]
@@ -533,25 +542,28 @@ mod tests {
         let rules = parser.parse_a_stylesheet();
 
         assert_eq!(rules.len(), 1);
-        assert_eq!(rules[0], Rule::QualifiedRule(QualifiedRule {
-            prelude: vec![
-                ComponentValue::PerservedToken(Token::Delim('.')),
-                ComponentValue::PerservedToken(Token::Ident("className".to_string())),
-                ComponentValue::PerservedToken(Token::Whitespace)
-            ],
-            block: Some(SimpleBlock {
-                token: Token::BraceOpen,
-                value: vec![
-                    ComponentValue::PerservedToken(Token::Whitespace),
-                    ComponentValue::PerservedToken(Token::Ident("color".to_string())),
-                    ComponentValue::PerservedToken(Token::Colon),
-                    ComponentValue::PerservedToken(Token::Whitespace),
-                    ComponentValue::PerservedToken(Token::Ident("black".to_string())),
-                    ComponentValue::PerservedToken(Token::Semicolon),
-                    ComponentValue::PerservedToken(Token::Whitespace),
-                ]
+        assert_eq!(
+            rules[0],
+            Rule::QualifiedRule(QualifiedRule {
+                prelude: vec![
+                    ComponentValue::PerservedToken(Token::Delim('.')),
+                    ComponentValue::PerservedToken(Token::Ident("className".to_string())),
+                    ComponentValue::PerservedToken(Token::Whitespace)
+                ],
+                block: Some(SimpleBlock {
+                    token: Token::BraceOpen,
+                    value: vec![
+                        ComponentValue::PerservedToken(Token::Whitespace),
+                        ComponentValue::PerservedToken(Token::Ident("color".to_string())),
+                        ComponentValue::PerservedToken(Token::Colon),
+                        ComponentValue::PerservedToken(Token::Whitespace),
+                        ComponentValue::PerservedToken(Token::Ident("black".to_string())),
+                        ComponentValue::PerservedToken(Token::Semicolon),
+                        ComponentValue::PerservedToken(Token::Whitespace),
+                    ]
+                })
             })
-        }));
+        );
     }
 
     #[test]
@@ -563,23 +575,29 @@ mod tests {
         let rules = parser.parse_a_stylesheet();
 
         assert_eq!(rules.len(), 1);
-        assert_eq!(rules[0], Rule::QualifiedRule(QualifiedRule {
-            prelude: vec![
-                ComponentValue::PerservedToken(Token::Hash("elementId".to_string(), HashType::Id)),
-                ComponentValue::PerservedToken(Token::Whitespace)
-            ],
-            block: Some(SimpleBlock {
-                token: Token::BraceOpen,
-                value: vec![
-                    ComponentValue::PerservedToken(Token::Whitespace),
-                    ComponentValue::PerservedToken(Token::Ident("color".to_string())),
-                    ComponentValue::PerservedToken(Token::Colon),
-                    ComponentValue::PerservedToken(Token::Whitespace),
-                    ComponentValue::PerservedToken(Token::Ident("black".to_string())),
-                    ComponentValue::PerservedToken(Token::Semicolon),
-                    ComponentValue::PerservedToken(Token::Whitespace),
-                ]
+        assert_eq!(
+            rules[0],
+            Rule::QualifiedRule(QualifiedRule {
+                prelude: vec![
+                    ComponentValue::PerservedToken(Token::Hash(
+                        "elementId".to_string(),
+                        HashType::Id
+                    )),
+                    ComponentValue::PerservedToken(Token::Whitespace)
+                ],
+                block: Some(SimpleBlock {
+                    token: Token::BraceOpen,
+                    value: vec![
+                        ComponentValue::PerservedToken(Token::Whitespace),
+                        ComponentValue::PerservedToken(Token::Ident("color".to_string())),
+                        ComponentValue::PerservedToken(Token::Colon),
+                        ComponentValue::PerservedToken(Token::Whitespace),
+                        ComponentValue::PerservedToken(Token::Ident("black".to_string())),
+                        ComponentValue::PerservedToken(Token::Semicolon),
+                        ComponentValue::PerservedToken(Token::Whitespace),
+                    ]
+                })
             })
-        }));
+        );
     }
 }

@@ -1,12 +1,12 @@
 pub mod token;
 
-use std::env;
-use io::output_stream::OutputStream;
+use io::data_stream::DataStream;
 use io::input_stream::InputStream;
-use token::Token;
+use regex::Regex;
+use std::env;
 use token::HashType;
 use token::NumberType;
-use regex::Regex;
+use token::Token;
 
 fn is_trace() -> bool {
     match env::var("TRACE_CSS_TOKENIZER") {
@@ -36,7 +36,7 @@ const REPLACEMENT_CHARACTER: char = '\u{FFFD}';
 #[derive(Clone)]
 pub enum Char {
     ch(char),
-    eof
+    eof,
 }
 
 /// Check if a code point is a whitespace (according to specs)
@@ -44,7 +44,7 @@ pub enum Char {
 fn is_whitespace(ch: char) -> bool {
     match ch {
         '\t' | '\n' | '\x0C' | ' ' => true,
-        _ => false
+        _ => false,
     }
 }
 
@@ -56,7 +56,7 @@ fn is_non_printable(ch: char) -> bool {
         '\u{000B}' => true,
         '\u{000E}'..='\u{001F}' => true,
         '\u{007F}' => true,
-        _ => false
+        _ => false,
     }
 }
 
@@ -120,7 +120,7 @@ fn is_start_identifier(value: &str) -> bool {
         Some('\\') => {
             return is_valid_escape(&format!("{}{}", '\\', chars.next().unwrap()));
         }
-        _ => return false
+        _ => return false,
     }
 }
 
@@ -131,7 +131,7 @@ fn is_start_number(value: &str) -> bool {
     let first = chars.next().unwrap();
     let second = chars.next().unwrap();
     let third = chars.next().unwrap();
-    
+
     match first {
         '+' | '-' => {
             if second.is_ascii_digit() || (second == '.' && third.is_ascii_digit()) {
@@ -146,7 +146,7 @@ fn is_start_number(value: &str) -> bool {
             return false;
         }
         c if c.is_ascii_digit() => return true,
-        _ => return false
+        _ => return false,
     }
 }
 
@@ -159,7 +159,7 @@ pub struct Tokenizer {
     current_character: char,
 
     /// Output tokens
-    output: Vec<Token>
+    output: Vec<Token>,
 }
 
 impl Tokenizer {
@@ -167,18 +167,18 @@ impl Tokenizer {
         Self {
             input: InputStream::new(input),
             current_character: '\0',
-            output: Vec::new()
+            output: Vec::new(),
         }
     }
 
     /// Constantly running the tokenizer and produce a list of tokens
-    pub fn run(mut self) -> OutputStream<Token> {
+    pub fn run(mut self) -> DataStream<Token> {
         loop {
             let token = self.consume_token();
             self.output.push(token.clone());
 
             match token {
-                Token::EOF => return OutputStream::new(self.output),
+                Token::EOF => return DataStream::new(self.output),
                 _ => {}
             }
         }
@@ -199,7 +199,7 @@ impl Tokenizer {
     fn consume_while<F: Fn(char) -> bool>(&mut self, test: F) {
         while let Some(ch) = self.input.peek_next_char() {
             if !test(ch) {
-                return
+                return;
             }
             self.consume_next();
         }
@@ -221,9 +221,7 @@ impl Tokenizer {
                 self.consume_while(is_whitespace);
                 Token::Whitespace
             }
-            Char::ch('"') => {
-                self.consume_string(None)
-            }
+            Char::ch('"') => self.consume_string(None),
             Char::ch('#') => {
                 let is_hash = if let Some(ch) = self.input.peek_next_char() {
                     if is_named(ch) {
@@ -246,13 +244,11 @@ impl Tokenizer {
                         }
                     }
                     token.set_hash_value(self.consume_name());
-                    return token
+                    return token;
                 }
                 return Token::Delim(self.current_character);
             }
-            Char::ch('\'') => {
-                self.consume_string(None)
-            }
+            Char::ch('\'') => self.consume_string(None),
             Char::ch('(') => Token::ParentheseOpen,
             Char::ch(')') => Token::ParentheseClose,
             Char::ch('+') => {
@@ -334,7 +330,7 @@ impl Tokenizer {
                 return self.consume_ident_like();
             }
             Char::eof => Token::EOF,
-            _ => Token::Delim(self.current_character)
+            _ => Token::Delim(self.current_character),
         }
     }
 
@@ -342,7 +338,7 @@ impl Tokenizer {
         'outer: loop {
             if let Some(next_2_chars) = self.input.peek_next(2) {
                 if next_2_chars != "/*" {
-                    break
+                    break;
                 }
                 self.consume_next(); // /
                 self.consume_next(); // *
@@ -351,13 +347,13 @@ impl Tokenizer {
                         if end_comment == "*/" {
                             self.consume_next();
                             self.consume_next();
-                            break
+                            break;
                         } else {
                             self.consume_next();
                         }
                     } else {
                         emit_error!("Unexpected EOF while consume_comments");
-                        break 'outer
+                        break 'outer;
                     }
                 }
                 continue;
@@ -394,7 +390,7 @@ impl Tokenizer {
                 return Token::Dimension {
                     value: number,
                     type_,
-                    unit: self.consume_name()
+                    unit: self.consume_name(),
                 };
             }
         }
@@ -402,7 +398,10 @@ impl Tokenizer {
             self.consume_next();
             return Token::Percentage(number);
         }
-        return Token::Number { value: number, type_ };
+        return Token::Number {
+            value: number,
+            type_,
+        };
     }
 
     fn consume_number(&mut self) -> (i32, NumberType) {
@@ -412,14 +411,14 @@ impl Tokenizer {
                     if c.is_ascii_digit() {
                         this.consume_next();
                         repr.push(c);
-                        continue
+                        continue;
                     }
                 }
-                break
+                break;
             }
         }
         let mut type_ = NumberType::Integer;
-        let mut repr  = String::new();
+        let mut repr = String::new();
         if let Some(c) = self.input.peek_next_char() {
             if c == '+' || c == '-' {
                 self.consume_next();
@@ -456,7 +455,7 @@ impl Tokenizer {
         let value = i32::from_str_radix(&repr, 10).unwrap();
         return (value, type_);
     }
-    
+
     fn consume_ident_like(&mut self) -> Token {
         let string = self.consume_name();
         if string.eq_ignore_ascii_case("url") {
@@ -470,7 +469,7 @@ impl Tokenizer {
                         if is_whitespace(first) && is_whitespace(second) {
                             self.consume_next();
                         } else {
-                            break
+                            break;
                         }
                     }
                 }
@@ -514,11 +513,11 @@ impl Tokenizer {
                 Char::ch('\\') => {
                     let next_char = self.input.peek_next_char();
                     if next_char.is_none() {
-                        continue
+                        continue;
                     }
                     if let Some('\n') = next_char {
                         self.consume_next();
-                        continue
+                        continue;
                     }
                     token.append_to_string_token(self.consume_escaped());
                 }
@@ -609,14 +608,14 @@ impl Tokenizer {
                             if c.is_ascii_hexdigit() {
                                 hex_value *= 16;
                                 hex_value += c.to_digit(16).unwrap();
-                                continue
+                                continue;
                             }
-                            break
+                            break;
                         }
                         Char::eof => {
                             emit_error!("Unexpected EOF");
                             hex_value = 0xFFFD;
-                            break
+                            break;
                         }
                     }
                 }
@@ -636,7 +635,7 @@ impl Tokenizer {
                 }
                 return std::char::from_u32(hex_value).unwrap_or(REPLACEMENT_CHARACTER);
             }
-            Char::ch(c) => c
+            Char::ch(c) => c,
         }
     }
 }
@@ -650,13 +649,20 @@ mod tests {
         let css = r"#id_selector .class_selector {
             color: red;
             background: url(https://example.com/image.jpg);
-        }".to_string();
+        }"
+        .to_string();
         let mut tokenizer = Tokenizer::new(css);
-        assert_eq!(tokenizer.consume_token(), Token::Hash("id_selector".to_string(), HashType::Id));
+        assert_eq!(
+            tokenizer.consume_token(),
+            Token::Hash("id_selector".to_string(), HashType::Id)
+        );
         assert_eq!(tokenizer.consume_token(), Token::Whitespace);
-        
+
         assert_eq!(tokenizer.consume_token(), Token::Delim('.'));
-        assert_eq!(tokenizer.consume_token(), Token::Ident("class_selector".to_string()));
+        assert_eq!(
+            tokenizer.consume_token(),
+            Token::Ident("class_selector".to_string())
+        );
         assert_eq!(tokenizer.consume_token(), Token::Whitespace);
 
         assert_eq!(tokenizer.consume_token(), Token::BraceOpen);
@@ -671,14 +677,20 @@ mod tests {
 
         assert_eq!(tokenizer.consume_token(), Token::Whitespace);
 
-        assert_eq!(tokenizer.consume_token(), Token::Ident("background".to_string()));
+        assert_eq!(
+            tokenizer.consume_token(),
+            Token::Ident("background".to_string())
+        );
         assert_eq!(tokenizer.consume_token(), Token::Colon);
         assert_eq!(tokenizer.consume_token(), Token::Whitespace);
-        assert_eq!(tokenizer.consume_token(), Token::Url("https://example.com/image.jpg".to_string()));
+        assert_eq!(
+            tokenizer.consume_token(),
+            Token::Url("https://example.com/image.jpg".to_string())
+        );
         assert_eq!(tokenizer.consume_token(), Token::Semicolon);
 
         assert_eq!(tokenizer.consume_token(), Token::Whitespace);
-        
+
         assert_eq!(tokenizer.consume_token(), Token::BraceClose);
         assert_eq!(tokenizer.consume_token(), Token::EOF);
     }
