@@ -1,4 +1,4 @@
-mod structs;
+pub mod structs;
 
 use std::env;
 use io::output_stream::OutputStream;

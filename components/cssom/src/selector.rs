@@ -1,4 +1,11 @@
-pub struct Selector(Vec<SimpleSelectorSequence>);
+pub struct Selector(Vec<(SimpleSelectorSequence, Option<Combinator>)>);
+
+pub enum Combinator {
+    Descendant,
+    Child,
+    NextSibling,
+    SubsequentSibling
+}
 
 pub struct SimpleSelectorSequence(Vec<SimpleSelector>);
 
