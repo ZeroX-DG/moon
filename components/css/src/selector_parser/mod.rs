@@ -391,4 +391,20 @@ mod tests {
             assert_eq!(selectors.get(1), Some(&expected2));
         }
     }
+
+    #[test]
+    fn parse_invalid() {
+        let css = " { color: black; }";
+        let tokenizer = Tokenizer::new(css.to_string());
+        let tokens = tokenizer.run();
+        let mut parser = Parser::new(tokens);
+        let rules = parser.parse_a_stylesheet();
+        let rule = rules.get(0).unwrap();
+
+        if let Rule::QualifiedRule(rule) = rule {
+            let selectors = parse_selectors(&rule.prelude);
+
+            assert_eq!(selectors.len(), 0);
+        }
+    }
 }
