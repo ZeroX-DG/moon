@@ -1,6 +1,7 @@
 pub mod token;
 
 use std::env;
+use io::output_stream::OutputStream;
 use io::input_stream::InputStream;
 use token::Token;
 use token::HashType;
@@ -8,15 +9,15 @@ use token::NumberType;
 use regex::Regex;
 
 fn is_trace() -> bool {
-    match env::var("TRACE_TOKENIZER") {
-        Ok(s) => s == "true",
+    match env::var("TRACE_CSS_TOKENIZER") {
+        Ok(s) => s == "true" || s == "",
         _ => false,
     }
 }
 
 macro_rules! trace {
     ($err:expr) => {
-        println!("[ParseError][Tokenization]: {}", $err);
+        println!("[ParseError][CSS Tokenization]: {}", $err);
     };
 }
 
@@ -155,14 +156,31 @@ pub struct Tokenizer {
     input: InputStream,
 
     /// current processing character
-    current_character: char
+    current_character: char,
+
+    /// Output tokens
+    output: Vec<Token>
 }
 
 impl Tokenizer {
     pub fn new(input: String) -> Self {
         Self {
             input: InputStream::new(input),
-            current_character: '\0'
+            current_character: '\0',
+            output: Vec::new()
+        }
+    }
+
+    /// Constantly running the tokenizer and produce a list of tokens
+    pub fn run(mut self) -> OutputStream<Token> {
+        loop {
+            let token = self.consume_token();
+            self.output.push(token.clone());
+
+            match token {
+                Token::EOF => return OutputStream::new(self.output),
+                _ => {}
+            }
         }
     }
 
@@ -193,6 +211,8 @@ impl Tokenizer {
 }
 
 impl Tokenizer {
+    /// Consume and return the next token
+    /// Should only be use for testing, use `run()` when you want to run tokenizer
     pub fn consume_token(&mut self) -> Token {
         self.consume_comments();
 
