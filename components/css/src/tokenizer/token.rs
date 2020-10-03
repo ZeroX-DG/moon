@@ -11,13 +11,13 @@ pub enum Token {
     Delim(char),
     Number {
         value: i32,
-        type_: NumberType
+        type_: NumberType,
     },
     Percentage(i32),
     Dimension {
         value: i32,
         type_: NumberType,
-        unit: String
+        unit: String,
     },
     Whitespace,
     CDO,
@@ -31,19 +31,19 @@ pub enum Token {
     ParentheseClose,
     BraceOpen,
     BraceClose,
-    EOF
+    EOF,
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum HashType {
     Id,
-    Unrestricted
+    Unrestricted,
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum NumberType {
     Integer,
-    Number
+    Number,
 }
 
 impl Token {

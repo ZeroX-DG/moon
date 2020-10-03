@@ -1,16 +1,22 @@
-/// The input stream to feed to tokenizer.
+/// The char input stream
 #[derive(Debug)]
 pub struct InputStream {
     input: String,
     index: usize,
     reconsume: bool,
     current_char: char,
-    current_index: usize
+    current_index: usize,
 }
 
 impl InputStream {
     pub fn new(input: String) -> Self {
-        Self { input, index: 0, reconsume: false, current_char: '\0', current_index: 0 }
+        Self {
+            input,
+            index: 0,
+            reconsume: false,
+            current_char: '\0',
+            current_index: 0,
+        }
     }
 
     /// Consume the next character and return it
@@ -54,7 +60,7 @@ impl InputStream {
     /// Convert current input from the current index to `&str`
     pub fn as_str(&self) -> &str {
         if self.reconsume {
-            return &self.input[self.current_index..]
+            return &self.input[self.current_index..];
         }
         &self.input[self.index..]
     }
