@@ -3,6 +3,12 @@ use super::tokenizer::token::Token;
 use cssom::selector::*;
 use io::data_stream::DataStream;
 
+macro_rules! token_value {
+    ($token:pat) => {
+        ComponentValue::PerservedToken($token)
+    };
+}
+
 pub fn parse_selectors(values: &Vec<ComponentValue>) -> Vec<Selector> {
     let mut selectors = Vec::new();
 
@@ -11,7 +17,15 @@ pub fn parse_selectors(values: &Vec<ComponentValue>) -> Vec<Selector> {
     loop {
         if let Some(selector) = parse_selector(&mut data_stream) {
             selectors.push(selector);
-            if let Some(ComponentValue::PerservedToken(Token::Comma)) = data_stream.next() {
+            loop {
+                // consume all white space
+                if let Some(token_value!(Token::Whitespace)) = data_stream.peek() {
+                    data_stream.next();
+                } else {
+                    break
+                }
+            }
+            if let Some(token_value!(Token::Comma)) = data_stream.next() {
                 // there is a comma, let the parsing continue
                 continue;
             }
@@ -51,12 +65,6 @@ pub fn parse_selector(data_stream: &mut DataStream<ComponentValue>) -> Option<Se
         0 => None,
         _ => Some(Selector::new(selector_seqs)),
     }
-}
-
-macro_rules! token_value {
-    ($token:pat) => {
-        ComponentValue::PerservedToken($token)
-    };
 }
 
 pub fn parse_combinator(data_stream: &mut DataStream<ComponentValue>) -> Option<Combinator> {
@@ -343,6 +351,44 @@ mod tests {
             ]);
 
             assert_eq!(selectors.get(0), Some(&expected));
+        }
+    }
+
+    #[test]
+    fn parse_multiple() {
+        let css = "div.class , #name { color: black; }";
+        let tokenizer = Tokenizer::new(css.to_string());
+        let tokens = tokenizer.run();
+        let mut parser = Parser::new(tokens);
+        let rules = parser.parse_a_stylesheet();
+        let rule = rules.get(0).unwrap();
+
+        if let Rule::QualifiedRule(rule) = rule {
+            let selectors = parse_selectors(&rule.prelude);
+
+            assert_eq!(selectors.len(), 2);
+
+            let expected = Selector::new(vec![
+                (
+                    SimpleSelectorSequence::new(vec![
+                        SimpleSelector::new(SimpleSelectorType::Type, Some("div".to_string())),
+                        SimpleSelector::new(SimpleSelectorType::Class, Some("class".to_string())),
+                    ]),
+                    None
+                )
+            ]);
+
+            let expected2 = Selector::new(vec![
+                (
+                    SimpleSelectorSequence::new(vec![
+                        SimpleSelector::new(SimpleSelectorType::ID, Some("name".to_string())),
+                    ]),
+                    None
+                )
+            ]);
+
+            assert_eq!(selectors.get(0), Some(&expected));
+            assert_eq!(selectors.get(1), Some(&expected2));
         }
     }
 }
