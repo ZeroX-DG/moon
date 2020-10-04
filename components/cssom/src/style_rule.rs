@@ -1,5 +1,6 @@
 use super::selector::Selector;
 use std::collections::HashMap;
+use smallbitvec::SmallBitVec;
 
 pub struct StyleRule {
     selector: Selector,
@@ -7,5 +8,10 @@ pub struct StyleRule {
 }
 
 pub struct StyleDeclarations {
-    properties: HashMap<String, String>,
+    properties: Vec<StyleDeclaration>,
+    importance: SmallBitVec
+}
+
+pub enum StyleDeclaration {
+    Background
 }
