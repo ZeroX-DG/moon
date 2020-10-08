@@ -1,4 +1,4 @@
-mod structs;
+pub mod structs;
 
 use super::parser::structs::ComponentValue;
 use super::tokenizer::token::Token;
