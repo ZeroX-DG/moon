@@ -500,6 +500,10 @@ mod tests {
     use super::*;
     use crate::tokenizer::token::HashType;
     use crate::tokenizer::Tokenizer;
+    use crate::cssom::css_rule_list::CSSRuleList;
+    use crate::cssom::css_rule::CSSRule;
+    use crate::cssom::style_rule::StyleRule;
+    use crate::selector::structs::*;
 
     #[test]
     fn parse_a_stylesheet() {
@@ -608,6 +612,25 @@ mod tests {
         let tokens = tokenizer.run();
         let mut parser = Parser::new(tokens);
         let stylesheet = parser.parse_a_css_stylesheet();
-        println!("{:#?}", stylesheet);
+        assert_eq!(stylesheet.css_rules, CSSRuleList(vec![
+            CSSRule::Style(StyleRule::new(
+                vec![
+                    Selector::new(vec![
+                        (SimpleSelectorSequence::new(vec![
+                            SimpleSelector::new(SimpleSelectorType::ID, Some("elementId".to_string()))
+                        ]), None)
+                    ])
+                ],
+                vec![
+                    Declaration {
+                        name: "color".to_string(),
+                        important: true,
+                        value: vec![
+                            ComponentValue::PerservedToken(Token::Ident("black".to_string()))
+                        ]
+                    }
+                ]
+            ))
+        ]));
     }
 }

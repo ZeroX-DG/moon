@@ -1,6 +1,6 @@
 use super::style_rule::StyleRule;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum CSSRule {
     Style(StyleRule),
 }

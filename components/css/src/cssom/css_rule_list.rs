@@ -1,7 +1,7 @@
 use super::css_rule::CSSRule;
 
-#[derive(Debug)]
-pub struct CSSRuleList(Vec<CSSRule>);
+#[derive(Debug, PartialEq)]
+pub struct CSSRuleList(pub Vec<CSSRule>);
 
 impl CSSRuleList {
     pub fn new() -> Self {

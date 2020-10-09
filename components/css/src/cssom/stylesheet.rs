@@ -1,9 +1,9 @@
 use super::css_rule::CSSRule;
 use super::css_rule_list::CSSRuleList;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct StyleSheet {
-    css_rules: CSSRuleList,
+    pub css_rules: CSSRuleList,
 }
 
 impl StyleSheet {

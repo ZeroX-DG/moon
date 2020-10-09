@@ -1,7 +1,7 @@
 use crate::selector::structs::Selector;
 use crate::parser::structs::Declaration;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct StyleRule {
     selectors: Vec<Selector>,
     declarations: Vec<Declaration>,
