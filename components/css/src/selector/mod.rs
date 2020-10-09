@@ -1,7 +1,9 @@
+pub mod structs;
+
 use super::parser::structs::ComponentValue;
 use super::tokenizer::token::Token;
-use cssom::selector::*;
 use io::data_stream::DataStream;
+use structs::*;
 
 macro_rules! token_value {
     ($token:pat) => {
