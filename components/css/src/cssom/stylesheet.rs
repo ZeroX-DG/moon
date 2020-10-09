@@ -1,6 +1,7 @@
 use super::css_rule::CSSRule;
 use super::css_rule_list::CSSRuleList;
 
+#[derive(Debug)]
 pub struct StyleSheet {
     css_rules: CSSRuleList,
 }

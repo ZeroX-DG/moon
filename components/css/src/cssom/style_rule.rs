@@ -1,16 +1,17 @@
 use crate::selector::structs::Selector;
-use smallbitvec::SmallBitVec;
+use crate::parser::structs::Declaration;
 
+#[derive(Debug)]
 pub struct StyleRule {
-    selector: Selector,
-    style: StyleDeclarations,
+    selectors: Vec<Selector>,
+    declarations: Vec<Declaration>,
 }
 
-pub struct StyleDeclarations {
-    properties: Vec<StyleDeclaration>,
-    importances: SmallBitVec
-}
-
-pub enum StyleDeclaration {
-    Background
+impl StyleRule {
+    pub fn new(selectors: Vec<Selector>, declarations: Vec<Declaration>) -> Self {
+        Self {
+            selectors,
+            declarations
+        }
+    }
 }

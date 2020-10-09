@@ -1,6 +1,10 @@
 pub mod structs;
 
 use super::tokenizer::token::Token;
+use super::cssom::stylesheet::StyleSheet;
+use super::cssom::style_rule::StyleRule;
+use super::cssom::css_rule::CSSRule;
+use super::selector::parse_selectors;
 use io::data_stream::DataStream;
 use std::env;
 use structs::*;
@@ -50,6 +54,13 @@ impl Parser {
         }
     }
 
+    pub fn recreate(&mut self, tokens: DataStream<Token>) {
+        self.top_level = false;
+        self.reconsume = false;
+        self.current_token = None;
+        self.tokens = tokens;
+    }
+
     fn consume_next_token(&mut self) -> Token {
         if self.reconsume {
             self.reconsume = false;
@@ -64,7 +75,7 @@ impl Parser {
         if self.reconsume {
             return self.current_token.clone().unwrap();
         }
-        return self.tokens.next().unwrap_or(&Token::EOF).clone();
+        return self.tokens.peek().unwrap_or(&Token::EOF).clone();
     }
 
     fn reconsume(&mut self) {
@@ -104,16 +115,16 @@ impl Parser {
     }
 
     fn consume_a_component_value(&mut self) -> ComponentValue {
-        self.consume_next_token();
+        let token = self.consume_next_token();
 
-        match self.current_token.clone().unwrap() {
+        match token {
             Token::BraceOpen | Token::BracketOpen | Token::ParentheseOpen => {
                 return ComponentValue::SimpleBlock(self.consume_a_simple_block());
             }
             Token::Function(_) => {
                 return ComponentValue::Function(self.consume_a_function());
             }
-            t => return ComponentValue::PerservedToken(t),
+            t => ComponentValue::PerservedToken(t)
         }
     }
 
@@ -134,19 +145,19 @@ impl Parser {
                     result.push(DeclarationOrAtRule::AtRule(rule));
                 }
                 Token::Ident(_) => {
-                    let mut tmp = vec![ComponentValue::PerservedToken(
-                        self.current_token.clone().unwrap(),
-                    )];
+                    let mut tmp = vec![self.current_token.clone().unwrap()];
                     loop {
                         match self.peek_next_token() {
                             Token::Semicolon | Token::EOF => break,
                             _ => {
-                                tmp.push(self.consume_a_component_value());
+                                if let ComponentValue::PerservedToken(t) = self.consume_a_component_value() {
+                                    tmp.push(t);
+                                }
                             }
                         }
                     }
-                    if let Some(declaration) =
-                        self.consume_a_declaration_from_list(DataStream::new(tmp))
+                    let mut parser = Parser::new(DataStream::new(tmp));
+                    if let Some(declaration) = parser.consume_a_declaration()
                     {
                         result.push(DeclarationOrAtRule::Declaration(declaration));
                     }
@@ -279,65 +290,6 @@ impl Parser {
         }
     }
 
-    fn consume_a_declaration_from_list(
-        &mut self,
-        mut tokens: DataStream<ComponentValue>,
-    ) -> Option<Declaration> {
-        let next_token = tokens.next().unwrap();
-        let declaration_name =
-            if let ComponentValue::PerservedToken(Token::Ident(name)) = next_token {
-                name.clone()
-            } else {
-                panic!("Token is not a indent token");
-            };
-        let mut declaration = Declaration::new(declaration_name);
-
-        while let Some(ComponentValue::PerservedToken(Token::Whitespace)) = tokens.peek() {
-            tokens.next();
-        }
-
-        match tokens.peek().unwrap() {
-            ComponentValue::PerservedToken(Token::Colon) => {
-                tokens.next();
-            }
-            _ => {
-                emit_error!("Expected Colon in declaration");
-                return None;
-            }
-        }
-
-        while let Some(ComponentValue::PerservedToken(Token::Whitespace)) = tokens.peek() {
-            tokens.next();
-        }
-
-        loop {
-            let token = tokens.peek().unwrap();
-            if let ComponentValue::PerservedToken(Token::EOF) = token {
-                break;
-            }
-            declaration.append_value(self.consume_a_component_value());
-        }
-
-        let last_two_tokens = declaration.last_values(2);
-
-        if last_two_tokens.len() == 2 {
-            if let ComponentValue::PerservedToken(Token::Delim('!')) = last_two_tokens[0] {
-                if let ComponentValue::PerservedToken(Token::Ident(data)) = last_two_tokens[1] {
-                    if data.eq_ignore_ascii_case("important") {
-                        declaration.pop_last(2);
-                        declaration.important();
-                    }
-                }
-            }
-        }
-
-        while let Some((index, Token::Whitespace)) = declaration.last_token() {
-            declaration.remove(index);
-        }
-
-        return Some(declaration);
-    }
-
     fn consume_a_declaration(&mut self) -> Option<Declaration> {
         let next_token = self.consume_next_token();
         let declaration_name = if let Token::Ident(name) = next_token {
@@ -400,6 +352,54 @@ impl Parser {
         self.top_level = true;
         let rules = self.consume_a_list_of_rules();
         return rules;
+    }
+
+    pub fn parse_a_css_stylesheet(&mut self) -> StyleSheet {
+        let mut stylesheet = StyleSheet::new();
+        let rules = self.parse_a_stylesheet();
+        let mut parser = Parser::new(DataStream::new(Vec::new()));
+        for rule in rules {
+            if let Rule::QualifiedRule(rule) = rule {
+                let selectors = parse_selectors(&rule.prelude);
+                if selectors.len() == 0 {
+                    // invalid rule
+                    continue
+                }
+                let content = if let Some(block) = rule.block {
+                    // transform component values to tokens
+                    let tokens = block.value
+                        .into_iter()
+                        .filter_map(|com| {
+                            match com {
+                                ComponentValue::PerservedToken(t) => Some(t),
+                                _ => None
+                            }
+                        })
+                        .collect();
+                    parser.recreate(DataStream::new(tokens));
+
+                    let declarations = parser.parse_a_list_of_declarations();
+                    // take only declaration
+                    declarations
+                        .into_iter()
+                        .filter_map(|declaration| {
+                            match declaration {
+                                DeclarationOrAtRule::Declaration(d) => Some(d),
+                                _ => None
+                            }
+                        })
+                        .collect()
+                } else {
+                    Vec::new()
+                };
+                let style_rule = StyleRule::new(selectors, content);
+                stylesheet.append_rule(CSSRule::Style(style_rule));
+            }
+            else {
+                continue;
+            }
+        }
+        stylesheet
     }
 
     pub fn parse_a_list_of_rules(&mut self) -> ListOfRules {
@@ -599,5 +599,14 @@ mod tests {
                 })
             })
         );
+    }
+
+    #[test]
+    fn parse_css_stylesheet() {
+        let css = "#elementId { color: black; }";
+        let tokenizer = Tokenizer::new(css.to_string());
+        let tokens = tokenizer.run();
+        let mut parser = Parser::new(tokens);
+        let stylesheet = parser.parse_a_css_stylesheet();
     }
 }

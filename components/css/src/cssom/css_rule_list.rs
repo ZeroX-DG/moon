@@ -1,5 +1,6 @@
 use super::css_rule::CSSRule;
 
+#[derive(Debug)]
 pub struct CSSRuleList(Vec<CSSRule>);
 
 impl CSSRuleList {

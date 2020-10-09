@@ -7,6 +7,7 @@ pub enum Rule {
 }
 pub type ListOfRules = Vec<Rule>;
 
+#[derive(Debug)]
 pub enum DeclarationOrAtRule {
     Declaration(Declaration),
     AtRule(AtRule),
@@ -49,6 +50,7 @@ pub struct AtRule {
 
 /// Declaration
 /// https://www.w3.org/TR/css-syntax-3/#declaration
+#[derive(Debug)]
 pub struct Declaration {
     pub name: String,
     pub value: Vec<ComponentValue>,
