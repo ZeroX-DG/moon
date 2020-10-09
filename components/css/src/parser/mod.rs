@@ -333,8 +333,8 @@ impl Parser {
             }
         }
 
-        while let Some((index, Token::Whitespace)) = declaration.last_token() {
-            declaration.remove(index);
+        while let Some(Token::Whitespace) = declaration.last_token() {
+            declaration.pop_last(1);
         }
 
         return Some(declaration);
@@ -603,10 +603,11 @@ mod tests {
 
     #[test]
     fn parse_css_stylesheet() {
-        let css = "#elementId { color: black; }";
+        let css = "#elementId { color: black !important; }";
         let tokenizer = Tokenizer::new(css.to_string());
         let tokens = tokenizer.run();
         let mut parser = Parser::new(tokens);
         let stylesheet = parser.parse_a_css_stylesheet();
+        println!("{:#?}", stylesheet);
     }
 }

@@ -128,13 +128,13 @@ impl Declaration {
     }
 
     pub fn last_values(&self, len: usize) -> Vec<&ComponentValue> {
-        self.value.iter().rev().take(len).collect()
+        self.value.iter().rev().take(len).rev().collect()
     }
 
-    pub fn last_token(&self) -> Option<(usize, &Token)> {
-        for (index, value) in self.value.iter().rev().enumerate() {
+    pub fn last_token(&self) -> Option<&Token> {
+        for value in self.value.iter().rev() {
             if let ComponentValue::PerservedToken(token) = value {
-                return Some((index, token));
+                return Some(token);
             }
         }
         return None;
