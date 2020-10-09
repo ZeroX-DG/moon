@@ -27,18 +27,18 @@ Bold text is what I'm working on
 - [ ] :electric_plug: **CSSOM API**
 - [ ] :memo: CSS Parsing
   - [x] CSS tokenizer
-  - [ ] **CSSOM parser/tree builder**
-- [ ] :triangular_ruler: CSS
+  - [x] CSSOM parser/tree builder
+- [ ] :triangular_ruler: Style
+  - [ ] Style tree
   - [ ] Selector matching
-    - [ ] Element selector
-    - [ ] Id selector
-    - [ ] Class selector
   - [ ] Box model
+  - [ ] Layout tree
   - [ ] Block layout
   - [ ] Inline layout
   - [ ] Flexbox
   - [ ] CSS Grid
 - [ ] :art: Rendering
+  - [ ] Display list
   - [ ] GPU rendering
   - [ ] Font rendering
 - [ ] :earth_americas: Networking
