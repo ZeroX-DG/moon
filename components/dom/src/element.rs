@@ -46,7 +46,11 @@ impl Element {
         self.attributes.contains_key(name)
     }
 
-    pub fn tag_name(&self) -> String {
-        self.tag_name.clone()
+    pub fn tag_name(&self) -> &String {
+        &self.tag_name
+    }
+
+    pub fn id(&self) -> &String {
+        &self.id
     }
 }

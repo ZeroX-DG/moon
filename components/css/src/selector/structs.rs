@@ -34,16 +34,32 @@ impl Selector {
     pub fn new(data: SelectorData) -> Self {
         Self(data)
     }
+
+    pub fn values(&self) -> &SelectorData {
+        &self.0
+    }
 }
 
 impl SimpleSelectorSequence {
     pub fn new(data: Vec<SimpleSelector>) -> Self {
         Self(data)
     }
+
+    pub fn values(&self) -> &Vec<SimpleSelector> {
+        &self.0
+    }
 }
 
 impl SimpleSelector {
     pub fn new(type_: SimpleSelectorType, value: Option<String>) -> Self {
         Self { type_, value }
+    }
+
+    pub fn value(&self) -> &Option<String> {
+        &self.value
+    }
+
+    pub fn selector_type(&self) -> &SimpleSelectorType {
+        &self.type_
     }
 }
