@@ -35,6 +35,10 @@ impl Element {
     }
 
     pub fn set_attribute(&mut self, name: &str, value: &str) {
+        if (name == "id") {
+            self.id = value.to_string();
+            return
+        }
         self.attributes.insert(name.to_owned(), value.to_owned());
     }
 

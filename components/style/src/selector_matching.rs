@@ -106,3 +106,146 @@ fn is_match_simple_selector(element: &Element, selector: &SimpleSelector) -> boo
         _ => false
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use css::parser::Parser;
+    use css::tokenizer::Tokenizer;
+    use css::cssom::css_rule::CSSRule;
+    use dom::node::Node;
+
+    #[test]
+    fn match_simple_type() {
+        let element = NodeRef::new(Element::new("h1".to_string()));
+        let css = "h1 { color: red; }";
+
+        let tokenizer = Tokenizer::new(css.to_string());
+        let tokens = tokenizer.run();
+        let mut parser = Parser::new(tokens);
+        let stylesheet = parser.parse_a_css_stylesheet();
+
+        let rule = stylesheet.first().unwrap();
+
+        match rule {
+            CSSRule::Style(style) => {
+                let selectors = &style.selectors;
+                assert!(is_match_selectors(&element, selectors));
+            }
+        }
+    }
+
+    #[test]
+    fn match_simple_id() {
+        let mut element = Element::new("h1".to_string());
+        element.set_attribute("id", "button");
+        let element = NodeRef::new(element);
+        let css = "h1#button { color: red; }";
+
+        let tokenizer = Tokenizer::new(css.to_string());
+        let tokens = tokenizer.run();
+        let mut parser = Parser::new(tokens);
+        let stylesheet = parser.parse_a_css_stylesheet();
+
+        let rule = stylesheet.first().unwrap();
+
+        match rule {
+            CSSRule::Style(style) => {
+                let selectors = &style.selectors;
+                assert!(is_match_selectors(&element, selectors));
+            }
+        }
+    }
+
+    #[test]
+    fn match_simple_decendant() {
+        let parent = NodeRef::new(Element::new("h1".to_string()));
+        let child = NodeRef::new(Element::new("button".to_string()));
+        Node::append_child(parent.clone(), child.clone());
+
+        let css = "h1 button { color: red; }";
+
+        let tokenizer = Tokenizer::new(css.to_string());
+        let tokens = tokenizer.run();
+        let mut parser = Parser::new(tokens);
+        let stylesheet = parser.parse_a_css_stylesheet();
+
+        let rule = stylesheet.first().unwrap();
+
+        match rule {
+            CSSRule::Style(style) => {
+                let selectors = &style.selectors;
+                assert!(is_match_selectors(&child, selectors));
+            }
+        }
+    }
+
+    #[test]
+    fn match_simple_child() {
+        let parent = NodeRef::new(Element::new("h1".to_string()));
+        let child = NodeRef::new(Element::new("button".to_string()));
+        Node::append_child(parent.clone(), child.clone());
+        
+        let css = "h1 > button { color: red; }";
+
+        let tokenizer = Tokenizer::new(css.to_string());
+        let tokens = tokenizer.run();
+        let mut parser = Parser::new(tokens);
+        let stylesheet = parser.parse_a_css_stylesheet();
+
+        let rule = stylesheet.first().unwrap();
+
+        match rule {
+            CSSRule::Style(style) => {
+                let selectors = &style.selectors;
+                assert!(is_match_selectors(&child, selectors));
+            }
+        }
+    }
+
+    #[test]
+    fn match_invalid_child() {
+        let parent = NodeRef::new(Element::new("h1".to_string()));
+        let child = NodeRef::new(Element::new("button".to_string()));
+        Node::append_child(parent.clone(), child.clone());
+        
+        let css = "button > h1 { color: red; }";
+
+        let tokenizer = Tokenizer::new(css.to_string());
+        let tokens = tokenizer.run();
+        let mut parser = Parser::new(tokens);
+        let stylesheet = parser.parse_a_css_stylesheet();
+
+        let rule = stylesheet.first().unwrap();
+
+        match rule {
+            CSSRule::Style(style) => {
+                let selectors = &style.selectors;
+                assert!(!is_match_selectors(&child, selectors));
+            }
+        }
+    }
+
+    #[test]
+    fn match_invalid_id() {
+        let parent = NodeRef::new(Element::new("h1".to_string()));
+        let child = NodeRef::new(Element::new("button".to_string()));
+        Node::append_child(parent.clone(), child.clone());
+        
+        let css = "h1#name > button { color: red; }";
+
+        let tokenizer = Tokenizer::new(css.to_string());
+        let tokens = tokenizer.run();
+        let mut parser = Parser::new(tokens);
+        let stylesheet = parser.parse_a_css_stylesheet();
+
+        let rule = stylesheet.first().unwrap();
+
+        match rule {
+            CSSRule::Style(style) => {
+                let selectors = &style.selectors;
+                assert!(!is_match_selectors(&child, selectors));
+            }
+        }
+    }
+}

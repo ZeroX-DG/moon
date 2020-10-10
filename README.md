@@ -30,7 +30,7 @@ Bold text is what I'm working on
   - [x] CSSOM parser/tree builder
 - [ ] :triangular_ruler: Style
   - [ ] Style tree
-  - [ ] Selector matching
+  - [x] Selector matching
   - [ ] Box model
   - [ ] Layout tree
   - [ ] Block layout
