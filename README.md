@@ -29,8 +29,8 @@ Bold text is what I'm working on
   - [x] CSS tokenizer
   - [x] CSSOM parser/tree builder
 - [ ] :triangular_ruler: Style
-  - [ ] Style tree
-  - [ ] Selector matching
+  - [ ] **Style tree**
+  - [ ] **Selector matching**
   - [ ] Box model
   - [ ] Layout tree
   - [ ] Block layout
