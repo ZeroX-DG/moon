@@ -50,6 +50,10 @@ impl Element {
         &self.tag_name
     }
 
+    pub fn class_list(&self) -> &DOMTokenList {
+        &self.class_list
+    }
+
     pub fn id(&self) -> &String {
         &self.id
     }

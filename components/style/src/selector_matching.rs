@@ -91,6 +91,12 @@ fn is_match_simple_selector(element: &Element, selector: &SimpleSelector) -> boo
             }
             false
         }
+        SimpleSelectorType::Class => {
+            if let Some(type_name) = selector.value() {
+                return element.class_list().contains(&type_name);
+            }
+            false
+        }
         SimpleSelectorType::ID => {
             if let Some(id) = selector.value() {
                 return element.id() == id;
