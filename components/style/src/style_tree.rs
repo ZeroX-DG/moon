@@ -13,6 +13,7 @@ use super::values::display::Display;
 
 pub type Properties = HashMap<Property, Value>;
 
+/// CSS property name
 #[derive(Debug, Hash, Eq, PartialEq)]
 pub enum Property {
     BackgroundColor,
@@ -20,16 +21,21 @@ pub enum Property {
     Display
 }
 
+/// CSS property value
 #[derive(Debug, Clone, PartialEq)]
 pub enum Value {
     Color(Color),
     Display(Display)
 }
 
+/// A style node in the style tree
 #[derive(Debug)]
 pub struct StyleNode {
+    /// A reference to the DOM node that uses this style
     pub node: NodeRef,
+    /// A property HashMap containing style property & value
     pub properties: Properties,
+    /// Child style nodes
     pub children: Vec<StyleNode>
 }
 
@@ -106,6 +112,7 @@ fn apply_style_rule(node: &NodeRef, rule: &StyleRule, properties: &mut Propertie
     }
 }
 
+/// Build the style tree using the root node & list of stylesheets
 pub fn build_style_tree(node: NodeRef, stylesheets: &Vec<StyleSheet>) -> StyleNode {
     let properties = if node.is::<dom::text::Text>() {
         HashMap::new()
