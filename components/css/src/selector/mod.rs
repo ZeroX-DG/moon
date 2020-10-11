@@ -2,8 +2,8 @@ pub mod structs;
 
 use super::parser::structs::ComponentValue;
 use super::parser::Parser;
-use super::tokenizer::Tokenizer;
 use super::tokenizer::token::Token;
+use super::tokenizer::Tokenizer;
 use io::data_stream::DataStream;
 use structs::*;
 
@@ -34,7 +34,7 @@ pub fn parse_selectors(values: &Vec<ComponentValue>) -> Vec<Selector> {
                 if let Some(token_value!(Token::Whitespace)) = data_stream.peek() {
                     data_stream.next();
                 } else {
-                    break
+                    break;
                 }
             }
             if let Some(token_value!(Token::Comma)) = data_stream.next() {
@@ -208,7 +208,7 @@ pub fn parse_simple_selector(
             if let token_value!(Token::Ident(data)) = next_values[1].clone() {
                 data_stream.next();
                 data_stream.next();
-                return Some(SimpleSelector::new(SimpleSelectorType::Class, Some(data)))
+                return Some(SimpleSelector::new(SimpleSelectorType::Class, Some(data)));
             }
             None
         }
@@ -384,24 +384,21 @@ mod tests {
 
             assert_eq!(selectors.len(), 2);
 
-            let expected = Selector::new(vec![
-                (
-                    SimpleSelectorSequence::new(vec![
-                        SimpleSelector::new(SimpleSelectorType::Type, Some("div".to_string())),
-                        SimpleSelector::new(SimpleSelectorType::Class, Some("class".to_string())),
-                    ]),
-                    None
-                )
-            ]);
+            let expected = Selector::new(vec![(
+                SimpleSelectorSequence::new(vec![
+                    SimpleSelector::new(SimpleSelectorType::Type, Some("div".to_string())),
+                    SimpleSelector::new(SimpleSelectorType::Class, Some("class".to_string())),
+                ]),
+                None,
+            )]);
 
-            let expected2 = Selector::new(vec![
-                (
-                    SimpleSelectorSequence::new(vec![
-                        SimpleSelector::new(SimpleSelectorType::ID, Some("name".to_string())),
-                    ]),
-                    None
-                )
-            ]);
+            let expected2 = Selector::new(vec![(
+                SimpleSelectorSequence::new(vec![SimpleSelector::new(
+                    SimpleSelectorType::ID,
+                    Some("name".to_string()),
+                )]),
+                None,
+            )]);
 
             assert_eq!(selectors.get(0), Some(&expected));
             assert_eq!(selectors.get(1), Some(&expected2));

@@ -1,5 +1,5 @@
-use crate::selector::structs::Selector;
 use crate::parser::structs::Declaration;
+use crate::selector::structs::Selector;
 
 #[derive(Debug, PartialEq)]
 pub struct StyleRule {
@@ -11,7 +11,7 @@ impl StyleRule {
     pub fn new(selectors: Vec<Selector>, declarations: Vec<Declaration>) -> Self {
         Self {
             selectors,
-            declarations
+            declarations,
         }
     }
 }

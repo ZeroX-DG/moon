@@ -1,6 +1,6 @@
-use dom::element::Element;
-use dom::dom_ref::NodeRef;
 use css::selector::structs::*;
+use dom::dom_ref::NodeRef;
+use dom::element::Element;
 
 fn get_parent(el: &NodeRef) -> Option<NodeRef> {
     el.borrow().as_node().parent()
@@ -11,7 +11,9 @@ fn get_prev_sibling(el: &NodeRef) -> Option<NodeRef> {
 }
 
 pub fn is_match_selectors(element: &NodeRef, selectors: &Vec<Selector>) -> bool {
-    selectors.iter().any(|selector| is_match_selector(element.clone(), selector))
+    selectors
+        .iter()
+        .any(|selector| is_match_selector(element.clone(), selector))
 }
 
 pub fn is_match_selector(element: NodeRef, selector: &Selector) -> bool {
@@ -23,54 +25,50 @@ pub fn is_match_selector(element: NodeRef, selector: &Selector) -> bool {
                     let parent = get_parent(&el);
                     if let Some(p) = &parent {
                         if !is_match_simple_selector_seq(p, selector_seq) {
-                            return false
+                            return false;
                         }
                     }
                     current_element = parent;
                 }
-                Some(Combinator::Descendant) => {
-                    loop {
-                        let parent = get_parent(&el);
-                        if let Some(p) = &parent {
-                            if is_match_simple_selector_seq(p, selector_seq) {
-                                current_element = parent;
-                                break
-                            }
-                        } else {
-                            return false;
+                Some(Combinator::Descendant) => loop {
+                    let parent = get_parent(&el);
+                    if let Some(p) = &parent {
+                        if is_match_simple_selector_seq(p, selector_seq) {
+                            current_element = parent;
+                            break;
                         }
+                    } else {
+                        return false;
                     }
-                }
+                },
                 Some(Combinator::NextSibling) => {
                     let sibling = get_prev_sibling(&el);
                     if let Some(sibling) = &sibling {
                         if !is_match_simple_selector_seq(sibling, selector_seq) {
-                            return false
+                            return false;
                         }
                     }
                     current_element = sibling;
                 }
-                Some(Combinator::SubsequentSibling) => {
-                    loop {
-                        let sibling = get_prev_sibling(&el);
-                        if let Some(s) = &sibling {
-                            if is_match_simple_selector_seq(s, selector_seq) {
-                                current_element = sibling;
-                                break
-                            }
-                        } else {
-                            return false;
+                Some(Combinator::SubsequentSibling) => loop {
+                    let sibling = get_prev_sibling(&el);
+                    if let Some(s) = &sibling {
+                        if is_match_simple_selector_seq(s, selector_seq) {
+                            current_element = sibling;
+                            break;
                         }
+                    } else {
+                        return false;
                     }
-                }
+                },
                 None => {
                     if !is_match_simple_selector_seq(&el, selector_seq) {
-                        return false
+                        return false;
                     }
                 }
             }
         } else {
-            return false
+            return false;
         }
     }
     true
@@ -79,7 +77,10 @@ pub fn is_match_selector(element: NodeRef, selector: &Selector) -> bool {
 fn is_match_simple_selector_seq(element: &NodeRef, sequence: &SimpleSelectorSequence) -> bool {
     let element = element.borrow();
     let element = element.as_element().expect("Node is not an element");
-    sequence.values().iter().all(|selector| is_match_simple_selector(element, selector))
+    sequence
+        .values()
+        .iter()
+        .all(|selector| is_match_simple_selector(element, selector))
 }
 
 fn is_match_simple_selector(element: &Element, selector: &SimpleSelector) -> bool {
@@ -103,16 +104,16 @@ fn is_match_simple_selector(element: &Element, selector: &SimpleSelector) -> boo
             }
             false
         }
-        _ => false
+        _ => false,
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use css::cssom::css_rule::CSSRule;
     use css::parser::Parser;
     use css::tokenizer::Tokenizer;
-    use css::cssom::css_rule::CSSRule;
     use dom::node::Node;
 
     #[test]
@@ -185,7 +186,7 @@ mod tests {
         let parent = NodeRef::new(Element::new("h1".to_string()));
         let child = NodeRef::new(Element::new("button".to_string()));
         Node::append_child(parent.clone(), child.clone());
-        
+
         let css = "h1 > button { color: red; }";
 
         let tokenizer = Tokenizer::new(css.to_string());
@@ -208,7 +209,7 @@ mod tests {
         let parent = NodeRef::new(Element::new("h1".to_string()));
         let child = NodeRef::new(Element::new("button".to_string()));
         Node::append_child(parent.clone(), child.clone());
-        
+
         let css = "button > h1 { color: red; }";
 
         let tokenizer = Tokenizer::new(css.to_string());
@@ -231,7 +232,7 @@ mod tests {
         let parent = NodeRef::new(Element::new("h1".to_string()));
         let child = NodeRef::new(Element::new("button".to_string()));
         Node::append_child(parent.clone(), child.clone());
-        
+
         let css = "h1#name > button { color: red; }";
 
         let tokenizer = Tokenizer::new(css.to_string());

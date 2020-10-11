@@ -1,10 +1,10 @@
 pub mod structs;
 
-use super::tokenizer::token::Token;
-use super::cssom::stylesheet::StyleSheet;
-use super::cssom::style_rule::StyleRule;
 use super::cssom::css_rule::CSSRule;
+use super::cssom::style_rule::StyleRule;
+use super::cssom::stylesheet::StyleSheet;
 use super::selector::parse_selectors;
+use super::tokenizer::token::Token;
 use io::data_stream::DataStream;
 use std::env;
 use structs::*;
@@ -124,7 +124,7 @@ impl Parser {
             Token::Function(_) => {
                 return ComponentValue::Function(self.consume_a_function());
             }
-            t => ComponentValue::PerservedToken(t)
+            t => ComponentValue::PerservedToken(t),
         }
     }
 
@@ -150,15 +150,16 @@ impl Parser {
                         match self.peek_next_token() {
                             Token::Semicolon | Token::EOF => break,
                             _ => {
-                                if let ComponentValue::PerservedToken(t) = self.consume_a_component_value() {
+                                if let ComponentValue::PerservedToken(t) =
+                                    self.consume_a_component_value()
+                                {
                                     tmp.push(t);
                                 }
                             }
                         }
                     }
                     let mut parser = Parser::new(DataStream::new(tmp));
-                    if let Some(declaration) = parser.consume_a_declaration()
-                    {
+                    if let Some(declaration) = parser.consume_a_declaration() {
                         result.push(DeclarationOrAtRule::Declaration(declaration));
                     }
                 }
@@ -363,17 +364,16 @@ impl Parser {
                 let selectors = parse_selectors(&rule.prelude);
                 if selectors.len() == 0 {
                     // invalid rule
-                    continue
+                    continue;
                 }
                 let content = if let Some(block) = rule.block {
                     // transform component values to tokens
-                    let tokens = block.value
+                    let tokens = block
+                        .value
                         .into_iter()
-                        .filter_map(|com| {
-                            match com {
-                                ComponentValue::PerservedToken(t) => Some(t),
-                                _ => None
-                            }
+                        .filter_map(|com| match com {
+                            ComponentValue::PerservedToken(t) => Some(t),
+                            _ => None,
                         })
                         .collect();
                     parser.recreate(DataStream::new(tokens));
@@ -382,11 +382,9 @@ impl Parser {
                     // take only declaration
                     declarations
                         .into_iter()
-                        .filter_map(|declaration| {
-                            match declaration {
-                                DeclarationOrAtRule::Declaration(d) => Some(d),
-                                _ => None
-                            }
+                        .filter_map(|declaration| match declaration {
+                            DeclarationOrAtRule::Declaration(d) => Some(d),
+                            _ => None,
                         })
                         .collect()
                 } else {
@@ -394,8 +392,7 @@ impl Parser {
                 };
                 let style_rule = StyleRule::new(selectors, content);
                 stylesheet.append_rule(CSSRule::Style(style_rule));
-            }
-            else {
+            } else {
                 continue;
             }
         }
@@ -498,12 +495,12 @@ impl Parser {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::tokenizer::token::HashType;
-    use crate::tokenizer::Tokenizer;
-    use crate::cssom::css_rule_list::CSSRuleList;
     use crate::cssom::css_rule::CSSRule;
+    use crate::cssom::css_rule_list::CSSRuleList;
     use crate::cssom::style_rule::StyleRule;
     use crate::selector::structs::*;
+    use crate::tokenizer::token::HashType;
+    use crate::tokenizer::Tokenizer;
 
     #[test]
     fn parse_a_stylesheet() {
@@ -612,25 +609,24 @@ mod tests {
         let tokens = tokenizer.run();
         let mut parser = Parser::new(tokens);
         let stylesheet = parser.parse_a_css_stylesheet();
-        assert_eq!(stylesheet.css_rules, CSSRuleList(vec![
-            CSSRule::Style(StyleRule::new(
-                vec![
-                    Selector::new(vec![
-                        (SimpleSelectorSequence::new(vec![
-                            SimpleSelector::new(SimpleSelectorType::ID, Some("elementId".to_string()))
-                        ]), None)
-                    ])
-                ],
-                vec![
-                    Declaration {
-                        name: "color".to_string(),
-                        important: true,
-                        value: vec![
-                            ComponentValue::PerservedToken(Token::Ident("black".to_string()))
-                        ]
-                    }
-                ]
-            ))
-        ]));
+        assert_eq!(
+            stylesheet.css_rules,
+            CSSRuleList(vec![CSSRule::Style(StyleRule::new(
+                vec![Selector::new(vec![(
+                    SimpleSelectorSequence::new(vec![SimpleSelector::new(
+                        SimpleSelectorType::ID,
+                        Some("elementId".to_string())
+                    )]),
+                    None
+                )])],
+                vec![Declaration {
+                    name: "color".to_string(),
+                    important: true,
+                    value: vec![ComponentValue::PerservedToken(Token::Ident(
+                        "black".to_string()
+                    ))]
+                }]
+            ))])
+        );
     }
 }

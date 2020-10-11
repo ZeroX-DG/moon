@@ -40,7 +40,11 @@ impl DOMTokenList {
 impl From<&str> for DOMTokenList {
     fn from(data: &str) -> Self {
         Self {
-            items: data.split(' ').map(String::from).collect()
+            items: data
+                .split(' ')
+                .filter(|class| class.len() > 0)
+                .map(String::from)
+                .collect(),
         }
     }
 }

@@ -1,9 +1,9 @@
-use css::tokenizer::token::Token;
 use crate::style_tree::Value;
+use css::tokenizer::token::Token;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Color {
-    RGBA(u8, u8, u8, u8)
+    RGBA(u8, u8, u8, u8),
 }
 
 impl Color {

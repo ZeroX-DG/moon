@@ -1,11 +1,11 @@
-use std::collections::HashMap;
-use dom::dom_ref::NodeRef;
+use super::selector_matching::is_match_selectors;
 use css::cssom::css_rule::CSSRule;
 use css::cssom::style_rule::StyleRule;
 use css::cssom::stylesheet::StyleSheet;
-use css::tokenizer::token::Token;
 use css::parser::structs::ComponentValue;
-use super::selector_matching::is_match_selectors;
+use css::tokenizer::token::Token;
+use dom::dom_ref::NodeRef;
+use std::collections::HashMap;
 
 // values
 use super::values::color::Color;
@@ -18,14 +18,14 @@ pub type Properties = HashMap<Property, Value>;
 pub enum Property {
     BackgroundColor,
     Color,
-    Display
+    Display,
 }
 
 /// CSS property value
 #[derive(Debug, Clone, PartialEq)]
 pub enum Value {
     Color(Color),
-    Display(Display)
+    Display(Display),
 }
 
 /// A style node in the style tree
@@ -36,12 +36,15 @@ pub struct StyleNode {
     /// A property HashMap containing style property & value
     pub properties: Properties,
     /// Child style nodes
-    pub children: Vec<StyleNode>
+    pub children: Vec<StyleNode>,
 }
 
 impl StyleNode {
     pub fn get_value(&self, prop: Property) -> Value {
-        self.properties.get(&prop).cloned().unwrap_or(Value::default(&prop))
+        self.properties
+            .get(&prop)
+            .cloned()
+            .unwrap_or(Value::default(&prop))
     }
 }
 
@@ -58,7 +61,7 @@ impl Value {
         match property {
             Property::BackgroundColor => Color::default(),
             Property::Color => Color::default(),
-            Property::Display => Display::default()
+            Property::Display => Display::default(),
         }
     }
 }
@@ -69,7 +72,7 @@ impl Property {
             "background-color" => Some(Property::BackgroundColor),
             "color" => Some(Property::Color),
             "display" => Some(Property::Display),
-            _ => None
+            _ => None,
         }
     }
 }
@@ -80,7 +83,7 @@ fn apply_stylesheets(node: NodeRef, stylesheets: &Vec<StyleSheet>) -> Properties
     for stylesheet in stylesheets {
         for rule in stylesheet.iter() {
             match rule {
-                CSSRule::Style(style_rule) => apply_style_rule(&node, style_rule, &mut properties)
+                CSSRule::Style(style_rule) => apply_style_rule(&node, style_rule, &mut properties),
             }
         }
     }
@@ -94,14 +97,13 @@ fn apply_style_rule(node: &NodeRef, rule: &StyleRule, properties: &mut Propertie
             let property = Property::parse(&declaration.name);
 
             if let Some(property) = property {
-                let tokens = declaration.value
+                let tokens = declaration
+                    .value
                     .clone()
                     .into_iter()
-                    .filter_map(|com| {
-                        match com {
-                            ComponentValue::PerservedToken(t) => Some(t),
-                            _ => None
-                        }
+                    .filter_map(|com| match com {
+                        ComponentValue::PerservedToken(t) => Some(t),
+                        _ => None,
                     })
                     .collect();
                 if let Some(value) = Value::parse(&property, tokens) {
@@ -128,7 +130,7 @@ pub fn build_style_tree(node: NodeRef, stylesheets: &Vec<StyleSheet>) -> StyleNo
             .child_nodes()
             .into_iter() // this is fine because we clone the node when iterate
             .map(|child| build_style_tree(child, stylesheets))
-            .collect()
+            .collect(),
     }
 }
 
@@ -139,11 +141,10 @@ mod tests {
 
     #[test]
     fn build_tree_simple() {
-        let dom_tree = element("div#parent", vec![
-           element("div#child", vec![
-               text("Hello")
-           ])
-        ]);
+        let dom_tree = element(
+            "div#parent",
+            vec![element("div#child", vec![text("Hello")])],
+        );
 
         let css = r#"
         #parent {
@@ -162,10 +163,16 @@ mod tests {
         let style_tree = build_style_tree(dom_tree.clone(), &vec![stylesheet]);
 
         let mut parent_styles = style_tree.properties.values();
-        assert_eq!(parent_styles.next(), Some(&Value::Color(Color::RGBA(255, 255, 255, 255))));
+        assert_eq!(
+            parent_styles.next(),
+            Some(&Value::Color(Color::RGBA(255, 255, 255, 255)))
+        );
 
         let mut child_styles = style_tree.children[0].properties.values();
-        assert_eq!(child_styles.next(), Some(&Value::Color(Color::RGBA(255, 255, 255, 255))));
+        assert_eq!(
+            child_styles.next(),
+            Some(&Value::Color(Color::RGBA(255, 255, 255, 255)))
+        );
         assert_eq!(child_styles.next(), Some(&Value::Display(Display::Block)));
     }
 }

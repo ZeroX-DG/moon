@@ -17,7 +17,7 @@ impl<T: Clone> DataStream<T> {
     pub fn peek_clone(&self) -> Option<T> {
         match self.data.get(self.index) {
             Some(d) => Some(d.clone()),
-            _ => None
+            _ => None,
         }
     }
 

@@ -1,12 +1,12 @@
+use css::cssom::stylesheet::StyleSheet;
+use css::parser::Parser;
+use css::selector::parse_selector_str;
+use css::selector::structs::*;
+use css::tokenizer::Tokenizer;
 use dom::dom_ref::NodeRef;
 use dom::element::Element;
 use dom::node::Node;
 use dom::text::Text;
-use css::selector::parse_selector_str;
-use css::selector::structs::*;
-use css::cssom::stylesheet::StyleSheet;
-use css::parser::Parser;
-use css::tokenizer::Tokenizer;
 
 pub fn parse_stylesheet(style: &str) -> StyleSheet {
     let tokenizer = Tokenizer::new(style.to_string());
@@ -15,23 +15,23 @@ pub fn parse_stylesheet(style: &str) -> StyleSheet {
 }
 
 pub fn element(selector: &str, children: Vec<NodeRef>) -> NodeRef {
-    let selector = parse_selector_str(selector)
-        .expect("Unable to parse selector in test_utils#element");
+    let selector =
+        parse_selector_str(selector).expect("Unable to parse selector in test_utils#element");
 
     let selector = selector.values().get(0).clone().unwrap();
 
     let selector_parts = selector.0.values();
 
-    let tag_name = selector_parts.iter().find(|part| {
-        match part.selector_type() {
+    let tag_name = selector_parts
+        .iter()
+        .find(|part| match part.selector_type() {
             SimpleSelectorType::Type => true,
-            _ => false
-        }
-    })
-    .expect("Unable to find tag name in test_utils#element")
-    .value()
-    .clone()
-    .unwrap();
+            _ => false,
+        })
+        .expect("Unable to find tag name in test_utils#element")
+        .value()
+        .clone()
+        .unwrap();
 
     let mut element = Element::new(tag_name);
     let mut classes = Vec::new();
@@ -51,7 +51,7 @@ pub fn element(selector: &str, children: Vec<NodeRef>) -> NodeRef {
     element.set_attribute("class", &classes.join(" ").to_string());
 
     let node = NodeRef::new(element);
-   
+
     for child in children {
         Node::append_child(node.clone(), child.clone());
     }
