@@ -87,7 +87,7 @@ fn is_match_simple_selector(element: &Element, selector: &SimpleSelector) -> boo
         SimpleSelectorType::Universal => true,
         SimpleSelectorType::Type => {
             if let Some(type_name) = selector.value() {
-                return element.tag_name() == type_name;
+                return element.tag_name() == *type_name;
             }
             false
         }

@@ -1,6 +1,8 @@
 pub mod structs;
 
 use super::parser::structs::ComponentValue;
+use super::parser::Parser;
+use super::tokenizer::Tokenizer;
 use super::tokenizer::token::Token;
 use io::data_stream::DataStream;
 use structs::*;
@@ -9,6 +11,14 @@ macro_rules! token_value {
     ($token:pat) => {
         ComponentValue::PerservedToken($token)
     };
+}
+
+pub fn parse_selector_str(selector: &str) -> Option<Selector> {
+    let tokenizer = Tokenizer::new(selector.to_string());
+    let mut parser = Parser::new(tokenizer.run());
+    let values = parser.parse_a_list_of_component_values();
+    let mut data_stream = DataStream::new(values);
+    parse_selector(&mut data_stream)
 }
 
 pub fn parse_selectors(values: &Vec<ComponentValue>) -> Vec<Selector> {
@@ -176,27 +186,31 @@ pub fn parse_simple_selector_seq(
 pub fn parse_simple_selector(
     data_stream: &mut DataStream<ComponentValue>,
 ) -> Option<SimpleSelector> {
-    let next_values = data_stream.peek_next(2);
-    if next_values.len() != 2 {
-        return None;
-    }
-    match (next_values[0].clone(), next_values[1].clone()) {
-        (token_value!(Token::Ident(data)), _) => {
+    let next_token = data_stream.peek_clone();
+    match next_token {
+        Some(token_value!(Token::Ident(data))) => {
             data_stream.next();
             Some(SimpleSelector::new(SimpleSelectorType::Type, Some(data)))
         }
-        (token_value!(Token::Delim('*')), _) => {
+        Some(token_value!(Token::Delim('*'))) => {
             data_stream.next();
             Some(SimpleSelector::new(SimpleSelectorType::Universal, None))
         }
-        (token_value!(Token::Hash(data, _)), _) => {
+        Some(token_value!(Token::Hash(data, _))) => {
             data_stream.next();
             Some(SimpleSelector::new(SimpleSelectorType::ID, Some(data)))
         }
-        (token_value!(Token::Delim('.')), token_value!(Token::Ident(data))) => {
-            data_stream.next();
-            data_stream.next();
-            Some(SimpleSelector::new(SimpleSelectorType::Class, Some(data)))
+        Some(token_value!(Token::Delim('.'))) => {
+            let next_values = data_stream.peek_next(2);
+            if next_values.len() != 2 {
+                return None;
+            }
+            if let token_value!(Token::Ident(data)) = next_values[1].clone() {
+                data_stream.next();
+                data_stream.next();
+                return Some(SimpleSelector::new(SimpleSelectorType::Class, Some(data)))
+            }
+            None
         }
         // TODO: Support other selectors too
         _ => None,

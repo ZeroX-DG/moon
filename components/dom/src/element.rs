@@ -35,8 +35,12 @@ impl Element {
     }
 
     pub fn set_attribute(&mut self, name: &str, value: &str) {
-        if (name == "id") {
+        if name == "id" {
             self.id = value.to_string();
+            return
+        }
+        if name == "class" {
+            self.class_list = DOMTokenList::from(value);
             return
         }
         self.attributes.insert(name.to_owned(), value.to_owned());
@@ -50,8 +54,8 @@ impl Element {
         self.attributes.contains_key(name)
     }
 
-    pub fn tag_name(&self) -> &String {
-        &self.tag_name
+    pub fn tag_name(&self) -> String {
+        self.tag_name.clone()
     }
 
     pub fn class_list(&self) -> &DOMTokenList {

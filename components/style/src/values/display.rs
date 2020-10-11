@@ -1,7 +1,7 @@
 use css::tokenizer::token::Token;
 use crate::style_tree::Value;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Display {
     Inline,
     Block,

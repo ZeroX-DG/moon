@@ -20,7 +20,7 @@ pub enum Property {
     Display
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Value {
     Color(Color),
     Display(Display)
@@ -122,5 +122,43 @@ pub fn build_style_tree(node: NodeRef, stylesheets: &Vec<StyleSheet>) -> StyleNo
             .into_iter() // this is fine because we clone the node when iterate
             .map(|child| build_style_tree(child, stylesheets))
             .collect()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::test_utils::*;
+
+    #[test]
+    fn build_tree_simple() {
+        let dom_tree = element("div#parent", vec![
+           element("div#child", vec![
+               text("Hello")
+           ])
+        ]);
+
+        let css = r#"
+        #parent {
+            background-color: white;
+        }
+        #parent #child {
+            color: white;
+        }
+        #child {
+            display: block;
+        }
+        "#;
+
+        let stylesheet = parse_stylesheet(css);
+
+        let style_tree = build_style_tree(dom_tree.clone(), &vec![stylesheet]);
+
+        let mut parent_styles = style_tree.properties.values();
+        assert_eq!(parent_styles.next(), Some(&Value::Color(Color::RGBA(255, 255, 255, 255))));
+
+        let mut child_styles = style_tree.children[0].properties.values();
+        assert_eq!(child_styles.next(), Some(&Value::Color(Color::RGBA(255, 255, 255, 255))));
+        assert_eq!(child_styles.next(), Some(&Value::Display(Display::Block)));
     }
 }

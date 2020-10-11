@@ -36,3 +36,11 @@ impl DOMTokenList {
         self.items.join(" ")
     }
 }
+
+impl From<&str> for DOMTokenList {
+    fn from(data: &str) -> Self {
+        Self {
+            items: data.split(' ').map(String::from).collect()
+        }
+    }
+}
