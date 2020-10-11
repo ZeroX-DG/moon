@@ -23,6 +23,9 @@ impl InputStream {
     pub fn next(&mut self) -> Option<char> {
         if self.reconsume {
             self.reconsume = false;
+            if self.index >= self.input.len() {
+                return None
+            }
             return Some(self.current_char);
         }
         let mut iter = self.input[self.index..].char_indices();

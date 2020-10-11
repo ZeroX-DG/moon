@@ -76,4 +76,8 @@ impl NodeRef {
     pub fn downgrade(self) -> WeakNodeRef {
         WeakNodeRef(Rc::downgrade(&self.0))
     }
+
+    pub fn is<T: Any>(&self) -> bool {
+        self.0.borrow().as_any().is::<T>()
+    }
 }

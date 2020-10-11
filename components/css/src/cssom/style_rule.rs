@@ -3,8 +3,8 @@ use crate::parser::structs::Declaration;
 
 #[derive(Debug, PartialEq)]
 pub struct StyleRule {
-    selectors: Vec<Selector>,
-    declarations: Vec<Declaration>,
+    pub selectors: Vec<Selector>,
+    pub declarations: Vec<Declaration>,
 }
 
 impl StyleRule {

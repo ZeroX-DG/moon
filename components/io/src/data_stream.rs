@@ -1,17 +1,24 @@
 /// A generic data stream to use in multiple occasions
 #[derive(Debug)]
-pub struct DataStream<T> {
+pub struct DataStream<T: Clone> {
     data: Vec<T>,
     index: usize,
 }
 
-impl<T> DataStream<T> {
+impl<T: Clone> DataStream<T> {
     pub fn new(data: Vec<T>) -> Self {
         Self { data, index: 0 }
     }
 
     pub fn peek(&self) -> Option<&T> {
         self.data.get(self.index)
+    }
+
+    pub fn peek_clone(&self) -> Option<T> {
+        match self.data.get(self.index) {
+            Some(d) => Some(d.clone()),
+            _ => None
+        }
     }
 
     pub fn peek_next(&self, len: usize) -> Vec<&T> {
