@@ -1,11 +1,9 @@
-use super::selector_matching::is_match_selectors;
-use css::cssom::css_rule::CSSRule;
-use css::cssom::style_rule::StyleRule;
+use super::value_processing::apply_styles;
 use css::cssom::stylesheet::StyleSheet;
-use css::parser::structs::ComponentValue;
 use css::tokenizer::token::Token;
 use dom::dom_ref::NodeRef;
 use std::collections::HashMap;
+use strum_macros::*;
 
 // values
 use super::values::color::Color;
@@ -14,7 +12,7 @@ use super::values::display::Display;
 pub type Properties = HashMap<Property, Value>;
 
 /// CSS property name
-#[derive(Debug, Hash, Eq, PartialEq)]
+#[derive(Debug, Clone, Hash, Eq, PartialEq, EnumIter)]
 pub enum Property {
     BackgroundColor,
     Color,
@@ -77,49 +75,12 @@ impl Property {
     }
 }
 
-fn apply_stylesheets(node: NodeRef, stylesheets: &Vec<StyleSheet>) -> Properties {
-    let mut properties = HashMap::new();
-
-    for stylesheet in stylesheets {
-        for rule in stylesheet.iter() {
-            match rule {
-                CSSRule::Style(style_rule) => apply_style_rule(&node, style_rule, &mut properties),
-            }
-        }
-    }
-
-    properties
-}
-
-fn apply_style_rule(node: &NodeRef, rule: &StyleRule, properties: &mut Properties) {
-    if is_match_selectors(&node, &rule.selectors) {
-        for declaration in &rule.declarations {
-            let property = Property::parse(&declaration.name);
-
-            if let Some(property) = property {
-                let tokens = declaration
-                    .value
-                    .clone()
-                    .into_iter()
-                    .filter_map(|com| match com {
-                        ComponentValue::PerservedToken(t) => Some(t),
-                        _ => None,
-                    })
-                    .collect();
-                if let Some(value) = Value::parse(&property, tokens) {
-                    properties.insert(property, value);
-                }
-            }
-        }
-    }
-}
-
 /// Build the style tree using the root node & list of stylesheets
-pub fn build_style_tree(node: NodeRef, stylesheets: &Vec<StyleSheet>) -> StyleNode {
+pub fn build_style_tree(node: NodeRef, stylesheets: &[StyleSheet]) -> StyleNode {
     let properties = if node.is::<dom::text::Text>() {
         HashMap::new()
     } else {
-        apply_stylesheets(node.clone(), stylesheets)
+        apply_styles(&node, stylesheets)
     };
     StyleNode {
         node: node.clone(),
@@ -160,7 +121,7 @@ mod tests {
 
         let stylesheet = parse_stylesheet(css);
 
-        let style_tree = build_style_tree(dom_tree.clone(), &vec![stylesheet]);
+        let style_tree = build_style_tree(dom_tree.clone(), &[stylesheet]);
 
         let mut parent_styles = style_tree.properties.values();
         assert_eq!(
