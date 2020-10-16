@@ -18,7 +18,7 @@ pub enum Property {
 }
 
 /// CSS property value
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub enum Value {
     Color(Color),
     Display(Display),
@@ -100,8 +100,8 @@ pub fn build_style_tree(node: NodeRef, rules: &[ContextualRule]) -> StyleNode {
 mod tests {
     use super::*;
     use crate::test_utils::*;
-    use css::cssom::css_rule::CSSRule;
     use crate::value_processing::{CSSLocation, CascadeOrigin};
+    use css::cssom::css_rule::CSSRule;
 
     #[test]
     fn build_tree_simple() {
@@ -124,13 +124,16 @@ mod tests {
 
         let stylesheet = parse_stylesheet(css);
 
-        let rules = stylesheet.iter().map(|rule| match rule {
-            CSSRule::Style(style) => ContextualRule {
-                inner: style,
-                location: CSSLocation::Embedded,
-                origin: CascadeOrigin::User
-            }
-        }).collect::<Vec<ContextualRule>>();
+        let rules = stylesheet
+            .iter()
+            .map(|rule| match rule {
+                CSSRule::Style(style) => ContextualRule {
+                    inner: style,
+                    location: CSSLocation::Embedded,
+                    origin: CascadeOrigin::User,
+                },
+            })
+            .collect::<Vec<ContextualRule>>();
 
         let style_tree = build_style_tree(dom_tree.clone(), &rules);
 

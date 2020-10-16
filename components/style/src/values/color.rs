@@ -1,7 +1,7 @@
 use crate::style_tree::Value;
 use css::tokenizer::token::Token;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub enum Color {
     RGBA(u8, u8, u8, u8),
 }
