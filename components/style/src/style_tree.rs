@@ -1,18 +1,18 @@
 use super::value_processing::apply_styles;
+use super::value_processing::CascadeOrigin;
 use css::cssom::stylesheet::StyleSheet;
 use css::tokenizer::token::Token;
 use dom::dom_ref::NodeRef;
 use std::collections::HashMap;
-use strum_macros::*;
 
 // values
 use super::values::color::Color;
 use super::values::display::Display;
 
-pub type Properties = HashMap<Property, Value>;
+pub type Properties = HashMap<Property, Option<Value>>;
 
 /// CSS property name
-#[derive(Debug, Clone, Hash, Eq, PartialEq, EnumIter)]
+#[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub enum Property {
     BackgroundColor,
     Color,
@@ -39,10 +39,13 @@ pub struct StyleNode {
 
 impl StyleNode {
     pub fn get_value(&self, prop: Property) -> Value {
-        self.properties
-            .get(&prop)
-            .cloned()
-            .unwrap_or(Value::default(&prop))
+        // we will do defaulting here to reduce the size of properties map
+        if let Some(value) = self.properties.get(&prop) {
+            if let Some(v) = value {
+                return v.clone();
+            }
+        }
+        return Value::default(&prop);
     }
 }
 
@@ -76,7 +79,7 @@ impl Property {
 }
 
 /// Build the style tree using the root node & list of stylesheets
-pub fn build_style_tree(node: NodeRef, stylesheets: &[StyleSheet]) -> StyleNode {
+pub fn build_style_tree(node: NodeRef, stylesheets: &[(StyleSheet, CascadeOrigin)]) -> StyleNode {
     let properties = if node.is::<dom::text::Text>() {
         HashMap::new()
     } else {
@@ -121,19 +124,22 @@ mod tests {
 
         let stylesheet = parse_stylesheet(css);
 
-        let style_tree = build_style_tree(dom_tree.clone(), &[stylesheet]);
+        let style_tree = build_style_tree(dom_tree.clone(), &[(stylesheet, CascadeOrigin::User)]);
 
         let mut parent_styles = style_tree.properties.values();
         assert_eq!(
             parent_styles.next(),
-            Some(&Value::Color(Color::RGBA(255, 255, 255, 255)))
+            Some(&Some(Value::Color(Color::RGBA(255, 255, 255, 255))))
         );
 
         let mut child_styles = style_tree.children[0].properties.values();
         assert_eq!(
             child_styles.next(),
-            Some(&Value::Color(Color::RGBA(255, 255, 255, 255)))
+            Some(&Some(Value::Color(Color::RGBA(255, 255, 255, 255))))
         );
-        assert_eq!(child_styles.next(), Some(&Value::Display(Display::Block)));
+        assert_eq!(
+            child_styles.next(),
+            Some(&Some(Value::Display(Display::Block)))
+        );
     }
 }

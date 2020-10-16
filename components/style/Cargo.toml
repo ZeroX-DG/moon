@@ -9,5 +9,3 @@ edition = "2018"
 [dependencies]
 css = { version = "*", path = "../css" }
 dom = { version = "*", path = "../dom" }
-strum = { version = "0.19", features = ["derive"] }
-strum_macros = "0.19"
