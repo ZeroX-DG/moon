@@ -1,8 +1,6 @@
 use super::selector_matching::is_match_selectors;
 use super::style_tree::{Properties, Property, Value};
-use css::cssom::css_rule::CSSRule;
-use css::cssom::stylesheet::StyleSheet;
-use css::parser::structs::ComponentValue;
+use css::cssom::style_rule::StyleRule;
 use dom::dom_ref::NodeRef;
 use std::collections::HashMap;
 
@@ -14,6 +12,18 @@ pub struct PropertyDeclaration {
     pub value: Value,
     pub important: bool,
     pub origin: CascadeOrigin,
+    pub location: CSSLocation
+}
+
+/// Location of the CSS applied
+#[derive(Debug, Clone)]
+pub enum CSSLocation {
+    /// Inline CSS (in HTML tags)
+    Inline,
+    /// Embedded CSS (in HTML style tag)
+    Embedded,
+    /// External CSS (in external css file)
+    External,
 }
 
 /// Cascade origin
@@ -27,12 +37,19 @@ pub enum CascadeOrigin {
     Transition,
 }
 
-pub fn apply_styles(node: &NodeRef, stylesheets: &[(StyleSheet, CascadeOrigin)]) -> Properties {
+/// Style rule with context for cascading
+pub struct ContextualRule<'a> {
+    pub inner: &'a StyleRule,
+    pub origin: CascadeOrigin,
+    pub location: CSSLocation
+}
+
+pub fn apply_styles(node: &NodeRef, rules: &[ContextualRule]) -> Properties {
     let mut properties = HashMap::new();
 
     // https://www.w3.org/TR/css3-cascade/#value-stages
     // Step 1
-    let declared_values = collect_declared_values(&node, stylesheets);
+    let declared_values = collect_declared_values(&node, rules);
 
     // Step 2
     let cascade_values = declared_values
@@ -64,57 +81,39 @@ fn cascade(
 
 fn collect_declared_values(
     node: &NodeRef,
-    stylesheets: &[(StyleSheet, CascadeOrigin)],
+    rules: &[ContextualRule]
 ) -> DeclaredValuesMap {
     let mut result: DeclaredValuesMap = HashMap::new();
 
-    stylesheets.iter().for_each(|(stylesheet, origin)| {
-        let matched_rules = stylesheet
-            .iter()
-            .filter_map(|rule| match rule {
-                CSSRule::Style(style_rule) => {
-                    if is_match_selectors(node, &style_rule.selectors) {
-                        return Some((rule, origin));
+    let matched_rules = rules
+        .iter()
+        .filter(|rule| is_match_selectors(node, &rule.inner.selectors))
+        .collect::<Vec<&ContextualRule>>();
+
+    for rule in matched_rules {
+        for declaration in &rule.inner.declarations {
+            let property = Property::parse(&declaration.name);
+
+            if let Some(property) = property {
+                let tokens = declaration.tokens();
+                let value = Value::parse(&property, tokens);
+
+                if let Some(value) = value {
+                    let declaration = PropertyDeclaration {
+                        value,
+                        important: declaration.important,
+                        origin: rule.origin.clone(),
+                        location: rule.location.clone()
+                    };
+                    if result.contains_key(&property) {
+                        result.get_mut(&property).unwrap().push(declaration);
+                    } else {
+                        result.insert(property, vec![declaration]);
                     }
-                    None
                 }
-            })
-            .collect::<Vec<(&CSSRule, &CascadeOrigin)>>();
-
-        matched_rules.iter().for_each(|(rule, origin)| match rule {
-            CSSRule::Style(style_rule) => {
-                style_rule.declarations.iter().for_each(|declaration| {
-                    let property = Property::parse(&declaration.name);
-
-                    if let Some(property) = property {
-                        let tokens = declaration
-                            .value
-                            .clone()
-                            .into_iter()
-                            .filter_map(|com| match com {
-                                ComponentValue::PerservedToken(t) => Some(t),
-                                _ => None,
-                            })
-                            .collect();
-
-                        let value = Value::parse(&property, tokens);
-                        if let Some(value) = value {
-                            let declaration = PropertyDeclaration {
-                                value,
-                                important: declaration.important,
-                                origin: (*origin).clone(),
-                            };
-                            if result.contains_key(&property) {
-                                result.get_mut(&property).unwrap().push(declaration);
-                            } else {
-                                result.insert(property, vec![declaration]);
-                            }
-                        }
-                    }
-                });
             }
-        });
-    });
+        }
+    }
 
     result
 }

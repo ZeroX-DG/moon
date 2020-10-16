@@ -1,6 +1,4 @@
-use super::value_processing::apply_styles;
-use super::value_processing::CascadeOrigin;
-use css::cssom::stylesheet::StyleSheet;
+use super::value_processing::{apply_styles, ContextualRule};
 use css::tokenizer::token::Token;
 use dom::dom_ref::NodeRef;
 use std::collections::HashMap;
@@ -79,11 +77,11 @@ impl Property {
 }
 
 /// Build the style tree using the root node & list of stylesheets
-pub fn build_style_tree(node: NodeRef, stylesheets: &[(StyleSheet, CascadeOrigin)]) -> StyleNode {
+pub fn build_style_tree(node: NodeRef, rules: &[ContextualRule]) -> StyleNode {
     let properties = if node.is::<dom::text::Text>() {
         HashMap::new()
     } else {
-        apply_styles(&node, stylesheets)
+        apply_styles(&node, &rules)
     };
     StyleNode {
         node: node.clone(),
@@ -93,7 +91,7 @@ pub fn build_style_tree(node: NodeRef, stylesheets: &[(StyleSheet, CascadeOrigin
             .as_node()
             .child_nodes()
             .into_iter() // this is fine because we clone the node when iterate
-            .map(|child| build_style_tree(child, stylesheets))
+            .map(|child| build_style_tree(child, &rules))
             .collect(),
     }
 }
@@ -102,6 +100,8 @@ pub fn build_style_tree(node: NodeRef, stylesheets: &[(StyleSheet, CascadeOrigin
 mod tests {
     use super::*;
     use crate::test_utils::*;
+    use css::cssom::css_rule::CSSRule;
+    use crate::value_processing::{CSSLocation, CascadeOrigin};
 
     #[test]
     fn build_tree_simple() {
@@ -124,7 +124,15 @@ mod tests {
 
         let stylesheet = parse_stylesheet(css);
 
-        let style_tree = build_style_tree(dom_tree.clone(), &[(stylesheet, CascadeOrigin::User)]);
+        let rules = stylesheet.iter().map(|rule| match rule {
+            CSSRule::Style(style) => ContextualRule {
+                inner: style,
+                location: CSSLocation::Embedded,
+                origin: CascadeOrigin::User
+            }
+        }).collect::<Vec<ContextualRule>>();
+
+        let style_tree = build_style_tree(dom_tree.clone(), &rules);
 
         let mut parent_styles = style_tree.properties.values();
         assert_eq!(
