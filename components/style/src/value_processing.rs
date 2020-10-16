@@ -1,6 +1,7 @@
 use super::selector_matching::is_match_selectors;
 use super::style_tree::{Properties, Property, Value};
 use css::cssom::style_rule::StyleRule;
+use css::selector::structs::Specificity;
 use dom::dom_ref::NodeRef;
 use std::cmp::{Ord, Ordering};
 use std::collections::HashMap;
@@ -8,13 +9,13 @@ use std::collections::HashMap;
 type DeclaredValuesMap = HashMap<Property, Vec<PropertyDeclaration>>;
 
 /// CSS property declaration for cascading
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct PropertyDeclaration {
     pub value: Value,
     pub important: bool,
     pub origin: CascadeOrigin,
     pub location: CSSLocation,
-    pub specificity: usize,
+    pub specificity: Specificity,
 }
 
 /// Location of the CSS applied
@@ -95,7 +96,7 @@ fn collect_declared_values(node: &NodeRef, rules: &[ContextualRule]) -> Declared
                         important: declaration.important,
                         origin: rule.origin.clone(),
                         location: rule.location.clone(),
-                        specificity: 0,
+                        specificity: rule.inner.specificity(),
                     };
                     if result.contains_key(&property) {
                         result.get_mut(&property).unwrap().push(declaration);
@@ -183,5 +184,43 @@ fn cmp_cascade_origin(a: &PropertyDeclaration, b: &PropertyDeclaration) -> Order
                 _ => Ordering::Less,
             };
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::values::color::Color;
+
+    #[test]
+    fn cascade_simple() {
+        let a = PropertyDeclaration {
+            location: CSSLocation::External,
+            origin: CascadeOrigin::User,
+            important: false,
+            value: Color::default(),
+            specificity: Specificity::new(1, 0, 1)
+        };
+
+        let b = PropertyDeclaration {
+            location: CSSLocation::Inline,
+            origin: CascadeOrigin::User,
+            important: false,
+            value: Color::default(),
+            specificity: Specificity::new(1, 0, 1)
+        };
+
+        let c = PropertyDeclaration {
+            location: CSSLocation::Embedded,
+            origin: CascadeOrigin::User,
+            important: true,
+            value: Color::default(),
+            specificity: Specificity::new(1, 0, 1)
+        };
+
+        let mut declared = vec![a.clone(), b.clone(), c.clone()];
+
+        let win = cascade(&mut declared);
+        assert_eq!(win, Some(c.value));
     }
 }

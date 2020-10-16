@@ -1,5 +1,5 @@
 use crate::parser::structs::Declaration;
-use crate::selector::structs::Selector;
+use crate::selector::structs::{Selector, Specificity};
 
 #[derive(Debug, PartialEq)]
 pub struct StyleRule {
@@ -13,5 +13,14 @@ impl StyleRule {
             selectors,
             declarations,
         }
+    }
+
+    pub fn specificity(&self) -> Specificity {
+        let specificities = self.selectors
+            .iter()
+            .map(|selector| selector.specificity())
+            .collect::<Vec<Specificity>>();
+
+        specificities.into_iter().max().unwrap()
     }
 }
