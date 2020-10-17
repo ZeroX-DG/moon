@@ -1,5 +1,5 @@
 use super::selector_matching::is_match_selectors;
-use super::style_tree::{Properties, Property, Value};
+use super::render_tree::{Properties, Property, Value};
 use css::cssom::style_rule::StyleRule;
 use css::selector::structs::Specificity;
 use dom::dom_ref::NodeRef;
