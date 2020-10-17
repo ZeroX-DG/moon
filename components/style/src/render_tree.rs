@@ -76,13 +76,23 @@ impl Property {
     }
 }
 
-/// Build the style tree using the root node & list of stylesheets
+/// Build the render tree using the root node & list of stylesheets
 pub fn build_render_tree(node: NodeRef, rules: &[ContextualRule]) -> Option<RenderNode> {
     let properties = if node.is::<dom::text::Text>() {
         HashMap::new()
     } else {
         apply_styles(&node, &rules)
     };
+
+    // Filter display none from render tree
+    if let Some(display_value) = properties.get(&Property::Display) {
+        if let Some(value) = display_value {
+            if let Value::Display(Display::None) = value {
+                return None;
+            }
+        }
+    }
+
     Some(RenderNode {
         node: node.clone(),
         properties,
