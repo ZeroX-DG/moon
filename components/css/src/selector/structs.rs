@@ -53,9 +53,9 @@ impl Ord for Specificity {
                 Ordering::Equal => match self.2.cmp(&other.2) {
                     Ordering::Greater => Ordering::Greater,
                     Ordering::Less => Ordering::Less,
-                    Ordering::Equal => Ordering::Equal
-                }
-            }
+                    Ordering::Equal => Ordering::Equal,
+                },
+            },
         }
     }
 }
@@ -72,7 +72,11 @@ impl Selector {
     pub fn specificity(&self) -> Specificity {
         let (a, b, c) = self.values().iter().fold((0, 0, 0), |acc, (selector, _)| {
             let specificity = selector.specificity();
-            (acc.0 + specificity.0, acc.1 + specificity.1, acc.2 + specificity.2)
+            (
+                acc.0 + specificity.0,
+                acc.1 + specificity.1,
+                acc.2 + specificity.2,
+            )
         });
         Specificity::new(a, b, c)
     }
@@ -88,15 +92,17 @@ impl SimpleSelectorSequence {
     }
 
     pub fn specificity(&self) -> Specificity {
-        let (a, b, c) = self.values().iter().fold((0, 0, 0), |acc, curr| {
-            match curr.selector_type() {
-                SimpleSelectorType::ID => (acc.0 + 1, acc.1, acc.2),
-                SimpleSelectorType::Class
-                | SimpleSelectorType::Attribute => (acc.0, acc.1 + 1, acc.2),
-                SimpleSelectorType::Type => (acc.0, acc.1, acc.2 + 1),
-                _ => acc
-            }
-        });
+        let (a, b, c) =
+            self.values()
+                .iter()
+                .fold((0, 0, 0), |acc, curr| match curr.selector_type() {
+                    SimpleSelectorType::ID => (acc.0 + 1, acc.1, acc.2),
+                    SimpleSelectorType::Class | SimpleSelectorType::Attribute => {
+                        (acc.0, acc.1 + 1, acc.2)
+                    }
+                    SimpleSelectorType::Type => (acc.0, acc.1, acc.2 + 1),
+                    _ => acc,
+                });
         Specificity(a, b, c)
     }
 }

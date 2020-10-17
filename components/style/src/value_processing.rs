@@ -45,6 +45,7 @@ pub struct ContextualRule<'a> {
     pub location: CSSLocation,
 }
 
+/// Apply a list of style rules for a node
 pub fn apply_styles(node: &NodeRef, rules: &[ContextualRule]) -> Properties {
     let mut properties = HashMap::new();
 
@@ -65,6 +66,8 @@ pub fn apply_styles(node: &NodeRef, rules: &[ContextualRule]) -> Properties {
     properties
 }
 
+/// Cascade sort the property declarations
+/// for a property and get the wining value
 fn cascade(declared_values: &mut Vec<PropertyDeclaration>) -> Option<Value> {
     declared_values.sort();
 
@@ -74,6 +77,8 @@ fn cascade(declared_values: &mut Vec<PropertyDeclaration>) -> Option<Value> {
     }
 }
 
+/// Collect declared values for each property
+/// found in each style rule
 fn collect_declared_values(node: &NodeRef, rules: &[ContextualRule]) -> DeclaredValuesMap {
     let mut result: DeclaredValuesMap = HashMap::new();
 
@@ -111,6 +116,12 @@ fn collect_declared_values(node: &NodeRef, rules: &[ContextualRule]) -> Declared
     result
 }
 
+/// The implementation for ordering for cascade sort
+///
+/// These are the steps to compare the order:
+/// 1. Comparing the location of the property declaration (Inline, Embedded, etc.)
+/// 2. If step 1 result in equal ordering compare the cascade origin
+/// 3. If step 2 result in equal ordering compare the specificity
 impl Ord for PropertyDeclaration {
     fn cmp(&self, other: &Self) -> Ordering {
         match cmp_location(self, other) {
@@ -199,7 +210,7 @@ mod tests {
             origin: CascadeOrigin::User,
             important: false,
             value: Color::default(),
-            specificity: Specificity::new(1, 0, 1)
+            specificity: Specificity::new(1, 0, 1),
         };
 
         let b = PropertyDeclaration {
@@ -207,7 +218,7 @@ mod tests {
             origin: CascadeOrigin::User,
             important: false,
             value: Color::default(),
-            specificity: Specificity::new(1, 0, 1)
+            specificity: Specificity::new(1, 0, 1),
         };
 
         let c = PropertyDeclaration {
@@ -215,7 +226,7 @@ mod tests {
             origin: CascadeOrigin::User,
             important: true,
             value: Color::default(),
-            specificity: Specificity::new(1, 0, 1)
+            specificity: Specificity::new(1, 0, 1),
         };
 
         let mut declared = vec![a.clone(), b.clone(), c.clone()];

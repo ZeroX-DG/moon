@@ -16,7 +16,8 @@ impl StyleRule {
     }
 
     pub fn specificity(&self) -> Specificity {
-        let specificities = self.selectors
+        let specificities = self
+            .selectors
             .iter()
             .map(|selector| selector.specificity())
             .collect::<Vec<Specificity>>();
