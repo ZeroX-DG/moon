@@ -1,28 +1,8 @@
-use super::value_processing::{apply_styles, ContextualRule};
-use css::tokenizer::token::Token;
+use super::value_processing::{apply_styles, ContextualRule, Properties, Value, Property};
 use dom::dom_ref::NodeRef;
 use std::collections::HashMap;
 
-// values
-use super::values::color::Color;
 use super::values::display::Display;
-
-pub type Properties = HashMap<Property, Option<Value>>;
-
-/// CSS property name
-#[derive(Debug, Clone, Hash, Eq, PartialEq)]
-pub enum Property {
-    BackgroundColor,
-    Color,
-    Display,
-}
-
-/// CSS property value
-#[derive(Debug, Clone, Eq, PartialEq)]
-pub enum Value {
-    Color(Color),
-    Display(Display),
-}
 
 /// A style node in the style tree
 #[derive(Debug)]
@@ -43,36 +23,7 @@ impl RenderNode {
                 return v.clone();
             }
         }
-        return Value::default(&prop);
-    }
-}
-
-impl Value {
-    pub fn parse(property: &Property, tokens: Vec<Token>) -> Option<Self> {
-        match property {
-            Property::BackgroundColor => Color::parse(tokens),
-            Property::Color => Color::parse(tokens),
-            Property::Display => Display::parse(tokens),
-        }
-    }
-
-    pub fn default(property: &Property) -> Value {
-        match property {
-            Property::BackgroundColor => Color::default(),
-            Property::Color => Color::default(),
-            Property::Display => Display::default(),
-        }
-    }
-}
-
-impl Property {
-    pub fn parse(property: &str) -> Option<Self> {
-        match property {
-            "background-color" => Some(Property::BackgroundColor),
-            "color" => Some(Property::Color),
-            "display" => Some(Property::Display),
-            _ => None,
-        }
+        return Value::initial(&prop);
     }
 }
 
@@ -112,6 +63,8 @@ mod tests {
     use crate::test_utils::*;
     use crate::value_processing::{CSSLocation, CascadeOrigin};
     use css::cssom::css_rule::CSSRule;
+    use crate::values::display::Display;
+    use crate::values::color::Color;
 
     #[test]
     fn build_tree_simple() {

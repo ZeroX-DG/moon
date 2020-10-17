@@ -1,12 +1,33 @@
 use super::selector_matching::is_match_selectors;
-use super::render_tree::{Properties, Property, Value};
 use css::cssom::style_rule::StyleRule;
 use css::selector::structs::Specificity;
 use dom::dom_ref::NodeRef;
 use std::cmp::{Ord, Ordering};
 use std::collections::HashMap;
+use css::tokenizer::token::Token;
+
+// values
+use super::values::color::Color;
+use super::values::display::Display;
 
 type DeclaredValuesMap = HashMap<Property, Vec<PropertyDeclaration>>;
+
+pub type Properties = HashMap<Property, Option<Value>>;
+
+/// CSS property name
+#[derive(Debug, Clone, Hash, Eq, PartialEq)]
+pub enum Property {
+    BackgroundColor,
+    Color,
+    Display,
+}
+
+/// CSS property value
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub enum Value {
+    Color(Color),
+    Display(Display),
+}
 
 /// CSS property declaration for cascading
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -43,6 +64,45 @@ pub struct ContextualRule<'a> {
     pub inner: &'a StyleRule,
     pub origin: CascadeOrigin,
     pub location: CSSLocation,
+}
+
+macro_rules! parse_value {
+    ($value:ident, $tokens:ident) => {
+        if let Some(value) = $value::parse($tokens) {
+            Some(Value::$value(value))
+        } else {
+            None
+        }
+    };
+}
+
+impl Value {
+    pub fn parse(property: &Property, tokens: Vec<Token>) -> Option<Self> {
+        match property {
+            Property::BackgroundColor => parse_value!(Color, tokens),
+            Property::Color => parse_value!(Color, tokens),
+            Property::Display => parse_value!(Display, tokens),
+        }
+    }
+
+    pub fn initial(property: &Property) -> Value {
+        match property {
+            Property::BackgroundColor => Value::Color(Color::transparent()),
+            Property::Color => Value::Color(Color::black()),
+            Property::Display => Value::Display(Display::Inline),
+        }
+    }
+}
+
+impl Property {
+    pub fn parse(property: &str) -> Option<Self> {
+        match property {
+            "background-color" => Some(Property::BackgroundColor),
+            "color" => Some(Property::Color),
+            "display" => Some(Property::Display),
+            _ => None,
+        }
+    }
 }
 
 /// Apply a list of style rules for a node
@@ -209,7 +269,7 @@ mod tests {
             location: CSSLocation::External,
             origin: CascadeOrigin::User,
             important: false,
-            value: Color::default(),
+            value: Value::Color(Color::black()),
             specificity: Specificity::new(1, 0, 1),
         };
 
@@ -217,7 +277,7 @@ mod tests {
             location: CSSLocation::Inline,
             origin: CascadeOrigin::User,
             important: false,
-            value: Color::default(),
+            value: Value::Color(Color::black()),
             specificity: Specificity::new(1, 0, 1),
         };
 
@@ -225,7 +285,7 @@ mod tests {
             location: CSSLocation::Embedded,
             origin: CascadeOrigin::User,
             important: true,
-            value: Color::default(),
+            value: Value::Color(Color::black()),
             specificity: Specificity::new(1, 0, 1),
         };
 
