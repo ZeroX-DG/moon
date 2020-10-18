@@ -182,18 +182,18 @@ mod tests {
             .expect("Render tree is not constructed");
 
         let render_tree_inner = render_tree.borrow();
-        let mut parent_styles = render_tree_inner.properties.values();
+        let parent_styles = &render_tree_inner.properties;
         assert_eq!(
-            parent_styles.next(),
+            parent_styles.get(&Property::BackgroundColor),
             Some(&Value::Color(Color::RGBA(255.0, 255.0, 255.0, 255.0)))
         );
 
         let child_inner = render_tree_inner.children[0].borrow();
-        let mut child_styles = child_inner.properties.values();
+        let child_styles = &child_inner.properties;
         assert_eq!(
-            child_styles.next(),
+            child_styles.get(&Property::Color),
             Some(&Value::Color(Color::RGBA(255.0, 255.0, 255.0, 255.0)))
         );
-        assert_eq!(child_styles.next(), Some(&Value::Display(Display::Block)));
+        assert_eq!(child_styles.get(&Property::Display), Some(&Value::Display(Display::Block)));
     }
 }

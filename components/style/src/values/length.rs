@@ -49,7 +49,17 @@ impl Length {
                 }
                 None
             }
+            Some(ComponentValue::PerservedToken(Token::Number { value, .. })) => {
+                if *value == 0.0 {
+                    return Some(Length::zero())
+                }
+                None
+            }
             _ => None,
         }
+    }
+
+    pub fn zero() -> Self {
+        Length { value: 0.0, unit: LengthUnit::Px }
     }
 }
