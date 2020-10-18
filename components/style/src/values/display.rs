@@ -22,7 +22,7 @@ impl Display {
                     None
                 }
             }
-            _ => None
+            _ => None,
         }
     }
 }

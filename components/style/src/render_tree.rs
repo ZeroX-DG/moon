@@ -1,15 +1,13 @@
-use super::value_processing::{
-    apply_styles, compute,
-    ContextualRule, ComputeContext,
-    Properties, Value, Property
-};
-use dom::dom_ref::NodeRef;
-use std::collections::HashMap;
-use std::rc::{Weak, Rc};
-use std::cell::RefCell;
-use strum::IntoEnumIterator;
-use super::values::display::Display;
 use super::inheritable::INHERITABLES;
+use super::value_processing::{
+    apply_styles, compute, ComputeContext, ContextualRule, Properties, Property, Value,
+};
+use super::values::display::Display;
+use dom::dom_ref::NodeRef;
+use std::cell::RefCell;
+use std::collections::HashMap;
+use std::rc::{Rc, Weak};
+use strum::IntoEnumIterator;
 
 pub type RenderNodeRef = Rc<RefCell<RenderNode>>;
 pub type RenderNodeWeak = Weak<RefCell<RenderNode>>;
@@ -24,7 +22,7 @@ pub struct RenderNode {
     /// Child style nodes
     pub children: Vec<RenderNodeRef>,
     /// Parent reference for inheritance
-    pub parent_render_node: Option<RenderNodeWeak>
+    pub parent_render_node: Option<RenderNodeWeak>,
 }
 
 impl RenderNode {
@@ -47,40 +45,48 @@ impl RenderNode {
     }
 }
 
-pub fn compute_styles(properties: Properties, parent: Option<RenderNodeWeak>) -> HashMap<Property, Value> {
+pub fn compute_styles(
+    properties: Properties,
+    parent: Option<RenderNodeWeak>,
+) -> HashMap<Property, Value> {
     // Step 3
-    let specified_values = Property::iter().map(|property| {
-        if let Some(value) = properties.get(&property) {
-            // TODO: explicit defaulting
-            if let Some(v) = value {
-                return (property, v.clone());
-            }
-        }
-        // if there's no specified value in properties
-        // we will try to inherit it
-        if INHERITABLES.contains(&property) {
-            if let Some(parent) = &parent {
-                if let Some(p) = parent.upgrade() {
-                    return (property.clone(), p.borrow().get_style(&property));
+    let specified_values = Property::iter()
+        .map(|property| {
+            if let Some(value) = properties.get(&property) {
+                // TODO: explicit defaulting
+                if let Some(v) = value {
+                    return (property, v.clone());
                 }
             }
-        }
-        // if there's no parent or the property is not inheritable
-        // we will use the initial value for that property
-        return (property.clone(), Value::initial(&property));
-    }).collect::<HashMap<Property, Value>>();
+            // if there's no specified value in properties
+            // we will try to inherit it
+            if INHERITABLES.contains(&property) {
+                if let Some(parent) = &parent {
+                    if let Some(p) = parent.upgrade() {
+                        return (property.clone(), p.borrow().get_style(&property));
+                    }
+                }
+            }
+            // if there's no parent or the property is not inheritable
+            // we will use the initial value for that property
+            return (property.clone(), Value::initial(&property));
+        })
+        .collect::<HashMap<Property, Value>>();
 
     // Step 4
     // TODO: Might be an expensive clone when we support all properties
     let temp_specified = specified_values.clone();
     let context = ComputeContext {
         parent: &parent,
-        properties: temp_specified
+        properties: temp_specified,
     };
-    let computed_values = specified_values.into_iter().map(|(property, value)| {
-        // TODO: filter properties that need layout to compute
-        return (property.clone(), compute(&property, &value, context.clone()));
-    }).collect::<HashMap<Property, Value>>();
+    let computed_values = specified_values
+        .into_iter()
+        .map(|(property, value)| {
+            // TODO: filter properties that need layout to compute
+            return (property.clone(), compute(&property, &value, &context));
+        })
+        .collect::<HashMap<Property, Value>>();
 
     computed_values
 }
@@ -89,7 +95,7 @@ pub fn compute_styles(properties: Properties, parent: Option<RenderNodeWeak>) ->
 pub fn build_render_tree(
     node: NodeRef,
     rules: &[ContextualRule],
-    parent: Option<RenderNodeWeak>
+    parent: Option<RenderNodeWeak>,
 ) -> Option<RenderNodeRef> {
     let properties = if node.is::<dom::text::Text>() {
         HashMap::new()
@@ -127,7 +133,7 @@ pub fn build_render_tree(
         .into_iter() // this is fine because we clone the node when iterate
         .filter_map(|child| build_render_tree(child, &rules, Some(Rc::downgrade(&render_node))))
         .collect();
-    
+
     Some(render_node)
 }
 
@@ -136,9 +142,9 @@ mod tests {
     use super::*;
     use crate::test_utils::*;
     use crate::value_processing::{CSSLocation, CascadeOrigin};
-    use css::cssom::css_rule::CSSRule;
-    use crate::values::display::Display;
     use crate::values::color::Color;
+    use crate::values::display::Display;
+    use css::cssom::css_rule::CSSRule;
 
     #[test]
     fn build_tree_simple() {
@@ -188,9 +194,6 @@ mod tests {
             child_styles.next(),
             Some(&Value::Color(Color::RGBA(255.0, 255.0, 255.0, 255.0)))
         );
-        assert_eq!(
-            child_styles.next(),
-            Some(&Value::Display(Display::Block))
-        );
+        assert_eq!(child_styles.next(), Some(&Value::Display(Display::Block)));
     }
 }

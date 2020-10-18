@@ -5,7 +5,7 @@ use css::tokenizer::token::Token;
 #[derive(Debug, Clone, PartialEq)]
 pub enum Color {
     CurrentColor,
-    RGBA(f32, f32, f32, f32)
+    RGBA(f32, f32, f32, f32),
 }
 
 impl Eq for Color {}
@@ -13,17 +13,15 @@ impl Eq for Color {}
 impl Color {
     pub fn parse(values: &Vec<ComponentValue>) -> Option<Self> {
         match values.iter().next() {
-            Some(ComponentValue::Function(function)) => {
-                match function.name.as_ref() {
-                    "rgba" => Color::parse_rgba_function(function, true),
-                    "rgb" => Color::parse_rgba_function(function, false),
-                    _ => None
-                }
-            }
+            Some(ComponentValue::Function(function)) => match function.name.as_ref() {
+                "rgba" => Color::parse_rgba_function(function, true),
+                "rgb" => Color::parse_rgba_function(function, false),
+                _ => None,
+            },
             Some(ComponentValue::PerservedToken(Token::Ident(keyword))) => {
                 Color::parse_color_keyword(&keyword)
             }
-            _ => None
+            _ => None,
         }
     }
 
@@ -47,7 +45,7 @@ impl Color {
             n if n.eq_ignore_ascii_case("blue") => Some(Color::RGBA(0.0, 0.0, 255.0, 255.0)),
             n if n.eq_ignore_ascii_case("teal") => Some(Color::RGBA(0.0, 128.0, 128.0, 255.0)),
             n if n.eq_ignore_ascii_case("aqua") => Some(Color::RGBA(0.0, 255.0, 255.0, 255.0)),
-            _ => None
+            _ => None,
         }
     }
 
@@ -65,14 +63,14 @@ impl Color {
             match value {
                 ComponentValue::PerservedToken(Token::Number { value, .. }) => {
                     if index == max_length {
-                        return None
+                        return None;
                     }
                     rgba[index] = *value;
                     index += 1;
                 }
                 ComponentValue::PerservedToken(Token::Whitespace) => {}
                 ComponentValue::PerservedToken(Token::Comma) => {}
-                _ => return None // invalid character
+                _ => return None, // invalid character
             }
         }
 

@@ -202,7 +202,7 @@ impl Parser<Token> {
             match next_token {
                 Token::ParentheseClose => {
                     return function;
-                },
+                }
                 Token::EOF => {
                     emit_error!("Unexpected EOF while consuming a function");
                     return function;
@@ -374,9 +374,8 @@ impl Parser<Token> {
                     continue;
                 }
                 let content = if let Some(block) = rule.block {
-                    let mut parser = Parser::<ComponentValue>::new(
-                        DataStream::new(block.value.clone())
-                    );
+                    let mut parser =
+                        Parser::<ComponentValue>::new(DataStream::new(block.value.clone()));
 
                     let declarations = parser.parse_a_list_of_declarations();
 
@@ -508,7 +507,10 @@ impl Parser<ComponentValue> {
             self.reconsume = false;
             return self.current_token.clone().unwrap();
         }
-        let token = self.tokens.next().unwrap_or(&ComponentValue::PerservedToken(Token::EOF));
+        let token = self
+            .tokens
+            .next()
+            .unwrap_or(&ComponentValue::PerservedToken(Token::EOF));
         self.current_token = Some(token.clone());
         return token.clone();
     }
@@ -517,7 +519,11 @@ impl Parser<ComponentValue> {
         if self.reconsume {
             return self.current_token.clone().unwrap();
         }
-        return self.tokens.peek().unwrap_or(&ComponentValue::PerservedToken(Token::EOF)).clone();
+        return self
+            .tokens
+            .peek()
+            .unwrap_or(&ComponentValue::PerservedToken(Token::EOF))
+            .clone();
     }
 
     fn reconsume(&mut self) {
@@ -535,11 +541,12 @@ impl Parser<ComponentValue> {
     fn consume_an_at_rule(&mut self) -> AtRule {
         self.consume_next_token();
         let current_token = self.current_token.clone().unwrap();
-        let keyword_name = if let ComponentValue::PerservedToken(Token::AtKeyword(name)) = current_token {
-            name
-        } else {
-            panic!("The current token is not a function");
-        };
+        let keyword_name =
+            if let ComponentValue::PerservedToken(Token::AtKeyword(name)) = current_token {
+                name
+            } else {
+                panic!("The current token is not a function");
+            };
         let mut at_rule = AtRule::new(keyword_name);
 
         loop {
@@ -583,9 +590,7 @@ impl Parser<ComponentValue> {
                         match self.peek_next_token() {
                             ComponentValue::PerservedToken(Token::Semicolon)
                             | ComponentValue::PerservedToken(Token::EOF) => break,
-                            _ => {
-                                tmp.push(self.consume_a_component_value())
-                            }
+                            _ => tmp.push(self.consume_a_component_value()),
                         }
                     }
                     let mut parser = Parser::<ComponentValue>::new(DataStream::new(tmp));
@@ -613,11 +618,12 @@ impl Parser<ComponentValue> {
 
     fn consume_a_declaration(&mut self) -> Option<Declaration> {
         let next_token = self.consume_next_token();
-        let declaration_name = if let ComponentValue::PerservedToken(Token::Ident(name)) = next_token {
-            name
-        } else {
-            panic!("Token is not a indent token");
-        };
+        let declaration_name =
+            if let ComponentValue::PerservedToken(Token::Ident(name)) = next_token {
+                name
+            } else {
+                panic!("Token is not a indent token");
+            };
         let mut declaration = Declaration::new(declaration_name);
         self.consume_while_next_token_is(Token::Whitespace);
 
@@ -829,25 +835,27 @@ mod tests {
                     important: false,
                     value: vec![ComponentValue::Function(Function {
                         name: "rgba".to_string(),
-                        value: vec![ComponentValue::PerservedToken(Token::Number {
-                            value: 0.0,
-                            type_: crate::tokenizer::token::NumberType::Integer,
-                        }),
-                        ComponentValue::PerservedToken(Token::Whitespace),
-                        ComponentValue::PerservedToken(Token::Number {
-                            value: 0.0,
-                            type_: crate::tokenizer::token::NumberType::Integer,
-                        }),
-                        ComponentValue::PerservedToken(Token::Whitespace),
-                        ComponentValue::PerservedToken(Token::Number {
-                            value: 0.0,
-                            type_: crate::tokenizer::token::NumberType::Integer,
-                        }),
-                        ComponentValue::PerservedToken(Token::Whitespace),
-                        ComponentValue::PerservedToken(Token::Number {
-                            value: 0.0,
-                            type_: crate::tokenizer::token::NumberType::Integer,
-                        })]
+                        value: vec![
+                            ComponentValue::PerservedToken(Token::Number {
+                                value: 0.0,
+                                type_: crate::tokenizer::token::NumberType::Integer,
+                            }),
+                            ComponentValue::PerservedToken(Token::Whitespace),
+                            ComponentValue::PerservedToken(Token::Number {
+                                value: 0.0,
+                                type_: crate::tokenizer::token::NumberType::Integer,
+                            }),
+                            ComponentValue::PerservedToken(Token::Whitespace),
+                            ComponentValue::PerservedToken(Token::Number {
+                                value: 0.0,
+                                type_: crate::tokenizer::token::NumberType::Integer,
+                            }),
+                            ComponentValue::PerservedToken(Token::Whitespace),
+                            ComponentValue::PerservedToken(Token::Number {
+                                value: 0.0,
+                                type_: crate::tokenizer::token::NumberType::Integer,
+                            })
+                        ]
                     })]
                 }]
             ))])

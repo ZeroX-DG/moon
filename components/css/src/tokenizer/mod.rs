@@ -4,10 +4,10 @@ use io::data_stream::DataStream;
 use io::input_stream::InputStream;
 use regex::Regex;
 use std::env;
+use std::str::FromStr;
 use token::HashType;
 use token::NumberType;
 use token::Token;
-use std::str::FromStr;
 
 fn is_trace() -> bool {
     match env::var("TRACE_CSS_TOKENIZER") {
@@ -723,18 +723,45 @@ mod tests {
         assert_eq!(tokenizer.consume_token(), Token::Ident("color".to_string()));
         assert_eq!(tokenizer.consume_token(), Token::Colon);
         assert_eq!(tokenizer.consume_token(), Token::Whitespace);
-        assert_eq!(tokenizer.consume_token(), Token::Function("rgba".to_string()));
+        assert_eq!(
+            tokenizer.consume_token(),
+            Token::Function("rgba".to_string())
+        );
         assert_eq!(tokenizer.consume_token(), Token::ParentheseOpen);
-        assert_eq!(tokenizer.consume_token(), Token::Number { value: 0.0, type_: NumberType::Integer });
+        assert_eq!(
+            tokenizer.consume_token(),
+            Token::Number {
+                value: 0.0,
+                type_: NumberType::Integer
+            }
+        );
         assert_eq!(tokenizer.consume_token(), Token::Comma);
         assert_eq!(tokenizer.consume_token(), Token::Whitespace);
-        assert_eq!(tokenizer.consume_token(), Token::Number { value: 0.0, type_: NumberType::Integer });
+        assert_eq!(
+            tokenizer.consume_token(),
+            Token::Number {
+                value: 0.0,
+                type_: NumberType::Integer
+            }
+        );
         assert_eq!(tokenizer.consume_token(), Token::Comma);
         assert_eq!(tokenizer.consume_token(), Token::Whitespace);
-        assert_eq!(tokenizer.consume_token(), Token::Number { value: 0.0, type_: NumberType::Integer });
+        assert_eq!(
+            tokenizer.consume_token(),
+            Token::Number {
+                value: 0.0,
+                type_: NumberType::Integer
+            }
+        );
         assert_eq!(tokenizer.consume_token(), Token::Comma);
         assert_eq!(tokenizer.consume_token(), Token::Whitespace);
-        assert_eq!(tokenizer.consume_token(), Token::Number { value: 0.0, type_: NumberType::Integer });
+        assert_eq!(
+            tokenizer.consume_token(),
+            Token::Number {
+                value: 0.0,
+                type_: NumberType::Integer
+            }
+        );
         assert_eq!(tokenizer.consume_token(), Token::ParentheseClose);
         assert_eq!(tokenizer.consume_token(), Token::Semicolon);
 

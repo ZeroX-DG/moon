@@ -4,7 +4,7 @@ use css::tokenizer::token::Token;
 #[derive(Debug, Clone, PartialEq)]
 pub struct Length {
     pub value: f32,
-    pub unit: LengthUnit
+    pub unit: LengthUnit,
 }
 
 impl Eq for Length {}
@@ -18,7 +18,7 @@ pub enum LengthUnit {
     Mm,
     Pt,
     Pc,
-    Px
+    Px,
 }
 
 impl LengthUnit {
@@ -32,7 +32,7 @@ impl LengthUnit {
             "pt" => Some(LengthUnit::Pt),
             "pc" => Some(LengthUnit::Pc),
             "px" => Some(LengthUnit::Px),
-            _ => None
+            _ => None,
         }
     }
 }
@@ -44,12 +44,12 @@ impl Length {
                 if let Some(unit) = LengthUnit::from_str(&unit) {
                     return Some(Length {
                         value: *value,
-                        unit 
+                        unit,
                     });
                 }
                 None
             }
-            _ => None
+            _ => None,
         }
     }
 }

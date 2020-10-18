@@ -1,12 +1,15 @@
+use super::render_tree::RenderNodeWeak;
 use super::selector_matching::is_match_selectors;
 use css::cssom::style_rule::StyleRule;
+use css::parser::structs::ComponentValue;
 use css::selector::structs::Specificity;
 use dom::dom_ref::NodeRef;
 use std::cmp::{Ord, Ordering};
 use std::collections::HashMap;
-use css::parser::structs::ComponentValue;
-use super::render_tree::RenderNodeWeak;
 use strum_macros::*;
+
+// computes
+use super::computes::color::compute_color;
 
 // values
 use super::values::color::Color;
@@ -136,31 +139,10 @@ pub fn apply_styles(node: &NodeRef, rules: &[ContextualRule]) -> Properties {
 }
 
 /// Resolve specified values to computed values
-pub fn compute(
-    property: &Property,
-    value: &Value,
-    context: ComputeContext
-) -> Value {
+pub fn compute(property: &Property, value: &Value, context: &ComputeContext) -> Value {
     match value {
-        Value::Color(Color::CurrentColor) => match property {
-            Property::Color => {
-                if let Some(parent) = &context.parent {
-                    if let Some(p) = parent.upgrade() {
-                        return p.borrow().get_style(&property)
-                    }
-                }
-                Value::initial(property)
-            }
-            _ => {
-                // It's guarentee that all properties have a vlue
-                compute(
-                    &Property::Color,
-                    context.properties.get(&Property::Color).unwrap(),
-                    context.clone()
-                )
-            }
-        }
-        _ => value.clone()
+        Value::Color(_) => compute_color(value, property, context),
+        _ => value.clone(),
     }
 }
 

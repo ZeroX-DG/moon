@@ -113,8 +113,8 @@ mod tests {
     use super::*;
     use css::cssom::css_rule::CSSRule;
     use css::parser::Parser;
-    use css::tokenizer::Tokenizer;
     use css::tokenizer::token::Token;
+    use css::tokenizer::Tokenizer;
     use dom::node::Node;
 
     #[test]
