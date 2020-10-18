@@ -7,6 +7,7 @@ use std::env;
 use token::HashType;
 use token::NumberType;
 use token::Token;
+use std::str::FromStr;
 
 fn is_trace() -> bool {
     match env::var("TRACE_CSS_TOKENIZER") {
@@ -404,7 +405,7 @@ impl Tokenizer {
         };
     }
 
-    fn consume_number(&mut self) -> (i32, NumberType) {
+    fn consume_number(&mut self) -> (f32, NumberType) {
         fn consume_while_number_and_append_to_repr(this: &mut Tokenizer, repr: &mut String) {
             loop {
                 if let Some(c) = this.input.peek_next_char() {
@@ -452,7 +453,7 @@ impl Tokenizer {
                 consume_while_number_and_append_to_repr(self, &mut repr);
             }
         }
-        let value = i32::from_str_radix(&repr, 10).unwrap();
+        let value = f32::from_str(&repr).expect("Unable to parse float");
         return (value, type_);
     }
 
@@ -724,16 +725,16 @@ mod tests {
         assert_eq!(tokenizer.consume_token(), Token::Whitespace);
         assert_eq!(tokenizer.consume_token(), Token::Function("rgba".to_string()));
         assert_eq!(tokenizer.consume_token(), Token::ParentheseOpen);
-        assert_eq!(tokenizer.consume_token(), Token::Number { value: 0, type_: NumberType::Integer });
+        assert_eq!(tokenizer.consume_token(), Token::Number { value: 0.0, type_: NumberType::Integer });
         assert_eq!(tokenizer.consume_token(), Token::Comma);
         assert_eq!(tokenizer.consume_token(), Token::Whitespace);
-        assert_eq!(tokenizer.consume_token(), Token::Number { value: 0, type_: NumberType::Integer });
+        assert_eq!(tokenizer.consume_token(), Token::Number { value: 0.0, type_: NumberType::Integer });
         assert_eq!(tokenizer.consume_token(), Token::Comma);
         assert_eq!(tokenizer.consume_token(), Token::Whitespace);
-        assert_eq!(tokenizer.consume_token(), Token::Number { value: 0, type_: NumberType::Integer });
+        assert_eq!(tokenizer.consume_token(), Token::Number { value: 0.0, type_: NumberType::Integer });
         assert_eq!(tokenizer.consume_token(), Token::Comma);
         assert_eq!(tokenizer.consume_token(), Token::Whitespace);
-        assert_eq!(tokenizer.consume_token(), Token::Number { value: 0, type_: NumberType::Integer });
+        assert_eq!(tokenizer.consume_token(), Token::Number { value: 0.0, type_: NumberType::Integer });
         assert_eq!(tokenizer.consume_token(), Token::ParentheseClose);
         assert_eq!(tokenizer.consume_token(), Token::Semicolon);
 

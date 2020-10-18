@@ -830,22 +830,22 @@ mod tests {
                     value: vec![ComponentValue::Function(Function {
                         name: "rgba".to_string(),
                         value: vec![ComponentValue::PerservedToken(Token::Number {
-                            value: 0,
+                            value: 0.0,
                             type_: crate::tokenizer::token::NumberType::Integer,
                         }),
                         ComponentValue::PerservedToken(Token::Whitespace),
                         ComponentValue::PerservedToken(Token::Number {
-                            value: 0,
+                            value: 0.0,
                             type_: crate::tokenizer::token::NumberType::Integer,
                         }),
                         ComponentValue::PerservedToken(Token::Whitespace),
                         ComponentValue::PerservedToken(Token::Number {
-                            value: 0,
+                            value: 0.0,
                             type_: crate::tokenizer::token::NumberType::Integer,
                         }),
                         ComponentValue::PerservedToken(Token::Whitespace),
                         ComponentValue::PerservedToken(Token::Number {
-                            value: 0,
+                            value: 0.0,
                             type_: crate::tokenizer::token::NumberType::Integer,
                         })]
                     })]
