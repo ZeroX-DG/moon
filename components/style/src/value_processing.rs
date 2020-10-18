@@ -126,6 +126,13 @@ pub fn apply_styles(node: &NodeRef, rules: &[ContextualRule]) -> Properties {
     properties
 }
 
+/// Resolve specified values to computed values
+pub fn compute(value: Value) -> Value {
+    match value {
+        _ => value
+    }
+}
+
 /// Cascade sort the property declarations
 /// for a property and get the wining value
 fn cascade(declared_values: &mut Vec<PropertyDeclaration>) -> Option<Value> {
