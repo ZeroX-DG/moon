@@ -29,7 +29,7 @@ Bold text is what I'm working on
   - [x] CSS tokenizer
   - [x] CSSOM parser/tree builder
 - [ ] :triangular_ruler: Style
-  - [x] Style tree
+  - [x] Render tree
   - [x] Selector matching
   - [ ] Box model
   - [ ] Layout tree

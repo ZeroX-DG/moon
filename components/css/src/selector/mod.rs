@@ -420,4 +420,13 @@ mod tests {
             assert_eq!(selectors.len(), 0);
         }
     }
+
+    #[test]
+    fn test_specificity() {
+        let css = "#div.class#name";
+        let selector = parse_selector_str(css);
+        let specificity = selector.expect("Failed to parse selector").specificity();
+
+        assert_eq!(specificity, Specificity::new(2, 1, 0));
+    }
 }

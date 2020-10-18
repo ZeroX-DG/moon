@@ -639,6 +639,7 @@ version = "0.1.0"
 dependencies = [
  "css",
  "dom",
+ "lazy_static",
 ]
 
 [[package]]

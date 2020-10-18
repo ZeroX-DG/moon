@@ -153,6 +153,17 @@ impl Declaration {
     pub fn important(&mut self) {
         self.important = true;
     }
+
+    pub fn tokens(&self) -> Vec<Token> {
+        self.value
+            .clone()
+            .into_iter()
+            .filter_map(|com| match com {
+                ComponentValue::PerservedToken(t) => Some(t),
+                _ => None,
+            })
+            .collect()
+    }
 }
 
 impl Function {
