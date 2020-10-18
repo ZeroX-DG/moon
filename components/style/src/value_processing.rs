@@ -4,7 +4,7 @@ use css::selector::structs::Specificity;
 use dom::dom_ref::NodeRef;
 use std::cmp::{Ord, Ordering};
 use std::collections::HashMap;
-use css::tokenizer::token::Token;
+use css::parser::structs::ComponentValue;
 
 // values
 use super::values::color::Color;
@@ -77,7 +77,7 @@ macro_rules! parse_value {
 }
 
 impl Value {
-    pub fn parse(property: &Property, tokens: Vec<Token>) -> Option<Self> {
+    pub fn parse(property: &Property, tokens: &Vec<ComponentValue>) -> Option<Self> {
         match property {
             Property::BackgroundColor => parse_value!(Color, tokens),
             Property::Color => parse_value!(Color, tokens),
@@ -159,8 +159,8 @@ fn collect_declared_values(node: &NodeRef, rules: &[ContextualRule]) -> Declared
             let property = Property::parse(&declaration.name);
 
             if let Some(property) = property {
-                let tokens = declaration.tokens();
-                let value = Value::parse(&property, tokens);
+                let values = &declaration.value;
+                let value = Value::parse(&property, values);
 
                 if let Some(value) = value {
                     let declaration = PropertyDeclaration {

@@ -144,7 +144,7 @@ mod tests {
             background-color: white;
         }
         #parent #child {
-            color: white;
+            color: rgba(255, 255, 255, 255);
         }
         #child {
             display: block;
@@ -171,14 +171,14 @@ mod tests {
         let mut parent_styles = render_tree_inner.properties.values();
         assert_eq!(
             parent_styles.next(),
-            Some(&Value::Color(Color::RGBA(255, 255, 255, 255)))
+            Some(&Value::Color(Color::RGBA(255.0, 255.0, 255.0, 255.0)))
         );
 
         let child_inner = render_tree_inner.children[0].borrow();
         let mut child_styles = child_inner.properties.values();
         assert_eq!(
             child_styles.next(),
-            Some(&Value::Color(Color::RGBA(255, 255, 255, 255)))
+            Some(&Value::Color(Color::RGBA(255.0, 255.0, 255.0, 255.0)))
         );
         assert_eq!(
             child_styles.next(),

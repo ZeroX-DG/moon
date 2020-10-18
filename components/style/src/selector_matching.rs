@@ -114,6 +114,7 @@ mod tests {
     use css::cssom::css_rule::CSSRule;
     use css::parser::Parser;
     use css::tokenizer::Tokenizer;
+    use css::tokenizer::token::Token;
     use dom::node::Node;
 
     #[test]
@@ -123,7 +124,7 @@ mod tests {
 
         let tokenizer = Tokenizer::new(css.to_string());
         let tokens = tokenizer.run();
-        let mut parser = Parser::new(tokens);
+        let mut parser = Parser::<Token>::new(tokens);
         let stylesheet = parser.parse_a_css_stylesheet();
 
         let rule = stylesheet.first().unwrap();
@@ -145,7 +146,7 @@ mod tests {
 
         let tokenizer = Tokenizer::new(css.to_string());
         let tokens = tokenizer.run();
-        let mut parser = Parser::new(tokens);
+        let mut parser = Parser::<Token>::new(tokens);
         let stylesheet = parser.parse_a_css_stylesheet();
 
         let rule = stylesheet.first().unwrap();
@@ -168,7 +169,7 @@ mod tests {
 
         let tokenizer = Tokenizer::new(css.to_string());
         let tokens = tokenizer.run();
-        let mut parser = Parser::new(tokens);
+        let mut parser = Parser::<Token>::new(tokens);
         let stylesheet = parser.parse_a_css_stylesheet();
 
         let rule = stylesheet.first().unwrap();
@@ -191,7 +192,7 @@ mod tests {
 
         let tokenizer = Tokenizer::new(css.to_string());
         let tokens = tokenizer.run();
-        let mut parser = Parser::new(tokens);
+        let mut parser = Parser::<Token>::new(tokens);
         let stylesheet = parser.parse_a_css_stylesheet();
 
         let rule = stylesheet.first().unwrap();
@@ -214,7 +215,7 @@ mod tests {
 
         let tokenizer = Tokenizer::new(css.to_string());
         let tokens = tokenizer.run();
-        let mut parser = Parser::new(tokens);
+        let mut parser = Parser::<Token>::new(tokens);
         let stylesheet = parser.parse_a_css_stylesheet();
 
         let rule = stylesheet.first().unwrap();
@@ -237,7 +238,7 @@ mod tests {
 
         let tokenizer = Tokenizer::new(css.to_string());
         let tokens = tokenizer.run();
-        let mut parser = Parser::new(tokens);
+        let mut parser = Parser::<Token>::new(tokens);
         let stylesheet = parser.parse_a_css_stylesheet();
 
         let rule = stylesheet.first().unwrap();
