@@ -154,19 +154,19 @@ macro_rules! parse_value {
 impl Value {
     pub fn parse(property: &Property, tokens: &Vec<ComponentValue>) -> Option<Self> {
         match property {
-            Property::BackgroundColor => parse_value!(Color | Unset; tokens),
-            Property::Color => parse_value!(Color | Unset; tokens),
-            Property::Display => parse_value!(Display | Unset; tokens),
-            Property::Width => parse_value!(Length | Percentage | Auto | Inherit | Unset; tokens),
-            Property::Height => parse_value!(Length | Percentage | Auto | Inherit | Unset; tokens),
-            Property::MarginTop => parse_value!(Length | Percentage | Auto | Inherit | Unset; tokens),
-            Property::MarginRight => parse_value!(Length | Percentage | Auto | Inherit | Unset; tokens),
-            Property::MarginBottom => parse_value!(Length | Percentage | Auto | Inherit | Unset; tokens),
-            Property::MarginLeft => parse_value!(Length | Percentage | Auto | Inherit | Unset; tokens),
-            Property::PaddingTop => parse_value!(Length | Percentage | Inherit | Unset; tokens),
-            Property::PaddingRight => parse_value!(Length | Percentage | Inherit | Unset; tokens),
-            Property::PaddingBottom => parse_value!(Length | Percentage | Inherit | Unset; tokens),
-            Property::PaddingLeft => parse_value!(Length | Percentage | Inherit | Unset; tokens),
+            Property::BackgroundColor => parse_value!(Color | Inherit | Initial | Unset; tokens),
+            Property::Color => parse_value!(Color | Inherit | Initial | Unset; tokens),
+            Property::Display => parse_value!(Display | Inherit | Initial | Unset; tokens),
+            Property::Width => parse_value!(Length | Percentage | Auto | Inherit | Initial | Unset; tokens),
+            Property::Height => parse_value!(Length | Percentage | Auto | Inherit | Initial | Unset; tokens),
+            Property::MarginTop => parse_value!(Length | Percentage | Auto | Inherit | Initial | Unset; tokens),
+            Property::MarginRight => parse_value!(Length | Percentage | Auto | Inherit | Initial | Unset; tokens),
+            Property::MarginBottom => parse_value!(Length | Percentage | Auto | Inherit | Initial | Unset; tokens),
+            Property::MarginLeft => parse_value!(Length | Percentage | Auto | Inherit | Initial | Unset; tokens),
+            Property::PaddingTop => parse_value!(Length | Percentage | Inherit | Initial | Unset; tokens),
+            Property::PaddingRight => parse_value!(Length | Percentage | Inherit | Initial | Unset; tokens),
+            Property::PaddingBottom => parse_value!(Length | Percentage | Inherit | Initial | Unset; tokens),
+            Property::PaddingLeft => parse_value!(Length | Percentage | Inherit | Initial | Unset; tokens),
         }
     }
 
