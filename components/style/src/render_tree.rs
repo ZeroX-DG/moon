@@ -1,13 +1,18 @@
-use super::value_processing::{apply_styles, compute, ContextualRule, Properties, Value, Property};
+use super::value_processing::{
+    apply_styles, compute,
+    ContextualRule, ComputeContext,
+    Properties, Value, Property
+};
 use dom::dom_ref::NodeRef;
 use std::collections::HashMap;
 use std::rc::{Weak, Rc};
 use std::cell::RefCell;
+use strum::IntoEnumIterator;
 use super::values::display::Display;
 use super::inheritable::INHERITABLES;
 
-type RenderNodeRef = Rc<RefCell<RenderNode>>;
-type RenderNodeWeak = Weak<RefCell<RenderNode>>;
+pub type RenderNodeRef = Rc<RefCell<RenderNode>>;
+pub type RenderNodeWeak = Weak<RefCell<RenderNode>>;
 
 /// A style node in the style tree
 #[derive(Debug)]
@@ -43,12 +48,13 @@ impl RenderNode {
 }
 
 pub fn compute_styles(properties: Properties, parent: Option<RenderNodeWeak>) -> HashMap<Property, Value> {
-    let mut computed_styles = HashMap::new();
     // Step 3
-    let specified_values = properties.into_iter().map(|(property, value)| {
-        if let Some(v) = value {
+    let specified_values = Property::iter().map(|property| {
+        if let Some(value) = properties.get(&property) {
             // TODO: explicit defaulting
-            return (property, v);
+            if let Some(v) = value {
+                return (property, v.clone());
+            }
         }
         // if there's no specified value in properties
         // we will try to inherit it
@@ -62,19 +68,21 @@ pub fn compute_styles(properties: Properties, parent: Option<RenderNodeWeak>) ->
         // if there's no parent or the property is not inheritable
         // we will use the initial value for that property
         return (property.clone(), Value::initial(&property));
-    }).collect::<Vec<(Property, Value)>>();
+    }).collect::<HashMap<Property, Value>>();
 
     // Step 4
+    // TODO: Might be an expensive clone when we support all properties
+    let temp_specified = specified_values.clone();
+    let context = ComputeContext {
+        parent: &parent,
+        properties: temp_specified
+    };
     let computed_values = specified_values.into_iter().map(|(property, value)| {
         // TODO: filter properties that need layout to compute
-        return (property, compute(value));
-    }).collect::<Vec<(Property, Value)>>();
+        return (property.clone(), compute(&property, &value, context.clone()));
+    }).collect::<HashMap<Property, Value>>();
 
-    for (property, value) in computed_values {
-        computed_styles.insert(property, value);
-    }
-    
-    computed_styles
+    computed_values
 }
 
 /// Build the render tree using the root node & list of stylesheets

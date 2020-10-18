@@ -5,6 +5,8 @@ use dom::dom_ref::NodeRef;
 use std::cmp::{Ord, Ordering};
 use std::collections::HashMap;
 use css::parser::structs::ComponentValue;
+use super::render_tree::RenderNodeWeak;
+use strum_macros::*;
 
 // values
 use super::values::color::Color;
@@ -15,7 +17,7 @@ type DeclaredValuesMap = HashMap<Property, Vec<PropertyDeclaration>>;
 pub type Properties = HashMap<Property, Option<Value>>;
 
 /// CSS property name
-#[derive(Debug, Clone, Hash, Eq, PartialEq)]
+#[derive(Debug, Clone, Hash, Eq, PartialEq, EnumIter)]
 pub enum Property {
     BackgroundColor,
     Color,
@@ -64,6 +66,13 @@ pub struct ContextualRule<'a> {
     pub inner: &'a StyleRule,
     pub origin: CascadeOrigin,
     pub location: CSSLocation,
+}
+
+/// Context for computing values
+#[derive(Clone)]
+pub struct ComputeContext<'a> {
+    pub parent: &'a Option<RenderNodeWeak>,
+    pub properties: HashMap<Property, Value>,
 }
 
 macro_rules! parse_value {
@@ -127,9 +136,31 @@ pub fn apply_styles(node: &NodeRef, rules: &[ContextualRule]) -> Properties {
 }
 
 /// Resolve specified values to computed values
-pub fn compute(value: Value) -> Value {
+pub fn compute(
+    property: &Property,
+    value: &Value,
+    context: ComputeContext
+) -> Value {
     match value {
-        _ => value
+        Value::Color(Color::CurrentColor) => match property {
+            Property::Color => {
+                if let Some(parent) = &context.parent {
+                    if let Some(p) = parent.upgrade() {
+                        return p.borrow().get_style(&property)
+                    }
+                }
+                Value::initial(property)
+            }
+            _ => {
+                // It's guarentee that all properties have a vlue
+                compute(
+                    &Property::Color,
+                    context.properties.get(&Property::Color).unwrap(),
+                    context.clone()
+                )
+            }
+        }
+        _ => value.clone()
     }
 }
 

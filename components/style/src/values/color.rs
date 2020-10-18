@@ -4,6 +4,7 @@ use css::tokenizer::token::Token;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Color {
+    CurrentColor,
     RGBA(f32, f32, f32, f32)
 }
 
@@ -28,6 +29,8 @@ impl Color {
 
     fn parse_color_keyword(keyword: &str) -> Option<Self> {
         match keyword {
+            n if n.eq_ignore_ascii_case("currentColor") => Some(Color::CurrentColor),
+            n if n.eq_ignore_ascii_case("transparent") => Some(Color::transparent()),
             n if n.eq_ignore_ascii_case("black") => Some(Color::black()),
             n if n.eq_ignore_ascii_case("silver") => Some(Color::RGBA(192.0, 192.0, 192.0, 255.0)),
             n if n.eq_ignore_ascii_case("gray") => Some(Color::RGBA(128.0, 128.0, 128.0, 255.0)),
