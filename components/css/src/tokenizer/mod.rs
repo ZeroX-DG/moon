@@ -694,4 +694,52 @@ mod tests {
         assert_eq!(tokenizer.consume_token(), Token::BraceClose);
         assert_eq!(tokenizer.consume_token(), Token::EOF);
     }
+
+    #[test]
+    fn tokenize_css_function() {
+        let css = r"#id_selector .class_selector {
+            color: rgba(0, 0, 0, 0);
+        }"
+        .to_string();
+        let mut tokenizer = Tokenizer::new(css);
+        assert_eq!(
+            tokenizer.consume_token(),
+            Token::Hash("id_selector".to_string(), HashType::Id)
+        );
+        assert_eq!(tokenizer.consume_token(), Token::Whitespace);
+
+        assert_eq!(tokenizer.consume_token(), Token::Delim('.'));
+        assert_eq!(
+            tokenizer.consume_token(),
+            Token::Ident("class_selector".to_string())
+        );
+        assert_eq!(tokenizer.consume_token(), Token::Whitespace);
+
+        assert_eq!(tokenizer.consume_token(), Token::BraceOpen);
+
+        assert_eq!(tokenizer.consume_token(), Token::Whitespace);
+
+        assert_eq!(tokenizer.consume_token(), Token::Ident("color".to_string()));
+        assert_eq!(tokenizer.consume_token(), Token::Colon);
+        assert_eq!(tokenizer.consume_token(), Token::Whitespace);
+        assert_eq!(tokenizer.consume_token(), Token::Function("rgba".to_string()));
+        assert_eq!(tokenizer.consume_token(), Token::ParentheseOpen);
+        assert_eq!(tokenizer.consume_token(), Token::Number { value: 0, type_: NumberType::Integer });
+        assert_eq!(tokenizer.consume_token(), Token::Comma);
+        assert_eq!(tokenizer.consume_token(), Token::Whitespace);
+        assert_eq!(tokenizer.consume_token(), Token::Number { value: 0, type_: NumberType::Integer });
+        assert_eq!(tokenizer.consume_token(), Token::Comma);
+        assert_eq!(tokenizer.consume_token(), Token::Whitespace);
+        assert_eq!(tokenizer.consume_token(), Token::Number { value: 0, type_: NumberType::Integer });
+        assert_eq!(tokenizer.consume_token(), Token::Comma);
+        assert_eq!(tokenizer.consume_token(), Token::Whitespace);
+        assert_eq!(tokenizer.consume_token(), Token::Number { value: 0, type_: NumberType::Integer });
+        assert_eq!(tokenizer.consume_token(), Token::ParentheseClose);
+        assert_eq!(tokenizer.consume_token(), Token::Semicolon);
+
+        assert_eq!(tokenizer.consume_token(), Token::Whitespace);
+
+        assert_eq!(tokenizer.consume_token(), Token::BraceClose);
+        assert_eq!(tokenizer.consume_token(), Token::EOF);
+    }
 }

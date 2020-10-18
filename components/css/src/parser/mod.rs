@@ -33,18 +33,29 @@ macro_rules! emit_error {
 pub struct SyntaxError;
 
 /// CSS Parser
-pub struct Parser {
+/// The parser support 2 mode:
+/// 1. Token mode which used to parse tokens from the tokenizer
+/// 2. ComponentValue mode which used to parse the content of
+/// a CSS block as list of declarations
+///
+/// Why do we need to parse component value too? It's because
+/// of a well-known phenomenon called NFKYO or Nobody Fucking
+/// Know Yet Ok
+///
+/// Go read this if you wish to be even more confuse:
+/// https://www.w3.org/TR/css-syntax-3/#style-rules
+pub struct Parser<T: Clone> {
     /// Stream of output tokens from tokenizer
-    tokens: DataStream<Token>,
+    tokens: DataStream<T>,
     /// Top level flag
     top_level: bool,
     /// Reconsume current input token
     reconsume: bool,
     /// Current token to return if being reconsumed
-    current_token: Option<Token>,
+    current_token: Option<T>,
 }
 
-impl Parser {
+impl Parser<Token> {
     pub fn new(tokens: DataStream<Token>) -> Self {
         Self {
             tokens,
@@ -52,13 +63,6 @@ impl Parser {
             reconsume: false,
             current_token: None,
         }
-    }
-
-    pub fn recreate(&mut self, tokens: DataStream<Token>) {
-        self.top_level = false;
-        self.reconsume = false;
-        self.current_token = None;
-        self.tokens = tokens;
     }
 
     fn consume_next_token(&mut self) -> Token {
@@ -158,7 +162,7 @@ impl Parser {
                             }
                         }
                     }
-                    let mut parser = Parser::new(DataStream::new(tmp));
+                    let mut parser = Parser::<Token>::new(DataStream::new(tmp));
                     if let Some(declaration) = parser.consume_a_declaration() {
                         result.push(DeclarationOrAtRule::Declaration(declaration));
                     }
@@ -190,11 +194,15 @@ impl Parser {
 
         let mut function = Function::new(function_name);
 
+        // consume `(`
+        self.consume_next_token();
         loop {
             let next_token = self.consume_next_token();
 
             match next_token {
-                Token::ParentheseClose => return function,
+                Token::ParentheseClose => {
+                    return function;
+                },
                 Token::EOF => {
                     emit_error!("Unexpected EOF while consuming a function");
                     return function;
@@ -348,7 +356,7 @@ impl Parser {
     }
 }
 
-impl Parser {
+impl Parser<Token> {
     pub fn parse_a_stylesheet(&mut self) -> ListOfRules {
         self.top_level = true;
         let rules = self.consume_a_list_of_rules();
@@ -358,7 +366,6 @@ impl Parser {
     pub fn parse_a_css_stylesheet(&mut self) -> StyleSheet {
         let mut stylesheet = StyleSheet::new();
         let rules = self.parse_a_stylesheet();
-        let mut parser = Parser::new(DataStream::new(Vec::new()));
         for rule in rules {
             if let Rule::QualifiedRule(rule) = rule {
                 let selectors = parse_selectors(&rule.prelude);
@@ -367,18 +374,12 @@ impl Parser {
                     continue;
                 }
                 let content = if let Some(block) = rule.block {
-                    // transform component values to tokens
-                    let tokens = block
-                        .value
-                        .into_iter()
-                        .filter_map(|com| match com {
-                            ComponentValue::PerservedToken(t) => Some(t),
-                            _ => None,
-                        })
-                        .collect();
-                    parser.recreate(DataStream::new(tokens));
+                    let mut parser = Parser::<ComponentValue>::new(
+                        DataStream::new(block.value.clone())
+                    );
 
                     let declarations = parser.parse_a_list_of_declarations();
+
                     // take only declaration
                     declarations
                         .into_iter()
@@ -492,6 +493,182 @@ impl Parser {
     }
 }
 
+impl Parser<ComponentValue> {
+    pub fn new(tokens: DataStream<ComponentValue>) -> Self {
+        Self {
+            tokens,
+            top_level: false,
+            reconsume: false,
+            current_token: None,
+        }
+    }
+
+    fn consume_next_token(&mut self) -> ComponentValue {
+        if self.reconsume {
+            self.reconsume = false;
+            return self.current_token.clone().unwrap();
+        }
+        let token = self.tokens.next().unwrap_or(&ComponentValue::PerservedToken(Token::EOF));
+        self.current_token = Some(token.clone());
+        return token.clone();
+    }
+
+    fn peek_next_token(&mut self) -> ComponentValue {
+        if self.reconsume {
+            return self.current_token.clone().unwrap();
+        }
+        return self.tokens.peek().unwrap_or(&ComponentValue::PerservedToken(Token::EOF)).clone();
+    }
+
+    fn reconsume(&mut self) {
+        self.reconsume = true;
+    }
+
+    fn parse_a_list_of_declarations(&mut self) -> Vec<DeclarationOrAtRule> {
+        self.consume_a_list_of_declarations()
+    }
+
+    fn consume_a_component_value(&mut self) -> ComponentValue {
+        self.consume_next_token()
+    }
+
+    fn consume_an_at_rule(&mut self) -> AtRule {
+        self.consume_next_token();
+        let current_token = self.current_token.clone().unwrap();
+        let keyword_name = if let ComponentValue::PerservedToken(Token::AtKeyword(name)) = current_token {
+            name
+        } else {
+            panic!("The current token is not a function");
+        };
+        let mut at_rule = AtRule::new(keyword_name);
+
+        loop {
+            let next_token = self.consume_next_token();
+
+            match next_token {
+                ComponentValue::PerservedToken(Token::Semicolon) => return at_rule,
+                ComponentValue::PerservedToken(Token::EOF) => {
+                    emit_error!("Unexpected EOF while consuming an at-rule");
+                    return at_rule;
+                }
+                // TODO: How is a simple block a token?
+                _ => {
+                    self.reconsume();
+                    at_rule.append_prelude(self.consume_a_component_value());
+                }
+            }
+        }
+    }
+
+    fn consume_a_list_of_declarations(&mut self) -> Vec<DeclarationOrAtRule> {
+        let mut result = Vec::new();
+
+        loop {
+            let next_token = self.consume_next_token();
+
+            match next_token {
+                ComponentValue::PerservedToken(Token::Whitespace)
+                | ComponentValue::PerservedToken(Token::Semicolon) => {}
+                ComponentValue::PerservedToken(Token::EOF) => {
+                    return result;
+                }
+                ComponentValue::PerservedToken(Token::AtKeyword(_)) => {
+                    self.reconsume();
+                    let rule = self.consume_an_at_rule();
+                    result.push(DeclarationOrAtRule::AtRule(rule));
+                }
+                ComponentValue::PerservedToken(Token::Ident(_)) => {
+                    let mut tmp = vec![self.current_token.clone().unwrap()];
+                    loop {
+                        match self.peek_next_token() {
+                            ComponentValue::PerservedToken(Token::Semicolon)
+                            | ComponentValue::PerservedToken(Token::EOF) => break,
+                            _ => {
+                                tmp.push(self.consume_a_component_value())
+                            }
+                        }
+                    }
+                    let mut parser = Parser::<ComponentValue>::new(DataStream::new(tmp));
+                    if let Some(declaration) = parser.consume_a_declaration() {
+                        result.push(DeclarationOrAtRule::Declaration(declaration));
+                    }
+                }
+                _ => {
+                    emit_error!("Unexpected token while consuming a list of declarations");
+                    self.reconsume();
+                    loop {
+                        match self.peek_next_token() {
+                            ComponentValue::PerservedToken(Token::Semicolon)
+                            | ComponentValue::PerservedToken(Token::EOF) => break,
+                            _ => {
+                                // throw away
+                                self.consume_a_component_value();
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    fn consume_a_declaration(&mut self) -> Option<Declaration> {
+        let next_token = self.consume_next_token();
+        let declaration_name = if let ComponentValue::PerservedToken(Token::Ident(name)) = next_token {
+            name
+        } else {
+            panic!("Token is not a indent token");
+        };
+        let mut declaration = Declaration::new(declaration_name);
+        self.consume_while_next_token_is(Token::Whitespace);
+
+        match self.peek_next_token() {
+            ComponentValue::PerservedToken(Token::Colon) => {
+                self.consume_next_token();
+            }
+            _ => {
+                emit_error!("Expected Colon in declaration");
+                return None;
+            }
+        }
+
+        self.consume_while_next_token_is(Token::Whitespace);
+
+        loop {
+            let token = self.peek_next_token();
+            if let ComponentValue::PerservedToken(Token::EOF) = token {
+                break;
+            }
+            declaration.append_value(self.consume_a_component_value());
+        }
+
+        let last_two_tokens = declaration.last_values(2);
+
+        if last_two_tokens.len() == 2 {
+            if let ComponentValue::PerservedToken(Token::Delim('!')) = last_two_tokens[0] {
+                if let ComponentValue::PerservedToken(Token::Ident(data)) = last_two_tokens[1] {
+                    if data.eq_ignore_ascii_case("important") {
+                        declaration.pop_last(2);
+                        declaration.important();
+                    }
+                }
+            }
+        }
+
+        while let Some(Token::Whitespace) = declaration.last_token() {
+            declaration.pop_last(1);
+        }
+
+        return Some(declaration);
+    }
+
+    fn consume_while_next_token_is(&mut self, token: Token) {
+        let token = ComponentValue::PerservedToken(token);
+        while self.peek_next_token() == token {
+            self.consume_next_token();
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -507,7 +684,7 @@ mod tests {
         let css = "div { color: black; }";
         let tokenizer = Tokenizer::new(css.to_string());
         let tokens = tokenizer.run();
-        let mut parser = Parser::new(tokens);
+        let mut parser = Parser::<Token>::new(tokens);
         let rules = parser.parse_a_stylesheet();
 
         assert_eq!(rules.len(), 1);
@@ -539,7 +716,7 @@ mod tests {
         let css = ".className { color: black; }";
         let tokenizer = Tokenizer::new(css.to_string());
         let tokens = tokenizer.run();
-        let mut parser = Parser::new(tokens);
+        let mut parser = Parser::<Token>::new(tokens);
         let rules = parser.parse_a_stylesheet();
 
         assert_eq!(rules.len(), 1);
@@ -572,7 +749,7 @@ mod tests {
         let css = "#elementId { color: black; }";
         let tokenizer = Tokenizer::new(css.to_string());
         let tokens = tokenizer.run();
-        let mut parser = Parser::new(tokens);
+        let mut parser = Parser::<Token>::new(tokens);
         let rules = parser.parse_a_stylesheet();
 
         assert_eq!(rules.len(), 1);
@@ -607,7 +784,7 @@ mod tests {
         let css = "#elementId { color: black !important; }";
         let tokenizer = Tokenizer::new(css.to_string());
         let tokens = tokenizer.run();
-        let mut parser = Parser::new(tokens);
+        let mut parser = Parser::<Token>::new(tokens);
         let stylesheet = parser.parse_a_css_stylesheet();
         assert_eq!(
             stylesheet.css_rules,
@@ -625,6 +802,53 @@ mod tests {
                     value: vec![ComponentValue::PerservedToken(Token::Ident(
                         "black".to_string()
                     ))]
+                }]
+            ))])
+        );
+    }
+
+    #[test]
+    fn parse_function() {
+        let css = "#elementId { color: rgba(0 0 0 0); }";
+        let tokenizer = Tokenizer::new(css.to_string());
+        let tokens = tokenizer.run();
+        let mut parser = Parser::<Token>::new(tokens);
+        let stylesheet = parser.parse_a_css_stylesheet();
+        assert_eq!(
+            stylesheet.css_rules,
+            CSSRuleList(vec![CSSRule::Style(StyleRule::new(
+                vec![Selector::new(vec![(
+                    SimpleSelectorSequence::new(vec![SimpleSelector::new(
+                        SimpleSelectorType::ID,
+                        Some("elementId".to_string())
+                    )]),
+                    None
+                )])],
+                vec![Declaration {
+                    name: "color".to_string(),
+                    important: false,
+                    value: vec![ComponentValue::Function(Function {
+                        name: "rgba".to_string(),
+                        value: vec![ComponentValue::PerservedToken(Token::Number {
+                            value: 0,
+                            type_: crate::tokenizer::token::NumberType::Integer,
+                        }),
+                        ComponentValue::PerservedToken(Token::Whitespace),
+                        ComponentValue::PerservedToken(Token::Number {
+                            value: 0,
+                            type_: crate::tokenizer::token::NumberType::Integer,
+                        }),
+                        ComponentValue::PerservedToken(Token::Whitespace),
+                        ComponentValue::PerservedToken(Token::Number {
+                            value: 0,
+                            type_: crate::tokenizer::token::NumberType::Integer,
+                        }),
+                        ComponentValue::PerservedToken(Token::Whitespace),
+                        ComponentValue::PerservedToken(Token::Number {
+                            value: 0,
+                            type_: crate::tokenizer::token::NumberType::Integer,
+                        })]
+                    })]
                 }]
             ))])
         );
