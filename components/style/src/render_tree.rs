@@ -37,7 +37,7 @@ impl RenderNode {
             }
         }
 
-        // it shouldn't reach here
+        // If this is the property is not inheritable or this is the root node
         return Value::initial(property);
     }
 }
@@ -55,7 +55,6 @@ pub fn compute_styles(properties: Properties, parent: Option<RenderNodeWeak>) ->
         if INHERITABLES.contains(&property) {
             if let Some(parent) = &parent {
                 if let Some(p) = parent.upgrade() {
-                    // guarantee that the parent style is computed
                     return (property.clone(), p.borrow().get_style(&property));
                 }
             }
