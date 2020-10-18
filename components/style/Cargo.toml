@@ -10,3 +10,5 @@ edition = "2018"
 css = { version = "*", path = "../css" }
 dom = { version = "*", path = "../dom" }
 lazy_static = { version = "1.4.0" }
+strum_macros = "0.19"
+strum = { version = "0.19", features = ["derive"] }

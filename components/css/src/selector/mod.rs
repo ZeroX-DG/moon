@@ -15,7 +15,7 @@ macro_rules! token_value {
 
 pub fn parse_selector_str(selector: &str) -> Option<Selector> {
     let tokenizer = Tokenizer::new(selector.to_string());
-    let mut parser = Parser::new(tokenizer.run());
+    let mut parser = Parser::<Token>::new(tokenizer.run());
     let values = parser.parse_a_list_of_component_values();
     let mut data_stream = DataStream::new(values);
     parse_selector(&mut data_stream)
@@ -229,7 +229,7 @@ mod tests {
         let css = "div.class#id { color: red; }";
         let tokenizer = Tokenizer::new(css.to_string());
         let tokens = tokenizer.run();
-        let mut parser = Parser::new(tokens);
+        let mut parser = Parser::<Token>::new(tokens);
         let rules = parser.parse_a_stylesheet();
         let rule = rules.get(0).unwrap();
 
@@ -256,7 +256,7 @@ mod tests {
         let css = "div.class #id { color: red; }";
         let tokenizer = Tokenizer::new(css.to_string());
         let tokens = tokenizer.run();
-        let mut parser = Parser::new(tokens);
+        let mut parser = Parser::<Token>::new(tokens);
         let rules = parser.parse_a_stylesheet();
         let rule = rules.get(0).unwrap();
 
@@ -291,7 +291,7 @@ mod tests {
         let css = "div.class > > #id { color: red; }";
         let tokenizer = Tokenizer::new(css.to_string());
         let tokens = tokenizer.run();
-        let mut parser = Parser::new(tokens);
+        let mut parser = Parser::<Token>::new(tokens);
         let rules = parser.parse_a_stylesheet();
         let rule = rules.get(0).unwrap();
 
@@ -326,7 +326,7 @@ mod tests {
         let css = "div.class > #id > #name + div { color: red; }";
         let tokenizer = Tokenizer::new(css.to_string());
         let tokens = tokenizer.run();
-        let mut parser = Parser::new(tokens);
+        let mut parser = Parser::<Token>::new(tokens);
         let rules = parser.parse_a_stylesheet();
         let rule = rules.get(0).unwrap();
 
@@ -375,7 +375,7 @@ mod tests {
         let css = "div.class , #name { color: black; }";
         let tokenizer = Tokenizer::new(css.to_string());
         let tokens = tokenizer.run();
-        let mut parser = Parser::new(tokens);
+        let mut parser = Parser::<Token>::new(tokens);
         let rules = parser.parse_a_stylesheet();
         let rule = rules.get(0).unwrap();
 
@@ -410,7 +410,7 @@ mod tests {
         let css = " { color: black; }";
         let tokenizer = Tokenizer::new(css.to_string());
         let tokens = tokenizer.run();
-        let mut parser = Parser::new(tokens);
+        let mut parser = Parser::<Token>::new(tokens);
         let rules = parser.parse_a_stylesheet();
         let rule = rules.get(0).unwrap();
 

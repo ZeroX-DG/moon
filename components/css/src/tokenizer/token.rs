@@ -10,12 +10,12 @@ pub enum Token {
     BadUrl,
     Delim(char),
     Number {
-        value: i32,
+        value: f32,
         type_: NumberType,
     },
-    Percentage(i32),
+    Percentage(f32),
     Dimension {
-        value: i32,
+        value: f32,
         type_: NumberType,
         unit: String,
     },

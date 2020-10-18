@@ -1,25 +1,43 @@
+use super::render_tree::RenderNodeWeak;
 use super::selector_matching::is_match_selectors;
 use css::cssom::style_rule::StyleRule;
+use css::parser::structs::ComponentValue;
+use css::tokenizer::token::Token;
 use css::selector::structs::Specificity;
 use dom::dom_ref::NodeRef;
 use std::cmp::{Ord, Ordering};
 use std::collections::HashMap;
-use css::tokenizer::token::Token;
+use strum_macros::*;
+
+// computes
+use super::computes::color::compute_color;
 
 // values
 use super::values::color::Color;
 use super::values::display::Display;
+use super::values::length::Length;
+use super::values::percentage::Percentage;
 
 type DeclaredValuesMap = HashMap<Property, Vec<PropertyDeclaration>>;
 
 pub type Properties = HashMap<Property, Option<Value>>;
 
 /// CSS property name
-#[derive(Debug, Clone, Hash, Eq, PartialEq)]
+#[derive(Debug, Clone, Hash, Eq, PartialEq, EnumIter)]
 pub enum Property {
     BackgroundColor,
     Color,
     Display,
+    Width,
+    Height,
+    MarginTop,
+    MarginRight,
+    MarginBottom,
+    MarginLeft,
+    PaddingTop,
+    PaddingRight,
+    PaddingBottom,
+    PaddingLeft
 }
 
 /// CSS property value
@@ -27,6 +45,12 @@ pub enum Property {
 pub enum Value {
     Color(Color),
     Display(Display),
+    Length(Length),
+    Percentage(Percentage),
+    Auto,
+    Inherit,
+    Initial,
+    Unset
 }
 
 /// CSS property declaration for cascading
@@ -66,22 +90,83 @@ pub struct ContextualRule<'a> {
     pub location: CSSLocation,
 }
 
+/// Context for computing values
+#[derive(Clone)]
+pub struct ComputeContext<'a> {
+    pub parent: &'a Option<RenderNodeWeak>,
+    pub properties: HashMap<Property, Value>,
+}
+
+fn parse_keyword(tokens: &Vec<ComponentValue>, keyword: &str) -> bool {
+    match tokens.iter().next() {
+        Some(ComponentValue::PerservedToken(Token::Ident(word))) => {
+            word.eq_ignore_ascii_case(keyword)
+        },
+        _ => false
+    }
+}
+
 macro_rules! parse_value {
-    ($value:ident, $tokens:ident) => {
+    (Auto; $tokens:ident) => {{
+        if parse_keyword($tokens, "auto") {
+            Some(Value::Auto)
+        } else {
+            None
+        }
+    }};
+    (Inherit; $tokens:ident) => {{
+        if parse_keyword($tokens, "inherit") {
+            Some(Value::Inherit)
+        } else {
+            None
+        }
+    }};
+    (Initial; $tokens:ident) => {{
+        if parse_keyword($tokens, "initial") {
+            Some(Value::Inherit)
+        } else {
+            None
+        }
+    }};
+    (Unset; $tokens:ident) => {{
+        if parse_keyword($tokens, "unset") {
+            Some(Value::Inherit)
+        } else {
+            None
+        }
+    }};
+    ($value:ident; $tokens:ident) => {{
         if let Some(value) = $value::parse($tokens) {
             Some(Value::$value(value))
         } else {
             None
         }
-    };
+    }};
+    ($value:ident | $($remain:ident)|+; $tokens:ident) => {{
+        let value = parse_value!($value; $tokens);
+        if value.is_some() {
+            return value;
+        }
+        parse_value!($($remain)|+; $tokens)
+    }};
 }
 
 impl Value {
-    pub fn parse(property: &Property, tokens: Vec<Token>) -> Option<Self> {
+    pub fn parse(property: &Property, tokens: &Vec<ComponentValue>) -> Option<Self> {
         match property {
-            Property::BackgroundColor => parse_value!(Color, tokens),
-            Property::Color => parse_value!(Color, tokens),
-            Property::Display => parse_value!(Display, tokens),
+            Property::BackgroundColor => parse_value!(Color | Unset; tokens),
+            Property::Color => parse_value!(Color | Unset; tokens),
+            Property::Display => parse_value!(Display | Unset; tokens),
+            Property::Width => parse_value!(Length | Percentage | Auto | Inherit | Unset; tokens),
+            Property::Height => parse_value!(Length | Percentage | Auto | Inherit | Unset; tokens),
+            Property::MarginTop => parse_value!(Length | Percentage | Auto | Inherit | Unset; tokens),
+            Property::MarginRight => parse_value!(Length | Percentage | Auto | Inherit | Unset; tokens),
+            Property::MarginBottom => parse_value!(Length | Percentage | Auto | Inherit | Unset; tokens),
+            Property::MarginLeft => parse_value!(Length | Percentage | Auto | Inherit | Unset; tokens),
+            Property::PaddingTop => parse_value!(Length | Percentage | Inherit | Unset; tokens),
+            Property::PaddingRight => parse_value!(Length | Percentage | Inherit | Unset; tokens),
+            Property::PaddingBottom => parse_value!(Length | Percentage | Inherit | Unset; tokens),
+            Property::PaddingLeft => parse_value!(Length | Percentage | Inherit | Unset; tokens),
         }
     }
 
@@ -90,6 +175,16 @@ impl Value {
             Property::BackgroundColor => Value::Color(Color::transparent()),
             Property::Color => Value::Color(Color::black()),
             Property::Display => Value::Display(Display::Inline),
+            Property::Width => Value::Auto,
+            Property::Height => Value::Auto,
+            Property::MarginTop => Value::Length(Length::zero()),
+            Property::MarginRight => Value::Length(Length::zero()),
+            Property::MarginBottom => Value::Length(Length::zero()),
+            Property::MarginLeft => Value::Length(Length::zero()),
+            Property::PaddingTop => Value::Length(Length::zero()),
+            Property::PaddingRight => Value::Length(Length::zero()),
+            Property::PaddingBottom => Value::Length(Length::zero()),
+            Property::PaddingLeft => Value::Length(Length::zero()),
         }
     }
 }
@@ -100,6 +195,16 @@ impl Property {
             "background-color" => Some(Property::BackgroundColor),
             "color" => Some(Property::Color),
             "display" => Some(Property::Display),
+            "width" => Some(Property::Width),
+            "height" => Some(Property::Height),
+            "margin-top" => Some(Property::MarginTop),
+            "margin-right" => Some(Property::MarginRight),
+            "margin-bottom" => Some(Property::MarginBottom),
+            "margin-left" => Some(Property::MarginLeft),
+            "padding-top" => Some(Property::PaddingTop),
+            "padding-right" => Some(Property::PaddingRight),
+            "padding-bottom" => Some(Property::PaddingBottom),
+            "padding-left" => Some(Property::PaddingLeft),
             _ => None,
         }
     }
@@ -127,9 +232,10 @@ pub fn apply_styles(node: &NodeRef, rules: &[ContextualRule]) -> Properties {
 }
 
 /// Resolve specified values to computed values
-pub fn compute(value: Value) -> Value {
+pub fn compute(property: &Property, value: &Value, context: &ComputeContext) -> Value {
     match value {
-        _ => value
+        Value::Color(_) => compute_color(value, property, context),
+        _ => value.clone(),
     }
 }
 
@@ -159,8 +265,8 @@ fn collect_declared_values(node: &NodeRef, rules: &[ContextualRule]) -> Declared
             let property = Property::parse(&declaration.name);
 
             if let Some(property) = property {
-                let tokens = declaration.tokens();
-                let value = Value::parse(&property, tokens);
+                let values = &declaration.value;
+                let value = Value::parse(&property, values);
 
                 if let Some(value) = value {
                     let declaration = PropertyDeclaration {
@@ -269,6 +375,8 @@ fn cmp_cascade_origin(a: &PropertyDeclaration, b: &PropertyDeclaration) -> Order
 mod tests {
     use super::*;
     use crate::values::color::Color;
+    use css::parser::structs::ComponentValue;
+    use css::tokenizer::token::Token;
 
     #[test]
     fn cascade_simple() {
@@ -300,5 +408,27 @@ mod tests {
 
         let win = cascade(&mut declared);
         assert_eq!(win, Some(c.value));
+    }
+
+    #[test]
+    fn parse_multiple_value_types() {
+        let tokens_auto = vec![
+            ComponentValue::PerservedToken(Token::Ident("auto".to_string()))
+        ];
+        let value_auto = Value::parse(&Property::Width, &tokens_auto);
+
+        let tokens_percentage = vec![
+            ComponentValue::PerservedToken(Token::Percentage(20.5))
+        ];
+        let value_percentage = Value::parse(&Property::Width, &tokens_percentage);
+
+        let tokens_inherit = vec![
+            ComponentValue::PerservedToken(Token::Ident("inherit".to_string()))
+        ];
+        let value_inherit = Value::parse(&Property::Width, &tokens_inherit);
+
+        assert_eq!(value_auto, Some(Value::Auto));
+        assert_eq!(value_inherit, Some(Value::Inherit));
+        assert_eq!(value_percentage, Some(Value::Percentage(Percentage(20.5))));
     }
 }

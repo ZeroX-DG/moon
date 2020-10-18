@@ -2,6 +2,7 @@ use css::cssom::stylesheet::StyleSheet;
 use css::parser::Parser;
 use css::selector::parse_selector_str;
 use css::selector::structs::*;
+use css::tokenizer::token::Token;
 use css::tokenizer::Tokenizer;
 use dom::dom_ref::NodeRef;
 use dom::element::Element;
@@ -10,7 +11,7 @@ use dom::text::Text;
 
 pub fn parse_stylesheet(style: &str) -> StyleSheet {
     let tokenizer = Tokenizer::new(style.to_string());
-    let mut parser = Parser::new(tokenizer.run());
+    let mut parser = Parser::<Token>::new(tokenizer.run());
     parser.parse_a_css_stylesheet()
 }
 
