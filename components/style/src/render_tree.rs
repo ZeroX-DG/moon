@@ -194,6 +194,9 @@ mod tests {
             child_styles.get(&Property::Color),
             Some(&Value::Color(Color::RGBA(255.0, 255.0, 255.0, 255.0)))
         );
-        assert_eq!(child_styles.get(&Property::Display), Some(&Value::Display(Display::Block)));
+        assert_eq!(
+            child_styles.get(&Property::Display),
+            Some(&Value::Display(Display::Block))
+        );
     }
 }

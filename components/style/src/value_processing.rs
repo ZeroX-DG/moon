@@ -2,8 +2,8 @@ use super::render_tree::RenderNodeWeak;
 use super::selector_matching::is_match_selectors;
 use css::cssom::style_rule::StyleRule;
 use css::parser::structs::ComponentValue;
-use css::tokenizer::token::Token;
 use css::selector::structs::Specificity;
+use css::tokenizer::token::Token;
 use dom::dom_ref::NodeRef;
 use std::cmp::{Ord, Ordering};
 use std::collections::HashMap;
@@ -37,7 +37,7 @@ pub enum Property {
     PaddingTop,
     PaddingRight,
     PaddingBottom,
-    PaddingLeft
+    PaddingLeft,
 }
 
 /// CSS property value
@@ -50,7 +50,7 @@ pub enum Value {
     Auto,
     Inherit,
     Initial,
-    Unset
+    Unset,
 }
 
 /// CSS property declaration for cascading
@@ -101,8 +101,8 @@ fn parse_keyword(tokens: &Vec<ComponentValue>, keyword: &str) -> bool {
     match tokens.iter().next() {
         Some(ComponentValue::PerservedToken(Token::Ident(word))) => {
             word.eq_ignore_ascii_case(keyword)
-        },
-        _ => false
+        }
+        _ => false,
     }
 }
 
@@ -154,19 +154,57 @@ macro_rules! parse_value {
 impl Value {
     pub fn parse(property: &Property, tokens: &Vec<ComponentValue>) -> Option<Self> {
         match property {
-            Property::BackgroundColor => parse_value!(Color | Inherit | Initial | Unset; tokens),
-            Property::Color => parse_value!(Color | Inherit | Initial | Unset; tokens),
-            Property::Display => parse_value!(Display | Inherit | Initial | Unset; tokens),
-            Property::Width => parse_value!(Length | Percentage | Auto | Inherit | Initial | Unset; tokens),
-            Property::Height => parse_value!(Length | Percentage | Auto | Inherit | Initial | Unset; tokens),
-            Property::MarginTop => parse_value!(Length | Percentage | Auto | Inherit | Initial | Unset; tokens),
-            Property::MarginRight => parse_value!(Length | Percentage | Auto | Inherit | Initial | Unset; tokens),
-            Property::MarginBottom => parse_value!(Length | Percentage | Auto | Inherit | Initial | Unset; tokens),
-            Property::MarginLeft => parse_value!(Length | Percentage | Auto | Inherit | Initial | Unset; tokens),
-            Property::PaddingTop => parse_value!(Length | Percentage | Inherit | Initial | Unset; tokens),
-            Property::PaddingRight => parse_value!(Length | Percentage | Inherit | Initial | Unset; tokens),
-            Property::PaddingBottom => parse_value!(Length | Percentage | Inherit | Initial | Unset; tokens),
-            Property::PaddingLeft => parse_value!(Length | Percentage | Inherit | Initial | Unset; tokens),
+            Property::BackgroundColor => parse_value!(
+                Color | Inherit | Initial | Unset;
+                tokens
+            ),
+            Property::Color => parse_value!(
+                Color | Inherit | Initial | Unset;
+                tokens
+            ),
+            Property::Display => parse_value!(
+                Display | Inherit | Initial | Unset;
+                tokens
+            ),
+            Property::Width => parse_value!(
+                Length | Percentage | Auto | Inherit | Initial | Unset;
+                tokens
+            ),
+            Property::Height => parse_value!(
+                Length | Percentage | Auto | Inherit | Initial | Unset;
+                tokens
+            ),
+            Property::MarginTop => parse_value!(
+                Length | Percentage | Auto | Inherit | Initial | Unset;
+                tokens
+            ),
+            Property::MarginRight => parse_value!(
+                Length | Percentage | Auto | Inherit | Initial | Unset;
+                tokens
+            ),
+            Property::MarginBottom => parse_value!(
+                Length | Percentage | Auto | Inherit | Initial | Unset;
+                tokens
+            ),
+            Property::MarginLeft => parse_value!(
+                Length | Percentage | Auto | Inherit | Initial | Unset;
+                tokens
+            ),
+            Property::PaddingTop => parse_value!(
+                Length | Percentage | Inherit | Initial | Unset;
+                tokens),
+            Property::PaddingRight => parse_value!(
+                Length | Percentage | Inherit | Initial | Unset;
+                tokens
+            ),
+            Property::PaddingBottom => parse_value!(
+                Length | Percentage | Inherit | Initial | Unset;
+                tokens
+            ),
+            Property::PaddingLeft => parse_value!(
+                Length | Percentage | Inherit | Initial | Unset;
+                tokens
+            ),
         }
     }
 
@@ -406,19 +444,17 @@ mod tests {
 
     #[test]
     fn parse_multiple_value_types() {
-        let tokens_auto = vec![
-            ComponentValue::PerservedToken(Token::Ident("auto".to_string()))
-        ];
+        let tokens_auto = vec![ComponentValue::PerservedToken(Token::Ident(
+            "auto".to_string(),
+        ))];
         let value_auto = Value::parse(&Property::Width, &tokens_auto);
 
-        let tokens_percentage = vec![
-            ComponentValue::PerservedToken(Token::Percentage(20.5))
-        ];
+        let tokens_percentage = vec![ComponentValue::PerservedToken(Token::Percentage(20.5))];
         let value_percentage = Value::parse(&Property::Width, &tokens_percentage);
 
-        let tokens_inherit = vec![
-            ComponentValue::PerservedToken(Token::Ident("inherit".to_string()))
-        ];
+        let tokens_inherit = vec![ComponentValue::PerservedToken(Token::Ident(
+            "inherit".to_string(),
+        ))];
         let value_inherit = Value::parse(&Property::Width, &tokens_inherit);
 
         assert_eq!(value_auto, Some(Value::Auto));

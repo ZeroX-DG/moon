@@ -51,7 +51,7 @@ impl Length {
             }
             Some(ComponentValue::PerservedToken(Token::Number { value, .. })) => {
                 if *value == 0.0 {
-                    return Some(Length::zero())
+                    return Some(Length::zero());
                 }
                 None
             }
@@ -60,6 +60,9 @@ impl Length {
     }
 
     pub fn zero() -> Self {
-        Length { value: 0.0, unit: LengthUnit::Px }
+        Length {
+            value: 0.0,
+            unit: LengthUnit::Px,
+        }
     }
 }
