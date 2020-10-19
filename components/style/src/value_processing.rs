@@ -123,14 +123,14 @@ macro_rules! parse_value {
     }};
     (Initial; $tokens:ident) => {{
         if parse_keyword($tokens, "initial") {
-            Some(Value::Inherit)
+            Some(Value::Initial)
         } else {
             None
         }
     }};
     (Unset; $tokens:ident) => {{
         if parse_keyword($tokens, "unset") {
-            Some(Value::Inherit)
+            Some(Value::Unset)
         } else {
             None
         }
