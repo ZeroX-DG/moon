@@ -192,7 +192,8 @@ impl Value {
             ),
             Property::PaddingTop => parse_value!(
                 Length | Percentage | Inherit | Initial | Unset;
-                tokens),
+                tokens
+            ),
             Property::PaddingRight => parse_value!(
                 Length | Percentage | Inherit | Initial | Unset;
                 tokens
