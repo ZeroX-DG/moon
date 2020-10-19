@@ -212,8 +212,6 @@ impl Property {
 
 /// Apply a list of style rules for a node
 pub fn apply_styles(node: &NodeRef, rules: &[ContextualRule]) -> Properties {
-    let mut properties = HashMap::new();
-
     // https://www.w3.org/TR/css3-cascade/#value-stages
     // Step 1
     let mut declared_values = collect_declared_values(&node, rules);
@@ -222,13 +220,9 @@ pub fn apply_styles(node: &NodeRef, rules: &[ContextualRule]) -> Properties {
     let cascade_values = declared_values
         .iter_mut()
         .map(|(property, values)| (property.clone(), cascade(values)))
-        .collect::<Vec<(Property, Option<Value>)>>();
+        .collect::<Properties>();
 
-    for (property, value) in cascade_values {
-        properties.insert(property.clone(), value.clone());
-    }
-
-    properties
+    cascade_values
 }
 
 /// Resolve specified values to computed values
