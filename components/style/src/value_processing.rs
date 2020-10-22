@@ -313,6 +313,17 @@ fn cascade(declared_values: &mut Vec<PropertyDeclaration>) -> Option<Value> {
     }
 }
 
+/// Check if a property is a short-hand property
+fn is_shorthand_property(property: &str) -> bool {
+    match property {
+        "margin" => true,
+        "padding" => true,
+        "border" => true,
+        "background" => true,
+        _ => false
+    }
+}
+
 /// Collect declared values for each property
 /// found in each style rule
 fn collect_declared_values(node: &NodeRef, rules: &[ContextualRule]) -> DeclaredValuesMap {
