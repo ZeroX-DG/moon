@@ -1,15 +1,16 @@
+use super::number::Number;
 use css::parser::structs::ComponentValue;
 use css::tokenizer::token::Token;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Hash)]
 pub struct Length {
-    pub value: f32,
+    pub value: Number,
     pub unit: LengthUnit,
 }
 
 impl Eq for Length {}
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum LengthUnit {
     Em,
     Ex,
@@ -43,7 +44,7 @@ impl Length {
             Some(ComponentValue::PerservedToken(Token::Dimension { value, unit, .. })) => {
                 if let Some(unit) = LengthUnit::from_str(&unit) {
                     return Some(Length {
-                        value: *value,
+                        value: (*value).into(),
                         unit,
                     });
                 }
@@ -61,7 +62,7 @@ impl Length {
 
     pub fn zero() -> Self {
         Length {
-            value: 0.0,
+            value: 0.0.into(),
             unit: LengthUnit::Px,
         }
     }

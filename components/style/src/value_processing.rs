@@ -5,8 +5,11 @@ use css::parser::structs::ComponentValue;
 use css::selector::structs::Specificity;
 use css::tokenizer::token::Token;
 use dom::dom_ref::NodeRef;
+use std::borrow::Borrow;
 use std::cmp::{Ord, Ordering};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
+use std::ops::Deref;
+use std::rc::Rc;
 use strum_macros::*;
 
 // computes
@@ -41,7 +44,7 @@ pub enum Property {
 }
 
 /// CSS property value
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum Value {
     Color(Color),
     Display(Display),
@@ -91,10 +94,32 @@ pub struct ContextualRule<'a> {
 }
 
 /// Context for computing values
-#[derive(Clone)]
 pub struct ComputeContext<'a> {
     pub parent: &'a Option<RenderNodeWeak>,
     pub properties: HashMap<Property, Value>,
+    pub style_cache: &'a mut HashSet<ValueRef>,
+}
+
+#[derive(Debug, Clone, Hash, PartialEq, Eq)]
+pub struct ValueRef(pub Rc<Value>);
+
+impl Borrow<Value> for ValueRef {
+    fn borrow(&self) -> &Value {
+        self.0.borrow()
+    }
+}
+
+impl ValueRef {
+    pub fn new(value: Value) -> Self {
+        Self(Rc::new(value))
+    }
+}
+
+impl Deref for ValueRef {
+    type Target = Rc<Value>;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
 }
 
 fn parse_keyword(tokens: &Vec<ComponentValue>, keyword: &str) -> bool {
@@ -265,10 +290,15 @@ pub fn apply_styles(node: &NodeRef, rules: &[ContextualRule]) -> Properties {
 }
 
 /// Resolve specified values to computed values
-pub fn compute(property: &Property, value: &Value, context: &ComputeContext) -> Value {
+pub fn compute(property: &Property, value: &Value, context: &mut ComputeContext) -> ValueRef {
     match value {
         Value::Color(_) => compute_color(value, property, context),
-        _ => value.clone(),
+        _ => {
+            if !context.style_cache.contains(value) {
+                context.style_cache.insert(ValueRef::new(value.clone()));
+            }
+            context.style_cache.get(value).unwrap().clone()
+        }
     }
 }
 
@@ -460,6 +490,9 @@ mod tests {
 
         assert_eq!(value_auto, Some(Value::Auto));
         assert_eq!(value_inherit, Some(Value::Inherit));
-        assert_eq!(value_percentage, Some(Value::Percentage(Percentage(20.5))));
+        assert_eq!(
+            value_percentage,
+            Some(Value::Percentage(Percentage(20.5.into())))
+        );
     }
 }
