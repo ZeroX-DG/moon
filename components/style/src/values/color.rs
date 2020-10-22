@@ -1,11 +1,12 @@
+use super::number::Number;
 use css::parser::structs::ComponentValue;
 use css::parser::structs::Function;
 use css::tokenizer::token::Token;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Hash)]
 pub enum Color {
     CurrentColor,
-    RGBA(f32, f32, f32, f32),
+    Rgba(Number, Number, Number, Number),
 }
 
 impl Eq for Color {}
@@ -30,21 +31,96 @@ impl Color {
             n if n.eq_ignore_ascii_case("currentColor") => Some(Color::CurrentColor),
             n if n.eq_ignore_ascii_case("transparent") => Some(Color::transparent()),
             n if n.eq_ignore_ascii_case("black") => Some(Color::black()),
-            n if n.eq_ignore_ascii_case("silver") => Some(Color::RGBA(192.0, 192.0, 192.0, 255.0)),
-            n if n.eq_ignore_ascii_case("gray") => Some(Color::RGBA(128.0, 128.0, 128.0, 255.0)),
-            n if n.eq_ignore_ascii_case("white") => Some(Color::RGBA(255.0, 255.0, 255.0, 255.0)),
-            n if n.eq_ignore_ascii_case("maroon") => Some(Color::RGBA(128.0, 0.0, 0.0, 255.0)),
-            n if n.eq_ignore_ascii_case("red") => Some(Color::RGBA(255.0, 0.0, 0.0, 255.0)),
-            n if n.eq_ignore_ascii_case("purple") => Some(Color::RGBA(128.0, 0.0, 128.0, 255.0)),
-            n if n.eq_ignore_ascii_case("fuchsia") => Some(Color::RGBA(255.0, 0.0, 255.0, 255.0)),
-            n if n.eq_ignore_ascii_case("green") => Some(Color::RGBA(0.0, 128.0, 0.0, 255.0)),
-            n if n.eq_ignore_ascii_case("lime") => Some(Color::RGBA(0.0, 255.0, 0.0, 255.0)),
-            n if n.eq_ignore_ascii_case("olive") => Some(Color::RGBA(128.0, 128.0, 0.0, 255.0)),
-            n if n.eq_ignore_ascii_case("yellow") => Some(Color::RGBA(255.0, 255.0, 0.0, 255.0)),
-            n if n.eq_ignore_ascii_case("navy") => Some(Color::RGBA(0.0, 0.0, 128.0, 255.0)),
-            n if n.eq_ignore_ascii_case("blue") => Some(Color::RGBA(0.0, 0.0, 255.0, 255.0)),
-            n if n.eq_ignore_ascii_case("teal") => Some(Color::RGBA(0.0, 128.0, 128.0, 255.0)),
-            n if n.eq_ignore_ascii_case("aqua") => Some(Color::RGBA(0.0, 255.0, 255.0, 255.0)),
+            n if n.eq_ignore_ascii_case("silver") => Some(Color::Rgba(
+                192.0.into(),
+                192.0.into(),
+                192.0.into(),
+                255.0.into(),
+            )),
+            n if n.eq_ignore_ascii_case("gray") => Some(Color::Rgba(
+                128.0.into(),
+                128.0.into(),
+                128.0.into(),
+                255.0.into(),
+            )),
+            n if n.eq_ignore_ascii_case("white") => Some(Color::Rgba(
+                255.0.into(),
+                255.0.into(),
+                255.0.into(),
+                255.0.into(),
+            )),
+            n if n.eq_ignore_ascii_case("maroon") => Some(Color::Rgba(
+                128.0.into(),
+                0.0.into(),
+                0.0.into(),
+                255.0.into(),
+            )),
+            n if n.eq_ignore_ascii_case("red") => Some(Color::Rgba(
+                255.0.into(),
+                0.0.into(),
+                0.0.into(),
+                255.0.into(),
+            )),
+            n if n.eq_ignore_ascii_case("purple") => Some(Color::Rgba(
+                128.0.into(),
+                0.0.into(),
+                128.0.into(),
+                255.0.into(),
+            )),
+            n if n.eq_ignore_ascii_case("fuchsia") => Some(Color::Rgba(
+                255.0.into(),
+                0.0.into(),
+                255.0.into(),
+                255.0.into(),
+            )),
+            n if n.eq_ignore_ascii_case("green") => Some(Color::Rgba(
+                0.0.into(),
+                128.0.into(),
+                0.0.into(),
+                255.0.into(),
+            )),
+            n if n.eq_ignore_ascii_case("lime") => Some(Color::Rgba(
+                0.0.into(),
+                255.0.into(),
+                0.0.into(),
+                255.0.into(),
+            )),
+            n if n.eq_ignore_ascii_case("olive") => Some(Color::Rgba(
+                128.0.into(),
+                128.0.into(),
+                0.0.into(),
+                255.0.into(),
+            )),
+            n if n.eq_ignore_ascii_case("yellow") => Some(Color::Rgba(
+                255.0.into(),
+                255.0.into(),
+                0.0.into(),
+                255.0.into(),
+            )),
+            n if n.eq_ignore_ascii_case("navy") => Some(Color::Rgba(
+                0.0.into(),
+                0.0.into(),
+                128.0.into(),
+                255.0.into(),
+            )),
+            n if n.eq_ignore_ascii_case("blue") => Some(Color::Rgba(
+                0.0.into(),
+                0.0.into(),
+                255.0.into(),
+                255.0.into(),
+            )),
+            n if n.eq_ignore_ascii_case("teal") => Some(Color::Rgba(
+                0.0.into(),
+                128.0.into(),
+                128.0.into(),
+                255.0.into(),
+            )),
+            n if n.eq_ignore_ascii_case("aqua") => Some(Color::Rgba(
+                0.0.into(),
+                255.0.into(),
+                255.0.into(),
+                255.0.into(),
+            )),
             _ => None,
         }
     }
@@ -74,14 +150,19 @@ impl Color {
             }
         }
 
-        Some(Color::RGBA(rgba[0], rgba[1], rgba[2], rgba[3]))
+        Some(Color::Rgba(
+            rgba[0].into(),
+            rgba[1].into(),
+            rgba[2].into(),
+            rgba[3].into(),
+        ))
     }
 
     pub fn transparent() -> Self {
-        Color::RGBA(0.0, 0.0, 0.0, 0.0)
+        Color::Rgba(0.0.into(), 0.0.into(), 0.0.into(), 0.0.into())
     }
 
     pub fn black() -> Self {
-        Color::RGBA(0.0, 0.0, 0.0, 1.0)
+        Color::Rgba(0.0.into(), 0.0.into(), 0.0.into(), 1.0.into())
     }
 }

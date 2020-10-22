@@ -1,7 +1,7 @@
 use css::parser::structs::ComponentValue;
 use css::tokenizer::token::Token;
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum Display {
     Inline,
     Block,

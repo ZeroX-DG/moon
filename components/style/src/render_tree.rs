@@ -1,16 +1,23 @@
 use super::inheritable::INHERITABLES;
 use super::value_processing::{
-    apply_styles, compute, ComputeContext, ContextualRule, Properties, Property, Value,
+    apply_styles, compute, ComputeContext, ContextualRule, Properties, Property, Value, ValueRef,
 };
 use super::values::display::Display;
 use dom::dom_ref::NodeRef;
 use std::cell::RefCell;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::rc::{Rc, Weak};
 use strum::IntoEnumIterator;
 
 pub type RenderNodeRef = Rc<RefCell<RenderNode>>;
 pub type RenderNodeWeak = Weak<RefCell<RenderNode>>;
+
+pub struct RenderTree {
+    /// The root node of the render tree
+    pub root: Option<RenderNodeRef>,
+    /// The style cache to share style value and reduce style size
+    pub style_cache: HashSet<ValueRef>,
+}
 
 /// A style node in the style tree
 #[derive(Debug)]
@@ -18,7 +25,7 @@ pub struct RenderNode {
     /// A reference to the DOM node that uses this style
     pub node: NodeRef,
     /// A property HashMap containing computed styles
-    pub properties: HashMap<Property, Value>,
+    pub properties: HashMap<Property, ValueRef>,
     /// Child style nodes
     pub children: Vec<RenderNodeRef>,
     /// Parent reference for inheritance
@@ -27,7 +34,7 @@ pub struct RenderNode {
 
 impl RenderNode {
     /// Get style value of a property
-    pub fn get_style(&self, property: &Property) -> Value {
+    pub fn get_style(&self, property: &Property) -> ValueRef {
         if let Some(value) = self.properties.get(property) {
             return value.clone();
         }
@@ -40,15 +47,15 @@ impl RenderNode {
             }
         }
 
-        // If this is the property is not inheritable or this is the root node
-        return Value::initial(property);
+        panic!("Oops, we should not reach here");
     }
 }
 
 pub fn compute_styles(
     properties: Properties,
     parent: Option<RenderNodeWeak>,
-) -> HashMap<Property, Value> {
+    cache: &mut HashSet<ValueRef>,
+) -> HashMap<Property, ValueRef> {
     // Step 3
     let specified_values = Property::iter()
         .map(|property| {
@@ -63,7 +70,10 @@ pub fn compute_styles(
             if INHERITABLES.contains(&property) {
                 if let Some(parent) = &parent {
                     if let Some(p) = parent.upgrade() {
-                        return (property.clone(), p.borrow().get_style(&property));
+                        return (
+                            property.clone(),
+                            (**p.borrow().get_style(&property)).clone(),
+                        );
                     }
                 }
             }
@@ -76,26 +86,35 @@ pub fn compute_styles(
     // Step 4
     // TODO: Might be an expensive clone when we support all properties
     let temp_specified = specified_values.clone();
-    let context = ComputeContext {
+    let mut context = ComputeContext {
         parent: &parent,
         properties: temp_specified,
+        style_cache: cache,
     };
     let computed_values = specified_values
         .into_iter()
         .map(|(property, value)| {
             // TODO: filter properties that need layout to compute
-            return (property.clone(), compute(&property, &value, &context));
+            let computed_value = compute(&property, &value, &mut context);
+            return (property.clone(), computed_value);
         })
-        .collect::<HashMap<Property, Value>>();
+        .collect::<HashMap<Property, ValueRef>>();
 
     computed_values
 }
 
+pub fn build_render_tree(node: NodeRef, rules: &[ContextualRule]) -> RenderTree {
+    let mut style_cache = HashSet::new();
+    let root = build_render_tree_from_node(node, rules, None, &mut style_cache);
+    RenderTree { root, style_cache }
+}
+
 /// Build the render tree using the root node & list of stylesheets
-pub fn build_render_tree(
+fn build_render_tree_from_node(
     node: NodeRef,
     rules: &[ContextualRule],
     parent: Option<RenderNodeWeak>,
+    cache: &mut HashSet<ValueRef>,
 ) -> Option<RenderNodeRef> {
     let properties = if node.is::<dom::text::Text>() {
         HashMap::new()
@@ -121,7 +140,7 @@ pub fn build_render_tree(
 
     let render_node = Rc::new(RefCell::new(RenderNode {
         node: node.clone(),
-        properties: compute_styles(properties, parent.clone()),
+        properties: compute_styles(properties, parent.clone(), cache),
         parent_render_node: parent,
         children: Vec::new(),
     }));
@@ -131,7 +150,9 @@ pub fn build_render_tree(
         .as_node()
         .child_nodes()
         .into_iter() // this is fine because we clone the node when iterate
-        .filter_map(|child| build_render_tree(child, &rules, Some(Rc::downgrade(&render_node))))
+        .filter_map(|child| {
+            build_render_tree_from_node(child, &rules, Some(Rc::downgrade(&render_node)), cache)
+        })
         .collect();
 
     Some(render_node)
@@ -178,25 +199,35 @@ mod tests {
             })
             .collect::<Vec<ContextualRule>>();
 
-        let render_tree = build_render_tree(dom_tree.clone(), &rules, None)
-            .expect("Render tree is not constructed");
+        let render_tree = build_render_tree(dom_tree.clone(), &rules);
 
-        let render_tree_inner = render_tree.borrow();
+        let render_tree_inner = render_tree.root.expect("No root node");
+        let render_tree_inner = render_tree_inner.borrow();
         let parent_styles = &render_tree_inner.properties;
         assert_eq!(
             parent_styles.get(&Property::BackgroundColor),
-            Some(&Value::Color(Color::RGBA(255.0, 255.0, 255.0, 255.0)))
+            Some(&ValueRef(Rc::new(Value::Color(Color::Rgba(
+                255.0.into(),
+                255.0.into(),
+                255.0.into(),
+                255.0.into()
+            )))))
         );
 
         let child_inner = render_tree_inner.children[0].borrow();
         let child_styles = &child_inner.properties;
         assert_eq!(
             child_styles.get(&Property::Color),
-            Some(&Value::Color(Color::RGBA(255.0, 255.0, 255.0, 255.0)))
+            Some(&ValueRef(Rc::new(Value::Color(Color::Rgba(
+                255.0.into(),
+                255.0.into(),
+                255.0.into(),
+                255.0.into()
+            )))))
         );
         assert_eq!(
             child_styles.get(&Property::Display),
-            Some(&Value::Display(Display::Block))
+            Some(&ValueRef(Rc::new(Value::Display(Display::Block))))
         );
     }
 }
