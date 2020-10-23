@@ -7,6 +7,10 @@ pub fn expand_margin(values: &[&[ComponentValue]]) -> ExpandOutput {
         // this is a single value
         let value = Value::parse(&Property::MarginTop, values[0]);
 
+        if value.is_none() {
+            return None;
+        }
+
         return Some(vec![
             (Property::MarginTop, value.clone()),
             (Property::MarginRight, value.clone()),
@@ -19,6 +23,10 @@ pub fn expand_margin(values: &[&[ComponentValue]]) -> ExpandOutput {
         // this is margin (x, y)
         let margin_y = Value::parse(&Property::MarginRight, values[0]);
         let margin_x = Value::parse(&Property::MarginRight, values[1]);
+
+        if margin_x.is_none() || margin_y.is_none() {
+            return None;
+        }
 
         return Some(vec![
             (Property::MarginTop, margin_y.clone()),
@@ -33,6 +41,10 @@ pub fn expand_margin(values: &[&[ComponentValue]]) -> ExpandOutput {
         let margin_right = Value::parse(&Property::MarginRight, values[1]);
         let margin_bottom = Value::parse(&Property::MarginRight, values[2]);
 
+        if margin_top.is_none() || margin_right.is_none() || margin_bottom.is_none() {
+            return None;
+        }
+
         if values.len() == 3 {
             return Some(vec![
                 (Property::MarginTop, margin_top),
@@ -43,6 +55,11 @@ pub fn expand_margin(values: &[&[ComponentValue]]) -> ExpandOutput {
         }
 
         let margin_left = Value::parse(&Property::MarginRight, values[3]);
+
+        if margin_left.is_none() {
+            return None;
+        }
+
         return Some(vec![
             (Property::MarginTop, margin_top),
             (Property::MarginRight, margin_right),

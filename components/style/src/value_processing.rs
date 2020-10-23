@@ -1,6 +1,3 @@
-use super::expand::margin::expand_margin;
-use super::expand::padding::expand_padding;
-use super::expand::ExpandOutput;
 use super::render_tree::RenderNodeWeak;
 use super::selector_matching::is_match_selectors;
 use css::cssom::style_rule::StyleRule;
@@ -16,10 +13,21 @@ use std::ops::Deref;
 use std::rc::Rc;
 use strum_macros::*;
 
+// expand
+use super::expand::border::expand_border;
+use super::expand::border_color::expand_border_color;
+use super::expand::border_style::expand_border_style;
+use super::expand::border_width::expand_border_width;
+use super::expand::margin::expand_margin;
+use super::expand::padding::expand_padding;
+use super::expand::ExpandOutput;
+
 // computes
 use super::computes::color::compute_color;
 
 // values
+use super::values::border_style::BorderStyle;
+use super::values::border_width::BorderWidth;
 use super::values::color::Color;
 use super::values::display::Display;
 use super::values::length::Length;
@@ -45,6 +53,18 @@ pub enum Property {
     PaddingRight,
     PaddingBottom,
     PaddingLeft,
+    BorderTopWidth,
+    BorderRightWidth,
+    BorderBottomWidth,
+    BorderLeftWidth,
+    BorderBottomStyle,
+    BorderLeftStyle,
+    BorderRightStyle,
+    BorderTopStyle,
+    BorderTopColor,
+    BorderRightColor,
+    BorderBottomColor,
+    BorderLeftColor,
 }
 
 /// CSS property value
@@ -54,6 +74,8 @@ pub enum Value {
     Display(Display),
     Length(Length),
     Percentage(Percentage),
+    BorderStyle(BorderStyle),
+    BorderWidth(BorderWidth),
     Auto,
     Inherit,
     Initial,
@@ -235,6 +257,54 @@ impl Value {
                 Length | Percentage | Inherit | Initial | Unset;
                 tokens
             ),
+            Property::BorderTopStyle => parse_value!(
+                BorderStyle | Inherit | Initial | Unset;
+                tokens
+            ),
+            Property::BorderRightStyle => parse_value!(
+                BorderStyle | Inherit | Initial | Unset;
+                tokens
+            ),
+            Property::BorderBottomStyle => parse_value!(
+                BorderStyle | Inherit | Initial | Unset;
+                tokens
+            ),
+            Property::BorderLeftStyle => parse_value!(
+                BorderStyle | Inherit | Initial | Unset;
+                tokens
+            ),
+            Property::BorderTopWidth => parse_value!(
+                BorderWidth | Length | Inherit | Initial | Unset;
+                tokens
+            ),
+            Property::BorderRightWidth => parse_value!(
+                BorderWidth | Length | Inherit | Initial | Unset;
+                tokens
+            ),
+            Property::BorderBottomWidth => parse_value!(
+                BorderWidth | Length | Inherit | Initial | Unset;
+                tokens
+            ),
+            Property::BorderLeftWidth => parse_value!(
+                BorderWidth | Length | Inherit | Initial | Unset;
+                tokens
+            ),
+            Property::BorderTopColor => parse_value!(
+                Color | Inherit | Initial | Unset;
+                tokens
+            ),
+            Property::BorderRightColor => parse_value!(
+                Color | Inherit | Initial | Unset;
+                tokens
+            ),
+            Property::BorderBottomColor => parse_value!(
+                Color | Inherit | Initial | Unset;
+                tokens
+            ),
+            Property::BorderLeftColor => parse_value!(
+                Color | Inherit | Initial | Unset;
+                tokens
+            ),
         }
     }
 
@@ -253,6 +323,18 @@ impl Value {
             Property::PaddingRight => Value::Length(Length::zero()),
             Property::PaddingBottom => Value::Length(Length::zero()),
             Property::PaddingLeft => Value::Length(Length::zero()),
+            Property::BorderTopStyle => Value::BorderStyle(BorderStyle::None),
+            Property::BorderRightStyle => Value::BorderStyle(BorderStyle::None),
+            Property::BorderBottomStyle => Value::BorderStyle(BorderStyle::None),
+            Property::BorderLeftStyle => Value::BorderStyle(BorderStyle::None),
+            Property::BorderTopWidth => Value::BorderWidth(BorderWidth::Medium),
+            Property::BorderRightWidth => Value::BorderWidth(BorderWidth::Medium),
+            Property::BorderBottomWidth => Value::BorderWidth(BorderWidth::Medium),
+            Property::BorderLeftWidth => Value::BorderWidth(BorderWidth::Medium),
+            Property::BorderTopColor => Value::Color(Color::black()),
+            Property::BorderRightColor => Value::Color(Color::black()),
+            Property::BorderBottomColor => Value::Color(Color::black()),
+            Property::BorderLeftColor => Value::Color(Color::black()),
         }
     }
 }
@@ -324,6 +406,10 @@ fn get_expander_shorthand_property(
     match property {
         "margin" => Some(&expand_margin),
         "padding" => Some(&expand_padding),
+        "border" => Some(&expand_border),
+        "border-style" => Some(&expand_border_style),
+        "border-width" => Some(&expand_border_width),
+        "border-color" => Some(&expand_border_color),
         _ => None,
     }
 }
@@ -366,8 +452,7 @@ fn collect_declared_values(node: &NodeRef, rules: &[ContextualRule]) -> Declared
                     })
                     .collect::<Vec<&[ComponentValue]>>();
 
-                let expand_values = expand(&tokens);
-                if let Some(values) = expand_values {
+                if let Some(values) = expand(&tokens) {
                     for (property, value) in values {
                         if let Some(v) = value {
                             insert_declaration(v, property, rule, declaration);

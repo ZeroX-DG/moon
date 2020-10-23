@@ -163,6 +163,8 @@ mod tests {
     use super::*;
     use crate::test_utils::*;
     use crate::value_processing::{CSSLocation, CascadeOrigin};
+    use crate::values::border_style::BorderStyle;
+    use crate::values::border_width::BorderWidth;
     use crate::values::color::Color;
     use crate::values::display::Display;
     use crate::values::length::{Length, LengthUnit};
@@ -292,6 +294,142 @@ mod tests {
     }
 
     #[test]
+    fn invalid_shorthand() {
+        let dom_tree = element("div#parent", vec![]);
+
+        let css = r#"
+        #parent {
+            border: 2px solid black red;
+        }
+        "#;
+
+        let stylesheet = parse_stylesheet(css);
+
+        let rules = stylesheet
+            .iter()
+            .map(|rule| match rule {
+                CSSRule::Style(style) => ContextualRule {
+                    inner: style,
+                    location: CSSLocation::Embedded,
+                    origin: CascadeOrigin::User,
+                },
+            })
+            .collect::<Vec<ContextualRule>>();
+
+        let render_tree = build_render_tree(dom_tree.clone(), &rules);
+
+        let render_tree_inner = render_tree.root.expect("No root node");
+        let render_tree_inner = render_tree_inner.borrow();
+        let parent_styles = &render_tree_inner.properties;
+        assert_eq!(
+            parent_styles.get(&Property::BorderTopColor),
+            Some(&ValueRef(Rc::new(Value::Color(Color::black()))))
+        );
+        assert_eq!(
+            parent_styles.get(&Property::BorderRightColor),
+            Some(&ValueRef(Rc::new(Value::Color(Color::black()))))
+        );
+        assert_eq!(
+            parent_styles.get(&Property::BorderBottomColor),
+            Some(&ValueRef(Rc::new(Value::Color(Color::black()))))
+        );
+        assert_eq!(
+            parent_styles.get(&Property::BorderLeftColor),
+            Some(&ValueRef(Rc::new(Value::Color(Color::black()))))
+        );
+        assert_eq!(
+            parent_styles.get(&Property::BorderTopWidth),
+            Some(&ValueRef(Rc::new(Value::BorderWidth(BorderWidth::Medium))))
+        );
+        assert_eq!(
+            parent_styles.get(&Property::BorderRightWidth),
+            Some(&ValueRef(Rc::new(Value::BorderWidth(BorderWidth::Medium))))
+        );
+        assert_eq!(
+            parent_styles.get(&Property::BorderBottomWidth),
+            Some(&ValueRef(Rc::new(Value::BorderWidth(BorderWidth::Medium))))
+        );
+        assert_eq!(
+            parent_styles.get(&Property::BorderLeftWidth),
+            Some(&ValueRef(Rc::new(Value::BorderWidth(BorderWidth::Medium))))
+        );
+        assert_eq!(
+            parent_styles.get(&Property::BorderTopStyle),
+            Some(&ValueRef(Rc::new(Value::BorderStyle(BorderStyle::None))))
+        );
+        assert_eq!(
+            parent_styles.get(&Property::BorderRightStyle),
+            Some(&ValueRef(Rc::new(Value::BorderStyle(BorderStyle::None))))
+        );
+        assert_eq!(
+            parent_styles.get(&Property::BorderBottomStyle),
+            Some(&ValueRef(Rc::new(Value::BorderStyle(BorderStyle::None))))
+        );
+        assert_eq!(
+            parent_styles.get(&Property::BorderLeftStyle),
+            Some(&ValueRef(Rc::new(Value::BorderStyle(BorderStyle::None))))
+        );
+    }
+
+    #[test]
+    fn shorthand_property_3_values() {
+        let dom_tree = element("div#parent", vec![]);
+
+        let css = r#"
+        #parent {
+            padding: 20px 10px 20px;
+        }
+        "#;
+
+        let stylesheet = parse_stylesheet(css);
+
+        let rules = stylesheet
+            .iter()
+            .map(|rule| match rule {
+                CSSRule::Style(style) => ContextualRule {
+                    inner: style,
+                    location: CSSLocation::Embedded,
+                    origin: CascadeOrigin::User,
+                },
+            })
+            .collect::<Vec<ContextualRule>>();
+
+        let render_tree = build_render_tree(dom_tree.clone(), &rules);
+
+        let render_tree_inner = render_tree.root.expect("No root node");
+        let render_tree_inner = render_tree_inner.borrow();
+        let parent_styles = &render_tree_inner.properties;
+        assert_eq!(
+            parent_styles.get(&Property::PaddingTop),
+            Some(&ValueRef(Rc::new(Value::Length(Length {
+                value: Number(20.0),
+                unit: LengthUnit::Px
+            }))))
+        );
+        assert_eq!(
+            parent_styles.get(&Property::PaddingRight),
+            Some(&ValueRef(Rc::new(Value::Length(Length {
+                value: Number(10.0),
+                unit: LengthUnit::Px
+            }))))
+        );
+        assert_eq!(
+            parent_styles.get(&Property::PaddingBottom),
+            Some(&ValueRef(Rc::new(Value::Length(Length {
+                value: Number(20.0),
+                unit: LengthUnit::Px
+            }))))
+        );
+        assert_eq!(
+            parent_styles.get(&Property::PaddingLeft),
+            Some(&ValueRef(Rc::new(Value::Length(Length {
+                value: Number(0.0),
+                unit: LengthUnit::Px
+            }))))
+        );
+    }
+
+    #[test]
     fn shorthand_property_special() {
         let dom_tree = element("div#parent", vec![]);
 
@@ -346,6 +484,96 @@ mod tests {
                 value: Number(10.0),
                 unit: LengthUnit::Px
             }))))
+        );
+    }
+
+    #[test]
+    fn shorthand_property_border() {
+        let dom_tree = element("div#parent", vec![]);
+
+        let css = r#"
+        #parent {
+            border: dotted 2px;
+        }
+        "#;
+
+        let stylesheet = parse_stylesheet(css);
+
+        let rules = stylesheet
+            .iter()
+            .map(|rule| match rule {
+                CSSRule::Style(style) => ContextualRule {
+                    inner: style,
+                    location: CSSLocation::Embedded,
+                    origin: CascadeOrigin::User,
+                },
+            })
+            .collect::<Vec<ContextualRule>>();
+
+        let render_tree = build_render_tree(dom_tree.clone(), &rules);
+
+        let render_tree_inner = render_tree.root.expect("No root node");
+        let render_tree_inner = render_tree_inner.borrow();
+        let parent_styles = &render_tree_inner.properties;
+        assert_eq!(
+            parent_styles.get(&Property::BorderTopColor),
+            Some(&ValueRef(Rc::new(Value::Color(Color::black()))))
+        );
+        assert_eq!(
+            parent_styles.get(&Property::BorderRightColor),
+            Some(&ValueRef(Rc::new(Value::Color(Color::black()))))
+        );
+        assert_eq!(
+            parent_styles.get(&Property::BorderBottomColor),
+            Some(&ValueRef(Rc::new(Value::Color(Color::black()))))
+        );
+        assert_eq!(
+            parent_styles.get(&Property::BorderLeftColor),
+            Some(&ValueRef(Rc::new(Value::Color(Color::black()))))
+        );
+        assert_eq!(
+            parent_styles.get(&Property::BorderTopWidth),
+            Some(&ValueRef(Rc::new(Value::Length(Length {
+                value: Number(2.0),
+                unit: LengthUnit::Px
+            }))))
+        );
+        assert_eq!(
+            parent_styles.get(&Property::BorderRightWidth),
+            Some(&ValueRef(Rc::new(Value::Length(Length {
+                value: Number(2.0),
+                unit: LengthUnit::Px
+            }))))
+        );
+        assert_eq!(
+            parent_styles.get(&Property::BorderBottomWidth),
+            Some(&ValueRef(Rc::new(Value::Length(Length {
+                value: Number(2.0),
+                unit: LengthUnit::Px
+            }))))
+        );
+        assert_eq!(
+            parent_styles.get(&Property::BorderLeftWidth),
+            Some(&ValueRef(Rc::new(Value::Length(Length {
+                value: Number(2.0),
+                unit: LengthUnit::Px
+            }))))
+        );
+        assert_eq!(
+            parent_styles.get(&Property::BorderTopStyle),
+            Some(&ValueRef(Rc::new(Value::BorderStyle(BorderStyle::Dotted))))
+        );
+        assert_eq!(
+            parent_styles.get(&Property::BorderRightStyle),
+            Some(&ValueRef(Rc::new(Value::BorderStyle(BorderStyle::Dotted))))
+        );
+        assert_eq!(
+            parent_styles.get(&Property::BorderBottomStyle),
+            Some(&ValueRef(Rc::new(Value::BorderStyle(BorderStyle::Dotted))))
+        );
+        assert_eq!(
+            parent_styles.get(&Property::BorderLeftStyle),
+            Some(&ValueRef(Rc::new(Value::BorderStyle(BorderStyle::Dotted))))
         );
     }
 }
