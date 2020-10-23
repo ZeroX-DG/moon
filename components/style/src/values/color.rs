@@ -12,7 +12,7 @@ pub enum Color {
 impl Eq for Color {}
 
 impl Color {
-    pub fn parse(values: &Vec<ComponentValue>) -> Option<Self> {
+    pub fn parse(values: &[ComponentValue]) -> Option<Self> {
         match values.iter().next() {
             Some(ComponentValue::Function(function)) => match function.name.as_ref() {
                 "rgba" => Color::parse_rgba_function(function, true),

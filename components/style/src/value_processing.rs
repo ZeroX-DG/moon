@@ -2,6 +2,7 @@ use super::render_tree::RenderNodeWeak;
 use super::selector_matching::is_match_selectors;
 use css::cssom::style_rule::StyleRule;
 use css::parser::structs::ComponentValue;
+use css::parser::structs::Declaration;
 use css::selector::structs::Specificity;
 use css::tokenizer::token::Token;
 use dom::dom_ref::NodeRef;
@@ -122,7 +123,7 @@ impl Deref for ValueRef {
     }
 }
 
-fn parse_keyword(tokens: &Vec<ComponentValue>, keyword: &str) -> bool {
+fn parse_keyword(tokens: &[ComponentValue], keyword: &str) -> bool {
     match tokens.iter().next() {
         Some(ComponentValue::PerservedToken(Token::Ident(word))) => {
             word.eq_ignore_ascii_case(keyword)
@@ -177,7 +178,7 @@ macro_rules! parse_value {
 }
 
 impl Value {
-    pub fn parse(property: &Property, tokens: &Vec<ComponentValue>) -> Option<Self> {
+    pub fn parse(property: &Property, tokens: &[ComponentValue]) -> Option<Self> {
         match property {
             Property::BackgroundColor => parse_value!(
                 Color | Inherit | Initial | Unset;
@@ -313,14 +314,24 @@ fn cascade(declared_values: &mut Vec<PropertyDeclaration>) -> Option<Value> {
     }
 }
 
-/// Check if a property is a short-hand property
-fn is_shorthand_property(property: &str) -> bool {
+/// parse a short-hand property
+/// return if the string is a property
+/// and if the property allow single value for all long hands
+fn parse_shorthand_property(property: &str) -> Option<(Vec<Property>, bool)> {
     match property {
-        "margin" => true,
-        "padding" => true,
-        "border" => true,
-        "background" => true,
-        _ => false
+        "margin" => Some((vec![
+            Property::MarginTop,
+            Property::MarginRight,
+            Property::MarginBottom,
+            Property::MarginLeft,
+        ], true)),
+        "padding" => Some((vec![
+            Property::PaddingTop,
+            Property::PaddingRight,
+            Property::PaddingBottom,
+            Property::PaddingLeft,
+        ], true)),
+        _ => None,
     }
 }
 
@@ -334,26 +345,70 @@ fn collect_declared_values(node: &NodeRef, rules: &[ContextualRule]) -> Declared
         .filter(|rule| is_match_selectors(node, &rule.inner.selectors))
         .collect::<Vec<&ContextualRule>>();
 
+    let mut insert_declaration =
+        |value: Value, property: Property, rule: &ContextualRule, declaration: &Declaration| {
+            let declaration = PropertyDeclaration {
+                value,
+                important: declaration.important,
+                origin: rule.origin.clone(),
+                location: rule.location.clone(),
+                specificity: rule.inner.specificity(),
+            };
+            if result.contains_key(&property) {
+                result.get_mut(&property).unwrap().push(declaration);
+            } else {
+                result.insert(property, vec![declaration]);
+            }
+        };
+
     for rule in matched_rules {
         for declaration in &rule.inner.declarations {
-            let property = Property::parse(&declaration.name);
+            if let Some((properties, allow_single)) = parse_shorthand_property(&declaration.name) {
+                // process short hand property
+                let mut values = declaration
+                    .value
+                    .split(|val| match val {
+                        ComponentValue::PerservedToken(Token::Whitespace) => true,
+                        _ => false,
+                    })
+                    .collect::<Vec<&[ComponentValue]>>();
 
-            if let Some(property) = property {
-                let values = &declaration.value;
-                let value = Value::parse(&property, values);
+                if values.len() == 1 && allow_single {
+                    // this is the single value
+                    for property in properties {
+                        let tokens = values[0];
+                        let value = Value::parse(&property, tokens);
 
-                if let Some(value) = value {
-                    let declaration = PropertyDeclaration {
-                        value,
-                        important: declaration.important,
-                        origin: rule.origin.clone(),
-                        location: rule.location.clone(),
-                        specificity: rule.inner.specificity(),
-                    };
-                    if result.contains_key(&property) {
-                        result.get_mut(&property).unwrap().push(declaration);
-                    } else {
-                        result.insert(property, vec![declaration]);
+                        if let Some(value) = value {
+                            insert_declaration(value, property, rule, declaration);
+                        }
+                    }
+                    continue;
+                }
+
+                for property in properties {
+                    let mut tokens_remove_index = None;
+                    for (tokens_index, tokens) in values.iter().enumerate() {
+                        if let Some(value) = Value::parse(&property, tokens) {
+                            insert_declaration(value, property, rule, declaration);
+                            tokens_remove_index = Some(tokens_index);
+                            break;
+                        }
+                    }
+
+                    if let Some(tokens_index) = tokens_remove_index {
+                        values.remove(tokens_index);
+                    }
+                }
+            } else {
+                // process long hand css property
+                let property = Property::parse(&declaration.name);
+                if let Some(property) = property {
+                    let values = &declaration.value;
+                    let value = Value::parse(&property, values);
+
+                    if let Some(value) = value {
+                        insert_declaration(value, property, rule, declaration);
                     }
                 }
             }

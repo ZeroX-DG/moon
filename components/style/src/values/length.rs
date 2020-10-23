@@ -39,7 +39,7 @@ impl LengthUnit {
 }
 
 impl Length {
-    pub fn parse(values: &Vec<ComponentValue>) -> Option<Self> {
+    pub fn parse(values: &[ComponentValue]) -> Option<Self> {
         match values.first() {
             Some(ComponentValue::PerservedToken(Token::Dimension { value, unit, .. })) => {
                 if let Some(unit) = LengthUnit::from_str(&unit) {
