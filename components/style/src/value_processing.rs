@@ -1,5 +1,7 @@
 use super::render_tree::RenderNodeWeak;
 use super::selector_matching::is_match_selectors;
+use super::expand::ExpandOutput;
+use super::expand::margin::expand_margin;
 use css::cssom::style_rule::StyleRule;
 use css::parser::structs::ComponentValue;
 use css::parser::structs::Declaration;
@@ -314,23 +316,11 @@ fn cascade(declared_values: &mut Vec<PropertyDeclaration>) -> Option<Value> {
     }
 }
 
-/// parse a short-hand property
-/// return if the string is a property
-/// and if the property allow single value for all long hands
-fn parse_shorthand_property(property: &str) -> Option<(Vec<Property>, bool)> {
+/// A a short-hand property expander
+fn get_expander_shorthand_property(property: &str)
+    -> Option<&dyn Fn(&[&[ComponentValue]]) -> ExpandOutput> {
     match property {
-        "margin" => Some((vec![
-            Property::MarginTop,
-            Property::MarginRight,
-            Property::MarginBottom,
-            Property::MarginLeft,
-        ], true)),
-        "padding" => Some((vec![
-            Property::PaddingTop,
-            Property::PaddingRight,
-            Property::PaddingBottom,
-            Property::PaddingLeft,
-        ], true)),
+        "margin" => Some(&expand_margin),
         _ => None,
     }
 }
@@ -363,9 +353,9 @@ fn collect_declared_values(node: &NodeRef, rules: &[ContextualRule]) -> Declared
 
     for rule in matched_rules {
         for declaration in &rule.inner.declarations {
-            if let Some((properties, allow_single)) = parse_shorthand_property(&declaration.name) {
+            if let Some(expand) = get_expander_shorthand_property(&declaration.name) {
                 // process short hand property
-                let mut values = declaration
+                let tokens = declaration
                     .value
                     .split(|val| match val {
                         ComponentValue::PerservedToken(Token::Whitespace) => true,
@@ -373,30 +363,12 @@ fn collect_declared_values(node: &NodeRef, rules: &[ContextualRule]) -> Declared
                     })
                     .collect::<Vec<&[ComponentValue]>>();
 
-                if values.len() == 1 && allow_single {
-                    // this is the single value
-                    let tokens = values[0];
-                    let value = Value::parse(&properties[0], tokens);
-                    if let Some(value) = value {
-                        for property in properties {
-                            insert_declaration(value.clone(), property, rule, declaration);
+                let expand_values = expand(&tokens);
+                if let Some(values) = expand_values {
+                    for (property, value) in values {
+                        if let Some(v) = value {
+                            insert_declaration(v, property, rule, declaration);
                         }
-                    }
-                    continue;
-                }
-
-                for property in properties {
-                    let mut tokens_remove_index = None;
-                    for (tokens_index, tokens) in values.iter().enumerate() {
-                        if let Some(value) = Value::parse(&property, tokens) {
-                            insert_declaration(value, property, rule, declaration);
-                            tokens_remove_index = Some(tokens_index);
-                            break;
-                        }
-                    }
-
-                    if let Some(tokens_index) = tokens_remove_index {
-                        values.remove(tokens_index);
                     }
                 }
             } else {

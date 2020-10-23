@@ -4,6 +4,7 @@ pub mod render_tree;
 pub mod selector_matching;
 pub mod value_processing;
 pub mod values;
+pub mod expand;
 
 #[cfg(test)]
 pub mod test_utils;
