@@ -165,6 +165,8 @@ mod tests {
     use crate::value_processing::{CSSLocation, CascadeOrigin};
     use crate::values::color::Color;
     use crate::values::display::Display;
+    use crate::values::length::{Length, LengthUnit};
+    use crate::values::number::Number;
     use css::cssom::css_rule::CSSRule;
 
     #[test]
@@ -228,6 +230,128 @@ mod tests {
         assert_eq!(
             child_styles.get(&Property::Display),
             Some(&ValueRef(Rc::new(Value::Display(Display::Block))))
+        );
+    }
+
+    #[test]
+    fn shorthand_property() {
+        let dom_tree = element(
+            "div#parent",
+            vec![]
+        );
+
+        let css = r#"
+        #parent {
+            margin: 20px;
+        }
+        "#;
+
+        let stylesheet = parse_stylesheet(css);
+
+        let rules = stylesheet
+            .iter()
+            .map(|rule| match rule {
+                CSSRule::Style(style) => ContextualRule {
+                    inner: style,
+                    location: CSSLocation::Embedded,
+                    origin: CascadeOrigin::User,
+                },
+            })
+            .collect::<Vec<ContextualRule>>();
+
+        let render_tree = build_render_tree(dom_tree.clone(), &rules);
+
+        let render_tree_inner = render_tree.root.expect("No root node");
+        let render_tree_inner = render_tree_inner.borrow();
+        let parent_styles = &render_tree_inner.properties;
+        assert_eq!(
+            parent_styles.get(&Property::MarginTop),
+            Some(&ValueRef(Rc::new(Value::Length(Length {
+                value: Number(20.0),
+                unit: LengthUnit::Px
+            }))))
+        );
+        assert_eq!(
+            parent_styles.get(&Property::MarginRight),
+            Some(&ValueRef(Rc::new(Value::Length(Length {
+                value: Number(20.0),
+                unit: LengthUnit::Px
+            }))))
+        );
+        assert_eq!(
+            parent_styles.get(&Property::MarginBottom),
+            Some(&ValueRef(Rc::new(Value::Length(Length {
+                value: Number(20.0),
+                unit: LengthUnit::Px
+            }))))
+        );
+        assert_eq!(
+            parent_styles.get(&Property::MarginLeft),
+            Some(&ValueRef(Rc::new(Value::Length(Length {
+                value: Number(20.0),
+                unit: LengthUnit::Px
+            }))))
+        );
+    }
+
+    #[test]
+    fn shorthand_property_special() {
+        let dom_tree = element(
+            "div#parent",
+            vec![]
+        );
+
+        let css = r#"
+        #parent {
+            margin: 20px 10px;
+        }
+        "#;
+
+        let stylesheet = parse_stylesheet(css);
+
+        let rules = stylesheet
+            .iter()
+            .map(|rule| match rule {
+                CSSRule::Style(style) => ContextualRule {
+                    inner: style,
+                    location: CSSLocation::Embedded,
+                    origin: CascadeOrigin::User,
+                },
+            })
+            .collect::<Vec<ContextualRule>>();
+
+        let render_tree = build_render_tree(dom_tree.clone(), &rules);
+
+        let render_tree_inner = render_tree.root.expect("No root node");
+        let render_tree_inner = render_tree_inner.borrow();
+        let parent_styles = &render_tree_inner.properties;
+        assert_eq!(
+            parent_styles.get(&Property::MarginTop),
+            Some(&ValueRef(Rc::new(Value::Length(Length {
+                value: Number(20.0),
+                unit: LengthUnit::Px
+            }))))
+        );
+        assert_eq!(
+            parent_styles.get(&Property::MarginRight),
+            Some(&ValueRef(Rc::new(Value::Length(Length {
+                value: Number(10.0),
+                unit: LengthUnit::Px
+            }))))
+        );
+        assert_eq!(
+            parent_styles.get(&Property::MarginBottom),
+            Some(&ValueRef(Rc::new(Value::Length(Length {
+                value: Number(20.0),
+                unit: LengthUnit::Px
+            }))))
+        );
+        assert_eq!(
+            parent_styles.get(&Property::MarginLeft),
+            Some(&ValueRef(Rc::new(Value::Length(Length {
+                value: Number(10.0),
+                unit: LengthUnit::Px
+            }))))
         );
     }
 }

@@ -9,7 +9,7 @@ pub enum Display {
 }
 
 impl Display {
-    pub fn parse(values: &Vec<ComponentValue>) -> Option<Self> {
+    pub fn parse(values: &[ComponentValue]) -> Option<Self> {
         match values.iter().next() {
             Some(ComponentValue::PerservedToken(Token::Ident(value))) => {
                 if value.eq_ignore_ascii_case("inline") {

@@ -1,7 +1,7 @@
 use std::hash::{Hash, Hasher};
 
 #[derive(Debug, Clone)]
-pub struct Number(f32);
+pub struct Number(pub f32);
 
 impl Hash for Number {
     fn hash<H: Hasher>(&self, state: &mut H) {

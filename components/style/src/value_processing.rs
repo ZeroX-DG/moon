@@ -1,7 +1,10 @@
 use super::render_tree::RenderNodeWeak;
 use super::selector_matching::is_match_selectors;
+use super::expand::ExpandOutput;
+use super::expand::margin::expand_margin;
 use css::cssom::style_rule::StyleRule;
 use css::parser::structs::ComponentValue;
+use css::parser::structs::Declaration;
 use css::selector::structs::Specificity;
 use css::tokenizer::token::Token;
 use dom::dom_ref::NodeRef;
@@ -122,7 +125,7 @@ impl Deref for ValueRef {
     }
 }
 
-fn parse_keyword(tokens: &Vec<ComponentValue>, keyword: &str) -> bool {
+fn parse_keyword(tokens: &[ComponentValue], keyword: &str) -> bool {
     match tokens.iter().next() {
         Some(ComponentValue::PerservedToken(Token::Ident(word))) => {
             word.eq_ignore_ascii_case(keyword)
@@ -177,7 +180,7 @@ macro_rules! parse_value {
 }
 
 impl Value {
-    pub fn parse(property: &Property, tokens: &Vec<ComponentValue>) -> Option<Self> {
+    pub fn parse(property: &Property, tokens: &[ComponentValue]) -> Option<Self> {
         match property {
             Property::BackgroundColor => parse_value!(
                 Color | Inherit | Initial | Unset;
@@ -313,6 +316,15 @@ fn cascade(declared_values: &mut Vec<PropertyDeclaration>) -> Option<Value> {
     }
 }
 
+/// A a short-hand property expander
+fn get_expander_shorthand_property(property: &str)
+    -> Option<&dyn Fn(&[&[ComponentValue]]) -> ExpandOutput> {
+    match property {
+        "margin" => Some(&expand_margin),
+        _ => None,
+    }
+}
+
 /// Collect declared values for each property
 /// found in each style rule
 fn collect_declared_values(node: &NodeRef, rules: &[ContextualRule]) -> DeclaredValuesMap {
@@ -323,26 +335,51 @@ fn collect_declared_values(node: &NodeRef, rules: &[ContextualRule]) -> Declared
         .filter(|rule| is_match_selectors(node, &rule.inner.selectors))
         .collect::<Vec<&ContextualRule>>();
 
+    let mut insert_declaration =
+        |value: Value, property: Property, rule: &ContextualRule, declaration: &Declaration| {
+            let declaration = PropertyDeclaration {
+                value,
+                important: declaration.important,
+                origin: rule.origin.clone(),
+                location: rule.location.clone(),
+                specificity: rule.inner.specificity(),
+            };
+            if result.contains_key(&property) {
+                result.get_mut(&property).unwrap().push(declaration);
+            } else {
+                result.insert(property, vec![declaration]);
+            }
+        };
+
     for rule in matched_rules {
         for declaration in &rule.inner.declarations {
-            let property = Property::parse(&declaration.name);
+            if let Some(expand) = get_expander_shorthand_property(&declaration.name) {
+                // process short hand property
+                let tokens = declaration
+                    .value
+                    .split(|val| match val {
+                        ComponentValue::PerservedToken(Token::Whitespace) => true,
+                        _ => false,
+                    })
+                    .collect::<Vec<&[ComponentValue]>>();
 
-            if let Some(property) = property {
-                let values = &declaration.value;
-                let value = Value::parse(&property, values);
+                let expand_values = expand(&tokens);
+                if let Some(values) = expand_values {
+                    for (property, value) in values {
+                        if let Some(v) = value {
+                            insert_declaration(v, property, rule, declaration);
+                        }
+                    }
+                }
+            } else {
+                // process long hand css property
+                let property = Property::parse(&declaration.name);
+                if let Some(property) = property {
+                    let values = &declaration.value;
+                    let value = Value::parse(&property, values);
 
-                if let Some(value) = value {
-                    let declaration = PropertyDeclaration {
-                        value,
-                        important: declaration.important,
-                        origin: rule.origin.clone(),
-                        location: rule.location.clone(),
-                        specificity: rule.inner.specificity(),
-                    };
-                    if result.contains_key(&property) {
-                        result.get_mut(&property).unwrap().push(declaration);
-                    } else {
-                        result.insert(property, vec![declaration]);
+                    if let Some(value) = value {
+                        insert_declaration(value, property, rule, declaration);
                     }
                 }
             }
