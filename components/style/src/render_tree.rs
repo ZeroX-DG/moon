@@ -56,28 +56,49 @@ pub fn compute_styles(
     parent: Option<RenderNodeWeak>,
     cache: &mut HashSet<ValueRef>,
 ) -> HashMap<Property, ValueRef> {
+    // get inherit value for a property
+    let inherit = |property: Property| {
+        if let Some(parent) = &parent {
+            if let Some(p) = parent.upgrade() {
+                return (
+                    property.clone(),
+                    (**p.borrow().get_style(&property)).clone(),
+                );
+            }
+        }
+        // if there's no parent
+        // we will use the initial value for that property
+        return (property.clone(), Value::initial(&property))
+    };
+
     // Step 3
     let specified_values = Property::iter()
         .map(|property| {
             if let Some(value) = properties.get(&property) {
-                // TODO: explicit defaulting
                 if let Some(v) = value {
+                    // Explicit defaulting
+                    // https://www.w3.org/TR/css3-cascade/#defaulting-keywords
+                    if let Value::Initial = v {
+                        return (property.clone(), Value::initial(&property));
+                    }
+                    if let Value::Inherit = v {
+                        return inherit(property);
+                    }
+                    if let Value::Unset = v {
+                        if INHERITABLES.contains(&property) {
+                            return inherit(property);
+                        }
+                        return (property.clone(), Value::initial(&property));
+                    }
                     return (property, v.clone());
                 }
             }
             // if there's no specified value in properties
             // we will try to inherit it
             if INHERITABLES.contains(&property) {
-                if let Some(parent) = &parent {
-                    if let Some(p) = parent.upgrade() {
-                        return (
-                            property.clone(),
-                            (**p.borrow().get_style(&property)).clone(),
-                        );
-                    }
-                }
+                return inherit(property)
             }
-            // if there's no parent or the property is not inheritable
+            // if the property is not inheritable
             // we will use the initial value for that property
             return (property.clone(), Value::initial(&property));
         })
@@ -426,6 +447,58 @@ mod tests {
                 value: Number(0.0),
                 unit: LengthUnit::Px
             }))))
+        );
+    }
+
+    #[test]
+    fn explicit_default() {
+        let dom_tree = element("div#parent", vec![
+            element("div#child", vec![])
+        ]);
+
+        let css = r#"
+        #parent {
+            color: red;
+        }
+        #parent #child {
+            color: initial;
+        }
+        "#;
+
+        let stylesheet = parse_stylesheet(css);
+
+        let rules = stylesheet
+            .iter()
+            .map(|rule| match rule {
+                CSSRule::Style(style) => ContextualRule {
+                    inner: style,
+                    location: CSSLocation::Embedded,
+                    origin: CascadeOrigin::User,
+                },
+            })
+            .collect::<Vec<ContextualRule>>();
+
+        let render_tree = build_render_tree(dom_tree.clone(), &rules);
+
+        let render_tree_inner = render_tree.root.expect("No root node");
+        let render_tree_inner = render_tree_inner.borrow();
+        let parent_styles = &render_tree_inner.properties;
+        assert_eq!(
+            parent_styles.get(&Property::Color),
+            Some(&ValueRef(Rc::new(Value::Color(Color::Rgba(
+                Number(255.0),
+                Number(0.0),
+                Number(0.0),
+                Number(255.0),
+            )))))
+        );
+
+        let child_inner = render_tree_inner.children[0].borrow();
+        let child_styles = &child_inner.properties;
+
+        assert_eq!(
+            child_styles.get(&Property::Color),
+            Some(&ValueRef(Rc::new(Value::Color(Color::black()))))
         );
     }
 
