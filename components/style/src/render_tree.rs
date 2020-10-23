@@ -235,10 +235,7 @@ mod tests {
 
     #[test]
     fn shorthand_property() {
-        let dom_tree = element(
-            "div#parent",
-            vec![]
-        );
+        let dom_tree = element("div#parent", vec![]);
 
         let css = r#"
         #parent {
@@ -296,10 +293,7 @@ mod tests {
 
     #[test]
     fn shorthand_property_special() {
-        let dom_tree = element(
-            "div#parent",
-            vec![]
-        );
+        let dom_tree = element("div#parent", vec![]);
 
         let css = r#"
         #parent {

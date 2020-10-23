@@ -1,7 +1,8 @@
+use super::expand::margin::expand_margin;
+use super::expand::padding::expand_padding;
+use super::expand::ExpandOutput;
 use super::render_tree::RenderNodeWeak;
 use super::selector_matching::is_match_selectors;
-use super::expand::ExpandOutput;
-use super::expand::margin::expand_margin;
 use css::cssom::style_rule::StyleRule;
 use css::parser::structs::ComponentValue;
 use css::parser::structs::Declaration;
@@ -316,11 +317,13 @@ fn cascade(declared_values: &mut Vec<PropertyDeclaration>) -> Option<Value> {
     }
 }
 
-/// A a short-hand property expander
-fn get_expander_shorthand_property(property: &str)
-    -> Option<&dyn Fn(&[&[ComponentValue]]) -> ExpandOutput> {
+/// Get a short-hand property expander
+fn get_expander_shorthand_property(
+    property: &str,
+) -> Option<&dyn Fn(&[&[ComponentValue]]) -> ExpandOutput> {
     match property {
         "margin" => Some(&expand_margin),
+        "padding" => Some(&expand_padding),
         _ => None,
     }
 }
