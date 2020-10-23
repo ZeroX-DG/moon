@@ -375,12 +375,11 @@ fn collect_declared_values(node: &NodeRef, rules: &[ContextualRule]) -> Declared
 
                 if values.len() == 1 && allow_single {
                     // this is the single value
-                    for property in properties {
-                        let tokens = values[0];
-                        let value = Value::parse(&property, tokens);
-
-                        if let Some(value) = value {
-                            insert_declaration(value, property, rule, declaration);
+                    let tokens = values[0];
+                    let value = Value::parse(&properties[0], tokens);
+                    if let Some(value) = value {
+                        for property in properties {
+                            insert_declaration(value.clone(), property, rule, declaration);
                         }
                     }
                     continue;

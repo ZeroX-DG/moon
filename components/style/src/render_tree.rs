@@ -242,7 +242,7 @@ mod tests {
 
         let css = r#"
         #parent {
-            padding: 20px;
+            margin: 20px;
         }
         "#;
 
