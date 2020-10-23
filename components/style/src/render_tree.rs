@@ -34,6 +34,7 @@ pub struct RenderNode {
 
 impl RenderNode {
     /// Get style value of a property
+    /// Ensure that the value return is a shared computed value
     pub fn get_style(&self, property: &Property) -> ValueRef {
         if let Some(value) = self.properties.get(property) {
             return value.clone();
