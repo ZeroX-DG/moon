@@ -116,8 +116,19 @@ pub fn compute_styles(
     let computed_values = specified_values
         .into_iter()
         .map(|(property, value)| {
-            // TODO: filter properties that need layout to compute
-            let computed_value = compute(&property, &value, &mut context);
+            // width and height requires layout to compute
+            let is_not_compute = match property {
+                Property::Width | Property::Height => true,
+                _ => false
+            };
+            let computed_value = if is_not_compute {
+                if !context.style_cache.contains(&value) {
+                    context.style_cache.insert(ValueRef::new(value.clone()));
+                }
+                context.style_cache.get(&value).unwrap().clone()
+            } else {
+                compute(&property, &value, &mut context)
+            };
             return (property.clone(), computed_value);
         })
         .collect::<HashMap<Property, ValueRef>>();
