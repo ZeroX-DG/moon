@@ -116,9 +116,18 @@ pub fn compute_styles(
     let computed_values = specified_values
         .into_iter()
         .map(|(property, value)| {
-            // width and height requires layout to compute
+            // some properties requires layout to compute
             let is_not_compute = match property {
-                Property::Width | Property::Height => true,
+                Property::Width
+                | Property::Height
+                | Property::MarginTop
+                | Property::MarginRight
+                | Property::MarginBottom
+                | Property::MarginLeft
+                | Property::PaddingTop
+                | Property::PaddingRight
+                | Property::PaddingBottom
+                | Property::PaddingLeft => true,
                 _ => false
             };
             let computed_value = if is_not_compute {
