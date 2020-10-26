@@ -63,6 +63,10 @@ Bold text is what I'm working on
 
 I write about what I learn from this journey on my blog (order by latest):
 
+### Browser from Scratch: HTML parsing
+
+Since I have foolishly made a promise with the first three words in the name of this series, let's build an HTML parser from scratch. - [Read more][3]
+
 ### Browser from Scratch: DOM API
 
 One of the main building blocks of the HTML rendering process is the DOM API. Before a browser can render the HTML document, it needs to parse the document content into a tree structure called the DOM tree. In this post, I'll break down my experimentation in building a DOM API with Rust. - [**Read more**][2]
@@ -81,3 +85,4 @@ This is the start of Browser from Scratch series, created to help me (and probab
 
 [1]: https://zerox-dg.github.io/blog/2020/05/29/Browser-from-Scratch-Introduction/
 [2]: https://zerox-dg.github.io/blog/2020/09/01/Browser-from-Scratch-DOM-API/
+[3]: https://zerox-dg.github.io/blog/2020/10/24/Browser-from-Scratch-HTML-parsing/
