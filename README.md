@@ -31,12 +31,8 @@ Bold text is what I'm working on
 - [ ] :triangular_ruler: Style
   - [x] Render tree
   - [x] Selector matching
-  - [ ] Box model
-  - [ ] Layout tree
-  - [ ] Block layout
-  - [ ] Inline layout
-  - [ ] Flexbox
-  - [ ] CSS Grid
+  - [ ] **Box model**
+  - [ ] **Layout tree**
 - [ ] :art: Rendering
   - [ ] Display list
   - [ ] GPU rendering
