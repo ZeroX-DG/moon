@@ -32,6 +32,8 @@ use super::values::color::Color;
 use super::values::display::Display;
 use super::values::length::Length;
 use super::values::percentage::Percentage;
+use super::values::float::Float;
+use super::values::position::Position;
 
 type DeclaredValuesMap = HashMap<Property, Vec<PropertyDeclaration>>;
 
@@ -65,6 +67,8 @@ pub enum Property {
     BorderRightColor,
     BorderBottomColor,
     BorderLeftColor,
+    Position,
+    Float
 }
 
 /// CSS property value
@@ -76,6 +80,8 @@ pub enum Value {
     Percentage(Percentage),
     BorderStyle(BorderStyle),
     BorderWidth(BorderWidth),
+    Float(Float),
+    Position(Position),
     Auto,
     Inherit,
     Initial,
@@ -305,6 +311,14 @@ impl Value {
                 Color | Inherit | Initial | Unset;
                 tokens
             ),
+            Property::Float => parse_value!(
+                Float | Inherit | Initial | Unset;
+                tokens
+            ),
+            Property::Position => parse_value!(
+                Position | Inherit | Initial | Unset;
+                tokens
+            )
         }
     }
 
@@ -335,6 +349,8 @@ impl Value {
             Property::BorderRightColor => Value::Color(Color::black()),
             Property::BorderBottomColor => Value::Color(Color::black()),
             Property::BorderLeftColor => Value::Color(Color::black()),
+            Property::Float => Value::Float(Float::None),
+            Property::Position => Value::Position(Position::Static)
         }
     }
 }
@@ -355,6 +371,8 @@ impl Property {
             "padding-right" => Some(Property::PaddingRight),
             "padding-bottom" => Some(Property::PaddingBottom),
             "padding-left" => Some(Property::PaddingLeft),
+            "float" => Some(Property::Float),
+            "position" => Some(Property::Position),
             _ => None,
         }
     }
