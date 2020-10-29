@@ -1,8 +1,8 @@
 use style::render_tree::RenderNodeRef;
 use style::value_processing::{Property, Value};
-use style::values::length::Length;
-use std::borrow::Borrow;
+use style::values::display::Display;
 
+/// LayoutBox for the layout tree
 pub struct LayoutBox {
     pub box_type: BoxType,
     pub render_node: RenderNodeRef,
@@ -10,17 +10,20 @@ pub struct LayoutBox {
     pub children: Vec<LayoutBox>,
 }
 
+/// Different box types for each layout box
 pub enum BoxType {
     Block,
     Inline,
-    Anonymous
+    Anonymous,
+    AnonymousInline
 }
 
+/// Box-model dimensions for each layout box
 pub struct Dimensions {
-    content: ContentSize,
-    padding: EdgeSizes,
-    margin: EdgeSizes,
-    border: EdgeSizes
+    pub content: ContentSize,
+    pub padding: EdgeSizes,
+    pub margin: EdgeSizes,
+    pub border: EdgeSizes
 }
 
 /// Size of the content area (all in px)
@@ -63,17 +66,41 @@ impl Default for EdgeSizes {
 }
 
 impl LayoutBox {
-    pub fn new(node: RenderNodeRef) -> Self {
+    pub fn new(node: RenderNodeRef, box_type: BoxType) -> Self {
         Self {
-            box_type: BoxType::Inline,
-            children: Vec::new(),
+            box_type,
             render_node: node,
-            dimensions: Default::default()
+            dimensions: Dimensions::default(),
+            children: Vec::new()
         }
+    }
+
+    pub fn add_child(&mut self, child: LayoutBox) {
+        self.children.push(child);
     }
 }
 
-pub fn build_layout_tree_from_node(render_node: RenderNodeRef) -> LayoutBox {
-    let layout_box = LayoutBox::new(render_node.clone());
-    layout_box
+/// Box generation for layout
+/// https://www.w3.org/TR/CSS22/visuren.html#box-gen
+pub fn generate_box(root: RenderNodeRef) -> Option<LayoutBox> {
+    // TODO: careful with text nodes, they don't have a style and may panic
+    let display = root.borrow().get_style(&Property::Display);
+
+    let mut layout_box = match **display {
+        Value::Display(Display::Block) => LayoutBox::new(root.clone(), BoxType::Block),
+        Value::Display(Display::Inline) => LayoutBox::new(root.clone(), BoxType::Inline),
+        _ => return None
+    };
+
+    for child in &root.borrow().children {
+        if let Some(child_box) = generate_box(child.clone()) {
+            match child_box.box_type {
+                BoxType::Block => layout_box.add_child(child_box),
+                BoxType::Inline => layout_box.add_child(child_box),
+                _ => {}
+            }
+        }
+    }
+
+    Some(layout_box)
 }
