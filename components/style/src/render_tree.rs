@@ -127,7 +127,11 @@ pub fn compute_styles(
                 | Property::PaddingTop
                 | Property::PaddingRight
                 | Property::PaddingBottom
-                | Property::PaddingLeft => true,
+                | Property::PaddingLeft
+                | Property::Top
+                | Property::Right
+                | Property::Bottom
+                | Property::Left => true,
                 _ => false
             };
             let computed_value = if is_not_compute {

@@ -68,7 +68,11 @@ pub enum Property {
     BorderBottomColor,
     BorderLeftColor,
     Position,
-    Float
+    Float,
+    Left,
+    Right,
+    Top,
+    Bottom
 }
 
 /// CSS property value
@@ -318,7 +322,23 @@ impl Value {
             Property::Position => parse_value!(
                 Position | Inherit | Initial | Unset;
                 tokens
-            )
+            ),
+            Property::Top => parse_value!(
+                Length | Percentage | Auto | Inherit | Initial | Unset;
+                tokens
+            ),
+            Property::Right => parse_value!(
+                Length | Percentage | Auto | Inherit | Initial | Unset;
+                tokens
+            ),
+            Property::Bottom => parse_value!(
+                Length | Percentage | Auto | Inherit | Initial | Unset;
+                tokens
+            ),
+            Property::Left => parse_value!(
+                Length | Percentage | Auto | Inherit | Initial | Unset;
+                tokens
+            ),
         }
     }
 
@@ -350,7 +370,11 @@ impl Value {
             Property::BorderBottomColor => Value::Color(Color::black()),
             Property::BorderLeftColor => Value::Color(Color::black()),
             Property::Float => Value::Float(Float::None),
-            Property::Position => Value::Position(Position::Static)
+            Property::Position => Value::Position(Position::Static),
+            Property::Left => Value::Auto,
+            Property::Right => Value::Auto,
+            Property::Bottom => Value::Auto,
+            Property::Top => Value::Auto
         }
     }
 }
@@ -373,6 +397,10 @@ impl Property {
             "padding-left" => Some(Property::PaddingLeft),
             "float" => Some(Property::Float),
             "position" => Some(Property::Position),
+            "left" => Some(Property::Left),
+            "right" => Some(Property::Right),
+            "top" => Some(Property::Top),
+            "bottom" => Some(Property::Bottom),
             _ => None,
         }
     }
