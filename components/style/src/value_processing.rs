@@ -136,7 +136,7 @@ pub struct ComputeContext<'a> {
     pub style_cache: &'a mut HashSet<ValueRef>,
 }
 
-#[derive(Debug, Clone, Hash, PartialEq, Eq)]
+#[derive(Debug, Hash, PartialEq, Eq)]
 pub struct ValueRef(pub Rc<Value>);
 
 impl Borrow<Value> for ValueRef {
@@ -148,6 +148,12 @@ impl Borrow<Value> for ValueRef {
 impl ValueRef {
     pub fn new(value: Value) -> Self {
         Self(Rc::new(value))
+    }
+}
+
+impl Clone for ValueRef {
+    fn clone(&self) -> Self {
+        ValueRef(self.0.clone())
     }
 }
 
