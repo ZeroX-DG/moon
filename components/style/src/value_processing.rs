@@ -136,6 +136,7 @@ pub struct ComputeContext<'a> {
     pub style_cache: &'a mut HashSet<ValueRef>,
 }
 
+// TODO: drop the value from cache when rc is dropped to 1
 #[derive(Debug, Hash, PartialEq, Eq)]
 pub struct ValueRef(pub Rc<Value>);
 
