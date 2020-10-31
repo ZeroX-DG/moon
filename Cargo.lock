@@ -283,8 +283,10 @@ dependencies = [
 name = "layout"
 version = "0.1.0"
 dependencies = [
+ "css",
  "dom",
  "style",
+ "test_utils",
 ]
 
 [[package]]
@@ -680,6 +682,7 @@ dependencies = [
  "lazy_static",
  "strum",
  "strum_macros",
+ "test_utils",
 ]
 
 [[package]]
@@ -691,6 +694,14 @@ dependencies = [
  "proc-macro2",
  "quote",
  "unicode-xid",
+]
+
+[[package]]
+name = "test_utils"
+version = "0.1.0"
+dependencies = [
+ "css",
+ "dom",
 ]
 
 [[package]]
