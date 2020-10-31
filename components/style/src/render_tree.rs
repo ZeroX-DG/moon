@@ -207,7 +207,8 @@ fn build_render_tree_from_node(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_utils::*;
+    use test_utils::dom_creator::*;
+    use test_utils::css::parse_stylesheet;
     use crate::value_processing::{CSSLocation, CascadeOrigin};
     use crate::values::border_style::BorderStyle;
     use crate::values::border_width::BorderWidth;

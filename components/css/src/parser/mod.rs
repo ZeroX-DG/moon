@@ -718,6 +718,16 @@ mod tests {
     }
 
     #[test]
+    fn parse_component_values() {
+        let css = "p";
+        let tokenizer = Tokenizer::new(css.to_string());
+        let tokens = tokenizer.run();
+        let mut parser = Parser::<Token>::new(tokens);
+        let component_values = parser.parse_a_list_of_component_values();
+        assert_eq!(component_values[0], ComponentValue::PerservedToken(Token::Ident("p".to_string())));
+    }
+
+    #[test]
     fn parse_a_class() {
         let css = ".className { color: black; }";
         let tokenizer = Tokenizer::new(css.to_string());
