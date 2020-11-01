@@ -1,30 +1,21 @@
+use super::layout_box::{BoxType, FormattingContext, LayoutBox};
 use style::render_tree::RenderNodeRef;
-use style::value_processing::{Value, Property};
+use style::value_processing::{Property, Value};
 use style::values::display::Display;
-use super::layout_box::{LayoutBox, BoxType, FormattingContext};
 
 /// Box generation for layout
 /// https://www.w3.org/TR/CSS22/visuren.html#box-gen
 pub fn generate_box(root: RenderNodeRef) -> Option<LayoutBox> {
     if root.borrow().node.is::<dom::text::Text>() {
-        return Some(LayoutBox::new(
-            Some(root.clone()),
-            BoxType::Anonymous,
-        ));
+        return Some(LayoutBox::new(root.clone(), BoxType::Anonymous));
     }
 
     let display = root.borrow().get_style(&Property::Display);
 
     let mut layout_box = match **display {
-        Value::Display(Display::Block) => LayoutBox::new(
-            Some(root.clone()),
-            BoxType::Block,
-        ),
-        Value::Display(Display::Inline) => LayoutBox::new(
-            Some(root.clone()),
-            BoxType::Inline,
-        ),
-        _ => return None
+        Value::Display(Display::Block) => LayoutBox::new(root.clone(), BoxType::Block),
+        Value::Display(Display::Inline) => LayoutBox::new(root.clone(), BoxType::Inline),
+        _ => return None,
     };
 
     for child in &root.borrow().children {
@@ -37,13 +28,19 @@ pub fn generate_box(root: RenderNodeRef) -> Option<LayoutBox> {
                     _ => {}
                 }
             }
-            
+
             layout_box.add_child(child_box)
         }
     }
 
     if layout_box.fmt_context.is_none() {
         layout_box.set_formatting_context(FormattingContext::Inline);
+    }
+
+    let layout_box_fmt_context = layout_box.fmt_context.clone().unwrap();
+
+    for child in layout_box.children.iter_mut() {
+        child.set_parent_formatting_context(layout_box_fmt_context.clone());
     }
 
     Some(layout_box)
@@ -55,7 +52,8 @@ pub fn wrap_inline_boxes(root: &mut LayoutBox) {
     if let Some(FormattingContext::Block) = root.fmt_context {
         let mut is_block_start = false;
 
-        root.children = root.children
+        root.children = root
+            .children
             .clone()
             .into_iter()
             .fold(vec![], |mut acc, current| match current.box_type {
@@ -68,7 +66,7 @@ pub fn wrap_inline_boxes(root: &mut LayoutBox) {
                     let can_append = if let Some(last_box) = acc.last() {
                         match last_box.box_type {
                             BoxType::Anonymous if is_block_start => true,
-                            _ => false
+                            _ => false,
                         }
                     } else {
                         false
@@ -80,7 +78,8 @@ pub fn wrap_inline_boxes(root: &mut LayoutBox) {
                         }
                     } else {
                         is_block_start = true;
-                        let mut contain_box = LayoutBox::new(None, BoxType::Anonymous);
+                        let mut contain_box =
+                            LayoutBox::new(root.render_node.clone(), BoxType::Anonymous);
                         contain_box.set_formatting_context(FormattingContext::Inline);
                         contain_box.add_child(current);
                         acc.push(contain_box);
@@ -94,4 +93,3 @@ pub fn wrap_inline_boxes(root: &mut LayoutBox) {
         wrap_inline_boxes(child);
     }
 }
-

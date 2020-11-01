@@ -1,9 +1,9 @@
+use css::selector::parse_selector_str;
+use css::selector::structs::*;
 use dom::dom_ref::NodeRef;
 use dom::element::Element;
 use dom::node::Node;
 use dom::text::Text;
-use css::selector::parse_selector_str;
-use css::selector::structs::*;
 
 pub fn element(selector: &str, children: Vec<NodeRef>) -> NodeRef {
     let selector =

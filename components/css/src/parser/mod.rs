@@ -724,7 +724,10 @@ mod tests {
         let tokens = tokenizer.run();
         let mut parser = Parser::<Token>::new(tokens);
         let component_values = parser.parse_a_list_of_component_values();
-        assert_eq!(component_values[0], ComponentValue::PerservedToken(Token::Ident("p".to_string())));
+        assert_eq!(
+            component_values[0],
+            ComponentValue::PerservedToken(Token::Ident("p".to_string()))
+        );
     }
 
     #[test]

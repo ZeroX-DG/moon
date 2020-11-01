@@ -6,7 +6,7 @@ pub enum Position {
     Static,
     Relative,
     Absolute,
-    Fixed
+    Fixed,
 }
 
 impl Position {

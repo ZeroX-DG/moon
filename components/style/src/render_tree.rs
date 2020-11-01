@@ -69,7 +69,7 @@ pub fn compute_styles(
         }
         // if there's no parent
         // we will use the initial value for that property
-        return (property.clone(), Value::initial(&property))
+        return (property.clone(), Value::initial(&property));
     };
 
     // Step 3
@@ -97,7 +97,7 @@ pub fn compute_styles(
             // if there's no specified value in properties
             // we will try to inherit it
             if INHERITABLES.contains(&property) {
-                return inherit(property)
+                return inherit(property);
             }
             // if the property is not inheritable
             // we will use the initial value for that property
@@ -132,7 +132,7 @@ pub fn compute_styles(
                 | Property::Right
                 | Property::Bottom
                 | Property::Left => true,
-                _ => false
+                _ => false,
             };
             let computed_value = if is_not_compute {
                 if !context.style_cache.contains(&value) {
@@ -207,8 +207,6 @@ fn build_render_tree_from_node(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use test_utils::dom_creator::*;
-    use test_utils::css::parse_stylesheet;
     use crate::value_processing::{CSSLocation, CascadeOrigin};
     use crate::values::border_style::BorderStyle;
     use crate::values::border_width::BorderWidth;
@@ -217,6 +215,8 @@ mod tests {
     use crate::values::length::{Length, LengthUnit};
     use crate::values::number::Number;
     use css::cssom::css_rule::CSSRule;
+    use test_utils::css::parse_stylesheet;
+    use test_utils::dom_creator::*;
 
     #[test]
     fn build_tree_simple() {
@@ -478,9 +478,7 @@ mod tests {
 
     #[test]
     fn explicit_default() {
-        let dom_tree = element("div#parent", vec![
-            element("div#child", vec![])
-        ]);
+        let dom_tree = element("div#parent", vec![element("div#child", vec![])]);
 
         let css = r#"
         #parent {

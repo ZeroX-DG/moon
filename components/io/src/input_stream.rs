@@ -6,7 +6,7 @@ pub struct InputStream {
     consumed_index: usize,
     reconsume: bool,
     consumed: Option<char>,
-    is_last_ch: bool
+    is_last_ch: bool,
 }
 
 impl InputStream {
@@ -17,7 +17,7 @@ impl InputStream {
             consumed_index: 0,
             reconsume: false,
             consumed: None,
-            is_last_ch: false
+            is_last_ch: false,
         }
     }
 

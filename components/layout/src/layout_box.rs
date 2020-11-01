@@ -1,21 +1,23 @@
-use style::render_tree::RenderNodeRef;
 use super::box_model::Dimensions;
+use style::render_tree::RenderNodeRef;
 
 /// LayoutBox for the layout tree
 #[derive(Debug, Clone)]
 pub struct LayoutBox {
     pub box_type: BoxType,
-    pub render_node: Option<RenderNodeRef>,
+    pub render_node: RenderNodeRef,
+    pub position: BoxPosition,
     pub dimensions: Dimensions,
     pub children: Vec<LayoutBox>,
-    pub fmt_context: Option<FormattingContext>
+    pub parent_fmt_context: Option<FormattingContext>,
+    pub fmt_context: Option<FormattingContext>,
 }
 
 /// Formatting context of each box
 #[derive(Debug, Clone, PartialEq)]
 pub enum FormattingContext {
     Block,
-    Inline
+    Inline,
 }
 
 /// Different box types for each layout box
@@ -23,17 +25,32 @@ pub enum FormattingContext {
 pub enum BoxType {
     Block,
     Inline,
-    Anonymous
+    Anonymous,
+}
+
+/// Position of a layout box
+#[derive(Debug, Clone, PartialEq)]
+pub struct BoxPosition {
+    pub x: f32,
+    pub y: f32,
+}
+
+impl Default for BoxPosition {
+    fn default() -> Self {
+        Self { x: 0.0, y: 0.0 }
+    }
 }
 
 impl LayoutBox {
-    pub fn new(node: Option<RenderNodeRef>, box_type: BoxType) -> Self {
+    pub fn new(node: RenderNodeRef, box_type: BoxType) -> Self {
         Self {
             box_type,
             render_node: node,
+            position: BoxPosition::default(),
             dimensions: Dimensions::default(),
             children: Vec::new(),
-            fmt_context: None
+            parent_fmt_context: None,
+            fmt_context: None,
         }
     }
 
@@ -44,5 +61,8 @@ impl LayoutBox {
     pub fn set_formatting_context(&mut self, ctx: FormattingContext) {
         self.fmt_context = Some(ctx);
     }
-}
 
+    pub fn set_parent_formatting_context(&mut self, ctx: FormattingContext) {
+        self.parent_fmt_context = Some(ctx);
+    }
+}

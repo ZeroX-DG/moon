@@ -7,3 +7,4 @@ pub mod length;
 pub mod number;
 pub mod percentage;
 pub mod position;
+pub mod direction;

@@ -30,10 +30,11 @@ use super::values::border_style::BorderStyle;
 use super::values::border_width::BorderWidth;
 use super::values::color::Color;
 use super::values::display::Display;
+use super::values::float::Float;
 use super::values::length::Length;
 use super::values::percentage::Percentage;
-use super::values::float::Float;
 use super::values::position::Position;
+use super::values::direction::Direction;
 
 type DeclaredValuesMap = HashMap<Property, Vec<PropertyDeclaration>>;
 
@@ -72,7 +73,8 @@ pub enum Property {
     Left,
     Right,
     Top,
-    Bottom
+    Bottom,
+    Direction
 }
 
 /// CSS property value
@@ -86,6 +88,7 @@ pub enum Value {
     BorderWidth(BorderWidth),
     Float(Float),
     Position(Position),
+    Direction(Direction),
     Auto,
     Inherit,
     Initial,
@@ -149,6 +152,10 @@ impl Borrow<Value> for ValueRef {
 impl ValueRef {
     pub fn new(value: Value) -> Self {
         Self(Rc::new(value))
+    }
+
+    pub fn inner(&self) -> &Value {
+        self.borrow()
     }
 }
 
@@ -346,6 +353,10 @@ impl Value {
                 Length | Percentage | Auto | Inherit | Initial | Unset;
                 tokens
             ),
+            Property::Direction => parse_value!(
+                Direction | Inherit | Initial | Unset;
+                tokens
+            ),
         }
     }
 
@@ -381,7 +392,8 @@ impl Value {
             Property::Left => Value::Auto,
             Property::Right => Value::Auto,
             Property::Bottom => Value::Auto,
-            Property::Top => Value::Auto
+            Property::Top => Value::Auto,
+            Property::Direction => Value::Direction(Direction::Ltr),
         }
     }
 }
@@ -408,6 +420,7 @@ impl Property {
             "right" => Some(Property::Right),
             "top" => Some(Property::Top),
             "bottom" => Some(Property::Bottom),
+            "direction" => Some(Property::Direction),
             _ => None,
         }
     }
