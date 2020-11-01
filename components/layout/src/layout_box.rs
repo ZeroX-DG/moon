@@ -1,6 +1,4 @@
 use style::render_tree::RenderNodeRef;
-use style::value_processing::{Property, Value};
-use style::values::display::Display;
 use super::box_model::Dimensions;
 
 /// LayoutBox for the layout tree
@@ -47,7 +45,4 @@ impl LayoutBox {
         self.fmt_context = Some(ctx);
     }
 }
-
-
-
 
