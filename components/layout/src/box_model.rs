@@ -23,6 +23,48 @@ pub struct EdgeSizes {
     pub left: f32,
 }
 
+pub enum Edge {
+    Top,
+    Left,
+    Right,
+    Bottom
+}
+
+pub enum BoxComponent {
+    Padding,
+    Margin,
+    Border
+}
+
+impl Dimensions {
+    pub fn set_width(&mut self, width: f32) {
+        self.content.width = width;
+    }
+
+    pub fn set(&mut self, component: BoxComponent, edge: Edge, value: f32) {
+        match component {
+            BoxComponent::Margin => match edge {
+                Edge::Top => self.margin.top = value,
+                Edge::Right => self.margin.right = value,
+                Edge::Bottom => self.margin.bottom = value,
+                Edge::Left => self.margin.left = value,
+            },
+            BoxComponent::Padding => match edge {
+                Edge::Top => self.padding.top = value,
+                Edge::Right => self.padding.right = value,
+                Edge::Bottom => self.padding.bottom = value,
+                Edge::Left => self.padding.left = value,
+            },
+            BoxComponent::Border => match edge {
+                Edge::Top => self.border.top = value,
+                Edge::Right => self.border.right = value,
+                Edge::Bottom => self.border.bottom = value,
+                Edge::Left => self.border.left = value,
+            },
+        }
+    }
+}
+
 impl Default for Dimensions {
     fn default() -> Self {
         Self {

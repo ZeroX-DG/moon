@@ -29,12 +29,12 @@ use super::computes::color::compute_color;
 use super::values::border_style::BorderStyle;
 use super::values::border_width::BorderWidth;
 use super::values::color::Color;
+use super::values::direction::Direction;
 use super::values::display::Display;
 use super::values::float::Float;
 use super::values::length::Length;
 use super::values::percentage::Percentage;
 use super::values::position::Position;
-use super::values::direction::Direction;
 
 type DeclaredValuesMap = HashMap<Property, Vec<PropertyDeclaration>>;
 
@@ -74,7 +74,7 @@ pub enum Property {
     Right,
     Top,
     Bottom,
-    Direction
+    Direction,
 }
 
 /// CSS property value

@@ -60,6 +60,17 @@ impl Length {
         }
     }
 
+    pub fn new(value: f32, unit: LengthUnit) -> Self {
+        Self {
+            value: value.into(),
+            unit,
+        }
+    }
+
+    pub fn new_px(value: f32) -> Self {
+        Self::new(value, LengthUnit::Px)
+    }
+
     pub fn zero() -> Self {
         Length {
             value: 0.0.into(),
