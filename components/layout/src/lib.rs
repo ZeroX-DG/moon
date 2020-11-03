@@ -6,7 +6,7 @@ pub mod utils;
 
 use box_generation::{generate_box, wrap_inline_boxes};
 use layout_box::LayoutBox;
-use size::compute_size;
+use size::compute_width;
 use style::render_tree::RenderNodeRef;
 use utils::Rect;
 
@@ -30,7 +30,7 @@ pub fn build_layout_tree(root: RenderNodeRef) -> Option<LayoutBox> {
 /// 1. **Size calculation:** Calculate the size of all generated boxes
 /// 2. **Position calculation:** Calculate the position of all generated boxes
 pub fn layout(root: &mut LayoutBox, containing_block: Rect) {
-    compute_size(root, &containing_block);
+    compute_width(root, &containing_block);
 }
 
 #[cfg(test)]

@@ -7,9 +7,11 @@ use style::value_processing::Value;
 use style::value_processing::ValueRef;
 use style::values::length::{Length, LengthUnit};
 
-pub fn compute_size(root: &mut LayoutBox, containing_block: &Rect) {
+/// Compute the width for a layout box
+pub fn compute_width(root: &mut LayoutBox, containing_block: &Rect) {
     match root.box_type {
         BoxType::Block => compute_width_block_level(root, containing_block),
+        BoxType::Inline => compute_width_inline_level(root, containing_block),
         _ => {}
     }
 }
@@ -157,5 +159,37 @@ fn compute_width_block_level(layout_box: &mut LayoutBox, containing_block: &Rect
         BoxComponent::Border,
         Edge::Right,
         to_px(border_right_width.inner(), containing_block.width)
+    );
+}
+
+fn compute_width_inline_level(layout_box: &mut LayoutBox, containing_block: &Rect) {
+    let render_node = layout_box.render_node.borrow();
+    let is_replaced_element = is_replaced_element(&render_node.node);
+    let zero_length = ValueRef::new(Value::Length(Length::zero()));
+    let mut margin_left = render_node.get_style(&Property::MarginLeft);
+    let mut margin_right = render_node.get_style(&Property::MarginRight);
+
+    // 10.3.1 Inline, non-replaced elements
+    if !is_replaced_element {
+        if *margin_left.inner() == Value::Auto {
+            margin_left = zero_length.clone();
+        }
+
+        if *margin_right.inner() == Value::Auto {
+            margin_right = zero_length.clone();
+        }
+
+        layout_box.dimensions.set_width(0.0);
+    }
+
+    layout_box.dimensions.set(
+        BoxComponent::Margin,
+        Edge::Left,
+        to_px(margin_left.inner(), containing_block.width)
+    );
+    layout_box.dimensions.set(
+        BoxComponent::Margin,
+        Edge::Right,
+        to_px(margin_right.inner(), containing_block.width)
     );
 }
