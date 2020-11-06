@@ -6,6 +6,9 @@ pub enum Display {
     Inline,
     Block,
     InlineBlock,
+    ListItem,
+    Table,
+    InlineTable,
     None,
 }
 
@@ -17,6 +20,9 @@ impl Display {
                     v if v.eq_ignore_ascii_case("inline") => Some(Display::Inline),
                     v if v.eq_ignore_ascii_case("block") => Some(Display::Block),
                     v if v.eq_ignore_ascii_case("inline-block") => Some(Display::InlineBlock),
+                    v if v.eq_ignore_ascii_case("list-item") => Some(Display::ListItem),
+                    v if v.eq_ignore_ascii_case("table") => Some(Display::Table),
+                    v if v.eq_ignore_ascii_case("inline-table") => Some(Display::InlineTable),
                     v if v.eq_ignore_ascii_case("none") => Some(Display::None),
                     _ => None
                 }
