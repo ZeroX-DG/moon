@@ -28,11 +28,17 @@ Bold text is what I'm working on
 - [x] :memo: CSS Parsing
   - [x] CSS tokenizer
   - [x] CSSOM parser/tree builder
-- [ ] :triangular_ruler: Style
+- [x] :triangular_ruler: Style
+  - [x] CSS cascade
+  - [x] Style computation
   - [x] Render tree
   - [x] Selector matching
-  - [ ] **Box model**
-  - [ ] **Layout tree**
+- [ ] :flower_playing_cards: Layout process
+  - [x] Box model
+  - [x] Box generation
+  - [ ] **Box width calculation**
+  - [ ] Box position calculation
+  - [ ] Box height calculation
 - [ ] :art: Rendering
   - [ ] Display list
   - [ ] GPU rendering
