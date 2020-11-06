@@ -280,6 +280,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "layout"
+version = "0.1.0"
+dependencies = [
+ "css",
+ "dom",
+ "style",
+ "test_utils",
+]
+
+[[package]]
 name = "lazy_static"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -672,6 +682,7 @@ dependencies = [
  "lazy_static",
  "strum",
  "strum_macros",
+ "test_utils",
 ]
 
 [[package]]
@@ -683,6 +694,14 @@ dependencies = [
  "proc-macro2",
  "quote",
  "unicode-xid",
+]
+
+[[package]]
+name = "test_utils"
+version = "0.1.0"
+dependencies = [
+ "css",
+ "dom",
 ]
 
 [[package]]

@@ -16,4 +16,8 @@ impl Percentage {
             _ => None,
         }
     }
+
+    pub fn to_px(&self, containing: f32) -> f32 {
+        *self.0 * containing / 100.0
+    }
 }

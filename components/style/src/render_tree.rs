@@ -34,6 +34,7 @@ pub struct RenderNode {
 
 impl RenderNode {
     /// Get style value of a property
+    /// Ensure that the value return is a shared computed value
     pub fn get_style(&self, property: &Property) -> ValueRef {
         if let Some(value) = self.properties.get(property) {
             return value.clone();
@@ -68,7 +69,7 @@ pub fn compute_styles(
         }
         // if there's no parent
         // we will use the initial value for that property
-        return (property.clone(), Value::initial(&property))
+        return (property.clone(), Value::initial(&property));
     };
 
     // Step 3
@@ -96,7 +97,7 @@ pub fn compute_styles(
             // if there's no specified value in properties
             // we will try to inherit it
             if INHERITABLES.contains(&property) {
-                return inherit(property)
+                return inherit(property);
             }
             // if the property is not inheritable
             // we will use the initial value for that property
@@ -115,8 +116,32 @@ pub fn compute_styles(
     let computed_values = specified_values
         .into_iter()
         .map(|(property, value)| {
-            // TODO: filter properties that need layout to compute
-            let computed_value = compute(&property, &value, &mut context);
+            // some properties requires layout to compute
+            let is_not_compute = match property {
+                Property::Width
+                | Property::Height
+                | Property::MarginTop
+                | Property::MarginRight
+                | Property::MarginBottom
+                | Property::MarginLeft
+                | Property::PaddingTop
+                | Property::PaddingRight
+                | Property::PaddingBottom
+                | Property::PaddingLeft
+                | Property::Top
+                | Property::Right
+                | Property::Bottom
+                | Property::Left => true,
+                _ => false,
+            };
+            let computed_value = if is_not_compute {
+                if !context.style_cache.contains(&value) {
+                    context.style_cache.insert(ValueRef::new(value.clone()));
+                }
+                context.style_cache.get(&value).unwrap().clone()
+            } else {
+                compute(&property, &value, &mut context)
+            };
             return (property.clone(), computed_value);
         })
         .collect::<HashMap<Property, ValueRef>>();
@@ -182,7 +207,6 @@ fn build_render_tree_from_node(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_utils::*;
     use crate::value_processing::{CSSLocation, CascadeOrigin};
     use crate::values::border_style::BorderStyle;
     use crate::values::border_width::BorderWidth;
@@ -191,6 +215,8 @@ mod tests {
     use crate::values::length::{Length, LengthUnit};
     use crate::values::number::Number;
     use css::cssom::css_rule::CSSRule;
+    use test_utils::css::parse_stylesheet;
+    use test_utils::dom_creator::*;
 
     #[test]
     fn build_tree_simple() {
@@ -452,9 +478,7 @@ mod tests {
 
     #[test]
     fn explicit_default() {
-        let dom_tree = element("div#parent", vec![
-            element("div#child", vec![])
-        ]);
+        let dom_tree = element("div#parent", vec![element("div#child", vec![])]);
 
         let css = r#"
         #parent {

@@ -1,5 +1,5 @@
 [package]
-name = "style"
+name = "test_utils"
 version = "0.1.0"
 authors = ["ZeroX-DG <viethungax@gmail.com>"]
 edition = "2018"
@@ -7,11 +7,5 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-css = { version = "*", path = "../css" }
 dom = { version = "*", path = "../dom" }
-lazy_static = { version = "1.4.0" }
-strum_macros = "0.19"
-strum = { version = "0.19", features = ["derive"] }
-
-[dev-dependencies]
-test_utils = { version = "*", path = "../test_utils" }
+css = { version = "*", path = "../css" }

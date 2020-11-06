@@ -5,6 +5,10 @@ use css::tokenizer::token::Token;
 pub enum Display {
     Inline,
     Block,
+    InlineBlock,
+    ListItem,
+    Table,
+    InlineTable,
     None,
 }
 
@@ -12,14 +16,15 @@ impl Display {
     pub fn parse(values: &[ComponentValue]) -> Option<Self> {
         match values.iter().next() {
             Some(ComponentValue::PerservedToken(Token::Ident(value))) => {
-                if value.eq_ignore_ascii_case("inline") {
-                    Some(Display::Inline)
-                } else if value.eq_ignore_ascii_case("block") {
-                    Some(Display::Block)
-                } else if value.eq_ignore_ascii_case("none") {
-                    Some(Display::None)
-                } else {
-                    None
+                match value {
+                    v if v.eq_ignore_ascii_case("inline") => Some(Display::Inline),
+                    v if v.eq_ignore_ascii_case("block") => Some(Display::Block),
+                    v if v.eq_ignore_ascii_case("inline-block") => Some(Display::InlineBlock),
+                    v if v.eq_ignore_ascii_case("list-item") => Some(Display::ListItem),
+                    v if v.eq_ignore_ascii_case("table") => Some(Display::Table),
+                    v if v.eq_ignore_ascii_case("inline-table") => Some(Display::InlineTable),
+                    v if v.eq_ignore_ascii_case("none") => Some(Display::None),
+                    _ => None
                 }
             }
             _ => None,

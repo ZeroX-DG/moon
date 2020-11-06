@@ -379,6 +379,9 @@ impl Tokenizer {
                     }
                 }
             }
+            if let Char::eof = ch {
+                return result;
+            }
             self.reconsume();
             return result;
         }

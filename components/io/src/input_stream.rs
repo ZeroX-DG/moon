@@ -3,9 +3,10 @@
 pub struct InputStream {
     input: String,
     index: usize,
+    consumed_index: usize,
     reconsume: bool,
-    current_char: char,
-    current_index: usize,
+    consumed: Option<char>,
+    is_last_ch: bool,
 }
 
 impl InputStream {
@@ -13,30 +14,34 @@ impl InputStream {
         Self {
             input,
             index: 0,
+            consumed_index: 0,
             reconsume: false,
-            current_char: '\0',
-            current_index: 0,
+            consumed: None,
+            is_last_ch: false,
         }
     }
 
-    /// Consume the next character and return it
+    /// Consume the current character and return it
     pub fn next(&mut self) -> Option<char> {
         if self.reconsume {
             self.reconsume = false;
-            if self.index >= self.input.len() {
-                return None;
+            return self.consumed;
+        }
+        if self.is_last_ch {
+            return None;
+        }
+        let mut indexes = self.input[self.index..].char_indices();
+        if let Some((_, consumed_char)) = indexes.next() {
+            self.consumed = Some(consumed_char);
+            self.consumed_index = self.index;
+            if let Some((offset, _)) = indexes.next() {
+                self.index += offset;
+            } else {
+                self.is_last_ch = true;
             }
-            return Some(self.current_char);
+            return self.consumed;
         }
-        let mut iter = self.input[self.index..].char_indices();
-        if let Some((_, cur_char)) = iter.next() {
-            let (next_pos, _) = iter.next().unwrap_or((1, ' '));
-            self.current_index = self.index;
-            self.index += next_pos;
-            self.current_char = cur_char;
-            return Some(cur_char);
-        }
-        None
+        return None;
     }
 
     /// Peek the next `n` characters as `&str` to avoid allocation
@@ -54,8 +59,8 @@ impl InputStream {
 
     /// Peek the next character
     pub fn peek_next_char(&mut self) -> Option<char> {
-        if self.reconsume {
-            return Some(self.current_char);
+        if self.is_last_ch {
+            return None;
         }
         self.as_str().chars().next()
     }
@@ -63,7 +68,10 @@ impl InputStream {
     /// Convert current input from the current index to `&str`
     pub fn as_str(&self) -> &str {
         if self.reconsume {
-            return &self.input[self.current_index..];
+            return &self.input[self.consumed_index..];
+        }
+        if self.is_last_ch {
+            return "";
         }
         &self.input[self.index..]
     }

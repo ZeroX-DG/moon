@@ -29,9 +29,12 @@ use super::computes::color::compute_color;
 use super::values::border_style::BorderStyle;
 use super::values::border_width::BorderWidth;
 use super::values::color::Color;
+use super::values::direction::Direction;
 use super::values::display::Display;
+use super::values::float::Float;
 use super::values::length::Length;
 use super::values::percentage::Percentage;
+use super::values::position::Position;
 
 type DeclaredValuesMap = HashMap<Property, Vec<PropertyDeclaration>>;
 
@@ -65,6 +68,13 @@ pub enum Property {
     BorderRightColor,
     BorderBottomColor,
     BorderLeftColor,
+    Position,
+    Float,
+    Left,
+    Right,
+    Top,
+    Bottom,
+    Direction,
 }
 
 /// CSS property value
@@ -76,6 +86,9 @@ pub enum Value {
     Percentage(Percentage),
     BorderStyle(BorderStyle),
     BorderWidth(BorderWidth),
+    Float(Float),
+    Position(Position),
+    Direction(Direction),
     Auto,
     Inherit,
     Initial,
@@ -126,7 +139,8 @@ pub struct ComputeContext<'a> {
     pub style_cache: &'a mut HashSet<ValueRef>,
 }
 
-#[derive(Debug, Clone, Hash, PartialEq, Eq)]
+// TODO: drop the value from cache when rc is dropped to 1
+#[derive(Debug, Hash, PartialEq, Eq)]
 pub struct ValueRef(pub Rc<Value>);
 
 impl Borrow<Value> for ValueRef {
@@ -138,6 +152,16 @@ impl Borrow<Value> for ValueRef {
 impl ValueRef {
     pub fn new(value: Value) -> Self {
         Self(Rc::new(value))
+    }
+
+    pub fn inner(&self) -> &Value {
+        self.borrow()
+    }
+}
+
+impl Clone for ValueRef {
+    fn clone(&self) -> Self {
+        ValueRef(self.0.clone())
     }
 }
 
@@ -305,6 +329,34 @@ impl Value {
                 Color | Inherit | Initial | Unset;
                 tokens
             ),
+            Property::Float => parse_value!(
+                Float | Inherit | Initial | Unset;
+                tokens
+            ),
+            Property::Position => parse_value!(
+                Position | Inherit | Initial | Unset;
+                tokens
+            ),
+            Property::Top => parse_value!(
+                Length | Percentage | Auto | Inherit | Initial | Unset;
+                tokens
+            ),
+            Property::Right => parse_value!(
+                Length | Percentage | Auto | Inherit | Initial | Unset;
+                tokens
+            ),
+            Property::Bottom => parse_value!(
+                Length | Percentage | Auto | Inherit | Initial | Unset;
+                tokens
+            ),
+            Property::Left => parse_value!(
+                Length | Percentage | Auto | Inherit | Initial | Unset;
+                tokens
+            ),
+            Property::Direction => parse_value!(
+                Direction | Inherit | Initial | Unset;
+                tokens
+            ),
         }
     }
 
@@ -335,6 +387,13 @@ impl Value {
             Property::BorderRightColor => Value::Color(Color::black()),
             Property::BorderBottomColor => Value::Color(Color::black()),
             Property::BorderLeftColor => Value::Color(Color::black()),
+            Property::Float => Value::Float(Float::None),
+            Property::Position => Value::Position(Position::Static),
+            Property::Left => Value::Auto,
+            Property::Right => Value::Auto,
+            Property::Bottom => Value::Auto,
+            Property::Top => Value::Auto,
+            Property::Direction => Value::Direction(Direction::Ltr),
         }
     }
 }
@@ -355,6 +414,13 @@ impl Property {
             "padding-right" => Some(Property::PaddingRight),
             "padding-bottom" => Some(Property::PaddingBottom),
             "padding-left" => Some(Property::PaddingLeft),
+            "float" => Some(Property::Float),
+            "position" => Some(Property::Position),
+            "left" => Some(Property::Left),
+            "right" => Some(Property::Right),
+            "top" => Some(Property::Top),
+            "bottom" => Some(Property::Bottom),
+            "direction" => Some(Property::Direction),
             _ => None,
         }
     }

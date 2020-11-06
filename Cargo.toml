@@ -13,5 +13,7 @@ members = [
   "components/css",
   "components/io",
   "components/style",
+  "components/layout",
+  "components/test_utils",
   "rendering"
 ]

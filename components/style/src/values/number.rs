@@ -1,7 +1,16 @@
 use std::hash::{Hash, Hasher};
+use std::ops::Deref;
 
 #[derive(Debug, Clone)]
 pub struct Number(pub f32);
+
+impl Deref for Number {
+    type Target = f32;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
 
 impl Hash for Number {
     fn hash<H: Hasher>(&self, state: &mut H) {
