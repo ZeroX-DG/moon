@@ -157,6 +157,24 @@ impl ValueRef {
     pub fn inner(&self) -> &Value {
         self.borrow()
     }
+
+    pub fn is_auto(&self) -> bool {
+        match self.borrow() {
+            Value::Auto => true,
+            _ => false
+        }
+    }
+
+    pub fn to_px(&self, relative_to: f32) -> f32 {
+        match self.borrow() {
+            Value::Length(l) => l.to_px(),
+            Value::Percentage(p) => p.to_px(relative_to),
+            _ => {
+                println!("Cannot calculate px for value type: {:#?}", self);
+                0.0
+            }
+        }
+    }
 }
 
 impl Clone for ValueRef {

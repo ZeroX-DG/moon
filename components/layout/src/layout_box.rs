@@ -1,3 +1,6 @@
+/// This module contains the definition of
+/// the layout box, which is the component
+/// that made up the layout tree.
 use super::box_model::Dimensions;
 use super::is_block_container_box;
 use style::render_tree::RenderNodeRef;
@@ -19,6 +22,9 @@ pub struct LayoutBox {
 
     /// The formatting context that this block establish
     pub formatting_context: Option<FormattingContext>,
+
+    /// The parent formatting context that this element participate in
+    pub parent_formatting_context: Option<FormattingContext>,
 
     /// The children of this box
     pub children: Vec<LayoutBox>,
@@ -68,12 +74,17 @@ impl LayoutBox {
             position: BoxPosition::default(),
             dimensions: Dimensions::default(),
             formatting_context: None,
+            parent_formatting_context: None,
             children: Vec::new(),
         }
     }
 
     pub fn is_block_container_box(&self) -> bool {
         is_block_container_box(self)
+    }
+
+    pub fn box_model(&mut self) -> &mut Dimensions {
+        &mut self.dimensions
     }
 
     pub fn add_child(&mut self, child: LayoutBox) {
@@ -129,5 +140,9 @@ impl LayoutBox {
 
     pub fn set_formatting_context(&mut self, context: FormattingContext) {
         self.formatting_context = Some(context);
+    }
+
+    pub fn set_parent_formatting_context(&mut self, context: FormattingContext) {
+        self.parent_formatting_context = Some(context);
     }
 }

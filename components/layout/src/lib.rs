@@ -1,62 +1,14 @@
 pub mod box_model;
 pub mod layout_box;
+pub mod box_gen;
+pub mod box_layout;
 
-use layout_box::{LayoutBox, BoxType, FormattingContext};
-use style::render_tree::RenderNodeRef;
 use style::value_processing::{Property, Value};
 use style::values::display::Display;
-
-/// Build the layout tree from root render node
-/// 
-/// This will generate boxes for each render node & construct
-/// a layout tree for the layouting process
-pub fn build_layout_tree(root: RenderNodeRef) -> Option<LayoutBox> {
-    if let Some(root_box_type) = get_box_type(&root) {
-        let mut root_box = LayoutBox::new(root.clone(), root_box_type);
-
-        let children = root.borrow().children
-            .iter()
-            .filter_map(|child| build_layout_tree(child.clone()))
-            .collect::<Vec<LayoutBox>>();
-
-        let has_block = children
-            .iter()
-            .find(|child| match child.box_type {
-                BoxType::Block => true,
-                _ => false
-            })
-            .is_some();
-
-        match has_block {
-            true => root_box.set_formatting_context(FormattingContext::Block),
-            false if is_block_container_box(&root_box) => {
-                root_box.set_formatting_context(FormattingContext::Inline);
-            }
-            _ => { /* This one has no formatting context. It's just a box */ }
-        }
-
-        for child in children {
-            root_box.add_child(child);
-        }
-
-        return Some(root_box);
-    }
-    println!("Don't know which box type for this: {:#?}", root);
-    None
-}
-
-/// Get a box type for a node
-pub fn get_box_type(root: &RenderNodeRef) -> Option<BoxType> {
-    if is_text_node(&root) {
-        Some(BoxType::Anonymous)
-    } else if is_block_level_element(&root) {
-        Some(BoxType::Block)
-    } else if is_inline_level_element(&root) {
-        Some(BoxType::Inline)
-    } else {
-        None
-    }
-}
+use style::values::float::Float;
+use style::values::position::Position;
+use style::render_tree::RenderNodeRef;
+use layout_box::LayoutBox;
 
 /// Detect if a node is a text node
 pub fn is_text_node(root: &RenderNodeRef) -> bool {
@@ -111,124 +63,79 @@ pub fn is_inline_level_element(root: &RenderNodeRef) -> bool {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::layout_box::*;
-    use super::*;
-    use css::cssom::css_rule::CSSRule;
-    use dom::dom_ref::NodeRef;
-    use style::render_tree::build_render_tree;
-    use style::value_processing::*;
-    use test_utils::css::parse_stylesheet;
-    use test_utils::dom_creator::*;
+/// Detect if an element is a non-replaced element
+pub fn is_non_replaced_element(root: &RenderNodeRef) -> bool {
+    let render_node = root.borrow();
 
-    fn print_tree(root: NodeRef, level: usize) {
-        let child_nodes = root.borrow().as_node().child_nodes();
-        println!(
-            "{}{:#?}({} child)",
-            "    ".repeat(level),
-            root,
-            child_nodes.length()
-        );
-        for node in child_nodes {
-            print_tree(node, level + 1);
+    if let Some(element) = render_node.node.borrow().as_element() {
+        return match element.tag_name().as_ref() {
+            "img" | "image" | "canvas" | "video" | "audio" => false,
+            _ => true
         }
     }
 
-    fn print_layout(root: &LayoutBox, level: usize) {
+    false
+}
+
+/// Detect if an element is a floated element
+pub fn is_float_element(root: &RenderNodeRef) -> bool {
+    let render_node = root.borrow();
+    let float_value = render_node.get_style(&Property::Float);
+    let float = float_value.inner();
+
+    match float {
+        Value::Float(Float::None) => false,
+        _ => true
+    }
+}
+
+/// Detect if an element is an absolutely positioned element
+pub fn is_absolutely_positioned(root: &RenderNodeRef) -> bool {
+    let render_node = root.borrow();
+    let position_value = render_node.get_style(&Property::Position);
+    let position = position_value.inner();
+
+    match position {
+        Value::Position(Position::Absolute) => true,
+        Value::Position(Position::Fixed) => true,
+        _ => false
+    }
+}
+
+/// Detect if an element is an inline-block element
+pub fn is_inline_block(root: &RenderNodeRef) -> bool {
+    let render_node = root.borrow();
+    let display_value = render_node.get_style(&Property::Display);
+    let display = display_value.inner();
+
+    match display {
+        Value::Display(Display::InlineBlock) => true,
+        _ => false
+    }
+}
+
+pub fn is_in_normal_flow(layout_box: &LayoutBox) -> bool {
+    layout_box.parent_formatting_context.is_some()
+}
+
+#[cfg(test)]
+mod test_utils {
+    use super::layout_box::LayoutBox;
+
+    pub fn print_layout_tree(root: &LayoutBox, level: usize) {
         let child_nodes = &root.children;
         println!(
-            "{}{:#?}({:#?})({} child)",
+            "{}{:#?}({:#?})(x: {} | y: {} | width: {} | height: {})",
             "    ".repeat(level),
             root.box_type,
             root.render_node.borrow().node,
-            child_nodes.len()
+            root.position.x,
+            root.position.y,
+            root.dimensions.content.width,
+            root.dimensions.content.height
         );
         for node in child_nodes {
-            print_layout(node, level + 1);
+            print_layout_tree(node, level + 1);
         }
-    }
-
-    #[test]
-    fn test_build_tree() {
-        let dom = element(
-            "div",
-            vec![
-                element("span", vec![text("hello")]),
-                element("p", vec![text("world")]),
-                element("span", vec![text("hello")]),
-                element("span", vec![text("hello")]),
-            ],
-        );
-
-        print_tree(dom.clone(), 0);
-
-        let css = r#"
-        div {
-            display: block;
-        }
-        p {
-            display: block;
-        }
-        span {
-            display: inline;
-        }
-        "#;
-
-        let stylesheet = parse_stylesheet(css);
-
-        let rules = stylesheet
-            .iter()
-            .map(|rule| match rule {
-                CSSRule::Style(style) => ContextualRule {
-                    inner: style,
-                    location: CSSLocation::Embedded,
-                    origin: CascadeOrigin::User,
-                },
-            })
-            .collect::<Vec<ContextualRule>>();
-
-        let render_tree = build_render_tree(dom.clone(), &rules);
-        let layout_tree = build_layout_tree(render_tree.root.unwrap()).unwrap();
-
-        println!("------------------------");
-        print_layout(&layout_tree, 0);
-
-        assert_eq!(layout_tree.box_type, BoxType::Block);
-        assert_eq!(layout_tree.formatting_context, Some(FormattingContext::Block));
-        // span
-        assert_eq!(layout_tree.children[0].box_type, BoxType::Anonymous);
-        assert_eq!(
-            layout_tree.children[0].formatting_context,
-            Some(FormattingContext::Inline)
-        );
-        assert_eq!(
-            layout_tree.children[0].children[0].box_type,
-            BoxType::Inline
-        );
-        // p
-        assert_eq!(layout_tree.children[1].box_type, BoxType::Block);
-        assert_eq!(
-            layout_tree.children[1].formatting_context,
-            Some(FormattingContext::Inline)
-        );
-        assert_eq!(
-            layout_tree.children[1].children[0].box_type,
-            BoxType::Anonymous
-        );
-        // last 2 span is grouped
-        assert_eq!(layout_tree.children[2].box_type, BoxType::Anonymous);
-        assert_eq!(
-            layout_tree.children[2].formatting_context,
-            Some(FormattingContext::Inline)
-        );
-        assert_eq!(
-            layout_tree.children[2].children[0].box_type,
-            BoxType::Inline
-        );
-        assert_eq!(
-            layout_tree.children[2].children[1].box_type,
-            BoxType::Inline
-        );
     }
 }
