@@ -10,7 +10,7 @@ use style::render_tree::RenderNodeRef;
 pub struct LayoutBox {
     /// Type of this box (inline | block | anonymous)
     pub box_type: BoxType,
-    
+
     /// Box model dimensions for this box
     pub dimensions: Dimensions,
 
@@ -30,7 +30,6 @@ pub struct LayoutBox {
     pub children: Vec<LayoutBox>,
 }
 
-
 /// Formatting context of each box
 #[derive(Debug, Clone, PartialEq)]
 pub enum FormattingContext {
@@ -43,7 +42,7 @@ pub enum FormattingContext {
 pub enum BoxType {
     /// Block-level box
     Block,
-    
+
     /// Inline-level box
     Inline,
 

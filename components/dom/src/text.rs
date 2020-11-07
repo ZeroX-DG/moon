@@ -6,12 +6,7 @@ pub struct Text {
 
 impl core::fmt::Debug for Text {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(
-            f,
-            "Text({:?}) at {:#?}",
-            self.get_data(),
-            self as *const Text
-        )
+        write!(f, "Text({:?})", self.get_data(),)
     }
 }
 

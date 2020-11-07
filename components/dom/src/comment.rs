@@ -6,12 +6,7 @@ pub struct Comment {
 
 impl core::fmt::Debug for Comment {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(
-            f,
-            "Comment({:?}) at {:#?}",
-            self.get_data(),
-            self as *const Comment
-        )
+        write!(f, "Comment({:?})", self.get_data())
     }
 }
 

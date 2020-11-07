@@ -21,7 +21,7 @@ pub enum QuirksMode {
 
 impl core::fmt::Debug for Document {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "Document at {:#?}", self as *const Document)
+        write!(f, "Document")
     }
 }
 
