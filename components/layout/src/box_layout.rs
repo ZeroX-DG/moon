@@ -172,3 +172,65 @@ pub fn compute_width(root: &mut LayoutBox, containing_block: &ContainingBlock) {
     root.box_model().set(BoxComponent::Margin, Edge::Left, used_margin_left);
     root.box_model().set(BoxComponent::Margin, Edge::Right, used_margin_right);
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use test_utils::dom_creator::*;
+    use css::cssom::css_rule::CSSRule;
+    use style::render_tree::build_render_tree;
+    use style::value_processing::*;
+    use test_utils::css::parse_stylesheet;
+    use crate::box_gen::build_layout_tree;
+    use crate::test_utils::print_layout_tree;
+
+    #[test]
+    fn compute_width_simple() {
+        let dom = element(
+            "div",
+            vec![
+                element("span", vec![text("hello")]),
+                element("p", vec![text("world")]),
+                element("span", vec![text("hello")]),
+                element("span", vec![text("hello")]),
+            ],
+        );
+
+        let css = r#"
+        div {
+            display: block;
+        }
+        p {
+            display: block;
+        }
+        span {
+            display: inline;
+        }
+        "#;
+
+        let stylesheet = parse_stylesheet(css);
+
+        let rules = stylesheet
+            .iter()
+            .map(|rule| match rule {
+                CSSRule::Style(style) => ContextualRule {
+                    inner: style,
+                    location: CSSLocation::Embedded,
+                    origin: CascadeOrigin::User,
+                },
+            })
+            .collect::<Vec<ContextualRule>>();
+
+        let render_tree = build_render_tree(dom.clone(), &rules);
+        let mut layout_tree = build_layout_tree(render_tree.root.unwrap()).unwrap();
+
+        compute_width(&mut layout_tree, &ContainingBlock {
+            x: 0.0,
+            y: 0.0,
+            width: 1200.0,
+            height: 600.0
+        });
+
+        print_layout_tree(&layout_tree, 0);
+    }
+}

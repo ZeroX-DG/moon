@@ -68,38 +68,12 @@ mod tests {
     use crate::layout_box::*;
     use super::*;
     use css::cssom::css_rule::CSSRule;
-    use dom::dom_ref::NodeRef;
     use style::render_tree::build_render_tree;
     use style::value_processing::*;
     use test_utils::css::parse_stylesheet;
     use test_utils::dom_creator::*;
-
-    fn print_tree(root: NodeRef, level: usize) {
-        let child_nodes = root.borrow().as_node().child_nodes();
-        println!(
-            "{}{:#?}({} child)",
-            "    ".repeat(level),
-            root,
-            child_nodes.length()
-        );
-        for node in child_nodes {
-            print_tree(node, level + 1);
-        }
-    }
-
-    fn print_layout(root: &LayoutBox, level: usize) {
-        let child_nodes = &root.children;
-        println!(
-            "{}{:#?}({:#?})({} child)",
-            "    ".repeat(level),
-            root.box_type,
-            root.render_node.borrow().node,
-            child_nodes.len()
-        );
-        for node in child_nodes {
-            print_layout(node, level + 1);
-        }
-    }
+    use test_utils::printing::print_dom_tree;
+    use crate::test_utils::print_layout_tree;
 
     #[test]
     fn test_build_tree() {
@@ -113,7 +87,7 @@ mod tests {
             ],
         );
 
-        print_tree(dom.clone(), 0);
+        print_dom_tree(dom.clone(), 0);
 
         let css = r#"
         div {
@@ -144,7 +118,7 @@ mod tests {
         let layout_tree = build_layout_tree(render_tree.root.unwrap()).unwrap();
 
         println!("------------------------");
-        print_layout(&layout_tree, 0);
+        print_layout_tree(&layout_tree, 0);
 
         assert_eq!(layout_tree.box_type, BoxType::Block);
         assert_eq!(layout_tree.formatting_context, Some(FormattingContext::Block));

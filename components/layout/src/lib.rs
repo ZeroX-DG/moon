@@ -113,3 +113,25 @@ pub fn is_inline_block(root: &RenderNodeRef) -> bool {
         _ => false
     }
 }
+
+#[cfg(test)]
+mod test_utils {
+    use super::layout_box::LayoutBox;
+
+    pub fn print_layout_tree(root: &LayoutBox, level: usize) {
+        let child_nodes = &root.children;
+        println!(
+            "{}{:#?}({:#?})(x: {} | y: {} | width: {} | height: {})",
+            "    ".repeat(level),
+            root.box_type,
+            root.render_node.borrow().node,
+            root.position.x,
+            root.position.y,
+            root.dimensions.content.width,
+            root.dimensions.content.height
+        );
+        for node in child_nodes {
+            print_layout_tree(node, level + 1);
+        }
+    }
+}
