@@ -31,13 +31,13 @@ pub enum Edge {
     Top,
     Left,
     Right,
-    Bottom
+    Bottom,
 }
 
 pub enum BoxComponent {
     Padding,
     Margin,
-    Border
+    Border,
 }
 
 impl Dimensions {

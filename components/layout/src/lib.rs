@@ -1,14 +1,14 @@
-pub mod box_model;
-pub mod layout_box;
 pub mod box_gen;
 pub mod box_layout;
+pub mod box_model;
+pub mod layout_box;
 
+use layout_box::LayoutBox;
+use style::render_tree::RenderNodeRef;
 use style::value_processing::{Property, Value};
 use style::values::display::Display;
 use style::values::float::Float;
 use style::values::position::Position;
-use style::render_tree::RenderNodeRef;
-use layout_box::LayoutBox;
 
 /// Detect if a node is a text node
 pub fn is_text_node(root: &RenderNodeRef) -> bool {
@@ -25,7 +25,7 @@ pub fn is_block_level_element(root: &RenderNodeRef) -> bool {
         Value::Display(Display::Block)
         | Value::Display(Display::ListItem)
         | Value::Display(Display::Table) => true,
-        _ => false
+        _ => false,
     }
 }
 
@@ -45,7 +45,7 @@ pub fn is_block_container_box(layout_box: &LayoutBox) -> bool {
         Value::Display(Display::Block)
         | Value::Display(Display::Inline)
         | Value::Display(Display::InlineBlock) => true,
-        _ => false
+        _ => false,
     }
 }
 
@@ -59,7 +59,7 @@ pub fn is_inline_level_element(root: &RenderNodeRef) -> bool {
         Value::Display(Display::Inline)
         | Value::Display(Display::InlineTable)
         | Value::Display(Display::InlineBlock) => true,
-        _ => false
+        _ => false,
     }
 }
 
@@ -70,8 +70,8 @@ pub fn is_non_replaced_element(root: &RenderNodeRef) -> bool {
     if let Some(element) = render_node.node.borrow().as_element() {
         return match element.tag_name().as_ref() {
             "img" | "image" | "canvas" | "video" | "audio" => false,
-            _ => true
-        }
+            _ => true,
+        };
     }
 
     false
@@ -85,7 +85,7 @@ pub fn is_float_element(root: &RenderNodeRef) -> bool {
 
     match float {
         Value::Float(Float::None) => false,
-        _ => true
+        _ => true,
     }
 }
 
@@ -98,7 +98,7 @@ pub fn is_absolutely_positioned(root: &RenderNodeRef) -> bool {
     match position {
         Value::Position(Position::Absolute) => true,
         Value::Position(Position::Fixed) => true,
-        _ => false
+        _ => false,
     }
 }
 
@@ -110,12 +110,13 @@ pub fn is_inline_block(root: &RenderNodeRef) -> bool {
 
     match display {
         Value::Display(Display::InlineBlock) => true,
-        _ => false
+        _ => false,
     }
 }
 
 pub fn is_in_normal_flow(layout_box: &LayoutBox) -> bool {
     layout_box.parent_formatting_context.is_some()
+    || layout_box.render_node.borrow().parent_render_node.is_none()
 }
 
 #[cfg(test)]

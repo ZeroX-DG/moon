@@ -81,7 +81,7 @@ impl Length {
     pub fn to_px(&self) -> f32 {
         match self.unit {
             LengthUnit::Px => *self.value,
-            _ => 0.0
+            _ => 0.0,
         }
     }
 }
