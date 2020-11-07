@@ -67,6 +67,24 @@ impl Dimensions {
             },
         }
     }
+
+    pub fn margin_box_height(&self) -> f32 {
+        self.content.height
+            + self.padding.top
+            + self.padding.bottom
+            + self.border.top
+            + self.border.bottom
+            + self.margin.top
+            + self.margin.bottom
+    }
+
+    pub fn padding_box_height(&self) -> f32 {
+        self.content.height
+            + self.padding.top
+            + self.padding.bottom
+            + self.border.top
+            + self.border.bottom
+    }
 }
 
 impl Default for Dimensions {
