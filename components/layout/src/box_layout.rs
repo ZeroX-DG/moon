@@ -30,7 +30,20 @@ pub struct ContainingBlock {
 pub fn layout(root: &mut LayoutBox, containing_block: &mut ContainingBlock) {
     compute_width(root, containing_block);
     compute_position(root, containing_block);
+    layout_children(root, containing_block);
+    compute_height(root, containing_block);
+}
 
+fn compute_height(root: &mut LayoutBox, containing_block: &mut ContainingBlock) {
+    let computed_height = root.render_node.borrow().get_style(&Property::Height);
+
+    if !computed_height.is_auto() {
+        let used_height = computed_height.to_px(containing_block.height);
+        root.box_model().set_height(used_height);
+    }
+}
+
+fn layout_children(root: &mut LayoutBox, containing_block: &mut ContainingBlock) {
     for child in root.children.iter_mut() {
         layout(child, containing_block);
         
@@ -54,7 +67,7 @@ pub fn layout(root: &mut LayoutBox, containing_block: &mut ContainingBlock) {
     }
 }
 
-pub fn compute_position(root: &mut LayoutBox, containing_block: &mut ContainingBlock) {
+fn compute_position(root: &mut LayoutBox, containing_block: &mut ContainingBlock) {
     match root.box_type {
         BoxType::Block => place_block_in_flow(root, containing_block),
         BoxType::Anonymous => {
@@ -66,7 +79,7 @@ pub fn compute_position(root: &mut LayoutBox, containing_block: &mut ContainingB
     }
 }
 
-pub fn place_block_in_flow(root: &mut LayoutBox, containing_block: &mut ContainingBlock) {
+fn place_block_in_flow(root: &mut LayoutBox, containing_block: &mut ContainingBlock) {
     let box_model = root.box_model();
 
     let x = box_model.margin.left
@@ -96,10 +109,12 @@ pub fn place_block_in_flow(root: &mut LayoutBox, containing_block: &mut Containi
         + box_model.padding.top
         + containing_block.offset_y;
 
+    containing_block.previous_margin_bottom = box_model.margin.bottom;
+
     root.set_position(x, y);
 }
 
-pub fn compute_width(root: &mut LayoutBox, containing_block: &ContainingBlock) {
+fn compute_width(root: &mut LayoutBox, containing_block: &ContainingBlock) {
     let render_node = root.render_node.clone();
     let is_inline = is_inline_level_element(&render_node);
     let is_block = is_block_level_element(&render_node);

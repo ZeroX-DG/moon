@@ -45,6 +45,10 @@ impl Dimensions {
         self.content.width = width;
     }
 
+    pub fn set_height(&mut self, height: f32) {
+        self.content.height = height;
+    }
+
     pub fn set(&mut self, component: BoxComponent, edge: Edge, value: f32) {
         match component {
             BoxComponent::Margin => match edge {
