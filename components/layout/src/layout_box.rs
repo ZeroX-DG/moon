@@ -1,3 +1,6 @@
+/// This module contains the definition of
+/// the layout box, which is the component
+/// that made up the layout tree.
 use super::box_model::Dimensions;
 use super::is_block_container_box;
 use style::render_tree::RenderNodeRef;
@@ -74,6 +77,10 @@ impl LayoutBox {
 
     pub fn is_block_container_box(&self) -> bool {
         is_block_container_box(self)
+    }
+
+    pub fn box_model(&mut self) -> &mut Dimensions {
+        &mut self.dimensions
     }
 
     pub fn add_child(&mut self, child: LayoutBox) {

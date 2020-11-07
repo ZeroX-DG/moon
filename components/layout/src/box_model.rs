@@ -1,3 +1,7 @@
+/// This module contains the definition
+/// for the box-model of each box in the
+/// layout tree.
+
 /// Box-model dimensions for each layout box
 #[derive(Debug, Clone)]
 pub struct Dimensions {
