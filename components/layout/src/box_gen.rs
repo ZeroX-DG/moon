@@ -2,24 +2,23 @@
 /// of elements in the render tree. In other words,
 /// this module transforms render tree to layout tree
 /// to prepare for layouting process.
-use super::layout_box::{LayoutBox, BoxType, FormattingContext};
+use super::layout_box::{BoxType, FormattingContext, LayoutBox};
 use super::{
-    is_block_container_box,
-    is_inline_level_element,
-    is_block_level_element,
-    is_text_node,
+    is_block_container_box, is_block_level_element, is_inline_level_element, is_text_node,
 };
 use style::render_tree::RenderNodeRef;
 
 /// Build the layout tree from root render node
-/// 
+///
 /// This will generate boxes for each render node & construct
 /// a layout tree for the layouting process
 pub fn build_layout_tree(root: RenderNodeRef) -> Option<LayoutBox> {
     if let Some(root_box_type) = get_box_type(&root) {
         let mut root_box = LayoutBox::new(root.clone(), root_box_type);
 
-        let children = root.borrow().children
+        let children = root
+            .borrow()
+            .children
             .iter()
             .filter_map(|child| build_layout_tree(child.clone()))
             .collect::<Vec<LayoutBox>>();
@@ -28,7 +27,7 @@ pub fn build_layout_tree(root: RenderNodeRef) -> Option<LayoutBox> {
             .iter()
             .find(|child| match child.box_type {
                 BoxType::Block => true,
-                _ => false
+                _ => false,
             })
             .is_some();
 
@@ -68,15 +67,15 @@ pub fn get_box_type(root: &RenderNodeRef) -> Option<BoxType> {
 
 #[cfg(test)]
 mod tests {
-    use crate::layout_box::*;
     use super::*;
+    use crate::layout_box::*;
+    use crate::test_utils::print_layout_tree;
     use css::cssom::css_rule::CSSRule;
     use style::render_tree::build_render_tree;
     use style::value_processing::*;
     use test_utils::css::parse_stylesheet;
     use test_utils::dom_creator::*;
     use test_utils::printing::print_dom_tree;
-    use crate::test_utils::print_layout_tree;
 
     #[test]
     fn test_build_tree() {
@@ -124,7 +123,10 @@ mod tests {
         print_layout_tree(&layout_tree, 0);
 
         assert_eq!(layout_tree.box_type, BoxType::Block);
-        assert_eq!(layout_tree.formatting_context, Some(FormattingContext::Block));
+        assert_eq!(
+            layout_tree.formatting_context,
+            Some(FormattingContext::Block)
+        );
         // span
         assert_eq!(layout_tree.children[0].box_type, BoxType::Anonymous);
         assert_eq!(

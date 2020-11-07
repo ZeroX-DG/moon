@@ -14,12 +14,7 @@ pub struct Element {
 
 impl core::fmt::Debug for Element {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(
-            f,
-            "Element({:?}) at {:#?}",
-            self.tag_name(),
-            self as *const Element
-        )
+        write!(f, "Element({:?})", self.tag_name())
     }
 }
 

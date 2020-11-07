@@ -12,7 +12,7 @@ pub struct Node {
 
 impl core::fmt::Debug for Node {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "Node at {:#?}", self as *const Node)
+        write!(f, "Node")
     }
 }
 

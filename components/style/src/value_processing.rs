@@ -161,7 +161,7 @@ impl ValueRef {
     pub fn is_auto(&self) -> bool {
         match self.borrow() {
             Value::Auto => true,
-            _ => false
+            _ => false,
         }
     }
 
