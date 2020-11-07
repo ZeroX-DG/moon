@@ -232,5 +232,7 @@ mod tests {
         });
 
         print_layout_tree(&layout_tree, 0);
+
+        assert_eq!(layout_tree.dimensions.content.width, 1200.);
     }
 }
