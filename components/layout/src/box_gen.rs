@@ -40,7 +40,10 @@ pub fn build_layout_tree(root: RenderNodeRef) -> Option<LayoutBox> {
             _ => { /* This one has no formatting context. It's just a box */ }
         }
 
-        for child in children {
+        for mut child in children {
+            if let Some(ctx) = root_box.formatting_context.clone() {
+                child.set_parent_formatting_context(ctx);
+            }
             root_box.add_child(child);
         }
 

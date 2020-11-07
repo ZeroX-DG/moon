@@ -10,7 +10,8 @@ use super::{
     is_block_level_element,
     is_float_element,
     is_absolutely_positioned,
-    is_inline_block
+    is_inline_block,
+    is_in_normal_flow
 };
 use super::box_model::{BoxComponent, Edge};
 use style::value_processing::Property;
@@ -35,6 +36,7 @@ pub fn compute_width(root: &mut LayoutBox, containing_block: &ContainingBlock) {
     let is_non_replaced = is_non_replaced_element(&render_node);
     let is_absolutely_positioned = is_absolutely_positioned(&render_node);
     let is_inline_block = is_inline_block(&render_node);
+    let is_in_normal_flow = is_in_normal_flow(root);
 
     let render_node = render_node.borrow();
     let computed_width = render_node.get_style(&Property::Width);
@@ -71,7 +73,7 @@ pub fn compute_width(root: &mut LayoutBox, containing_block: &ContainingBlock) {
     }
 
     // 3. block-level, non-replaced elements in normal flow
-    else if is_block && is_non_replaced {
+    else if is_block && is_non_replaced && is_in_normal_flow {
         if !computed_width.is_auto() && box_width > containing_width {
             if computed_margin_left.is_auto() {
                 used_margin_left = 0.0;
@@ -139,31 +141,37 @@ pub fn compute_width(root: &mut LayoutBox, containing_block: &ContainingBlock) {
     }
     
     // 4. block-level, replaced elements in normal flow
-    else if is_block && !is_non_replaced {
+    else if is_block && !is_non_replaced && is_in_normal_flow {
         // TODO: work on this when we support replaced elements
     }
 
+    // 5. floating, non-replaced elements
     else if is_float && is_non_replaced {
         // TODO: work on this when we support float elements
     }
 
+    // 6. floating, replaced elements
     else if is_float && !is_non_replaced {
         // TODO: work on this when we support float replaced elements
     }
 
+    // 7. absolutely positioned, non-replaced elements
     else if is_absolutely_positioned && is_non_replaced {
         // TODO: work on this when we support absolutely positioned elements
     }
 
+    // 8. absolutely positioned, replaced elements
     else if is_absolutely_positioned && !is_non_replaced {
         // TODO: work on this when we support absolutely positioned replaced elements
     }
 
-    else if is_inline_block && is_non_replaced {
+    // 9. 'inline-block', non-replaced elements in normal flow
+    else if is_inline_block && is_non_replaced && is_in_normal_flow {
         // TODO: work on this when we support shrink-to-fit
     }
 
-    else if is_inline_block && !is_non_replaced {
+    // 10. 'inline-block', replaced elements in normal flow
+    else if is_inline_block && !is_non_replaced && is_in_normal_flow {
         // TODO: work on this when we support inline replaced element -_-
     }
 

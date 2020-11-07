@@ -114,6 +114,10 @@ pub fn is_inline_block(root: &RenderNodeRef) -> bool {
     }
 }
 
+pub fn is_in_normal_flow(layout_box: &LayoutBox) -> bool {
+    layout_box.parent_formatting_context.is_some()
+}
+
 #[cfg(test)]
 mod test_utils {
     use super::layout_box::LayoutBox;

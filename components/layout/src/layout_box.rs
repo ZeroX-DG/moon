@@ -23,6 +23,9 @@ pub struct LayoutBox {
     /// The formatting context that this block establish
     pub formatting_context: Option<FormattingContext>,
 
+    /// The parent formatting context that this element participate in
+    pub parent_formatting_context: Option<FormattingContext>,
+
     /// The children of this box
     pub children: Vec<LayoutBox>,
 }
@@ -71,6 +74,7 @@ impl LayoutBox {
             position: BoxPosition::default(),
             dimensions: Dimensions::default(),
             formatting_context: None,
+            parent_formatting_context: None,
             children: Vec::new(),
         }
     }
@@ -136,5 +140,9 @@ impl LayoutBox {
 
     pub fn set_formatting_context(&mut self, context: FormattingContext) {
         self.formatting_context = Some(context);
+    }
+
+    pub fn set_parent_formatting_context(&mut self, context: FormattingContext) {
+        self.parent_formatting_context = Some(context);
     }
 }
