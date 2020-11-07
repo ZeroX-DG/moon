@@ -37,8 +37,8 @@ Bold text is what I'm working on
   - [x] Box model
   - [x] Box generation
   - [ ] **Box width calculation**
-  - [ ] Box position calculation
-  - [ ] Box height calculation
+  - [ ] **Box position calculation**
+  - [ ] **Box height calculation**
 - [ ] :art: Rendering
   - [ ] Display list
   - [ ] GPU rendering
