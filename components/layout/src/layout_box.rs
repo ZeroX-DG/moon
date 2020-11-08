@@ -3,6 +3,7 @@
 /// that made up the layout tree.
 use super::box_model::Dimensions;
 use super::is_block_container_box;
+use super::box_layout::ContainingBlock;
 use style::render_tree::RenderNodeRef;
 
 /// LayoutBox for the layout tree
@@ -13,9 +14,6 @@ pub struct LayoutBox {
 
     /// Box model dimensions for this box
     pub dimensions: Dimensions,
-
-    /// The position of this box
-    pub position: BoxPosition,
 
     /// The render node that generate this box
     pub render_node: RenderNodeRef,
@@ -52,35 +50,16 @@ pub enum BoxType {
     Anonymous,
 }
 
-/// Position of a layout box
-#[derive(Debug, Clone, PartialEq)]
-pub struct BoxPosition {
-    pub x: f32,
-    pub y: f32,
-}
-
-impl Default for BoxPosition {
-    fn default() -> Self {
-        Self { x: 0.0, y: 0.0 }
-    }
-}
-
 impl LayoutBox {
     pub fn new(node: RenderNodeRef, box_type: BoxType) -> Self {
         Self {
             box_type,
             render_node: node,
-            position: BoxPosition::default(),
             dimensions: Dimensions::default(),
             formatting_context: None,
             parent_formatting_context: None,
             children: Vec::new(),
         }
-    }
-
-    pub fn set_position(&mut self, x: f32, y: f32) {
-        self.position.x = x;
-        self.position.y = y;
     }
 
     pub fn is_block_container_box(&self) -> bool {
@@ -89,6 +68,19 @@ impl LayoutBox {
 
     pub fn box_model(&mut self) -> &mut Dimensions {
         &mut self.dimensions
+    }
+
+    pub fn as_containing_block(&self) -> ContainingBlock {
+        let box_model = self.dimensions.clone();
+        ContainingBlock {
+            x: box_model.content.x,
+            y: box_model.content.y,
+            width: box_model.content.width,
+            height: box_model.content.height,
+            offset_x: 0.0,
+            offset_y: 0.0,
+            previous_margin_bottom: 0.0
+        }
     }
 
     pub fn add_child(&mut self, child: LayoutBox) {

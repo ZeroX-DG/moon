@@ -130,8 +130,8 @@ mod test_utils {
             "    ".repeat(level),
             root.box_type,
             root.render_node.borrow().node,
-            root.position.x,
-            root.position.y,
+            root.dimensions.content.x,
+            root.dimensions.content.y,
             root.dimensions.content.width,
             root.dimensions.content.height
         );

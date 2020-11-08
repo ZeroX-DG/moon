@@ -16,6 +16,8 @@ pub struct Dimensions {
 pub struct ContentArea {
     pub width: f32,
     pub height: f32,
+    pub x: f32,
+    pub y: f32
 }
 
 /// Edge size of the box (all in px)
@@ -47,6 +49,11 @@ impl Dimensions {
 
     pub fn set_height(&mut self, height: f32) {
         self.content.height = height;
+    }
+
+    pub fn set_position(&mut self, x: f32, y: f32) {
+        self.content.x = x;
+        self.content.y = y;
     }
 
     pub fn set(&mut self, component: BoxComponent, edge: Edge, value: f32) {
@@ -97,6 +104,8 @@ impl Default for Dimensions {
             content: ContentArea {
                 width: 0.0,
                 height: 0.0,
+                x: 0.0,
+                y: 0.0
             },
             padding: Default::default(),
             border: Default::default(),

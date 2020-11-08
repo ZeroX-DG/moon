@@ -11,6 +11,7 @@ use super::{
 };
 use style::value_processing::Property;
 
+#[derive(Debug)]
 pub struct ContainingBlock {
     pub x: f32,
     pub y: f32,
@@ -25,12 +26,18 @@ pub struct ContainingBlock {
 pub fn layout(root: &mut LayoutBox, containing_block: &mut ContainingBlock) {
     compute_width(root, containing_block);
     compute_position(root, containing_block);
-    layout_children(root, containing_block);
-    compute_height(root, containing_block);
+    layout_children(root);
+    apply_explicit_sizes(root, containing_block);
 }
 
-fn compute_height(root: &mut LayoutBox, containing_block: &mut ContainingBlock) {
+fn apply_explicit_sizes(root: &mut LayoutBox, containing_block: &mut ContainingBlock) {
+    let computed_width = root.render_node.borrow().get_style(&Property::Width);
     let computed_height = root.render_node.borrow().get_style(&Property::Height);
+
+    if !computed_width.is_auto() {
+        let used_width = computed_width.to_px(containing_block.width);
+        root.box_model().set_width(used_width);
+    }
 
     if !computed_height.is_auto() {
         let used_height = computed_height.to_px(containing_block.height);
@@ -38,11 +45,12 @@ fn compute_height(root: &mut LayoutBox, containing_block: &mut ContainingBlock) 
     }
 }
 
-fn layout_children(root: &mut LayoutBox, containing_block: &mut ContainingBlock) {
+fn layout_children(root: &mut LayoutBox) {
+    let mut containing_block = root.as_containing_block();
     for child in root.children.iter_mut() {
-        layout(child, containing_block);
+        layout(child, &mut containing_block);
         
-        match root.box_type {
+        match child.box_type {
             BoxType::Block => {
                 let child_margin_height = child.dimensions.margin_box_height();
                 containing_block.height += child_margin_height;
@@ -60,6 +68,10 @@ fn layout_children(root: &mut LayoutBox, containing_block: &mut ContainingBlock)
             _ => {}
         }
     }
+    let computed_height = root.render_node.borrow().get_style(&Property::Height);
+    if computed_height.is_auto() {
+        root.box_model().set_height(containing_block.height);
+    }
 }
 
 fn compute_position(root: &mut LayoutBox, containing_block: &mut ContainingBlock) {
@@ -75,7 +87,52 @@ fn compute_position(root: &mut LayoutBox, containing_block: &mut ContainingBlock
 }
 
 fn place_block_in_flow(root: &mut LayoutBox, containing_block: &mut ContainingBlock) {
+    let render_node = root.render_node.clone();
+    let render_node = render_node.borrow();
+
     let box_model = root.box_model();
+
+    let margin_top = render_node.get_style(&Property::MarginTop);
+    let margin_bottom = render_node.get_style(&Property::MarginBottom);
+
+    let border_top = render_node.get_style(&Property::BorderTopWidth);
+    let border_bottom = render_node.get_style(&Property::BorderBottomWidth);
+
+    let padding_top = render_node.get_style(&Property::PaddingTop);
+    let padding_bottom = render_node.get_style(&Property::PaddingBottom);
+
+    box_model.set(
+        BoxComponent::Margin,
+        Edge::Top, 
+        margin_top.to_px(containing_block.width)
+    );
+    box_model.set(
+        BoxComponent::Margin,
+        Edge::Bottom, 
+        margin_bottom.to_px(containing_block.width)
+    );
+
+    box_model.set(
+        BoxComponent::Padding,
+        Edge::Top, 
+        padding_top.to_px(containing_block.width)
+    );
+    box_model.set(
+        BoxComponent::Padding,
+        Edge::Bottom, 
+        padding_bottom.to_px(containing_block.width)
+    );
+
+    box_model.set(
+        BoxComponent::Border,
+        Edge::Top, 
+        border_top.to_px(containing_block.width)
+    );
+    box_model.set(
+        BoxComponent::Border,
+        Edge::Bottom, 
+        border_bottom.to_px(containing_block.width)
+    );
 
     let x = box_model.margin.left
         + box_model.border.left
@@ -106,7 +163,7 @@ fn place_block_in_flow(root: &mut LayoutBox, containing_block: &mut ContainingBl
 
     containing_block.previous_margin_bottom = box_model.margin.bottom;
 
-    root.set_position(x, y);
+    root.box_model().set_position(x, y);
 }
 
 fn compute_width(root: &mut LayoutBox, containing_block: &ContainingBlock) {
@@ -246,11 +303,14 @@ fn compute_width(root: &mut LayoutBox, containing_block: &ContainingBlock) {
     }
 
     // apply all calculated used values
-    root.box_model().set_width(used_width);
-    root.box_model()
-        .set(BoxComponent::Margin, Edge::Left, used_margin_left);
-    root.box_model()
-        .set(BoxComponent::Margin, Edge::Right, used_margin_right);
+    let box_model = root.box_model();
+    box_model.set_width(used_width);
+    box_model.set(BoxComponent::Margin, Edge::Left, used_margin_left);
+    box_model.set(BoxComponent::Margin, Edge::Right, used_margin_right);
+    box_model.set(BoxComponent::Padding, Edge::Left, computed_padding_left.to_px(containing_width));
+    box_model.set(BoxComponent::Padding, Edge::Right, computed_padding_right.to_px(containing_width));
+    box_model.set(BoxComponent::Border, Edge::Left, computed_border_left.to_px(containing_width));
+    box_model.set(BoxComponent::Border, Edge::Right, computed_border_right.to_px(containing_width));
 }
 
 #[cfg(test)]
@@ -317,5 +377,85 @@ mod tests {
         print_layout_tree(&layout_tree, 0);
 
         assert_eq!(layout_tree.dimensions.content.width, 1200.);
+    }
+
+    #[test]
+    fn layout_simple() {
+        let dom = element(
+            "div",
+            vec![
+                element("div", vec![]),
+                element("div#blue", vec![]),
+                element("div#red", vec![]),
+            ],
+        );
+
+        let css = r#"
+        div {
+            display: block;
+        }
+        #blue {
+            background-color: blue;
+            height: 340px;
+            width: 50%;
+        }
+        #red {
+            background-color: red;
+            height: 200px;
+            margin-top: 20px;
+            padding-left: 10px;
+        }
+        "#;
+
+        let stylesheet = parse_stylesheet(css);
+
+        let rules = stylesheet
+            .iter()
+            .map(|rule| match rule {
+                CSSRule::Style(style) => ContextualRule {
+                    inner: style,
+                    location: CSSLocation::Embedded,
+                    origin: CascadeOrigin::User,
+                },
+            })
+            .collect::<Vec<ContextualRule>>();
+
+        let render_tree = build_render_tree(dom.clone(), &rules);
+        let mut layout_tree = build_layout_tree(render_tree.root.unwrap()).unwrap();
+
+        layout(&mut layout_tree, &mut ContainingBlock {
+            x: 0.0,
+            y: 0.0,
+            width: 1200.0,
+            height: 600.0,
+            offset_x: 0.0,
+            offset_y: 0.0,
+            previous_margin_bottom: 0.0
+        });
+
+        print_layout_tree(&layout_tree, 0);
+
+        let root_dimensions = &layout_tree.dimensions;
+        assert_eq!(root_dimensions.content.width, 1200.);
+        assert_eq!(root_dimensions.content.height, 560.);
+
+        let first_child_dimensions = &layout_tree.children[0].dimensions;
+        assert_eq!(first_child_dimensions.content.width, 1200.);
+        // since the first div has auto height, its height is 0
+        assert_eq!(first_child_dimensions.content.height, 0.);
+
+        let second_child_dimensions = &layout_tree.children[1].dimensions;
+        // second div has width of 50%
+        assert_eq!(second_child_dimensions.content.width, 600.);
+        assert_eq!(second_child_dimensions.content.height, 340.);
+
+        let third_child_dimensions = &layout_tree.children[2].dimensions;
+        // third div has auto width which decrease to fit the padding
+        assert_eq!(third_child_dimensions.content.width, 1190.);
+        assert_eq!(third_child_dimensions.content.height, 200.);
+        assert_eq!(third_child_dimensions.margin.top, 20.);
+        assert_eq!(third_child_dimensions.padding.left, 10.);
+        assert_eq!(third_child_dimensions.content.x, 10.);
+        assert_eq!(third_child_dimensions.content.y, 360.);
     }
 }
