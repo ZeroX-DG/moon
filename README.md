@@ -33,7 +33,7 @@ Bold text is what I'm working on
   - [x] Style computation
   - [x] Render tree
   - [x] Selector matching
-- [ ] :flower_playing_cards: Layout process
+- [x] :flower_playing_cards: Layout process
   - [x] Box model
   - [x] Box generation
   - [x] Box width calculation (only non-replaced element, the rest is WIP)
