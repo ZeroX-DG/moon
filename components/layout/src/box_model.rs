@@ -16,6 +16,8 @@ pub struct Dimensions {
 pub struct ContentArea {
     pub width: f32,
     pub height: f32,
+    pub x: f32,
+    pub y: f32
 }
 
 /// Edge size of the box (all in px)
@@ -45,6 +47,15 @@ impl Dimensions {
         self.content.width = width;
     }
 
+    pub fn set_height(&mut self, height: f32) {
+        self.content.height = height;
+    }
+
+    pub fn set_position(&mut self, x: f32, y: f32) {
+        self.content.x = x;
+        self.content.y = y;
+    }
+
     pub fn set(&mut self, component: BoxComponent, edge: Edge, value: f32) {
         match component {
             BoxComponent::Margin => match edge {
@@ -67,6 +78,26 @@ impl Dimensions {
             },
         }
     }
+
+    // we might need to review this for collapse margin
+    // https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Box_Model/Mastering_margin_collapsing
+    pub fn margin_box_height(&self) -> f32 {
+        self.content.height
+            + self.padding.top
+            + self.padding.bottom
+            + self.border.top
+            + self.border.bottom
+            + self.margin.top
+            + self.margin.bottom
+    }
+
+    pub fn padding_box_height(&self) -> f32 {
+        self.content.height
+            + self.padding.top
+            + self.padding.bottom
+            + self.border.top
+            + self.border.bottom
+    }
 }
 
 impl Default for Dimensions {
@@ -75,6 +106,8 @@ impl Default for Dimensions {
             content: ContentArea {
                 width: 0.0,
                 height: 0.0,
+                x: 0.0,
+                y: 0.0
             },
             padding: Default::default(),
             border: Default::default(),

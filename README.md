@@ -36,9 +36,9 @@ Bold text is what I'm working on
 - [ ] :flower_playing_cards: Layout process
   - [x] Box model
   - [x] Box generation
-  - [ ] **Box width calculation**
-  - [ ] **Box position calculation**
-  - [ ] **Box height calculation**
+  - [x] Box width calculation (only non-replaced element, the rest is WIP)
+  - [x] Box height calculation
+  - [x] Box position calculation (only in-flow element, the rest is WIP)
 - [ ] :art: Rendering
   - [ ] Display list
   - [ ] GPU rendering
