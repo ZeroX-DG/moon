@@ -79,7 +79,8 @@ impl LayoutBox {
             height: box_model.content.height,
             offset_x: 0.0,
             offset_y: 0.0,
-            previous_margin_bottom: 0.0
+            previous_margin_bottom: 0.0,
+            collapsed_margins_vertical: 0.0
         }
     }
 

@@ -79,6 +79,8 @@ impl Dimensions {
         }
     }
 
+    // we might need to review this for collapse margin
+    // https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Box_Model/Mastering_margin_collapsing
     pub fn margin_box_height(&self) -> f32 {
         self.content.height
             + self.padding.top
