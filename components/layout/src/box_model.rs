@@ -17,7 +17,7 @@ pub struct ContentArea {
     pub width: f32,
     pub height: f32,
     pub x: f32,
-    pub y: f32
+    pub y: f32,
 }
 
 /// Edge size of the box (all in px)
@@ -107,7 +107,7 @@ impl Default for Dimensions {
                 width: 0.0,
                 height: 0.0,
                 x: 0.0,
-                y: 0.0
+                y: 0.0,
             },
             padding: Default::default(),
             border: Default::default(),

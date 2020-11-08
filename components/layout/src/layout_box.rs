@@ -1,9 +1,9 @@
+use super::box_layout::ContainingBlock;
 /// This module contains the definition of
 /// the layout box, which is the component
 /// that made up the layout tree.
 use super::box_model::Dimensions;
 use super::is_block_container_box;
-use super::box_layout::ContainingBlock;
 use style::render_tree::RenderNodeRef;
 
 /// LayoutBox for the layout tree
@@ -80,7 +80,7 @@ impl LayoutBox {
             offset_x: 0.0,
             offset_y: 0.0,
             previous_margin_bottom: 0.0,
-            collapsed_margins_vertical: 0.0
+            collapsed_margins_vertical: 0.0,
         }
     }
 

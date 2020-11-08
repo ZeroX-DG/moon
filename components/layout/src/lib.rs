@@ -116,7 +116,7 @@ pub fn is_inline_block(root: &RenderNodeRef) -> bool {
 
 pub fn is_in_normal_flow(layout_box: &LayoutBox) -> bool {
     layout_box.parent_formatting_context.is_some()
-    || layout_box.render_node.borrow().parent_render_node.is_none()
+        || layout_box.render_node.borrow().parent_render_node.is_none()
 }
 
 #[cfg(test)]

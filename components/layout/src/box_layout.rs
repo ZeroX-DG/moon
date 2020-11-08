@@ -1,10 +1,10 @@
-use super::box_model::{BoxComponent, Edge};
 /// This module in charge of the layouting
 /// process, which includes:
 /// 1. Box width calculation
 /// 2. Box position calculation
 /// 3. Box height calculation
-use super::layout_box::{LayoutBox, BoxType, FormattingContext};
+use super::box_model::{BoxComponent, Edge};
+use super::layout_box::{BoxType, FormattingContext, LayoutBox};
 use super::{
     is_absolutely_positioned, is_block_level_element, is_float_element, is_in_normal_flow,
     is_inline_block, is_inline_level_element, is_non_replaced_element,
@@ -20,7 +20,7 @@ pub struct ContainingBlock {
     pub offset_x: f32,
     pub offset_y: f32,
     pub previous_margin_bottom: f32,
-    pub collapsed_margins_vertical: f32
+    pub collapsed_margins_vertical: f32,
 }
 
 /// recursively layout the tree from the root
@@ -50,18 +50,19 @@ fn layout_children(root: &mut LayoutBox) {
     let mut containing_block = root.as_containing_block();
     for child in root.children.iter_mut() {
         layout(child, &mut containing_block);
-        
+
         match child.box_type {
             BoxType::Block => {
                 let child_margin_height = child.dimensions.margin_box_height();
-                containing_block.height += child_margin_height - containing_block.collapsed_margins_vertical;
-                containing_block.offset_y +=
-                    child_margin_height - child.dimensions.margin.bottom;
+                containing_block.height +=
+                    child_margin_height - containing_block.collapsed_margins_vertical;
+                containing_block.offset_y += child_margin_height - child.dimensions.margin.bottom;
             }
             BoxType::Anonymous => {
                 if let Some(FormattingContext::Block) = root.parent_formatting_context {
                     let child_margin_height = child.dimensions.margin_box_height();
-                    containing_block.height += child_margin_height - containing_block.collapsed_margins_vertical;
+                    containing_block.height +=
+                        child_margin_height - containing_block.collapsed_margins_vertical;
                     containing_block.offset_y +=
                         child_margin_height - child.dimensions.margin.bottom;
                 }
@@ -104,35 +105,35 @@ fn place_block_in_flow(root: &mut LayoutBox, containing_block: &mut ContainingBl
 
     box_model.set(
         BoxComponent::Margin,
-        Edge::Top, 
-        margin_top.to_px(containing_block.width)
+        Edge::Top,
+        margin_top.to_px(containing_block.width),
     );
     box_model.set(
         BoxComponent::Margin,
-        Edge::Bottom, 
-        margin_bottom.to_px(containing_block.width)
+        Edge::Bottom,
+        margin_bottom.to_px(containing_block.width),
     );
 
     box_model.set(
         BoxComponent::Padding,
-        Edge::Top, 
-        padding_top.to_px(containing_block.width)
+        Edge::Top,
+        padding_top.to_px(containing_block.width),
     );
     box_model.set(
         BoxComponent::Padding,
-        Edge::Bottom, 
-        padding_bottom.to_px(containing_block.width)
+        Edge::Bottom,
+        padding_bottom.to_px(containing_block.width),
     );
 
     box_model.set(
         BoxComponent::Border,
-        Edge::Top, 
-        border_top.to_px(containing_block.width)
+        Edge::Top,
+        border_top.to_px(containing_block.width),
     );
     box_model.set(
         BoxComponent::Border,
-        Edge::Bottom, 
-        border_bottom.to_px(containing_block.width)
+        Edge::Bottom,
+        border_bottom.to_px(containing_block.width),
     );
 
     let x = box_model.margin.left
@@ -151,16 +152,22 @@ fn place_block_in_flow(root: &mut LayoutBox, containing_block: &mut ContainingBl
         let min = |a, b| if a < b { a } else { b };
 
         match (is_margin_top_positive, is_margin_bottom_positive) {
-            (true, true) => (max(margin_top, margin_bottom), min(margin_top, margin_bottom)),
-            (true, false) | (false, true) => (margin_bottom + margin_top, min(margin_bottom, margin_top)),
-            (false, false) => (min(margin_top, margin_bottom), max(margin_top, margin_bottom))
+            (true, true) => (
+                max(margin_top, margin_bottom),
+                min(margin_top, margin_bottom),
+            ),
+            (true, false) | (false, true) => {
+                (margin_bottom + margin_top, min(margin_bottom, margin_top))
+            }
+            (false, false) => (
+                min(margin_top, margin_bottom),
+                max(margin_top, margin_bottom),
+            ),
         }
     };
 
-    let y = collapse_margin
-        + box_model.border.top
-        + box_model.padding.top
-        + containing_block.offset_y;
+    let y =
+        collapse_margin + box_model.border.top + box_model.padding.top + containing_block.offset_y;
 
     containing_block.previous_margin_bottom = box_model.margin.bottom;
     containing_block.collapsed_margins_vertical += collapsed;
@@ -309,10 +316,26 @@ fn compute_width(root: &mut LayoutBox, containing_block: &ContainingBlock) {
     box_model.set_width(used_width);
     box_model.set(BoxComponent::Margin, Edge::Left, used_margin_left);
     box_model.set(BoxComponent::Margin, Edge::Right, used_margin_right);
-    box_model.set(BoxComponent::Padding, Edge::Left, computed_padding_left.to_px(containing_width));
-    box_model.set(BoxComponent::Padding, Edge::Right, computed_padding_right.to_px(containing_width));
-    box_model.set(BoxComponent::Border, Edge::Left, computed_border_left.to_px(containing_width));
-    box_model.set(BoxComponent::Border, Edge::Right, computed_border_right.to_px(containing_width));
+    box_model.set(
+        BoxComponent::Padding,
+        Edge::Left,
+        computed_padding_left.to_px(containing_width),
+    );
+    box_model.set(
+        BoxComponent::Padding,
+        Edge::Right,
+        computed_padding_right.to_px(containing_width),
+    );
+    box_model.set(
+        BoxComponent::Border,
+        Edge::Left,
+        computed_border_left.to_px(containing_width),
+    );
+    box_model.set(
+        BoxComponent::Border,
+        Edge::Right,
+        computed_border_right.to_px(containing_width),
+    );
 }
 
 #[cfg(test)]
@@ -366,16 +389,19 @@ mod tests {
         let render_tree = build_render_tree(dom.clone(), &rules);
         let mut layout_tree = build_layout_tree(render_tree.root.unwrap()).unwrap();
 
-        compute_width(&mut layout_tree, &mut ContainingBlock {
-            x: 0.0,
-            y: 0.0,
-            width: 1200.0,
-            height: 600.0,
-            offset_x: 0.0,
-            offset_y: 0.0,
-            previous_margin_bottom: 0.0,
-            collapsed_margins_vertical: 0.0
-        });
+        compute_width(
+            &mut layout_tree,
+            &mut ContainingBlock {
+                x: 0.0,
+                y: 0.0,
+                width: 1200.0,
+                height: 600.0,
+                offset_x: 0.0,
+                offset_y: 0.0,
+                previous_margin_bottom: 0.0,
+                collapsed_margins_vertical: 0.0,
+            },
+        );
 
         print_layout_tree(&layout_tree, 0);
 
@@ -426,16 +452,19 @@ mod tests {
         let render_tree = build_render_tree(dom.clone(), &rules);
         let mut layout_tree = build_layout_tree(render_tree.root.unwrap()).unwrap();
 
-        layout(&mut layout_tree, &mut ContainingBlock {
-            x: 0.0,
-            y: 0.0,
-            width: 1200.0,
-            height: 600.0,
-            offset_x: 0.0,
-            offset_y: 0.0,
-            previous_margin_bottom: 0.0,
-            collapsed_margins_vertical: 0.0
-        });
+        layout(
+            &mut layout_tree,
+            &mut ContainingBlock {
+                x: 0.0,
+                y: 0.0,
+                width: 1200.0,
+                height: 600.0,
+                offset_x: 0.0,
+                offset_y: 0.0,
+                previous_margin_bottom: 0.0,
+                collapsed_margins_vertical: 0.0,
+            },
+        );
 
         print_layout_tree(&layout_tree, 0);
 
@@ -514,16 +543,19 @@ mod tests {
         let render_tree = build_render_tree(dom.clone(), &rules);
         let mut layout_tree = build_layout_tree(render_tree.root.unwrap()).unwrap();
 
-        layout(&mut layout_tree, &mut ContainingBlock {
-            x: 0.0,
-            y: 0.0,
-            width: 1200.0,
-            height: 600.0,
-            offset_x: 0.0,
-            offset_y: 0.0,
-            previous_margin_bottom: 0.0,
-            collapsed_margins_vertical: 0.0
-        });
+        layout(
+            &mut layout_tree,
+            &mut ContainingBlock {
+                x: 0.0,
+                y: 0.0,
+                width: 1200.0,
+                height: 600.0,
+                offset_x: 0.0,
+                offset_y: 0.0,
+                previous_margin_bottom: 0.0,
+                collapsed_margins_vertical: 0.0,
+            },
+        );
 
         print_layout_tree(&layout_tree, 0);
 
