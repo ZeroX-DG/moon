@@ -87,12 +87,12 @@ fn main() {
     let window = skulpin::WinitWindow::new(&winit_window);
 
     layout::layout(&mut layout_tree, &mut ContainingBlock {
-        offset_x: 0.0,
+        offset_x: 0.,
         offset_y: 0.,
         x: 0.,
         y: 0.,
-        width: 500.0,
-        height: 400.0,
+        width: logical_size.width,
+        height: logical_size.height,
         previous_margin_bottom: 0.0,
         collapsed_margins_vertical: 0.0
     }, winit_window.scale_factor() as f32);
