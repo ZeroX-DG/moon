@@ -80,4 +80,8 @@ impl NodeRef {
     pub fn is<T: Any>(&self) -> bool {
         self.0.borrow().as_any().is::<T>()
     }
+
+    pub fn is_element(&self) -> bool {
+        self.0.borrow().as_element().is_some()
+    }
 }

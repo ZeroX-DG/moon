@@ -12,6 +12,7 @@ use strum::IntoEnumIterator;
 pub type RenderNodeRef = Rc<RefCell<RenderNode>>;
 pub type RenderNodeWeak = Weak<RefCell<RenderNode>>;
 
+#[derive(Debug)]
 pub struct RenderTree {
     /// The root node of the render tree
     pub root: Option<RenderNodeRef>,
@@ -151,8 +152,19 @@ pub fn compute_styles(
 
 pub fn build_render_tree(node: NodeRef, rules: &[ContextualRule]) -> RenderTree {
     let mut style_cache = HashSet::new();
-    let root = build_render_tree_from_node(node, rules, None, &mut style_cache);
-    RenderTree { root, style_cache }
+    let mut render_root = None;
+    if node.is::<dom::document::Document>() {
+        // the first child is HTML tag
+        if let Some(html) = node.borrow().as_node().first_child() {
+            render_root = Some(html);
+        }
+    }
+
+    if let Some(node) = render_root {
+        let root = build_render_tree_from_node(node, rules, None, &mut style_cache);
+        return RenderTree { root, style_cache }
+    }
+    RenderTree { root: None, style_cache }
 }
 
 /// Build the render tree using the root node & list of stylesheets

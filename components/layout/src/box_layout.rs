@@ -24,10 +24,10 @@ pub struct ContainingBlock {
 }
 
 /// recursively layout the tree from the root
-pub fn layout(root: &mut LayoutBox, containing_block: &mut ContainingBlock) {
-    compute_width(root, containing_block);
+pub fn layout(root: &mut LayoutBox, containing_block: &mut ContainingBlock, scale_factor: f32) {
+    compute_width(root, containing_block, scale_factor);
     compute_position(root, containing_block);
-    layout_children(root);
+    layout_children(root, scale_factor);
     apply_explicit_sizes(root, containing_block);
 }
 
@@ -46,29 +46,14 @@ fn apply_explicit_sizes(root: &mut LayoutBox, containing_block: &mut ContainingB
     }
 }
 
-fn layout_children(root: &mut LayoutBox) {
+fn layout_children(root: &mut LayoutBox, scale_factor: f32) {
     let mut containing_block = root.as_containing_block();
     for child in root.children.iter_mut() {
-        layout(child, &mut containing_block);
+        layout(child, &mut containing_block, scale_factor);
 
-        match child.box_type {
-            BoxType::Block => {
-                let child_margin_height = child.dimensions.margin_box_height();
-                containing_block.height +=
-                    child_margin_height - containing_block.collapsed_margins_vertical;
-                containing_block.offset_y += child_margin_height - child.dimensions.margin.bottom;
-            }
-            BoxType::Anonymous => {
-                if let Some(FormattingContext::Block) = root.parent_formatting_context {
-                    let child_margin_height = child.dimensions.margin_box_height();
-                    containing_block.height +=
-                        child_margin_height - containing_block.collapsed_margins_vertical;
-                    containing_block.offset_y +=
-                        child_margin_height - child.dimensions.margin.bottom;
-                }
-            }
-            _ => {}
-        }
+        let child_margin_height = child.dimensions.margin_box_height();
+        containing_block.height += child_margin_height - containing_block.collapsed_margins_vertical;
+        containing_block.offset_y += child_margin_height - child.dimensions.margin.bottom;
     }
     let computed_height = root.render_node.borrow().get_style(&Property::Height);
     if computed_height.is_auto() {
@@ -138,7 +123,6 @@ fn place_block_in_flow(root: &mut LayoutBox, containing_block: &mut ContainingBl
 
     let x = box_model.margin.left
         + box_model.border.left
-        + box_model.padding.left
         + containing_block.offset_x;
 
     let (collapse_margin, collapsed) = {
@@ -166,8 +150,9 @@ fn place_block_in_flow(root: &mut LayoutBox, containing_block: &mut ContainingBl
         }
     };
 
-    let y =
-        collapse_margin + box_model.border.top + box_model.padding.top + containing_block.offset_y;
+    let y = collapse_margin
+        + box_model.border.top
+        + containing_block.offset_y;
 
     containing_block.previous_margin_bottom = box_model.margin.bottom;
     containing_block.collapsed_margins_vertical += collapsed;
@@ -175,7 +160,7 @@ fn place_block_in_flow(root: &mut LayoutBox, containing_block: &mut ContainingBl
     root.box_model().set_position(x, y);
 }
 
-fn compute_width(root: &mut LayoutBox, containing_block: &ContainingBlock) {
+fn compute_width(root: &mut LayoutBox, containing_block: &ContainingBlock, scale_factor: f32) {
     let render_node = root.render_node.clone();
     let is_inline = is_inline_level_element(&render_node);
     let is_block = is_block_level_element(&render_node);
@@ -201,7 +186,8 @@ fn compute_width(root: &mut LayoutBox, containing_block: &ContainingBlock) {
         + computed_width.to_px(containing_width)
         + computed_padding_right.to_px(containing_width)
         + computed_border_right.to_px(containing_width)
-        + computed_margin_right.to_px(containing_width);
+        + computed_margin_right.to_px(containing_width)
+        * scale_factor;
 
     let mut used_width = root.box_model().content.width;
     let mut used_margin_left = root.box_model().margin.left;
@@ -401,6 +387,7 @@ mod tests {
                 previous_margin_bottom: 0.0,
                 collapsed_margins_vertical: 0.0,
             },
+            1.0
         );
 
         print_layout_tree(&layout_tree, 0);
@@ -464,6 +451,7 @@ mod tests {
                 previous_margin_bottom: 0.0,
                 collapsed_margins_vertical: 0.0,
             },
+            1.0
         );
 
         print_layout_tree(&layout_tree, 0);
@@ -555,6 +543,7 @@ mod tests {
                 previous_margin_bottom: 0.0,
                 collapsed_margins_vertical: 0.0,
             },
+            1.0
         );
 
         print_layout_tree(&layout_tree, 0);

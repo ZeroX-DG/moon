@@ -15,5 +15,6 @@ members = [
   "components/style",
   "components/layout",
   "components/test_utils",
+  "components/painting",
   "rendering"
 ]

@@ -355,11 +355,9 @@ impl TreeBuilder {
             ("".to_string(), Vec::new())
         };
         let element_ref = create_element(self.document.clone().downgrade(), &tag_name);
-        if let Some(element) = element_ref
-            .borrow_mut()
-            .as_any_mut()
-            .downcast_mut::<Element>()
         {
+            let mut element = element_ref.borrow_mut();
+            let element = element.as_element_mut().unwrap();
             for attribute in attributes {
                 element.set_attribute(&attribute.name, &attribute.value);
             }
