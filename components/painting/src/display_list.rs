@@ -45,10 +45,14 @@ fn render_background(root: &LayoutBox, display_list: &mut DisplayList) {
         color: style_color_to_paint_color(background.inner()).unwrap_or_default()
     };
 
+    let rect_width = root.dimensions.content.width
+        + root.dimensions.padding.left
+        + root.dimensions.padding.right;
+
     let rect = Rect {
         x: root.dimensions.content.x,
         y: root.dimensions.content.y,
-        width: root.dimensions.content.width,
+        width: rect_width,
         height: root.dimensions.content.height
     };
 

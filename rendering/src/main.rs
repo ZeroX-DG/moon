@@ -34,7 +34,8 @@ fn main() {
 
     // parse CSS
     let css = r#"
-        * { display: block; padding: 12px; }
+        * { display: block; }
+        div { padding: 12px; }
         .a { background-color: rgb(52, 152, 219); }
         .b { background-color: rgb(155, 89, 182); }
         .c { background-color: rgb(52, 73, 94); }
@@ -62,8 +63,6 @@ fn main() {
     // layout
     let render_tree = build_render_tree(document, &rules);
     let mut layout_tree = build_layout_tree(render_tree.root.unwrap()).unwrap();
-
-    // return print_layout_tree(&layout_tree, 0);
 
     // window creation
     let event_loop = winit::event_loop::EventLoop::<()>::with_user_event();
@@ -97,7 +96,7 @@ fn main() {
         collapsed_margins_vertical: 0.0
     });
 
-    println!("{}", winit_window.scale_factor());
+    //return print_layout_tree(&layout_tree, 0);
 
     // Create the renderer, which will draw to the window
     let renderer = skulpin::RendererBuilder::new()
