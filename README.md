@@ -36,12 +36,12 @@ Bold text is what I'm working on
 - [x] :flower_playing_cards: Layout process
   - [x] Box model
   - [x] Box generation
-  - [x] Box width calculation (only non-replaced element, the rest is WIP)
+  - [x] **Box width calculation** (only non-replaced element, the rest are WIP)
   - [x] Box height calculation
-  - [x] Box position calculation (only in-flow element, the rest is WIP)
+  - [x] **Box position calculation** (only in-flow element, the rest are WIP)
 - [ ] :art: Rendering
-  - [ ] Display list
-  - [ ] GPU rendering
+  - [x] Display list
+  - [x] **GPU rendering** (still WIP to support all drawing operations)
   - [ ] Font rendering
 - [ ] :earth_americas: Networking
   - [ ] URL parsing
