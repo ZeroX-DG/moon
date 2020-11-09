@@ -24,10 +24,10 @@ pub struct ContainingBlock {
 }
 
 /// recursively layout the tree from the root
-pub fn layout(root: &mut LayoutBox, containing_block: &mut ContainingBlock, scale_factor: f32) {
-    compute_width(root, containing_block, scale_factor);
+pub fn layout(root: &mut LayoutBox, containing_block: &mut ContainingBlock) {
+    compute_width(root, containing_block);
     compute_position(root, containing_block);
-    layout_children(root, scale_factor);
+    layout_children(root);
     apply_explicit_sizes(root, containing_block);
 }
 
@@ -46,10 +46,10 @@ fn apply_explicit_sizes(root: &mut LayoutBox, containing_block: &mut ContainingB
     }
 }
 
-fn layout_children(root: &mut LayoutBox, scale_factor: f32) {
+fn layout_children(root: &mut LayoutBox) {
     let mut containing_block = root.as_containing_block();
     for child in root.children.iter_mut() {
-        layout(child, &mut containing_block, scale_factor);
+        layout(child, &mut containing_block);
 
         let child_margin_height = child.dimensions.margin_box_height();
         containing_block.height += child_margin_height - containing_block.collapsed_margins_vertical;
@@ -160,7 +160,7 @@ fn place_block_in_flow(root: &mut LayoutBox, containing_block: &mut ContainingBl
     root.box_model().set_position(x, y);
 }
 
-fn compute_width(root: &mut LayoutBox, containing_block: &ContainingBlock, scale_factor: f32) {
+fn compute_width(root: &mut LayoutBox, containing_block: &ContainingBlock) {
     let render_node = root.render_node.clone();
     let is_inline = is_inline_level_element(&render_node);
     let is_block = is_block_level_element(&render_node);
@@ -186,8 +186,7 @@ fn compute_width(root: &mut LayoutBox, containing_block: &ContainingBlock, scale
         + computed_width.to_px(containing_width)
         + computed_padding_right.to_px(containing_width)
         + computed_border_right.to_px(containing_width)
-        + computed_margin_right.to_px(containing_width)
-        * scale_factor;
+        + computed_margin_right.to_px(containing_width);
 
     let mut used_width = root.box_model().content.width;
     let mut used_margin_left = root.box_model().margin.left;
@@ -386,8 +385,7 @@ mod tests {
                 offset_y: 0.0,
                 previous_margin_bottom: 0.0,
                 collapsed_margins_vertical: 0.0,
-            },
-            1.0
+            }
         );
 
         print_layout_tree(&layout_tree, 0);
@@ -450,8 +448,7 @@ mod tests {
                 offset_y: 0.0,
                 previous_margin_bottom: 0.0,
                 collapsed_margins_vertical: 0.0,
-            },
-            1.0
+            }
         );
 
         print_layout_tree(&layout_tree, 0);
@@ -542,8 +539,7 @@ mod tests {
                 offset_y: 0.0,
                 previous_margin_bottom: 0.0,
                 collapsed_margins_vertical: 0.0,
-            },
-            1.0
+            }
         );
 
         print_layout_tree(&layout_tree, 0);

@@ -95,7 +95,7 @@ fn main() {
         height: logical_size.height,
         previous_margin_bottom: 0.0,
         collapsed_margins_vertical: 0.0
-    }, winit_window.scale_factor() as f32);
+    });
 
     println!("{}", winit_window.scale_factor());
 
