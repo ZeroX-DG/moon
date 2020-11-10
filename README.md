@@ -16,6 +16,24 @@ This is a web browser developed from scratch using Rust. I created this project 
 
 To fit with the "make from scratch" spirit, I'll limit the use of external libraries as much as possible.
 
+## Current status
+
+Currently, the browser is able to render block layout! I'm working on supporting other types of layout & text-rendering. Here's a comparison with Firefox rendering. (Moon is on the left, Firefox is on the right).
+
+<p align="center"><img src="./resources/firefox_compare.png" /></p>
+
+## Wanna try it out?
+
+Here are the steps to try it out if you are interested:
+
+1. Clone the repository.
+2. Run `cd rendering` to navigate to the rendering engine.
+3. Run `cargo run` and wait for the code to compile & execute.
+
+**Requirement:** You should have SDL2 installed.
+
+**Tested on:** Ubuntu 18.04
+
 ## Features
 
 Bold text is what I'm working on
