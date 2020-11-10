@@ -42,7 +42,7 @@ fn main() {
         .d { background-color: rgb(231, 76, 60); }
         .e { background-color: rgb(230, 126, 34); }
         .f { background-color: rgb(241, 196, 15); }
-        .g { background-color: rgb(64, 64, 122); height: 100px; }
+        .g { background-color: rgb(64, 64, 122); }
     "#;
 
     let tokenizer = css::tokenizer::Tokenizer::new(css.to_string());
