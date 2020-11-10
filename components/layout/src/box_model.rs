@@ -91,6 +91,16 @@ impl Dimensions {
             + self.margin.bottom
     }
 
+    pub fn margin_box_width(&self) -> f32 {
+        self.content.width
+            + self.padding.left
+            + self.padding.right
+            + self.border.left
+            + self.border.right
+            + self.margin.left
+            + self.margin.right
+    }
+
     pub fn padding_box_height(&self) -> f32 {
         self.content.height
             + self.padding.top

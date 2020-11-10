@@ -10,6 +10,10 @@ use style::values::display::Display;
 use style::values::float::Float;
 use style::values::position::Position;
 
+pub use box_gen::build_layout_tree;
+pub use box_layout::layout;
+pub use box_layout::ContainingBlock;
+
 /// Detect if a node is a text node
 pub fn is_text_node(root: &RenderNodeRef) -> bool {
     root.borrow().node.is::<dom::text::Text>()

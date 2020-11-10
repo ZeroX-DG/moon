@@ -126,6 +126,7 @@ pub enum CascadeOrigin {
 }
 
 /// Style rule with context for cascading
+#[derive(Debug)]
 pub struct ContextualRule<'a> {
     pub inner: &'a StyleRule,
     pub origin: CascadeOrigin,
@@ -170,7 +171,6 @@ impl ValueRef {
             Value::Length(l) => l.to_px(),
             Value::Percentage(p) => p.to_px(relative_to),
             _ => {
-                println!("Cannot calculate px for value type: {:#?}", self);
                 0.0
             }
         }
@@ -502,6 +502,10 @@ fn get_expander_shorthand_property(
 /// found in each style rule
 fn collect_declared_values(node: &NodeRef, rules: &[ContextualRule]) -> DeclaredValuesMap {
     let mut result: DeclaredValuesMap = HashMap::new();
+
+    if !node.is_element() {
+        return result;
+    }
 
     let matched_rules = rules
         .iter()

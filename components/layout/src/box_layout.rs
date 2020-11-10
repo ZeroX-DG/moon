@@ -51,24 +51,9 @@ fn layout_children(root: &mut LayoutBox) {
     for child in root.children.iter_mut() {
         layout(child, &mut containing_block);
 
-        match child.box_type {
-            BoxType::Block => {
-                let child_margin_height = child.dimensions.margin_box_height();
-                containing_block.height +=
-                    child_margin_height - containing_block.collapsed_margins_vertical;
-                containing_block.offset_y += child_margin_height - child.dimensions.margin.bottom;
-            }
-            BoxType::Anonymous => {
-                if let Some(FormattingContext::Block) = root.parent_formatting_context {
-                    let child_margin_height = child.dimensions.margin_box_height();
-                    containing_block.height +=
-                        child_margin_height - containing_block.collapsed_margins_vertical;
-                    containing_block.offset_y +=
-                        child_margin_height - child.dimensions.margin.bottom;
-                }
-            }
-            _ => {}
-        }
+        let child_margin_height = child.dimensions.margin_box_height();
+        containing_block.height += child_margin_height - containing_block.collapsed_margins_vertical;
+        containing_block.offset_y += child_margin_height - child.dimensions.margin.bottom;
     }
     let computed_height = root.render_node.borrow().get_style(&Property::Height);
     if computed_height.is_auto() {
@@ -138,7 +123,6 @@ fn place_block_in_flow(root: &mut LayoutBox, containing_block: &mut ContainingBl
 
     let x = box_model.margin.left
         + box_model.border.left
-        + box_model.padding.left
         + containing_block.offset_x;
 
     let (collapse_margin, collapsed) = {
@@ -166,8 +150,9 @@ fn place_block_in_flow(root: &mut LayoutBox, containing_block: &mut ContainingBl
         }
     };
 
-    let y =
-        collapse_margin + box_model.border.top + box_model.padding.top + containing_block.offset_y;
+    let y = collapse_margin
+        + box_model.border.top
+        + containing_block.offset_y;
 
     containing_block.previous_margin_bottom = box_model.margin.bottom;
     containing_block.collapsed_margins_vertical += collapsed;
@@ -400,7 +385,7 @@ mod tests {
                 offset_y: 0.0,
                 previous_margin_bottom: 0.0,
                 collapsed_margins_vertical: 0.0,
-            },
+            }
         );
 
         print_layout_tree(&layout_tree, 0);
@@ -463,7 +448,7 @@ mod tests {
                 offset_y: 0.0,
                 previous_margin_bottom: 0.0,
                 collapsed_margins_vertical: 0.0,
-            },
+            }
         );
 
         print_layout_tree(&layout_tree, 0);
@@ -554,7 +539,7 @@ mod tests {
                 offset_y: 0.0,
                 previous_margin_bottom: 0.0,
                 collapsed_margins_vertical: 0.0,
-            },
+            }
         );
 
         print_layout_tree(&layout_tree, 0);
