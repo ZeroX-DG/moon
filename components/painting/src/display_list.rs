@@ -49,11 +49,15 @@ fn render_background(root: &LayoutBox, display_list: &mut DisplayList) {
         + root.dimensions.padding.left
         + root.dimensions.padding.right;
 
+    let rect_height = root.dimensions.content.height
+        + root.dimensions.padding.top
+        + root.dimensions.padding.bottom;
+
     let rect = Rect {
         x: root.dimensions.content.x,
         y: root.dimensions.content.y,
         width: rect_width,
-        height: root.dimensions.content.height
+        height: rect_height
     };
 
     display_list.push(DisplayCommand::DrawRect(rect, paint));
