@@ -1,7 +1,7 @@
 use layout::layout_box::LayoutBox;
 use super::{DisplayCommand, DisplayList};
 use super::components::Rect;
-use super::paint::{Paint, PaintStyle, PaintColor};
+use super::components::paint::{Paint, PaintStyle, PaintColor};
 use style::value_processing::Property;
 use style::values::color::Color;
 use style::value_processing::Value;
