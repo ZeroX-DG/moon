@@ -1,33 +1,12 @@
 use layout::layout_box::LayoutBox;
-use super::Painter;
-use super::rect::Rect;
+use super::{DisplayCommand, DisplayList};
+use super::components::Rect;
 use super::paint::{Paint, PaintStyle, PaintColor};
 use style::value_processing::Property;
 use style::values::color::Color;
 use style::value_processing::Value;
 
-#[derive(Debug)]
-pub enum DisplayCommand {
-    DrawRect(Rect, Paint)
-}
-
-pub type DisplayList = Vec<DisplayCommand>;
-
-pub fn execute_display_command<P: Painter>(command: DisplayCommand, painter: &mut P) {
-    match command {
-        DisplayCommand::DrawRect(rect, paint) => painter.paint_rect(rect, paint)
-    }
-}
-
-pub fn build_display_list(root: &LayoutBox) -> DisplayList {
-    let mut display_list = Vec::new();
-
-    render_layout_box(root, &mut display_list);
-
-    display_list
-}
-
-fn render_layout_box(root: &LayoutBox, display_list: &mut DisplayList) {
+pub fn render_layout_box(root: &LayoutBox, display_list: &mut DisplayList) {
     render_background(root, display_list);
 
     // TODO: render text
