@@ -1,9 +1,7 @@
 mod components;
-mod paint;
 mod render;
 
 pub use components::*;
-pub use paint::*;
 
 use layout::layout_box::LayoutBox;
 use render::render_layout_box;
