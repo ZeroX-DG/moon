@@ -114,6 +114,7 @@ fn main() {
     }
 
     let mut renderer = renderer.unwrap();
+    let mut painter = SkiaPainter::new();
 
     event_loop.run(move |event, _, control_flow| {
         let window = skulpin::WinitWindow::new(&winit_window);
@@ -135,9 +136,7 @@ fn main() {
             //
             winit::event::Event::RedrawRequested(_window_id) => {
                 if let Err(e) = renderer.draw(&window, |canvas, _| {
-                    let painter = SkiaPainter::new(canvas);
-                    // f*ck yeah! paint this shit!
-                    paint(&layout_tree, painter);
+                    paint(&layout_tree, &mut painter, canvas);
                 }) {
                     println!("Error during draw: {:?}", e);
                     *control_flow = winit::event_loop::ControlFlow::Exit
