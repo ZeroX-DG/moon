@@ -16,5 +16,12 @@ members = [
   "components/layout",
   "components/test_utils",
   "components/painting",
+  "components/ipc",
+  "components/message",
   "rendering"
 ]
+
+[dependencies]
+ipc = { version = "*", path = "./components/ipc" }
+message = { version = "*", path = "./components/message" }
+skulpin = "*"

@@ -1,38 +1,54 @@
 mod painter;
 
-use css::cssom::css_rule::CSSRule;
-use style::value_processing::{ContextualRule, CSSLocation, CascadeOrigin};
-use style::render_tree::build_render_tree;
+use dom::dom_ref::NodeRef;
+use css::cssom::{css_rule::CSSRule, stylesheet::StyleSheet};
+use style::{
+    value_processing::{ContextualRule, CSSLocation, CascadeOrigin},
+    render_tree::build_render_tree
+};
 use layout::{build_layout_tree, ContainingBlock, layout_box::LayoutBox};
 use painting::paint;
 use painter::SkiaPainter;
-use skulpin::winit;
+use skulpin::{winit, skia_safe::{Surface, ISize}};
+use ipc::IpcRenderer;
+use message::MoonMessage;
 
-fn print_layout_tree(root: &LayoutBox, level: usize) {
-    let child_nodes = &root.children;
-    println!(
-        "{}{:#?}({:#?})(x: {} | y: {} | width: {} | height: {})",
-        "    ".repeat(level),
-        root.box_type,
-        root.render_node.borrow().node,
-        root.dimensions.content.x,
-        root.dimensions.content.y,
-        root.dimensions.content.width,
-        root.dimensions.content.height
-    );
-    for node in child_nodes {
-        print_layout_tree(node, level + 1);
+pub struct Renderer {
+    surface: Surface
+}
+
+impl Renderer {
+    pub fn new() -> Self {
+        Self {
+            surface: Surface::new_raster_n32_premul(ISize::new(500, 300)).unwrap()
+        }
+    }
+
+    pub fn draw(&mut self, layout: &LayoutBox, painter: &mut SkiaPainter) {
+        let canvas = self.surface.canvas();
+        paint(layout, painter, canvas);
+    }
+
+    pub fn snapshot(&mut self) -> Vec<u8> {
+        let data = self.surface.image_snapshot()
+            .encoded_data();
+        if let Some(d) = data {
+            d.as_bytes().to_vec()
+        } else {
+            vec![]
+        }
     }
 }
 
-fn main() {
-    // parse HTML
+fn parse_html() -> NodeRef {
     let html = include_str!("../fixtures/test.html");
     let tokenizer = html::tokenizer::Tokenizer::new(html.to_owned());
     let tree_builder = html::tree_builder::TreeBuilder::new(tokenizer);
     let document = tree_builder.run();
+    document
+}
 
-    // parse CSS
+fn parse_css() -> StyleSheet {
     let css = r#"
         * { display: block; }
         div { padding: 12px; }
@@ -49,6 +65,12 @@ fn main() {
     let mut parser = css::parser::Parser::<css::tokenizer::token::Token>::new(tokenizer.run());
     let stylesheet = parser.parse_a_css_stylesheet();
 
+    stylesheet
+}
+
+fn main() {
+    let document = parse_html();
+    let stylesheet = parse_css();
     let rules = stylesheet
         .iter()
         .map(|rule| match rule {
@@ -59,7 +81,6 @@ fn main() {
             },
         })
         .collect::<Vec<ContextualRule>>();
-
     // layout
     let render_tree = build_render_tree(document, &rules);
     let mut layout_tree = build_layout_tree(render_tree.root.unwrap()).unwrap();
@@ -77,72 +98,17 @@ fn main() {
         collapsed_margins_vertical: 0.0
     });
 
-    print_layout_tree(&layout_tree, 0);
-
-    // window creation
-    let event_loop = winit::event_loop::EventLoop::<()>::with_user_event();
-
-    let visible_range = skulpin::skia_safe::Rect {
-        left: 0.0,
-        right: logical_size.width as f32,
-        top: 0.0,
-        bottom: logical_size.height as f32,
-    };
-    let scale_to_fit = skulpin::skia_safe::matrix::ScaleToFit::Center;
-
-    // Create a single window
-    let winit_window = winit::window::WindowBuilder::new()
-        .with_title("Moon")
-        .with_inner_size(logical_size)
-        .build(&event_loop)
-        .expect("Failed to create window");
-
-    let window = skulpin::WinitWindow::new(&winit_window);
-
-    let renderer = skulpin::RendererBuilder::new()
-        .use_vulkan_debug_layer(false)
-        .coordinate_system(skulpin::CoordinateSystem::VisibleRange(
-            visible_range,
-            scale_to_fit,
-        ))
-        .build(&window);
-
-    // Check if there were error setting up vulkan
-    if let Err(e) = renderer {
-        println!("Error during renderer construction: {:?}", e);
-        return;
-    }
-
-    let mut renderer = renderer.unwrap();
     let mut painter = SkiaPainter::new();
 
-    event_loop.run(move |event, _, control_flow| {
-        let window = skulpin::WinitWindow::new(&winit_window);
+    let mut renderer = Renderer::new();
 
-        match event {
-            winit::event::Event::WindowEvent {
-                event: winit::event::WindowEvent::CloseRequested,
-                ..
-            } => *control_flow = winit::event_loop::ControlFlow::Exit,
-            //
-            // Request a redraw any time we finish processing events
-            //
-            winit::event::Event::MainEventsCleared => {
-                // Queue a RedrawRequested event.
-                winit_window.request_redraw();
-            }
-            //
-            // Redraw
-            //
-            winit::event::Event::RedrawRequested(_window_id) => {
-                if let Err(e) = renderer.draw(&window, |canvas, _| {
-                    paint(&layout_tree, &mut painter, canvas);
-                }) {
-                    println!("Error during draw: {:?}", e);
-                    *control_flow = winit::event_loop::ControlFlow::Exit
-                }
-            }
-            _ => {}
-        }
-    });
+    renderer.draw(&layout_tree, &mut painter);
+
+    let ipc_address = std::env::args().skip(1).next().expect("Expected address");
+    let ipc = IpcRenderer::<MoonMessage>::new(&ipc_address);
+
+    println!("{}", ipc_address);
+
+    ipc.client.sender.send(MoonMessage::RePaint(renderer.snapshot()))
+        .expect("Failed to send canvas");
 }

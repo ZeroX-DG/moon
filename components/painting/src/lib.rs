@@ -5,8 +5,9 @@ pub use components::*;
 
 use layout::layout_box::LayoutBox;
 use render::render_layout_box;
+use serde::{Serialize, Deserialize};
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub enum DisplayCommand {
     DrawRect(Rect, Paint)
 }

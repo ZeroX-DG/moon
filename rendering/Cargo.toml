@@ -13,4 +13,6 @@ css = { version="*", path="../components/css" }
 style = { version="*", path="../components/style" }
 layout = { version="*", path="../components/layout" }
 painting = { version="*", path="../components/painting" }
+ipc = { version="*", path="../components/ipc" }
+message = { version="*", path="../components/message" }
 skulpin = "*"
