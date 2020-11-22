@@ -25,3 +25,6 @@ members = [
 ipc = { version = "*", path = "./components/ipc" }
 message = { version = "*", path = "./components/message" }
 skulpin = "*"
+simple-logging = "*"
+dirs = "2.0.2"
+log = "*"

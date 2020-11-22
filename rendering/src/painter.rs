@@ -1,6 +1,5 @@
 use painting::{Painter, Rect, Paint, PaintStyle, PaintColor};
-use skulpin::skia_safe::Canvas;
-use skulpin::skia_safe;
+use skia_safe::{self, Canvas, Color4f, Color};
 
 pub struct SkiaPainter {
     paint: skia_safe::Paint
@@ -8,14 +7,14 @@ pub struct SkiaPainter {
 
 impl SkiaPainter {
     pub fn new() -> Self {
-        let paint = skia_safe::Paint::new(skia_safe::Color4f::new(0., 0., 0., 0.), None);
+        let paint = skia_safe::Paint::new(Color4f::new(0., 0., 0., 0.), None);
         Self {
             paint
         }
     }
 
-    pub fn translate_color(color: PaintColor) -> skia_safe::Color {
-        skia_safe::Color::from_argb(
+    pub fn translate_color(color: PaintColor) -> Color {
+        Color::from_argb(
             color.a,
             color.r,
             color.g,
@@ -42,7 +41,7 @@ impl Painter<Canvas> for SkiaPainter {
     }
 
     fn clear(&mut self, canvas: &mut Canvas) {
-        canvas.clear(skia_safe::Color::from_argb(255, 255, 255, 255));
+        canvas.clear(Color::from_argb(255, 255, 255, 255));
     }
 }
 
