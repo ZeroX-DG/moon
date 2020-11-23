@@ -162,9 +162,12 @@ pub fn build_render_tree(node: NodeRef, rules: &[ContextualRule]) -> RenderTree 
 
     if let Some(node) = render_root {
         let root = build_render_tree_from_node(node, rules, None, &mut style_cache);
-        return RenderTree { root, style_cache }
+        return RenderTree { root, style_cache };
     }
-    RenderTree { root: None, style_cache }
+    RenderTree {
+        root: None,
+        style_cache,
+    }
 }
 
 /// Build the render tree using the root node & list of stylesheets

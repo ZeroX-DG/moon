@@ -170,9 +170,7 @@ impl ValueRef {
         match self.borrow() {
             Value::Length(l) => l.to_px(),
             Value::Percentage(p) => p.to_px(relative_to),
-            _ => {
-                0.0
-            }
+            _ => 0.0,
         }
     }
 }

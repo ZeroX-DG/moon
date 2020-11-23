@@ -1,0 +1,12 @@
+[tasks.build-renderer]
+workspace = false
+script = '''
+cd ./rendering &&
+cargo build
+'''
+
+[tasks.start]
+workspace = false
+dependencies = ["build-renderer"]
+command = "cargo"
+args = ["run"]
