@@ -34,11 +34,6 @@ impl RendererHandlers {
     pub fn inner(&self) -> &[RendererHandler] {
         &self.handlers
     }
-
-    pub fn close_all(&mut self) {
-        self.handlers.iter_mut().for_each(|renderer| renderer.close());
-        self.handlers.clear();
-    }
 }
 
 impl RendererHandler {
@@ -64,16 +59,6 @@ impl RendererHandler {
 
     pub fn sender(&self) -> &Sender<KernelMessage> {
         &self.client.sender
-    }
-
-    pub fn close(&mut self) {
-        self.send(KernelMessage::Exit)
-            .expect("Unable to send exit message to renderer");
-
-        // delay a bit so the exit message get sent
-        std::thread::sleep(std::time::Duration::from_millis(100));
-        self.process.kill()
-            .expect("Unable to kill renderer");
     }
 
     pub fn recv(&self) -> Result<RendererMessage, RecvError> {

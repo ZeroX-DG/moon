@@ -1,14 +1,19 @@
 head {
   display: none;
+  padding: 0!important;
+  margin: 0!important;
 }
 body,
 html {
-  padding: 0;
-  margin: 0;
+  padding: 0!important;
+  margin: 0!important;
+  width: 100%;
+  height: 100%;
 }
-* {
+div {
   display: block;
-  padding: 12px;
+  padding: 20px;
+  width: 100%;
 }
 .a {
   background-color: rgb(52, 152, 219);

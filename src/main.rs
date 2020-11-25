@@ -12,13 +12,12 @@ fn main() {
     init_logging();
 
     let mut kernel = Kernel::new();
-    kernel.renderer_handlers().new_renderer();
 
-    let (tx, rx) = flume::bounded::<painting::DisplayList>(10);
+    let (tx, rx) = flume::bounded::<painting::DisplayList>(1);
 
     std::thread::spawn(move || {
+        kernel.init_ui();
         kernel.main_loop(tx);
-        kernel.clean_up();
     });
 
     run_ui_loop(rx);

@@ -119,7 +119,10 @@ impl<MsgIn: Message, MsgOut: Message> Client<MsgIn, MsgOut> {
                         }
                     }
                     Ok(None) => continue,
-                    Err(e) => log::error!("Error reading message: {:?}", e),
+                    Err(e) => {
+                        log::error!("Error while reading: {:#?}", e.to_string());
+                        return Err(IpcError::Read("Error reading".to_string()));
+                    }
                 }
             }
             Ok(())

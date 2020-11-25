@@ -4,7 +4,7 @@ use ipc::Selector;
 use flume::Sender;
 
 pub struct Kernel {
-    renderer_handlers: RendererHandlers
+    renderer_handlers: RendererHandlers,
 }
 
 pub fn select(renderers: &[RendererHandler]) -> (usize, RendererMessage) {
@@ -28,7 +28,7 @@ impl Kernel {
         let handler = &self.renderer_handlers[index];
         match msg {
             RendererMessage::RePaint(display_list) => {
-                ui_sender.send(display_list);
+                ui_sender.send(display_list).map_err(|e| log::error!("{:#?}", e.to_string())).unwrap();
             }
             _ => {}
         }
@@ -38,12 +38,14 @@ impl Kernel {
 impl Kernel {
     pub fn new() -> Self {
         Self {
-            renderer_handlers: RendererHandlers::new()
+            renderer_handlers: RendererHandlers::new(),
         }
     }
 
-    pub fn renderer_handlers(&mut self) -> &mut RendererHandlers {
-        &mut self.renderer_handlers
+    pub fn init_ui(&mut self) {
+        let renderer = self.renderer_handlers.new_renderer();
+        renderer.send(KernelMessage::LoadHTMLLocal("/home/zerox/Desktop/Projects/moon/rendering/fixtures/test.html".to_string())).unwrap();
+        renderer.send(KernelMessage::LoadCSSLocal("/home/zerox/Desktop/Projects/moon/rendering/fixtures/test.css".to_string())).unwrap();
     }
 
     pub fn main_loop(&mut self, ui_sender: Sender<painting::DisplayList>) {
@@ -55,9 +57,5 @@ impl Kernel {
             let (index, msg) = select(self.renderer_handlers.inner());
             self.handle_renderer_msg(index, msg, &ui_sender);
         }
-    }
-
-    pub fn clean_up(&mut self) {
-        self.renderer_handlers.close_all();
     }
 }

@@ -116,7 +116,5 @@ fn main() {
             Err(_) => break
         }
     }
-
-    ipc.close().expect("Unable to close Ipc");
 }
 

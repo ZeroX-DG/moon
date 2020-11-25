@@ -35,9 +35,7 @@ impl WindowWrapper {
         let skulpin_renderer = {
             let winit_window_wrapper = WinitWindow::new(&winit_window);
             RendererBuilder::new()
-                .prefer_integrated_gpu()
                 .use_vulkan_debug_layer(false)
-                .present_mode_priority(vec![PresentMode::Immediate])
                 .coordinate_system(CoordinateSystem::Logical)
                 .build(&winit_window_wrapper)
                 .expect("Failed to create renderer")
@@ -75,26 +73,29 @@ pub fn run_ui_loop(kernel_receiver: Receiver<painting::DisplayList>) {
     let need_redraw_1 = Arc::clone(&need_redraw);
     let display_list_1 = Arc::clone(&display_list);
     std::thread::spawn(move || {
-        match kernel_receiver.recv() {
-            Ok(new_display_list) => {
-                let mut need_redraw = need_redraw_1.lock().unwrap();
-                let mut display_list = display_list_1.lock().unwrap();
-                *need_redraw = true;
-                *display_list = new_display_list;
+        loop {
+            match kernel_receiver.recv() {
+                Ok(new_display_list) => {
+                    let mut need_redraw = need_redraw_1.lock().unwrap();
+                    let mut display_list = display_list_1.lock().unwrap();
+                    *need_redraw = true;
+                    *display_list = new_display_list;
+                }
+                _ => {}
             }
-            _ => {}
         }
     });
-
+    let need_redraw = Arc::clone(&need_redraw);
+    let display_list = Arc::clone(&display_list);
     event_loop.run(move |e, _window_target, control_flow| {
-        let need_redraw = Arc::clone(&need_redraw);
-        let display_list = Arc::clone(&display_list);
         let frame_start = Instant::now();
-
         match e {
             Event::LoopDestroyed => std::process::exit(0),
             Event::WindowEvent { event: WindowEvent::CloseRequested, .. } => {
                 *control_flow = ControlFlow::Exit
+            }
+            Event::RedrawRequested(_) => {
+                *need_redraw.lock().unwrap() = true;
             }
             _ => {}
         }
