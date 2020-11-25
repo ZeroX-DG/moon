@@ -52,7 +52,8 @@ fn layout_children(root: &mut LayoutBox) {
         layout(child, &mut containing_block);
 
         let child_margin_height = child.dimensions.margin_box_height();
-        containing_block.height += child_margin_height - containing_block.collapsed_margins_vertical;
+        containing_block.height +=
+            child_margin_height - containing_block.collapsed_margins_vertical;
         containing_block.offset_y += child_margin_height - child.dimensions.margin.bottom;
     }
     let computed_height = root.render_node.borrow().get_style(&Property::Height);
@@ -121,9 +122,7 @@ fn place_block_in_flow(root: &mut LayoutBox, containing_block: &mut ContainingBl
         border_bottom.to_px(containing_block.width),
     );
 
-    let x = box_model.margin.left
-        + box_model.border.left
-        + containing_block.offset_x;
+    let x = box_model.margin.left + box_model.border.left + containing_block.offset_x;
 
     let (collapse_margin, collapsed) = {
         let margin_bottom = containing_block.previous_margin_bottom;
@@ -150,9 +149,7 @@ fn place_block_in_flow(root: &mut LayoutBox, containing_block: &mut ContainingBl
         }
     };
 
-    let y = collapse_margin
-        + box_model.border.top
-        + containing_block.offset_y;
+    let y = collapse_margin + box_model.border.top + containing_block.offset_y;
 
     containing_block.previous_margin_bottom = box_model.margin.bottom;
     containing_block.collapsed_margins_vertical += collapsed;
@@ -385,7 +382,7 @@ mod tests {
                 offset_y: 0.0,
                 previous_margin_bottom: 0.0,
                 collapsed_margins_vertical: 0.0,
-            }
+            },
         );
 
         print_layout_tree(&layout_tree, 0);
@@ -448,7 +445,7 @@ mod tests {
                 offset_y: 0.0,
                 previous_margin_bottom: 0.0,
                 collapsed_margins_vertical: 0.0,
-            }
+            },
         );
 
         print_layout_tree(&layout_tree, 0);
@@ -539,7 +536,7 @@ mod tests {
                 offset_y: 0.0,
                 previous_margin_bottom: 0.0,
                 collapsed_margins_vertical: 0.0,
-            }
+            },
         );
 
         print_layout_tree(&layout_tree, 0);

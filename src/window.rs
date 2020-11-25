@@ -6,7 +6,7 @@ use skulpin::winit::{
     dpi::LogicalSize,
 };
 use skulpin::{
-    Renderer as SkulpinRenderer, RendererBuilder, WinitWindow, PresentMode,
+    Renderer as SkulpinRenderer, RendererBuilder, WinitWindow,
     CoordinateSystem
 };
 use std::time::{Instant, Duration};

@@ -475,7 +475,7 @@ pub fn compute(property: &Property, value: &Value, context: &mut ComputeContext)
 fn cascade(declared_values: &mut Vec<PropertyDeclaration>) -> Option<Value> {
     declared_values.sort();
 
-    match declared_values.first() {
+    match declared_values.last() {
         Some(declaration) => Some(declaration.value.clone()),
         _ => None,
     }
@@ -705,5 +705,29 @@ mod tests {
             value_percentage,
             Some(Value::Percentage(Percentage(20.5.into())))
         );
+    }
+
+    #[test]
+    fn parse_multiple_value_override() {
+        let a = PropertyDeclaration {
+            location: CSSLocation::External,
+            origin: CascadeOrigin::User,
+            important: false,
+            value: Value::Color(Color::black()),
+            specificity: Specificity::new(0, 0, 0),
+        };
+
+        let b = PropertyDeclaration {
+            location: CSSLocation::External,
+            origin: CascadeOrigin::User,
+            important: false,
+            value: Value::Color(Color::transparent()),
+            specificity: Specificity::new(0, 0, 1),
+        };
+
+        let mut declared = vec![b.clone(), a.clone()];
+
+        let win = cascade(&mut declared);
+        assert_eq!(win, Some(b.value));
     }
 }

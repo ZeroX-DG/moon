@@ -9,7 +9,7 @@ use serde::{Serialize, Deserialize};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum DisplayCommand {
-    DrawRect(Rect, Paint)
+    DrawRect(Rect, Paint),
 }
 
 pub type DisplayList = Vec<DisplayCommand>;
@@ -45,6 +45,6 @@ fn execute_display_command<P, C>(
     where P: Painter<C>
 {
     match command {
-        DisplayCommand::DrawRect(rect, paint) => painter.paint_rect(rect, paint, canvas)
+        DisplayCommand::DrawRect(rect, paint) => painter.paint_rect(rect, paint, canvas),
     }
 }

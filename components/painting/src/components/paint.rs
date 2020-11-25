@@ -3,13 +3,13 @@ use serde::{Serialize, Deserialize};
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Paint {
     pub style: PaintStyle,
-    pub color: PaintColor
+    pub color: PaintColor,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum PaintStyle {
     Fill,
-    Stroke
+    Stroke,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -17,7 +17,7 @@ pub struct PaintColor {
     pub r: u8,
     pub g: u8,
     pub b: u8,
-    pub a: u8
+    pub a: u8,
 }
 
 impl Default for PaintColor {
@@ -26,7 +26,7 @@ impl Default for PaintColor {
             r: 0,
             g: 0,
             b: 0,
-            a: 0
+            a: 0,
         }
     }
 }
