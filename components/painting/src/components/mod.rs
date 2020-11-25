@@ -1,5 +1,5 @@
-pub mod rect;
 pub mod paint;
+pub mod rect;
 
-pub use rect::Rect;
 pub use paint::*;
+pub use rect::Rect;

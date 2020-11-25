@@ -1,12 +1,12 @@
 mod painter;
 
 use css::cssom::css_rule::CSSRule;
-use style::value_processing::{ContextualRule, CSSLocation, CascadeOrigin};
-use style::render_tree::build_render_tree;
-use layout::{build_layout_tree, ContainingBlock, layout_box::LayoutBox};
-use painting::paint;
+use layout::{build_layout_tree, layout_box::LayoutBox, ContainingBlock};
 use painter::SkiaPainter;
+use painting::paint;
 use skulpin::winit;
+use style::render_tree::build_render_tree;
+use style::value_processing::{CSSLocation, CascadeOrigin, ContextualRule};
 
 fn print_layout_tree(root: &LayoutBox, level: usize) {
     let child_nodes = &root.children;
@@ -66,16 +66,19 @@ fn main() {
 
     let logical_size = winit::dpi::LogicalSize::new(500.0, 300.0);
 
-    layout::layout(&mut layout_tree, &mut ContainingBlock {
-        offset_x: 0.,
-        offset_y: 0.,
-        x: 0.,
-        y: 0.,
-        width: logical_size.width,
-        height: logical_size.height,
-        previous_margin_bottom: 0.0,
-        collapsed_margins_vertical: 0.0
-    });
+    layout::layout(
+        &mut layout_tree,
+        &mut ContainingBlock {
+            offset_x: 0.,
+            offset_y: 0.,
+            x: 0.,
+            y: 0.,
+            width: logical_size.width,
+            height: logical_size.height,
+            previous_margin_bottom: 0.0,
+            collapsed_margins_vertical: 0.0,
+        },
+    );
 
     print_layout_tree(&layout_tree, 0);
 
