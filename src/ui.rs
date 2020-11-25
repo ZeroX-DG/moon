@@ -71,7 +71,7 @@ impl WindowWrapper {
 fn run_display_receiver(
     kernel_receiver: Receiver<painting::DisplayList>,
     need_redraw: Arc<Mutex<bool>>,
-    display_list: Arc<Mutex<DisplayList>>
+    display_list: Arc<Mutex<DisplayList>>,
 ) {
     std::thread::spawn(move || loop {
         match kernel_receiver.recv() {
@@ -95,7 +95,7 @@ pub fn run_ui_loop(kernel_receiver: Receiver<painting::DisplayList>) {
     run_display_receiver(
         kernel_receiver,
         Arc::clone(&need_redraw),
-        Arc::clone(&display_list)
+        Arc::clone(&display_list),
     );
 
     let need_redraw = Arc::clone(&need_redraw);

@@ -80,7 +80,8 @@ impl<'a> Renderer<'a> {
             let dom = parsing::parse_html(html);
             self.document = Some(dom);
         } else {
-            self.sender.send(RendererMessage::ResourceNotFound(path))
+            self.sender
+                .send(RendererMessage::ResourceNotFound(path))
                 .expect("Can't send response");
         }
     }
@@ -90,7 +91,8 @@ impl<'a> Renderer<'a> {
             let stylesheet = parsing::parse_css(css);
             self.stylesheets.push(stylesheet);
         } else {
-            self.sender.send(RendererMessage::ResourceNotFound(path))
+            self.sender
+                .send(RendererMessage::ResourceNotFound(path))
                 .expect("Can't send response");
         }
     }

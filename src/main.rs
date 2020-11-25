@@ -4,19 +4,29 @@ mod painter;
 mod renderer_handler;
 mod ui;
 
+use clap::{App, Arg, ArgMatches};
 use kernel::Kernel;
 use logging::init_logging;
-use ui::run_ui_loop;
 use message::KernelMessage;
-use clap::{App, Arg, ArgMatches};
+use ui::run_ui_loop;
 
 fn init_cli<'a>() -> ArgMatches<'a> {
     App::new("Moon")
         .version("1.0")
         .author("Viet-Hung Nguyen <viethungax@gmail.com>")
         .about("A rusty web browser")
-        .arg(Arg::with_name("html").required(true).long("html").takes_value(true))
-        .arg(Arg::with_name("css").required(true).long("css").takes_value(true))
+        .arg(
+            Arg::with_name("html")
+                .required(true)
+                .long("html")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("css")
+                .required(true)
+                .long("css")
+                .takes_value(true),
+        )
         .get_matches()
 }
 
@@ -29,12 +39,14 @@ fn main() {
     let renderer = kernel.renderer_handlers().new_renderer();
 
     if let Some(html_path) = matches.value_of("html") {
-        renderer.send(KernelMessage::LoadHTMLLocal(html_path.to_string()))
+        renderer
+            .send(KernelMessage::LoadHTMLLocal(html_path.to_string()))
             .expect("Unable to send HTML path to renderer");
     }
 
     if let Some(css_path) = matches.value_of("css") {
-        renderer.send(KernelMessage::LoadCSSLocal(css_path.to_string()))
+        renderer
+            .send(KernelMessage::LoadCSSLocal(css_path.to_string()))
             .expect("Unable to send CSS path to renderer");
     }
 

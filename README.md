@@ -27,8 +27,9 @@ Currently, the browser is able to render block layout! I'm working on supporting
 Here are the steps to try it out if you are interested:
 
 1. Clone the repository.
-2. Run `cd rendering` to navigate to the rendering engine.
-3. Run `cargo run` and wait for the code to compile & execute.
+2. Run `cargo make example` and wait for the code to compile & execute.
+
+Refer to the [Makefile.toml](Makefile.toml) file for more info.
 
 **Requirement:** You should have SDL2 installed.
 

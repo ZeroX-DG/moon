@@ -28,9 +28,7 @@ impl Kernel {
         let handler = &self.renderer_handlers[index];
         match msg {
             RendererMessage::RePaint(display_list) => {
-                ui_sender
-                    .send(display_list)
-                    .unwrap();
+                ui_sender.send(display_list).unwrap();
             }
             RendererMessage::ResourceNotFound(path) => {
                 panic!("Resource not found: {:#?}", path);
