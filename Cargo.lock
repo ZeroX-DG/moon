@@ -724,6 +724,7 @@ name = "ipc"
 version = "0.1.0"
 dependencies = [
  "flume",
+ "log",
  "nanoid",
 ]
 
@@ -899,6 +900,7 @@ version = "0.1.0"
 dependencies = [
  "ipc",
  "log",
+ "painting",
  "rmpv",
  "serde",
 ]
@@ -961,9 +963,11 @@ name = "moon"
 version = "0.1.0"
 dependencies = [
  "dirs",
+ "flume",
  "ipc",
  "log",
  "message",
+ "painting",
  "simple-logging",
  "skulpin",
 ]
@@ -1490,7 +1494,6 @@ dependencies = [
  "nanoid",
  "painting",
  "simple-logging",
- "skia-safe",
  "style",
 ]
 
@@ -1892,6 +1895,7 @@ dependencies = [
  "css",
  "dom",
  "lazy_static",
+ "log",
  "strum",
  "strum_macros",
  "test_utils",

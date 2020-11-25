@@ -11,7 +11,7 @@ use std::{
 
 use flume::bounded;
 
-pub use flume::{Sender, Receiver, RecvError, SendError};
+pub use flume::{Sender, Receiver, RecvError, SendError, Selector};
 
 pub trait Message: Sized + Send + 'static {
     fn read(r: &mut impl BufRead) -> Result<Option<Self>, IpcError>;
@@ -97,7 +97,7 @@ impl<MsgIn: Message, MsgOut: Message> Client<MsgIn, MsgOut> {
             let mut io_writer = get_writer();
             writer_receiver.into_iter().for_each(|msg| {
                 if let Err(e) = msg.write(&mut io_writer) {
-                    println!("Failed to write message {}", e);
+                    log::error!("Failed to write message {}", e);
                 }
             });
             Ok(())
@@ -119,7 +119,7 @@ impl<MsgIn: Message, MsgOut: Message> Client<MsgIn, MsgOut> {
                         }
                     }
                     Ok(None) => continue,
-                    Err(e) => println!("Error reading message: {:?}", e),
+                    Err(e) => log::error!("Error reading message: {:?}", e),
                 }
             }
             Ok(())

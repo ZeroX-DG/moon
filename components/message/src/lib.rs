@@ -6,17 +6,18 @@ use rmpv::{
     encode::write_value,
     ext::{from_value, to_value},
 };
+use painting::DisplayList;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum KernelMessage {
-    LoadUrl(String),
+    LoadHTMLLocal(String),
+    LoadCSSLocal(String),
     Exit
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum RendererMessage {
-    RePaint(Vec<u8>),
-    SetTitle(String),
+    RePaint(DisplayList),
     Exit
 }
 

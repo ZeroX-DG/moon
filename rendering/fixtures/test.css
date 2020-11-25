@@ -1,0 +1,33 @@
+head {
+  display: none;
+}
+body,
+html {
+  padding: 0;
+  margin: 0;
+}
+* {
+  display: block;
+  padding: 12px;
+}
+.a {
+  background-color: rgb(52, 152, 219);
+}
+.b {
+  background-color: rgb(155, 89, 182);
+}
+.c {
+  background-color: rgb(52, 73, 94);
+}
+.d {
+  background-color: rgb(231, 76, 60);
+}
+.e {
+  background-color: rgb(230, 126, 34);
+}
+.f {
+  background-color: rgb(241, 196, 15);
+}
+.g {
+  background-color: rgb(64, 64, 122);
+}

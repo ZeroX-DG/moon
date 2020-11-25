@@ -1,37 +1,25 @@
 mod logging;
 mod window;
-mod renderer;
+mod renderer_handler;
+mod kernel;
+mod painter;
 
 use logging::init_logging;
-use renderer::Renderers;
-use message::KernelMessage;
-// use window::run_ui_loop;
-
-pub struct Kernel {
-    renderers: Renderers
-}
+use kernel::Kernel;
+use window::run_ui_loop;
 
 fn main() {
     init_logging();
 
-    let mut kernel = Kernel {
-        renderers: Renderers::new()
-    };
+    let mut kernel = Kernel::new();
+    kernel.renderer_handlers().new_renderer();
 
-    let ui_renderer = kernel.renderers.new_renderer();
+    let (tx, rx) = flume::bounded::<painting::DisplayList>(10);
 
-    ui_renderer.send(KernelMessage::LoadUrl("https://google.com".to_string()))
-        .expect("Can't send");
+    std::thread::spawn(move || {
+        kernel.main_loop(tx);
+        kernel.clean_up();
+    });
 
-    println!("{:?}", ui_renderer.recv());
-
-    ui_renderer.send(KernelMessage::Exit)
-        .expect("Can't send");
-
-    // run_ui_loop();
-    clean_up(&mut kernel);
-}
-
-fn clean_up(kernel: &mut Kernel) {
-    kernel.renderers.close_all();
+    run_ui_loop(rx);
 }

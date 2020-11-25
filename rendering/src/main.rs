@@ -1,17 +1,12 @@
-mod painter;
+mod parsing;
+mod layouting;
 
 use dom::dom_ref::NodeRef;
-use css::cssom::{css_rule::CSSRule, stylesheet::StyleSheet};
-use style::{
-    value_processing::{ContextualRule, CSSLocation, CascadeOrigin},
-    render_tree::build_render_tree
-};
-use layout::{build_layout_tree, ContainingBlock, layout_box::LayoutBox};
-use painting::paint;
-use painter::SkiaPainter;
-use skia_safe::{Surface, ISize};
+use css::cssom::stylesheet::StyleSheet;
+
 use ipc::{Client, Sender};
 use std::io::{self, Stdin, StdinLock, Stdout, StdoutLock};
+use std::fs;
 use message::{KernelMessage, RendererMessage};
 
 use lazy_static::lazy_static;
@@ -31,30 +26,18 @@ pub fn stdoutlock() -> StdoutLock<'static> {
 
 pub struct Renderer<'a> {
     id: String,
-    surface: Surface,
-    sender: &'a mut Sender<RendererMessage>
+    sender: &'a mut Sender<RendererMessage>,
+    document: Option<NodeRef>,
+    stylesheets: Vec<StyleSheet>,
 }
 
 impl<'a> Renderer<'a> {
     pub fn new(sender: &'a mut Sender<RendererMessage>) -> Self {
         Self {
             id: nanoid::simple(),
-            surface: Surface::new_raster_n32_premul(ISize::new(500, 300)).unwrap(),
-            sender
-        }
-    }
-
-    pub fn draw(&mut self, layout: &LayoutBox, painter: &mut SkiaPainter) {
-        let canvas = self.surface.canvas();
-        paint(layout, painter, canvas);
-    }
-
-    pub fn handle_kernel_msg(&mut self, msg: KernelMessage) {
-        match msg {
-            KernelMessage::LoadUrl(url) => self.load_url(url),
-            _ => {
-                log::debug!("Unknown kernel message: {:?}", msg);
-            }
+            sender,
+            document: None,
+            stylesheets: Vec::new(),
         }
     }
 
@@ -62,9 +45,46 @@ impl<'a> Renderer<'a> {
         &self.id
     }
 
-    fn load_url(&mut self, url: String) {
-        self.sender.send(RendererMessage::SetTitle("Hello!".to_string()))
-            .expect("Can't send message to kernel");
+    pub fn handle_kernel_msg(&mut self, msg: KernelMessage) {
+        match msg {
+            KernelMessage::LoadHTMLLocal(path) => {
+                self.load_html_local(path);
+                self.reflow(self.document.clone().unwrap());
+            },
+            KernelMessage::LoadCSSLocal(path) => {
+                self.load_css_local(path);
+                self.reflow(self.document.clone().unwrap());
+            },
+            _ => {
+                log::debug!("Unknown kernel message: {:?}", msg);
+            }
+        }
+    }
+
+    fn reflow(&mut self, root: NodeRef) {
+        let new_layout = layouting::layout(
+            &root,
+            &self.stylesheets,
+            500.0,
+            300.0
+        );
+
+        let display_list = painting::build_display_list(&new_layout);
+
+        self.sender.send(RendererMessage::RePaint(display_list))
+            .expect("Can't send frame");
+    }
+
+    fn load_html_local(&mut self, path: String) {
+        let html = fs::read_to_string(path).expect("Unable to read HTML file");
+        let dom = parsing::parse_html(html);
+        self.document = Some(dom);
+    }
+
+    fn load_css_local(&mut self, path: String) {
+        let css = fs::read_to_string(path).expect("Unable to read CSS file");
+        let stylesheet = parsing::parse_css(css);
+        self.stylesheets.push(stylesheet);
     }
 }
 
@@ -73,7 +93,7 @@ fn init_logging(id: &str) {
     log_dir.push("/tmp/moon");
     std::fs::create_dir_all(&log_dir).expect("Cannot create log directory");
 
-    log_dir.push(format!("renderer_{}_log.txt", id));
+    log_dir.push(format!("renderer_log.txt"));
     simple_logging::log_to_file(log_dir, log::LevelFilter::Debug)
         .expect("Can not open log file");
 }

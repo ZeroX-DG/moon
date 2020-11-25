@@ -15,7 +15,6 @@ layout = { version="*", path="../components/layout" }
 painting = { version="*", path="../components/painting" }
 message = { version="*", path="../components/message" }
 ipc = { version="*", path="../components/ipc" }
-skia-safe = "*"
 lazy_static = "1.3.0"
 simple-logging = "*"
 dirs = "2.0.2"

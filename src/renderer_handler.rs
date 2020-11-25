@@ -1,9 +1,10 @@
-use ipc::{Client, RecvError, SendError};
+use ipc::{Client, Receiver, Sender, RecvError, SendError};
 use std::process::{Command, Stdio, Child};
 use message::{KernelMessage, RendererMessage};
+use std::ops::Deref;
 
-pub struct Renderers {
-    renderers: Vec<RendererHandler>
+pub struct RendererHandlers {
+    handlers: Vec<RendererHandler>
 }
 
 pub struct RendererHandler {
@@ -11,21 +12,32 @@ pub struct RendererHandler {
     client: Client<RendererMessage, KernelMessage>
 }
 
-impl Renderers {
+impl Deref for RendererHandlers {
+    type Target = Vec<RendererHandler>;
+    fn deref(&self) -> &Self::Target {
+        &self.handlers
+    }
+}
+
+impl RendererHandlers {
     pub fn new() -> Self {
         Self {
-            renderers: Vec::new()
+            handlers: Vec::new()
         }
     }
 
     pub fn new_renderer(&mut self) -> &RendererHandler {
-        self.renderers.push(RendererHandler::new());
-        self.renderers.last().unwrap()
+        self.handlers.push(RendererHandler::new());
+        self.handlers.last().unwrap()
+    }
+
+    pub fn inner(&self) -> &[RendererHandler] {
+        &self.handlers
     }
 
     pub fn close_all(&mut self) {
-        self.renderers.iter_mut().for_each(|renderer| renderer.close());
-        self.renderers.clear();
+        self.handlers.iter_mut().for_each(|renderer| renderer.close());
+        self.handlers.clear();
     }
 }
 
@@ -46,6 +58,14 @@ impl RendererHandler {
         }
     }
 
+    pub fn receiver(&self) -> &Receiver<RendererMessage> {
+        &self.client.receiver
+    }
+
+    pub fn sender(&self) -> &Sender<KernelMessage> {
+        &self.client.sender
+    }
+
     pub fn close(&mut self) {
         self.send(KernelMessage::Exit)
             .expect("Unable to send exit message to renderer");
@@ -57,10 +77,10 @@ impl RendererHandler {
     }
 
     pub fn recv(&self) -> Result<RendererMessage, RecvError> {
-        self.client.receiver.recv()
+        self.receiver().recv()
     }
 
     pub fn send(&self, msg: KernelMessage) -> Result<(), SendError<KernelMessage>> {
-        self.client.sender.send(msg)
+        self.sender().send(msg)
     }
 }
