@@ -3,7 +3,6 @@
 /// Most of the code here is taken from the awesome work
 /// of @unrealhoang from the project LSPC
 /// https://github.com/unrealhoang/lspc/blob/master/src/rpc.rs
-
 use std::{
     io::{BufRead, BufReader, Read, Write},
     thread,
@@ -11,7 +10,7 @@ use std::{
 
 use flume::bounded;
 
-pub use flume::{Sender, Receiver, RecvError, SendError, Selector};
+pub use flume::{Receiver, RecvError, Selector, SendError, Sender};
 
 pub trait Message: Sized + Send + 'static {
     fn read(r: &mut impl BufRead) -> Result<Option<Self>, IpcError>;
@@ -140,4 +139,3 @@ impl<MsgIn: Message, MsgOut: Message> Client<MsgIn, MsgOut> {
         self.threads.join()
     }
 }
-

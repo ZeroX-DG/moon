@@ -1,15 +1,15 @@
-use ipc::{Client, Receiver, Sender, RecvError, SendError};
-use std::process::{Command, Stdio, Child};
+use ipc::{Client, Receiver, RecvError, SendError, Sender};
 use message::{KernelMessage, RendererMessage};
 use std::ops::Deref;
+use std::process::{Child, Command, Stdio};
 
 pub struct RendererHandlers {
-    handlers: Vec<RendererHandler>
+    handlers: Vec<RendererHandler>,
 }
 
 pub struct RendererHandler {
     process: Child,
-    client: Client<RendererMessage, KernelMessage>
+    client: Client<RendererMessage, KernelMessage>,
 }
 
 impl Deref for RendererHandlers {
@@ -22,7 +22,7 @@ impl Deref for RendererHandlers {
 impl RendererHandlers {
     pub fn new() -> Self {
         Self {
-            handlers: Vec::new()
+            handlers: Vec::new(),
         }
     }
 
@@ -49,7 +49,7 @@ impl RendererHandler {
 
         Self {
             process,
-            client: Client::new(|| process_stdout, || process_stdin)
+            client: Client::new(|| process_stdout, || process_stdin),
         }
     }
 

@@ -1,7 +1,7 @@
-use super::renderer_handler::{RendererHandlers, RendererHandler};
-use message::{RendererMessage, KernelMessage};
-use ipc::Selector;
+use super::renderer_handler::{RendererHandler, RendererHandlers};
 use flume::Sender;
+use ipc::Selector;
+use message::{KernelMessage, RendererMessage};
 
 pub struct Kernel {
     renderer_handlers: RendererHandlers,
@@ -23,12 +23,15 @@ impl Kernel {
         &mut self,
         index: usize,
         msg: RendererMessage,
-        ui_sender: &Sender<painting::DisplayList>
+        ui_sender: &Sender<painting::DisplayList>,
     ) {
         let handler = &self.renderer_handlers[index];
         match msg {
             RendererMessage::RePaint(display_list) => {
-                ui_sender.send(display_list).map_err(|e| log::error!("{:#?}", e.to_string())).unwrap();
+                ui_sender
+                    .send(display_list)
+                    .map_err(|e| log::error!("{:#?}", e.to_string()))
+                    .unwrap();
             }
             _ => {}
         }
@@ -44,8 +47,16 @@ impl Kernel {
 
     pub fn init_ui(&mut self) {
         let renderer = self.renderer_handlers.new_renderer();
-        renderer.send(KernelMessage::LoadHTMLLocal("/home/zerox/Desktop/Projects/moon/rendering/fixtures/test.html".to_string())).unwrap();
-        renderer.send(KernelMessage::LoadCSSLocal("/home/zerox/Desktop/Projects/moon/rendering/fixtures/test.css".to_string())).unwrap();
+        renderer
+            .send(KernelMessage::LoadHTMLLocal(
+                "/home/zerox/Desktop/Projects/moon/rendering/fixtures/test.html".to_string(),
+            ))
+            .unwrap();
+        renderer
+            .send(KernelMessage::LoadCSSLocal(
+                "/home/zerox/Desktop/Projects/moon/rendering/fixtures/test.css".to_string(),
+            ))
+            .unwrap();
     }
 
     pub fn main_loop(&mut self, ui_sender: Sender<painting::DisplayList>) {

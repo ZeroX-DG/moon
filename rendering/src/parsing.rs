@@ -1,5 +1,5 @@
-use dom::dom_ref::NodeRef;
 use css::cssom::stylesheet::StyleSheet;
+use dom::dom_ref::NodeRef;
 
 pub fn parse_html(html: String) -> NodeRef {
     let tokenizer = html::tokenizer::Tokenizer::new(html);

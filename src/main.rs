@@ -1,11 +1,11 @@
-mod logging;
-mod window;
-mod renderer_handler;
 mod kernel;
+mod logging;
 mod painter;
+mod renderer_handler;
+mod window;
 
-use logging::init_logging;
 use kernel::Kernel;
+use logging::init_logging;
 use window::run_ui_loop;
 
 fn main() {

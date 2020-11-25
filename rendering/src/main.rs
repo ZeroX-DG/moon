@@ -1,13 +1,13 @@
-mod parsing;
 mod layouting;
+mod parsing;
 
-use dom::dom_ref::NodeRef;
 use css::cssom::stylesheet::StyleSheet;
+use dom::dom_ref::NodeRef;
 
 use ipc::{Client, Sender};
-use std::io::{self, Stdin, StdinLock, Stdout, StdoutLock};
-use std::fs;
 use message::{KernelMessage, RendererMessage};
+use std::fs;
+use std::io::{self, Stdin, StdinLock, Stdout, StdoutLock};
 
 use lazy_static::lazy_static;
 
@@ -50,11 +50,11 @@ impl<'a> Renderer<'a> {
             KernelMessage::LoadHTMLLocal(path) => {
                 self.load_html_local(path);
                 self.reflow(self.document.clone().unwrap());
-            },
+            }
             KernelMessage::LoadCSSLocal(path) => {
                 self.load_css_local(path);
                 self.reflow(self.document.clone().unwrap());
-            },
+            }
             _ => {
                 log::debug!("Unknown kernel message: {:?}", msg);
             }
@@ -62,18 +62,14 @@ impl<'a> Renderer<'a> {
     }
 
     fn reflow(&mut self, root: NodeRef) {
-        let new_layout = layouting::layout(
-            &root,
-            &self.stylesheets,
-            500.0,
-            300.0
-        );
+        let new_layout = layouting::layout(&root, &self.stylesheets, 500.0, 300.0);
 
         log::debug!("{}", new_layout.to_string());
 
         let display_list = painting::build_display_list(&new_layout);
 
-        self.sender.send(RendererMessage::RePaint(display_list))
+        self.sender
+            .send(RendererMessage::RePaint(display_list))
             .expect("Can't send frame");
     }
 
@@ -96,8 +92,7 @@ fn init_logging(id: &str) {
     std::fs::create_dir_all(&log_dir).expect("Cannot create log directory");
 
     log_dir.push(format!("renderer_log.txt"));
-    simple_logging::log_to_file(log_dir, log::LevelFilter::Debug)
-        .expect("Can not open log file");
+    simple_logging::log_to_file(log_dir, log::LevelFilter::Debug).expect("Can not open log file");
 }
 
 fn main() {
@@ -111,12 +106,11 @@ fn main() {
             Ok(msg) => {
                 if let KernelMessage::Exit = msg {
                     log::info!("Received exit. Goodbye!");
-                    break
+                    break;
                 }
                 renderer.handle_kernel_msg(msg);
-            },
-            Err(_) => break
+            }
+            Err(_) => break,
         }
     }
 }
-

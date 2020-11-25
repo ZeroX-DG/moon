@@ -1,25 +1,22 @@
-use skulpin::winit::{
-    self,
-    event_loop::{EventLoop, ControlFlow},
-    event::{Event, WindowEvent},
-    window::WindowBuilder,
-    dpi::LogicalSize,
-};
-use skulpin::{
-    Renderer as SkulpinRenderer, RendererBuilder, WinitWindow,
-    CoordinateSystem
-};
-use std::time::{Instant, Duration};
-use std::sync::{Arc, Mutex};
-use std::rc::Rc;
-use std::cell::RefCell;
 use super::painter::SkiaPainter;
 use flume::Receiver;
+use skulpin::winit::{
+    self,
+    dpi::LogicalSize,
+    event::{Event, WindowEvent},
+    event_loop::{ControlFlow, EventLoop},
+    window::WindowBuilder,
+};
+use skulpin::{CoordinateSystem, Renderer as SkulpinRenderer, RendererBuilder, WinitWindow};
+use std::cell::RefCell;
+use std::rc::Rc;
+use std::sync::{Arc, Mutex};
+use std::time::{Duration, Instant};
 
 pub struct WindowWrapper {
     window: winit::window::Window,
     skulpin_renderer: SkulpinRenderer,
-    painter: Rc<RefCell<SkiaPainter>>
+    painter: Rc<RefCell<SkiaPainter>>,
 }
 
 impl WindowWrapper {
@@ -44,7 +41,7 @@ impl WindowWrapper {
         Self {
             window: winit_window,
             skulpin_renderer,
-            painter: Rc::new(RefCell::new(SkiaPainter::new()))
+            painter: Rc::new(RefCell::new(SkiaPainter::new())),
         }
     }
 
@@ -53,10 +50,13 @@ impl WindowWrapper {
 
         let mut painter = self.painter.borrow_mut();
 
-        let error = self.skulpin_renderer.draw(&winit_window, |canvas, _| {
-            painting::paint(display_list, &mut *painter, canvas);
-        }).is_err();
-        
+        let error = self
+            .skulpin_renderer
+            .draw(&winit_window, |canvas, _| {
+                painting::paint(display_list, &mut *painter, canvas);
+            })
+            .is_err();
+
         if error {
             return false;
         }
@@ -72,17 +72,15 @@ pub fn run_ui_loop(kernel_receiver: Receiver<painting::DisplayList>) {
 
     let need_redraw_1 = Arc::clone(&need_redraw);
     let display_list_1 = Arc::clone(&display_list);
-    std::thread::spawn(move || {
-        loop {
-            match kernel_receiver.recv() {
-                Ok(new_display_list) => {
-                    let mut need_redraw = need_redraw_1.lock().unwrap();
-                    let mut display_list = display_list_1.lock().unwrap();
-                    *need_redraw = true;
-                    *display_list = new_display_list;
-                }
-                _ => {}
+    std::thread::spawn(move || loop {
+        match kernel_receiver.recv() {
+            Ok(new_display_list) => {
+                let mut need_redraw = need_redraw_1.lock().unwrap();
+                let mut display_list = display_list_1.lock().unwrap();
+                *need_redraw = true;
+                *display_list = new_display_list;
             }
+            _ => {}
         }
     });
     let need_redraw = Arc::clone(&need_redraw);
@@ -91,9 +89,10 @@ pub fn run_ui_loop(kernel_receiver: Receiver<painting::DisplayList>) {
         let frame_start = Instant::now();
         match e {
             Event::LoopDestroyed => std::process::exit(0),
-            Event::WindowEvent { event: WindowEvent::CloseRequested, .. } => {
-                *control_flow = ControlFlow::Exit
-            }
+            Event::WindowEvent {
+                event: WindowEvent::CloseRequested,
+                ..
+            } => *control_flow = ControlFlow::Exit,
             Event::RedrawRequested(_) => {
                 *need_redraw.lock().unwrap() = true;
             }

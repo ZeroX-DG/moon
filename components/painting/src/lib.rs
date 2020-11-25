@@ -5,7 +5,7 @@ pub use components::*;
 
 use layout::layout_box::LayoutBox;
 use render::render_layout_box;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum DisplayCommand {
@@ -20,7 +20,8 @@ pub trait Painter<Canvas> {
 }
 
 pub fn paint<P, C>(display_list: &DisplayList, painter: &mut P, canvas: &mut C)
-    where P: Painter<C>
+where
+    P: Painter<C>,
 {
     painter.clear(canvas);
 
@@ -37,12 +38,9 @@ pub fn build_display_list(root: &LayoutBox) -> DisplayList {
     display_list
 }
 
-fn execute_display_command<P, C>(
-    command: &DisplayCommand,
-    painter: &mut P,
-    canvas: &mut C
-)
-    where P: Painter<C>
+fn execute_display_command<P, C>(command: &DisplayCommand, painter: &mut P, canvas: &mut C)
+where
+    P: Painter<C>,
 {
     match command {
         DisplayCommand::DrawRect(rect, paint) => painter.paint_rect(rect, paint, canvas),
