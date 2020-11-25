@@ -1,151 +1,128 @@
-mod painter;
+mod layouting;
+mod parsing;
 
-use css::cssom::css_rule::CSSRule;
-use layout::{build_layout_tree, layout_box::LayoutBox, ContainingBlock};
-use painter::SkiaPainter;
-use painting::paint;
-use skulpin::winit;
-use style::render_tree::build_render_tree;
-use style::value_processing::{CSSLocation, CascadeOrigin, ContextualRule};
+use css::cssom::stylesheet::StyleSheet;
+use dom::dom_ref::NodeRef;
 
-fn print_layout_tree(root: &LayoutBox, level: usize) {
-    let child_nodes = &root.children;
-    println!(
-        "{}{:#?}({:#?})(x: {} | y: {} | width: {} | height: {})",
-        "    ".repeat(level),
-        root.box_type,
-        root.render_node.borrow().node,
-        root.dimensions.content.x,
-        root.dimensions.content.y,
-        root.dimensions.content.width,
-        root.dimensions.content.height
-    );
-    for node in child_nodes {
-        print_layout_tree(node, level + 1);
+use ipc::{Client, Sender};
+use message::{KernelMessage, RendererMessage};
+use std::fs;
+use std::io::{self, Stdin, StdinLock, Stdout, StdoutLock};
+
+use lazy_static::lazy_static;
+
+lazy_static! {
+    static ref STDIN: Stdin = io::stdin();
+    static ref STDOUT: Stdout = io::stdout();
+}
+
+pub fn stdinlock() -> StdinLock<'static> {
+    STDIN.lock()
+}
+
+pub fn stdoutlock() -> StdoutLock<'static> {
+    STDOUT.lock()
+}
+
+pub struct Renderer<'a> {
+    id: String,
+    sender: &'a mut Sender<RendererMessage>,
+    document: Option<NodeRef>,
+    stylesheets: Vec<StyleSheet>,
+}
+
+impl<'a> Renderer<'a> {
+    pub fn new(sender: &'a mut Sender<RendererMessage>) -> Self {
+        Self {
+            id: nanoid::simple(),
+            sender,
+            document: None,
+            stylesheets: Vec::new(),
+        }
+    }
+
+    pub fn id(&self) -> &str {
+        &self.id
+    }
+
+    pub fn handle_kernel_msg(&mut self, msg: KernelMessage) {
+        match msg {
+            KernelMessage::LoadHTMLLocal(path) => {
+                self.load_html_local(path);
+                self.reflow(self.document.clone());
+            }
+            KernelMessage::LoadCSSLocal(path) => {
+                self.load_css_local(path);
+                self.reflow(self.document.clone());
+            }
+            _ => {
+                log::debug!("Unknown kernel message: {:?}", msg);
+            }
+        }
+    }
+
+    fn reflow(&mut self, root: Option<NodeRef>) {
+        if let Some(root) = root {
+            let new_layout = layouting::layout(&root, &self.stylesheets, 500.0, 300.0);
+
+            log::debug!("{}", new_layout.to_string());
+
+            let display_list = painting::build_display_list(&new_layout);
+
+            self.sender
+                .send(RendererMessage::RePaint(display_list))
+                .expect("Can't send display list");
+        }
+    }
+
+    fn load_html_local(&mut self, path: String) {
+        if let Ok(html) = fs::read_to_string(&path) {
+            let dom = parsing::parse_html(html);
+            self.document = Some(dom);
+        } else {
+            self.sender
+                .send(RendererMessage::ResourceNotFound(path))
+                .expect("Can't send response");
+        }
+    }
+
+    fn load_css_local(&mut self, path: String) {
+        if let Ok(css) = fs::read_to_string(&path) {
+            let stylesheet = parsing::parse_css(css);
+            self.stylesheets.push(stylesheet);
+        } else {
+            self.sender
+                .send(RendererMessage::ResourceNotFound(path))
+                .expect("Can't send response");
+        }
     }
 }
 
+fn init_logging(id: &str) {
+    let mut log_dir = dirs::home_dir().expect("Home directory not found");
+    log_dir.push("/tmp/moon");
+    std::fs::create_dir_all(&log_dir).expect("Cannot create log directory");
+
+    log_dir.push(format!("renderer_log.txt"));
+    simple_logging::log_to_file(log_dir, log::LevelFilter::Debug).expect("Can not open log file");
+}
+
 fn main() {
-    // parse HTML
-    let html = include_str!("../fixtures/test.html");
-    let tokenizer = html::tokenizer::Tokenizer::new(html.to_owned());
-    let tree_builder = html::tree_builder::TreeBuilder::new(tokenizer);
-    let document = tree_builder.run();
+    let mut ipc = Client::<KernelMessage, RendererMessage>::new(stdinlock, stdoutlock);
+    let mut renderer = Renderer::new(&mut ipc.sender);
 
-    // parse CSS
-    let css = r#"
-        * { display: block; }
-        div { padding: 12px; }
-        .a { background-color: rgb(52, 152, 219); }
-        .b { background-color: rgb(155, 89, 182); }
-        .c { background-color: rgb(52, 73, 94); }
-        .d { background-color: rgb(231, 76, 60); }
-        .e { background-color: rgb(230, 126, 34); }
-        .f { background-color: rgb(241, 196, 15); }
-        .g { background-color: rgb(64, 64, 122); }
-    "#;
+    init_logging(renderer.id());
 
-    let tokenizer = css::tokenizer::Tokenizer::new(css.to_string());
-    let mut parser = css::parser::Parser::<css::tokenizer::token::Token>::new(tokenizer.run());
-    let stylesheet = parser.parse_a_css_stylesheet();
-
-    let rules = stylesheet
-        .iter()
-        .map(|rule| match rule {
-            CSSRule::Style(style) => ContextualRule {
-                inner: style,
-                location: CSSLocation::Embedded,
-                origin: CascadeOrigin::User,
-            },
-        })
-        .collect::<Vec<ContextualRule>>();
-
-    // layout
-    let render_tree = build_render_tree(document, &rules);
-    let mut layout_tree = build_layout_tree(render_tree.root.unwrap()).unwrap();
-
-    let logical_size = winit::dpi::LogicalSize::new(500.0, 300.0);
-
-    layout::layout(
-        &mut layout_tree,
-        &mut ContainingBlock {
-            offset_x: 0.,
-            offset_y: 0.,
-            x: 0.,
-            y: 0.,
-            width: logical_size.width,
-            height: logical_size.height,
-            previous_margin_bottom: 0.0,
-            collapsed_margins_vertical: 0.0,
-        },
-    );
-
-    print_layout_tree(&layout_tree, 0);
-
-    // window creation
-    let event_loop = winit::event_loop::EventLoop::<()>::with_user_event();
-
-    let visible_range = skulpin::skia_safe::Rect {
-        left: 0.0,
-        right: logical_size.width as f32,
-        top: 0.0,
-        bottom: logical_size.height as f32,
-    };
-    let scale_to_fit = skulpin::skia_safe::matrix::ScaleToFit::Center;
-
-    // Create a single window
-    let winit_window = winit::window::WindowBuilder::new()
-        .with_title("Moon")
-        .with_inner_size(logical_size)
-        .build(&event_loop)
-        .expect("Failed to create window");
-
-    let window = skulpin::WinitWindow::new(&winit_window);
-
-    let renderer = skulpin::RendererBuilder::new()
-        .use_vulkan_debug_layer(false)
-        .coordinate_system(skulpin::CoordinateSystem::VisibleRange(
-            visible_range,
-            scale_to_fit,
-        ))
-        .build(&window);
-
-    // Check if there were error setting up vulkan
-    if let Err(e) = renderer {
-        println!("Error during renderer construction: {:?}", e);
-        return;
-    }
-
-    let mut renderer = renderer.unwrap();
-    let mut painter = SkiaPainter::new();
-
-    event_loop.run(move |event, _, control_flow| {
-        let window = skulpin::WinitWindow::new(&winit_window);
-
-        match event {
-            winit::event::Event::WindowEvent {
-                event: winit::event::WindowEvent::CloseRequested,
-                ..
-            } => *control_flow = winit::event_loop::ControlFlow::Exit,
-            //
-            // Request a redraw any time we finish processing events
-            //
-            winit::event::Event::MainEventsCleared => {
-                // Queue a RedrawRequested event.
-                winit_window.request_redraw();
-            }
-            //
-            // Redraw
-            //
-            winit::event::Event::RedrawRequested(_window_id) => {
-                if let Err(e) = renderer.draw(&window, |canvas, _| {
-                    paint(&layout_tree, &mut painter, canvas);
-                }) {
-                    println!("Error during draw: {:?}", e);
-                    *control_flow = winit::event_loop::ControlFlow::Exit
+    loop {
+        match ipc.receiver.recv() {
+            Ok(msg) => {
+                if let KernelMessage::Exit = msg {
+                    log::info!("Received exit. Goodbye!");
+                    break;
                 }
+                renderer.handle_kernel_msg(msg);
             }
-            _ => {}
+            Err(_) => break,
         }
-    });
+    }
 }

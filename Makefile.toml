@@ -1,0 +1,18 @@
+[tasks.renderer]
+workspace = false
+script = '''
+cd ./rendering &&
+cargo build
+'''
+
+[tasks.start]
+workspace = false
+dependencies = ["renderer"]
+command = "cargo"
+args = ["run"]
+
+[tasks.example]
+workspace = false
+dependencies = ["renderer"]
+command = "cargo"
+args = ["run", "--", "--html", "fixtures/test.html", "--css", "fixtures/test.css"]

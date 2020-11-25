@@ -120,3 +120,14 @@ impl SimpleSelector {
         &self.type_
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn test_specificity() {
+        let a = Specificity::new(0, 0, 0);
+        let b = Specificity::new(0, 0, 1);
+        assert!(a < b);
+    }
+}

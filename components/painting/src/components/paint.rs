@@ -1,16 +1,18 @@
-#[derive(Debug)]
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Paint {
     pub style: PaintStyle,
     pub color: PaintColor,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub enum PaintStyle {
     Fill,
     Stroke,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct PaintColor {
     pub r: u8,
     pub g: u8,

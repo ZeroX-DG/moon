@@ -142,4 +142,27 @@ impl LayoutBox {
     pub fn set_parent_formatting_context(&mut self, context: FormattingContext) {
         self.parent_formatting_context = Some(context);
     }
+
+    pub fn to_string(&self) -> String {
+        dump_layout_tree(&self, 0)
+    }
+}
+
+fn dump_layout_tree(root: &LayoutBox, level: usize) -> String {
+    let mut result = String::new();
+    let child_nodes = &root.children;
+    result.push_str(&format!(
+        "{}{:#?}({:#?})(x: {} | y: {} | width: {} | height: {})\n",
+        "    ".repeat(level),
+        root.box_type,
+        root.render_node.borrow().node,
+        root.dimensions.content.x,
+        root.dimensions.content.y,
+        root.dimensions.content.width,
+        root.dimensions.content.height
+    ));
+    for node in child_nodes {
+        result.push_str(&dump_layout_tree(node, level + 1));
+    }
+    return result;
 }

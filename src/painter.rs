@@ -12,19 +12,19 @@ impl SkiaPainter {
         Self { paint }
     }
 
-    pub fn translate_color(color: PaintColor) -> skia_safe::Color {
+    pub fn translate_color(color: &PaintColor) -> skia_safe::Color {
         skia_safe::Color::from_argb(color.a, color.r, color.g, color.b)
     }
 }
 
 impl Painter<Canvas> for SkiaPainter {
-    fn paint_rect(&mut self, rect: Rect, paint: Paint, canvas: &mut Canvas) {
+    fn paint_rect(&mut self, rect: &Rect, paint: &Paint, canvas: &mut Canvas) {
         self.paint.set_style(match paint.style {
             PaintStyle::Fill => skia_safe::PaintStyle::Fill,
             PaintStyle::Stroke => skia_safe::PaintStyle::Stroke,
         });
 
-        self.paint.set_color(Self::translate_color(paint.color));
+        self.paint.set_color(Self::translate_color(&paint.color));
 
         canvas.draw_rect(
             skia_safe::Rect {
