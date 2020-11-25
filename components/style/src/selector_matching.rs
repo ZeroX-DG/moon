@@ -3,7 +3,13 @@ use dom::dom_ref::NodeRef;
 use dom::element::Element;
 
 fn get_parent(el: &NodeRef) -> Option<NodeRef> {
-    el.borrow().as_node().parent()
+    let parent = el.borrow().as_node().parent();
+    if let Some(p) = parent {
+        if p.is_element() {
+            return Some(p);
+        }
+    }
+    None
 }
 
 fn get_prev_sibling(el: &NodeRef) -> Option<NodeRef> {
