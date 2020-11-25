@@ -1,7 +1,7 @@
 use super::renderer_handler::{RendererHandler, RendererHandlers};
 use flume::Sender;
 use ipc::Selector;
-use message::{KernelMessage, RendererMessage};
+use message::RendererMessage;
 
 pub struct Kernel {
     renderer_handlers: RendererHandlers,
@@ -30,8 +30,10 @@ impl Kernel {
             RendererMessage::RePaint(display_list) => {
                 ui_sender
                     .send(display_list)
-                    .map_err(|e| log::error!("{:#?}", e.to_string()))
                     .unwrap();
+            }
+            RendererMessage::ResourceNotFound(path) => {
+                panic!("Resource not found: {:#?}", path);
             }
             _ => {}
         }
@@ -45,18 +47,8 @@ impl Kernel {
         }
     }
 
-    pub fn init_ui(&mut self) {
-        let renderer = self.renderer_handlers.new_renderer();
-        renderer
-            .send(KernelMessage::LoadHTMLLocal(
-                "/home/zerox/Desktop/Projects/moon/rendering/fixtures/test.html".to_string(),
-            ))
-            .unwrap();
-        renderer
-            .send(KernelMessage::LoadCSSLocal(
-                "/home/zerox/Desktop/Projects/moon/rendering/fixtures/test.css".to_string(),
-            ))
-            .unwrap();
+    pub fn renderer_handlers(&mut self) -> &mut RendererHandlers {
+        &mut self.renderer_handlers
     }
 
     pub fn main_loop(&mut self, ui_sender: Sender<painting::DisplayList>) {

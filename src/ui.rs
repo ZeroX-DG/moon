@@ -1,5 +1,6 @@
 use super::painter::SkiaPainter;
 use flume::Receiver;
+use painting::DisplayList;
 use skulpin::winit::{
     self,
     dpi::LogicalSize,
@@ -64,27 +65,42 @@ impl WindowWrapper {
     }
 }
 
-pub fn run_ui_loop(kernel_receiver: Receiver<painting::DisplayList>) {
-    let event_loop = EventLoop::<()>::with_user_event();
-    let mut window_wrapper = WindowWrapper::new(&event_loop);
-    let need_redraw = Arc::new(Mutex::new(true));
-    let display_list = Arc::new(Mutex::new(vec![]));
-
-    let need_redraw_1 = Arc::clone(&need_redraw);
-    let display_list_1 = Arc::clone(&display_list);
+/// Initialize a thread to receive display list
+/// from kernel thread. Everytime it receive the
+/// display list, it mark the screen as need redraw.
+fn run_display_receiver(
+    kernel_receiver: Receiver<painting::DisplayList>,
+    need_redraw: Arc<Mutex<bool>>,
+    display_list: Arc<Mutex<DisplayList>>
+) {
     std::thread::spawn(move || loop {
         match kernel_receiver.recv() {
             Ok(new_display_list) => {
-                let mut need_redraw = need_redraw_1.lock().unwrap();
-                let mut display_list = display_list_1.lock().unwrap();
+                let mut need_redraw = need_redraw.lock().unwrap();
+                let mut display_list = display_list.lock().unwrap();
                 *need_redraw = true;
                 *display_list = new_display_list;
             }
             _ => {}
         }
     });
+}
+
+pub fn run_ui_loop(kernel_receiver: Receiver<painting::DisplayList>) {
+    let event_loop = EventLoop::<()>::with_user_event();
+    let mut window_wrapper = WindowWrapper::new(&event_loop);
+    let need_redraw = Arc::new(Mutex::new(true));
+    let display_list = Arc::new(Mutex::new(vec![]));
+
+    run_display_receiver(
+        kernel_receiver,
+        Arc::clone(&need_redraw),
+        Arc::clone(&display_list)
+    );
+
     let need_redraw = Arc::clone(&need_redraw);
     let display_list = Arc::clone(&display_list);
+
     event_loop.run(move |e, _window_target, control_flow| {
         let frame_start = Instant::now();
         match e {

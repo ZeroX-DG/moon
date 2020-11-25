@@ -49,11 +49,11 @@ impl<'a> Renderer<'a> {
         match msg {
             KernelMessage::LoadHTMLLocal(path) => {
                 self.load_html_local(path);
-                self.reflow(self.document.clone().unwrap());
+                self.reflow(self.document.clone());
             }
             KernelMessage::LoadCSSLocal(path) => {
                 self.load_css_local(path);
-                self.reflow(self.document.clone().unwrap());
+                self.reflow(self.document.clone());
             }
             _ => {
                 log::debug!("Unknown kernel message: {:?}", msg);
@@ -61,28 +61,38 @@ impl<'a> Renderer<'a> {
         }
     }
 
-    fn reflow(&mut self, root: NodeRef) {
-        let new_layout = layouting::layout(&root, &self.stylesheets, 500.0, 300.0);
+    fn reflow(&mut self, root: Option<NodeRef>) {
+        if let Some(root) = root {
+            let new_layout = layouting::layout(&root, &self.stylesheets, 500.0, 300.0);
 
-        log::debug!("{}", new_layout.to_string());
+            log::debug!("{}", new_layout.to_string());
 
-        let display_list = painting::build_display_list(&new_layout);
+            let display_list = painting::build_display_list(&new_layout);
 
-        self.sender
-            .send(RendererMessage::RePaint(display_list))
-            .expect("Can't send frame");
+            self.sender
+                .send(RendererMessage::RePaint(display_list))
+                .expect("Can't send display list");
+        }
     }
 
     fn load_html_local(&mut self, path: String) {
-        let html = fs::read_to_string(path).expect("Unable to read HTML file");
-        let dom = parsing::parse_html(html);
-        self.document = Some(dom);
+        if let Ok(html) = fs::read_to_string(&path) {
+            let dom = parsing::parse_html(html);
+            self.document = Some(dom);
+        } else {
+            self.sender.send(RendererMessage::ResourceNotFound(path))
+                .expect("Can't send response");
+        }
     }
 
     fn load_css_local(&mut self, path: String) {
-        let css = fs::read_to_string(path).expect("Unable to read CSS file");
-        let stylesheet = parsing::parse_css(css);
-        self.stylesheets.push(stylesheet);
+        if let Ok(css) = fs::read_to_string(&path) {
+            let stylesheet = parsing::parse_css(css);
+            self.stylesheets.push(stylesheet);
+        } else {
+            self.sender.send(RendererMessage::ResourceNotFound(path))
+                .expect("Can't send response");
+        }
     }
 }
 

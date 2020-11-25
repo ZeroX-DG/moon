@@ -18,6 +18,7 @@ pub enum KernelMessage {
 #[derive(Debug, Serialize, Deserialize)]
 pub enum RendererMessage {
     RePaint(DisplayList),
+    ResourceNotFound(String),
     Exit,
 }
 
