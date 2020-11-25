@@ -256,4 +256,28 @@ mod tests {
             }
         }
     }
+
+    #[test]
+    fn match_group_of_types() {
+        let parent = NodeRef::new(Element::new("h1".to_string()));
+        let child = NodeRef::new(Element::new("button".to_string()));
+        Node::append_child(parent.clone(), child.clone());
+
+        let css = "h1, button { color: red; }";
+
+        let tokenizer = Tokenizer::new(css.to_string());
+        let tokens = tokenizer.run();
+        let mut parser = Parser::<Token>::new(tokens);
+        let stylesheet = parser.parse_a_css_stylesheet();
+
+        let rule = stylesheet.first().unwrap();
+
+        match rule {
+            CSSRule::Style(style) => {
+                let selectors = &style.selectors;
+                assert!(is_match_selectors(&child, selectors));
+                assert!(is_match_selectors(&parent, selectors));
+            }
+        }
+    }
 }

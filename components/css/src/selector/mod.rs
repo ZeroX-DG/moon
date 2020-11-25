@@ -166,6 +166,7 @@ pub fn parse_simple_selector_seq(
             if let Some(value) = data_stream.peek() {
                 match value {
                     ComponentValue::PerservedToken(Token::Whitespace) => break,
+                    ComponentValue::PerservedToken(Token::Comma) => break,
                     _ => {
                         data_stream.next();
                     }
@@ -372,7 +373,7 @@ mod tests {
 
     #[test]
     fn parse_multiple() {
-        let css = "div.class , #name { color: black; }";
+        let css = "div.class, #name { color: black; }";
         let tokenizer = Tokenizer::new(css.to_string());
         let tokens = tokenizer.run();
         let mut parser = Parser::<Token>::new(tokens);

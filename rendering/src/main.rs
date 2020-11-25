@@ -69,6 +69,8 @@ impl<'a> Renderer<'a> {
             300.0
         );
 
+        log::debug!("{}", new_layout.to_string());
+
         let display_list = painting::build_display_list(&new_layout);
 
         self.sender.send(RendererMessage::RePaint(display_list))
