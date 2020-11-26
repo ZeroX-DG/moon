@@ -25,9 +25,9 @@ members = [
 ipc = { version = "*", path = "./components/ipc" }
 message = { version = "*", path = "./components/message" }
 painting = { version = "*", path = "./components/painting" }
+skulpin = { version = "*", default-features = false, features = ["skulpin_winit", "skia_complete", "winit-22"] }
 simple-logging = "*"
 dirs = "2.0.2"
 log = "*"
 flume = "*"
 clap = "*"
-skulpin = "*"
