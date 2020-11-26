@@ -122,7 +122,10 @@ fn place_block_in_flow(root: &mut LayoutBox, containing_block: &mut ContainingBl
         border_bottom.to_px(containing_block.width),
     );
 
-    let x = box_model.margin.left + box_model.border.left + containing_block.offset_x;
+    let content_area_x = containing_block.offset_x
+        + box_model.margin.left
+        + box_model.border.left
+        + box_model.padding.left;
 
     let (collapse_margin, collapsed) = {
         let margin_bottom = containing_block.previous_margin_bottom;
@@ -149,12 +152,15 @@ fn place_block_in_flow(root: &mut LayoutBox, containing_block: &mut ContainingBl
         }
     };
 
-    let y = collapse_margin + box_model.border.top + containing_block.offset_y;
+    let content_area_y = containing_block.offset_y
+        + collapse_margin
+        + box_model.border.top
+        + box_model.padding.top;
 
     containing_block.previous_margin_bottom = box_model.margin.bottom;
     containing_block.collapsed_margins_vertical += collapsed;
 
-    root.box_model().set_position(x, y);
+    root.box_model().set_position(content_area_x, content_area_y);
 }
 
 fn compute_width(root: &mut LayoutBox, containing_block: &ContainingBlock) {
@@ -470,7 +476,7 @@ mod tests {
         assert_eq!(third_child_dimensions.content.height, 200.);
         assert_eq!(third_child_dimensions.margin.top, 20.);
         assert_eq!(third_child_dimensions.padding.left, 10.);
-        assert_eq!(third_child_dimensions.content.x, 0.);
+        assert_eq!(third_child_dimensions.content.x, 10.);
         assert_eq!(third_child_dimensions.content.y, 360.);
     }
 
@@ -565,7 +571,7 @@ mod tests {
         assert_eq!(third_child_dimensions.content.height, 200.);
         assert_eq!(third_child_dimensions.margin.top, 50.);
         assert_eq!(third_child_dimensions.padding.left, 10.);
-        assert_eq!(third_child_dimensions.content.x, 0.);
+        assert_eq!(third_child_dimensions.content.x, 10.);
         assert_eq!(third_child_dimensions.content.y, 120.);
     }
 }
