@@ -24,19 +24,14 @@ fn render_background(root: &LayoutBox, display_list: &mut DisplayList) {
         color: style_color_to_paint_color(background.inner()).unwrap_or_default(),
     };
 
-    let rect_width = root.dimensions.content.width
-        + root.dimensions.padding.left
-        + root.dimensions.padding.right;
-
-    let rect_height = root.dimensions.content.height
-        + root.dimensions.padding.top
-        + root.dimensions.padding.bottom;
+    let (x, y) = root.dimensions.padding_box_position();
+    let (width, height) = root.dimensions.padding_box_size();
 
     let rect = Rect {
-        x: root.dimensions.content.x,
-        y: root.dimensions.content.y,
-        width: rect_width,
-        height: rect_height,
+        x,
+        y,
+        width,
+        height,
     };
 
     display_list.push(DisplayCommand::DrawRect(rect, paint));
