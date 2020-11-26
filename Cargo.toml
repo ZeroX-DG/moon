@@ -25,9 +25,11 @@ members = [
 ipc = { version = "*", path = "./components/ipc" }
 message = { version = "*", path = "./components/message" }
 painting = { version = "*", path = "./components/painting" }
-skulpin = "*"
 simple-logging = "*"
 dirs = "2.0.2"
 log = "*"
 flume = "*"
 clap = "*"
+
+[target.'cfg(target_os = "linux")'.dependencies]
+skulpin = "*"

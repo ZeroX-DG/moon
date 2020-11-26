@@ -1747,7 +1747,7 @@ impl TreeBuilder {
                 "ul"
             )
         {
-            if self
+            if !self
                 .open_elements
                 .has_element_name_in_scope(&token.tag_name())
             {
@@ -3160,6 +3160,20 @@ mod test {
                 .get_data(),
             " this is a test "
         );
+    }
+
+    #[test]
+    fn handle_parsing_children_correctly() {
+        let html = "<div><div></div><div></div><div></div></div>".to_owned();
+        let tokenizer = Tokenizer::new(html);
+        let tree_builder = TreeBuilder::new(tokenizer);
+        let document = tree_builder.run();
+
+        let html = document.borrow().as_node().first_child().unwrap();
+        let body = html.borrow().as_node().last_child().unwrap();
+        let div = body.borrow().as_node().first_child().unwrap();
+
+        assert_eq!(div.borrow().as_node().child_nodes().length(), 3);
     }
 
     #[test]

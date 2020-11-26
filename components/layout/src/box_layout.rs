@@ -470,7 +470,7 @@ mod tests {
         assert_eq!(third_child_dimensions.content.height, 200.);
         assert_eq!(third_child_dimensions.margin.top, 20.);
         assert_eq!(third_child_dimensions.padding.left, 10.);
-        assert_eq!(third_child_dimensions.content.x, 10.);
+        assert_eq!(third_child_dimensions.content.x, 0.);
         assert_eq!(third_child_dimensions.content.y, 360.);
     }
 
@@ -565,7 +565,7 @@ mod tests {
         assert_eq!(third_child_dimensions.content.height, 200.);
         assert_eq!(third_child_dimensions.margin.top, 50.);
         assert_eq!(third_child_dimensions.padding.left, 10.);
-        assert_eq!(third_child_dimensions.content.x, 10.);
+        assert_eq!(third_child_dimensions.content.x, 0.);
         assert_eq!(third_child_dimensions.content.y, 120.);
     }
 }

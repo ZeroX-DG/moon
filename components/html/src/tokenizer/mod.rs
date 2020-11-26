@@ -2854,4 +2854,70 @@ mod tests {
             tokenizer.next_token()
         );
     }
+
+    #[test]
+    fn tokenize_mutliple() {
+        let html = "<div><div></div><div></div></div>".to_owned();
+        let mut tokenizer = Tokenizer::new(html);
+        assert_eq!(
+            Token::Tag {
+                tag_name: "div".to_owned(),
+                self_closing: false,
+                is_end_tag: false,
+                self_closing_acknowledged: false,
+                attributes: vec![]
+            },
+            tokenizer.next_token()
+        );
+        assert_eq!(
+            Token::Tag {
+                tag_name: "div".to_owned(),
+                self_closing: false,
+                is_end_tag: false,
+                self_closing_acknowledged: false,
+                attributes: vec![]
+            },
+            tokenizer.next_token()
+        );
+        assert_eq!(
+            Token::Tag {
+                tag_name: "div".to_owned(),
+                self_closing: false,
+                is_end_tag: true,
+                self_closing_acknowledged: false,
+                attributes: vec![]
+            },
+            tokenizer.next_token()
+        );
+        assert_eq!(
+            Token::Tag {
+                tag_name: "div".to_owned(),
+                self_closing: false,
+                is_end_tag: false,
+                self_closing_acknowledged: false,
+                attributes: vec![]
+            },
+            tokenizer.next_token()
+        );
+        assert_eq!(
+            Token::Tag {
+                tag_name: "div".to_owned(),
+                self_closing: false,
+                is_end_tag: true,
+                self_closing_acknowledged: false,
+                attributes: vec![]
+            },
+            tokenizer.next_token()
+        );
+        assert_eq!(
+            Token::Tag {
+                tag_name: "div".to_owned(),
+                self_closing: false,
+                is_end_tag: true,
+                self_closing_acknowledged: false,
+                attributes: vec![]
+            },
+            tokenizer.next_token()
+        );
+    }
 }

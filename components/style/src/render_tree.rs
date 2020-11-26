@@ -158,6 +158,8 @@ pub fn build_render_tree(node: NodeRef, rules: &[ContextualRule]) -> RenderTree 
         if let Some(html) = node.borrow().as_node().first_child() {
             render_root = Some(html);
         }
+    } else {
+        render_root = Some(node);
     }
 
     if let Some(node) = render_root {
