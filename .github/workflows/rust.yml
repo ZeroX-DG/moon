@@ -41,6 +41,7 @@ jobs:
           override: true
       - name: Run Tests
         uses: actions-rs/cargo@v1
+        working-directory: ./components
         with:
           command: test
 
