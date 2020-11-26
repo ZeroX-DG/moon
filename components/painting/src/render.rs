@@ -27,7 +27,12 @@ fn render_background(root: &LayoutBox, display_list: &mut DisplayList) {
     let (x, y) = root.dimensions.padding_box_position();
     let (width, height) = root.dimensions.padding_box_size();
 
-    let rect = Rect { x, y, width, height };
+    let rect = Rect {
+        x,
+        y,
+        width,
+        height,
+    };
 
     display_list.push(DisplayCommand::DrawRect(rect, paint));
 }

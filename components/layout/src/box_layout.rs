@@ -152,15 +152,14 @@ fn place_block_in_flow(root: &mut LayoutBox, containing_block: &mut ContainingBl
         }
     };
 
-    let content_area_y = containing_block.offset_y
-        + collapse_margin
-        + box_model.border.top
-        + box_model.padding.top;
+    let content_area_y =
+        containing_block.offset_y + collapse_margin + box_model.border.top + box_model.padding.top;
 
     containing_block.previous_margin_bottom = box_model.margin.bottom;
     containing_block.collapsed_margins_vertical += collapsed;
 
-    root.box_model().set_position(content_area_x, content_area_y);
+    root.box_model()
+        .set_position(content_area_x, content_area_y);
 }
 
 fn compute_width(root: &mut LayoutBox, containing_block: &ContainingBlock) {

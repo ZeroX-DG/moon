@@ -102,19 +102,18 @@ impl Dimensions {
     }
 
     pub fn padding_box_height(&self) -> f32 {
-        self.content.height
-            + self.padding.top
-            + self.padding.bottom
+        self.content.height + self.padding.top + self.padding.bottom
     }
 
     pub fn padding_box_width(&self) -> f32 {
-        self.content.width
-            + self.padding.left
-            + self.padding.right
+        self.content.width + self.padding.left + self.padding.right
     }
 
     pub fn padding_box_position(&self) -> (f32, f32) {
-        (self.content.x - self.padding.left, self.content.y - self.padding.top)
+        (
+            self.content.x - self.padding.left,
+            self.content.y - self.padding.top,
+        )
     }
 
     pub fn padding_box_size(&self) -> (f32, f32) {
