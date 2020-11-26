@@ -28,7 +28,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-latest]
 
     steps:
       - name: Checkout sources
@@ -39,9 +39,12 @@ jobs:
         with:
           toolchain: stable
           override: true
+
+      - name: Install SDL2 library
+        run: sudo apt-get install libsdl2-dev
+
       - name: Run Tests
         uses: actions-rs/cargo@v1
-        working-directory: ./components
         with:
           command: test
 
