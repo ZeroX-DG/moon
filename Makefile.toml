@@ -5,6 +5,17 @@ cd ./rendering &&
 cargo build
 '''
 
+[tasks.kernel]
+workspace = false
+command = "cargo"
+args = ["build"]
+
+[tasks.build]
+run_task = [
+	{ name = "renderer" },
+	{ name = "kernel" },
+]
+
 [tasks.start]
 workspace = false
 dependencies = ["renderer"]

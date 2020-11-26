@@ -1,0 +1,9 @@
+FROM ubuntu:bionic
+ARG DEBIAN_FRONTEND=noninteractive
+RUN apt-get update -y && apt-get install -y curl git build-essential cmake pkg-config libssl-dev
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+ENV PATH="/root/.cargo/bin:${PATH}"
+RUN cargo install --force cargo-make
+RUN git clone https://github.com/ZeroX-DG/moon.git
+WORKDIR moon
+RUN cargo make build
