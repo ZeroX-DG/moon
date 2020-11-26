@@ -30,6 +30,4 @@ dirs = "2.0.2"
 log = "*"
 flume = "*"
 clap = "*"
-
-[target.'cfg(target_os = "linux")'.dependencies]
 skulpin = "*"
