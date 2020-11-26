@@ -31,7 +31,7 @@ Here are the steps to try it out if you are interested:
 
 Refer to the [Makefile.toml](Makefile.toml) file for more info.
 
-**Requirement:** You should have SDL2 installed.
+**Requirement:** Please refer to the proper Dockerfile in [`/docker`](/docker) for more information.
 
 **Tested on:** Ubuntu 18.04
 
