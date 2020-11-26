@@ -40,6 +40,9 @@ jobs:
           toolchain: stable
           override: true
 
+      - name: Install ubuntu required packages
+        run: sudo apt update && sudo apt install libsdl2-dev
+
       - name: Run Tests
         uses: actions-rs/cargo@v1
         with:
