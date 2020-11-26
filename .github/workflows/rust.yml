@@ -40,35 +40,7 @@ jobs:
           toolchain: stable
           override: true
 
-      - name: Install SDL2 library
-        run: sudo apt-get install libsdl2-dev
-
       - name: Run Tests
         uses: actions-rs/cargo@v1
         with:
           command: test
-
-  build:
-    name: Build Binaries
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
-
-    steps:
-      - name: Checkout sources
-        uses: actions/checkout@v2
-
-      - name: Install stable toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
-
-      - name: Install SDL2 library
-        run: sudo apt-get install libsdl2-dev
-
-      - name: Run Build
-        uses: actions-rs/cargo@v1
-        with:
-          command: build

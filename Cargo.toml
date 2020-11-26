@@ -25,6 +25,8 @@ members = [
 ipc = { version = "*", path = "./components/ipc" }
 message = { version = "*", path = "./components/message" }
 painting = { version = "*", path = "./components/painting" }
+
+[target.'cfg(not(test))'.dependencies]
 skulpin = "*"
 simple-logging = "*"
 dirs = "2.0.2"
