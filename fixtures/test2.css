@@ -1,0 +1,24 @@
+html, body {
+  display: block;
+}
+
+div {
+    display: block;
+}
+#blue {
+    background-color: blue;
+    height: 340px;
+    width: 50%;
+}
+#red {
+    background-color: red;
+    height: 200px;
+    margin-top: 20px;
+    padding-left: 10px;
+}
+
+#yellow {
+    background-color: yellow;
+    height: 20px;
+    width: 30px;
+}
