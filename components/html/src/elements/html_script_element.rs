@@ -4,7 +4,6 @@ use dom::element::Element;
 use dom::node::Node;
 use std::any::Any;
 
-#[allow(dead_code)]
 pub struct HTMLScriptElement {
     html_element: HTMLElement,
     src: String,

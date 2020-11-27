@@ -2,6 +2,7 @@ use dom::dom_ref::DOMObject;
 use dom::element::Element;
 use dom::node::Node;
 use std::any::Any;
+use std::ops::Deref;
 
 mod html_base_element;
 mod html_body_element;
@@ -30,6 +31,13 @@ pub struct HTMLElement {
 impl HTMLElement {
     pub fn new(element: Element) -> Self {
         Self { element }
+    }
+}
+
+impl Deref for HTMLElement {
+    type Target = Element;
+    fn deref(&self) -> &Self::Target {
+        &self.element
     }
 }
 

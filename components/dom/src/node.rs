@@ -1,5 +1,6 @@
 use super::dom_ref::{NodeRef, WeakNodeRef};
 use super::node_list::NodeList;
+use super::text::Text;
 
 pub struct Node {
     parent_node: Option<WeakNodeRef>,
@@ -80,10 +81,91 @@ impl Node {
         }
     }
 
-    pub fn detach(&mut self) {
-        self.parent_node = None;
-        self.prev_sibling = None;
-        self.next_sibling = None;
+    /// Text content of the node
+    pub fn text_content(node: &NodeRef) -> String {
+        if node.is::<Text>() {
+            return node
+                .borrow()
+                .as_any()
+                .downcast_ref::<Text>()
+                .unwrap()
+                .get_data();
+        }
+        let mut result = String::new();
+        for child in node.borrow().as_node().child_nodes() {
+            result.push_str(&Node::text_content(&child));
+        }
+        result
+    }
+
+    /// Detach node from the parent
+    pub fn detach(node_ref: &NodeRef) {
+        let mut node = node_ref.borrow_mut();
+        let node = node.as_node_mut();
+
+        let parent = node.parent();
+
+        if let Some(parent) = parent {
+            let mut parent_borrow = parent.borrow_mut();
+            let parent_node = parent_borrow.as_node_mut();
+            
+            {
+                let first_child = parent_node.first_child().unwrap();
+                let last_child = parent_node.last_child().unwrap();
+
+                if *node_ref == first_child {
+                    parent_node.first_child = node.next_sibling();
+                }
+                else if *node_ref == last_child {
+                    parent_node.last_child = node.prev_sibling.clone();
+                }
+            }
+
+            let mut child = parent_node.first_child();
+
+            while let Some(c) = child {
+                if c == *node_ref {
+                    let mut inner = c.borrow_mut();
+                    let inner = inner.as_node_mut();
+                    let previous_sibling = inner.prev_sibling();
+                    let next_sibling = inner.next_sibling();
+
+                    if let Some(prev) = previous_sibling {
+                        if let Some(next) = next_sibling {
+                            prev.borrow_mut().as_node_mut().next_sibling = Some(next.clone());
+                            next.borrow_mut().as_node_mut().prev_sibling = Some(prev.downgrade());
+                        } else {
+                            prev.borrow_mut().as_node_mut().next_sibling = None;
+                        }
+                    } else {
+                        if let Some(next) = next_sibling {
+                            next.borrow_mut().as_node_mut().prev_sibling = None;
+                        }
+                    }
+                    break
+                } else {
+                    child = c.borrow().as_node().next_sibling();
+                }
+            }
+        }
+
+        node.parent_node = None;
+        node.prev_sibling = None;
+        node.next_sibling = None;
+    }
+
+    /// Transfer parent of nodes
+    pub fn reparent_nodes_in_node(old_parent: NodeRef, new_parent: NodeRef) {
+        let mut old_borrow = old_parent.borrow_mut();
+        let mut new_borrow = new_parent.borrow_mut();
+        let old = old_borrow.as_node_mut();
+        let new = new_borrow.as_node_mut();
+        new.first_child = old.first_child.take();
+        new.last_child = old.last_child.take();
+
+        for child in new.child_nodes() {
+            child.borrow_mut().as_node_mut().parent_node = Some(new_parent.clone().downgrade());
+        }
     }
 
     /// Append a child node to a parent node
@@ -95,6 +177,9 @@ impl Node {
     /// 4. The next-to-last child of the parent next sibling is the child if the parent has more
     ///    than 1 child
     pub fn append_child(parent: NodeRef, child: NodeRef) {
+        // detach from parent
+        Node::detach(&child);
+
         let mut parent_node = parent.borrow_mut();
         let mut parent_node = parent_node.as_node_mut();
 
@@ -127,6 +212,7 @@ impl Node {
     /// 6. The previous sibling of the inserted node is the node before the reference node
     /// 7. The parent of the inserted child is the parent
     pub fn insert_before(parent: NodeRef, child: NodeRef, ref_child: Option<NodeRef>) {
+        Node::detach(&child);
         if let Some(ref_child) = ref_child {
             let mut ref_child_node = ref_child.borrow_mut();
             let mut ref_child_node = ref_child_node.as_node_mut();
@@ -248,5 +334,24 @@ mod test {
         assert_eq!(child.borrow().as_node().parent(), Some(parent.clone()));
         assert_eq!(child.borrow().as_node().prev_sibling(), None);
         assert_eq!(child.borrow().as_node().next_sibling(), None);
+    }
+
+    #[test]
+    fn detach_before_append() {
+        let parent = NodeRef::new(Node::new());
+        let child = NodeRef::new(Node::new());
+
+        Node::append_child(parent.clone(), child.clone());
+
+        assert_eq!(parent.borrow().as_node().first_child(), Some(child.clone()));
+        assert_eq!(child.borrow().as_node().parent(), Some(parent.clone()));
+
+        let new_parent = NodeRef::new(Node::new());
+
+        Node::append_child(new_parent.clone(), child.clone());
+
+        assert_eq!(parent.borrow().as_node().first_child(), None);
+        assert_eq!(new_parent.borrow().as_node().first_child(), Some(child.clone()));
+        assert_eq!(child.borrow().as_node().parent(), Some(new_parent.clone()));
     }
 }

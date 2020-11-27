@@ -67,6 +67,17 @@ impl ListOfActiveFormattingElements {
         }
         false
     }
+
+    pub fn get_index_of_node(&self, node: &NodeRef) -> Option<usize> {
+        for (index, entry) in self.entries.iter().rev().enumerate() {
+            if let Entry::Element(el) = entry {
+                if el == node {
+                    return Some(index);
+                }
+            }
+        }
+        None
+    }
 }
 
 impl Deref for ListOfActiveFormattingElements {

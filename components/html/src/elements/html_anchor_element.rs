@@ -1,22 +1,11 @@
 use super::HTMLElement;
 use dom::dom_ref::DOMObject;
 use dom::element::Element;
-use dom::dom_token_list::DOMTokenList;
 use dom::node::Node;
 use std::any::Any;
 
-#[allow(dead_code)]
 pub struct HTMLAnchorElement {
-    html_element: HTMLElement,
-    target: String,
-    download: String,
-    ping: String,
-    rel: String,
-    rel_list: DOMTokenList,
-    hreflang: String,
-    type_: String,
-    text: String,
-    referrer_policy: String
+    html_element: HTMLElement
 }
 
 impl core::fmt::Debug for HTMLAnchorElement {
@@ -28,17 +17,23 @@ impl core::fmt::Debug for HTMLAnchorElement {
 impl HTMLAnchorElement {
     pub fn new(html_element: HTMLElement) -> Self {
         Self {
-            html_element,
-            target: String::new(),
-            download: String::new(),
-            ping: String::new(),
-            rel: String::new(),
-            rel_list: DOMTokenList::new(),
-            hreflang: String::new(),
-            type_: String::new(),
-            text: String::new(),
-            referrer_policy: String::new()
+            html_element
         }
+    }
+
+    pub fn href(&self) -> String {
+        if let Some(href) = self.html_element.attributes().get("href") {
+            return href.clone();
+        }
+        String::new()
+    }
+
+    pub fn text(&self) -> String {
+        let mut result = String::new();
+        for child in self.html_element.element.node.child_nodes() {
+            result.push_str(&Node::text_content(&child));
+        }
+        result
     }
 }
 

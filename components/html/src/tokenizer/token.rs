@@ -185,4 +185,13 @@ impl Attribute {
             namespace: String::new(),
         }
     }
+
+    pub fn from_name_value(name: String, value: String) -> Self {
+        Self {
+            name,
+            value,
+            prefix: String::new(),
+            namespace: String::new()
+        }
+    }
 }

@@ -375,8 +375,8 @@ impl TreeBuilder {
         })
     }
 
-    fn get_appropriate_place_for_inserting_a_node(&self) -> AdjustedInsertionLocation {
-        let target = self.open_elements.current_node().unwrap();
+    fn get_appropriate_place_for_inserting_a_node(&self, target: Option<NodeRef>) -> AdjustedInsertionLocation {
+        let target = target.unwrap_or(self.open_elements.current_node().unwrap());
 
         let adjusted_location = if self.foster_parenting
             && match_any!(
@@ -420,7 +420,7 @@ impl TreeBuilder {
     }
 
     fn insert_html_element(&mut self, token: Token) -> NodeRef {
-        let insert_position = self.get_appropriate_place_for_inserting_a_node();
+        let insert_position = self.get_appropriate_place_for_inserting_a_node(None);
         let element = self.create_element(token);
         let return_ref = element.clone();
 
@@ -440,7 +440,7 @@ impl TreeBuilder {
     }
 
     fn insert_character(&mut self, ch: char) {
-        let insert_position = self.get_appropriate_place_for_inserting_a_node();
+        let insert_position = self.get_appropriate_place_for_inserting_a_node(None);
         if insert_position
             .parent()
             .borrow()
@@ -479,7 +479,7 @@ impl TreeBuilder {
     }
 
     fn insert_comment(&mut self, data: String) {
-        let insert_position = self.get_appropriate_place_for_inserting_a_node();
+        let insert_position = self.get_appropriate_place_for_inserting_a_node(None);
         let comment = NodeRef::new(Comment::new(data));
         self.insert_at(insert_position, comment);
     }
@@ -661,17 +661,19 @@ impl TreeBuilder {
                 self.unexpected(&token);
             }
 
-            let furthest_block = {
+            let (mut furthest_block, mut furthest_block_index) = {
                 let mut found_element = None;
-                for element in self.open_elements.0.iter().rev() {
+                let mut found_index = None;
+                for (index, element) in self.open_elements.iter().rev().enumerate() {
                     if *element == fmt_element {
                         break;
                     }
                     if is_special_element(&get_element!(element).tag_name()) {
-                        found_element = Some(element);
+                        found_element = Some(element.clone());
+                        found_index = Some(index);
                     }
                 }
-                found_element
+                (found_element, found_index)
             };
 
             if furthest_block.is_none() {
@@ -683,8 +685,117 @@ impl TreeBuilder {
                 return AdoptionAgencyOutcome::DoNothing;
             }
 
-            // TODO: implement the rest of the algo
-            unimplemented!();
+            let mut common_ancestor = {
+                let mut found_element = None;
+                for (index, el) in self.open_elements.iter().rev().enumerate() {
+                    if *el == fmt_element {
+                        if index < self.open_elements.len() - 1 {
+                            found_element = Some(self.open_elements.get(index + 1));
+                        }
+                        break
+                    }
+                }
+                found_element
+            };
+
+            let common_ancestor = common_ancestor
+                .take()
+                .expect("Common ancestor doesn't exists in agency adoption algo");
+
+            let mut bookmark = self.active_formatting_elements
+                .iter()
+                .rposition(|el| match el {
+                    Entry::Element(e) => *e == fmt_element,
+                    _ => false
+                })
+                .unwrap();
+
+            let furthest_block = furthest_block.take().unwrap();
+            let furthest_block_index = furthest_block_index.take().unwrap();
+
+            let mut node;
+            let mut node_index = furthest_block_index;
+            let mut last_node = furthest_block.clone();
+
+            let mut inner_counter = 0;
+
+            loop {
+                inner_counter += 1;
+
+                node_index -= 1;
+                node = self.open_elements.get(node_index);
+
+                if node == fmt_element {
+                    break;
+                }
+
+                if inner_counter > 3 && self.active_formatting_elements.contains_node(&node) {
+                    self.active_formatting_elements.remove_element(&node);
+                    continue;
+                }
+
+                let node_formatting_index = {
+                    if let Some(index) = self.active_formatting_elements.get_index_of_node(&node) {
+                        index
+                    } else {
+                        self.open_elements.remove_first_matching(|n| *n == node);
+                        continue;
+                    }
+                };
+
+                let node_clone = node.clone();
+                let node_borrow = node_clone.borrow();
+                let node_element = node_borrow
+                    .as_element()
+                    .expect("Node is not an element");
+                let new_element = self.create_element(Token::Tag {
+                    tag_name: node_element.tag_name(),
+                    self_closing: false,
+                    is_end_tag: false,
+                    self_closing_acknowledged: false,
+                    attributes: node_element.attributes()
+                        .iter()
+                        .map(|(k, v)| Attribute::from_name_value(k.clone(), v.clone()))
+                        .collect(),
+                });
+
+                self.open_elements[node_index] = new_element.clone();
+                self.active_formatting_elements[node_formatting_index] =
+                    Entry::Element(new_element.clone());
+
+                node = new_element;
+
+                if last_node == furthest_block {
+                    bookmark = node_formatting_index + 1;
+                }
+
+                Node::append_child(node.clone(), last_node.clone());
+                last_node = node;
+            }
+
+            let insert_place = self.get_appropriate_place_for_inserting_a_node(Some(common_ancestor));
+            self.insert_at(insert_place, last_node);
+            
+            let node_borrow = fmt_element.borrow();
+            let node_element = node_borrow.as_element().expect("Node is not element");
+            let new_element = self.create_element(Token::Tag {
+                tag_name: node_element.tag_name(),
+                self_closing: false,
+                is_end_tag: false,
+                self_closing_acknowledged: false,
+                attributes: node_element.attributes()
+                    .iter()
+                    .map(|(k, v)| Attribute::from_name_value(k.clone(), v.clone()))
+                    .collect(),
+            });
+
+            Node::reparent_nodes_in_node(furthest_block.clone(), new_element.clone());
+            Node::append_child(furthest_block.clone(), new_element.clone());
+
+            self.active_formatting_elements.remove_element(&fmt_element);
+            self.active_formatting_elements[bookmark] = Entry::Element(new_element.clone());
+            self.open_elements.remove_first_matching(|n| *n == fmt_element);
+            self.open_elements.insert(furthest_block_index + 1, new_element);
         }
         AdoptionAgencyOutcome::DoNothing
     }
@@ -1035,7 +1146,7 @@ impl TreeBuilder {
         }
 
         if token.is_start_tag() && token.tag_name() == "script" {
-            let insert_position = self.get_appropriate_place_for_inserting_a_node();
+            let insert_position = self.get_appropriate_place_for_inserting_a_node(None);
             let element = self.create_element(token);
             if let Some(script_element) = element
                 .borrow_mut()
@@ -1424,7 +1535,7 @@ impl TreeBuilder {
             }
 
             let second_element = self.open_elements.get(1);
-            second_element.borrow_mut().as_node_mut().detach();
+            Node::detach(&second_element);
 
             while get_element!(self.current_node()).tag_name() != "html" {
                 self.open_elements.pop();
@@ -3139,6 +3250,7 @@ impl TreeBuilder {
 mod test {
     use super::*;
     use crate::tokenizer::Tokenizer;
+    use crate::elements::HTMLAnchorElement;
 
     #[test]
     fn handle_initial_correctly() {
@@ -3174,6 +3286,24 @@ mod test {
         let div = body.borrow().as_node().first_child().unwrap();
 
         assert_eq!(div.borrow().as_node().child_nodes().length(), 3);
+    }
+
+    #[test]
+    fn handle_parsing_a_tag() {
+        let html = "<div><a href=\"http://google.com\">This is a link</a></div>".to_owned();
+        let tokenizer = Tokenizer::new(html);
+        let tree_builder = TreeBuilder::new(tokenizer);
+        let document = tree_builder.run();
+
+        let html = document.borrow().as_node().first_child().unwrap();
+        let body = html.borrow().as_node().last_child().unwrap();
+        let div = body.borrow().as_node().first_child().unwrap();
+        let a = div.borrow().as_node().first_child().unwrap();
+
+        let a_borrow = a.borrow();
+        let anchor = a_borrow.as_any().downcast_ref::<HTMLAnchorElement>().unwrap();
+        assert_eq!(anchor.href(), "http://google.com".to_string());
+        assert_eq!(anchor.text(), "This is a link".to_string());
     }
 
     #[test]
