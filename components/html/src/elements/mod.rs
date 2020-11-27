@@ -2,20 +2,25 @@ use dom::dom_ref::DOMObject;
 use dom::element::Element;
 use dom::node::Node;
 use std::any::Any;
+use std::ops::Deref;
 
+mod html_anchor_element;
 mod html_base_element;
 mod html_body_element;
 mod html_div_element;
 mod html_head_element;
 mod html_html_element;
+mod html_marquee_element;
 mod html_script_element;
 mod html_title_element;
 
+pub use html_anchor_element::*;
 pub use html_base_element::*;
 pub use html_body_element::*;
 pub use html_div_element::*;
 pub use html_head_element::*;
 pub use html_html_element::*;
+pub use html_marquee_element::*;
 pub use html_script_element::*;
 pub use html_title_element::*;
 
@@ -26,6 +31,13 @@ pub struct HTMLElement {
 impl HTMLElement {
     pub fn new(element: Element) -> Self {
         Self { element }
+    }
+}
+
+impl Deref for HTMLElement {
+    type Target = Element;
+    fn deref(&self) -> &Self::Target {
+        &self.element
     }
 }
 

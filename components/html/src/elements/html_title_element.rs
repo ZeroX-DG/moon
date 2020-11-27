@@ -6,7 +6,6 @@ use std::any::Any;
 
 pub struct HTMLTitleElement {
     html_element: HTMLElement,
-    text: String,
 }
 
 impl core::fmt::Debug for HTMLTitleElement {
@@ -17,10 +16,16 @@ impl core::fmt::Debug for HTMLTitleElement {
 
 impl HTMLTitleElement {
     pub fn new(html_element: HTMLElement) -> Self {
-        Self {
-            html_element,
-            text: String::new(),
-        }
+        Self { html_element }
+    }
+
+    pub fn text(&self) -> String {
+        let itself = if let Some(child) = self.html_element.node.first_child() {
+            child.borrow().as_node().parent().unwrap()
+        } else {
+            return String::new();
+        };
+        Node::child_text_content(&itself)
     }
 }
 

@@ -1,5 +1,6 @@
 use super::Element;
 use super::NodeRef;
+use std::ops::{Deref, DerefMut};
 
 const BASE_LIST: [&str; 9] = [
     "applet", "caption", "html", "table", "td", "th", "marquee", "object", "template",
@@ -8,17 +9,22 @@ const BASE_LIST: [&str; 9] = [
 #[derive(Debug)]
 pub struct StackOfOpenElements(pub Vec<NodeRef>);
 
+impl Deref for StackOfOpenElements {
+    type Target = Vec<NodeRef>;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for StackOfOpenElements {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
 impl StackOfOpenElements {
     pub fn new() -> Self {
         Self(Vec::new())
-    }
-
-    pub fn push(&mut self, node: NodeRef) {
-        self.0.push(node)
-    }
-
-    pub fn pop(&mut self) -> Option<NodeRef> {
-        self.0.pop()
     }
 
     pub fn current_node(&self) -> Option<NodeRef> {
@@ -48,10 +54,10 @@ impl StackOfOpenElements {
             let node = node.borrow();
             let element = node.as_element().unwrap();
             if element.tag_name() == tag_name {
-                self.pop();
+                self.0.pop();
                 break;
             }
-            self.pop();
+            self.0.pop();
         }
     }
 
@@ -63,10 +69,10 @@ impl StackOfOpenElements {
             let node = node.borrow();
             let element = node.as_element().unwrap();
             if test(element) {
-                self.pop();
+                self.0.pop();
                 break;
             }
-            self.pop();
+            self.0.pop();
         }
     }
 
@@ -81,7 +87,7 @@ impl StackOfOpenElements {
             {
                 break;
             }
-            self.pop();
+            self.0.pop();
         }
     }
 

@@ -5,17 +5,17 @@ use dom::node::Node;
 use std::any::Any;
 use std::borrow::Cow;
 
-pub struct HTMLBaseElement {
+pub struct HTMLAnchorElement {
     html_element: HTMLElement,
 }
 
-impl core::fmt::Debug for HTMLBaseElement {
+impl core::fmt::Debug for HTMLAnchorElement {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "{:#?}", self.html_element)
     }
 }
 
-impl HTMLBaseElement {
+impl HTMLAnchorElement {
     pub fn new(html_element: HTMLElement) -> Self {
         Self { html_element }
     }
@@ -24,12 +24,16 @@ impl HTMLBaseElement {
         self.html_element.attributes().get_str("href")
     }
 
-    pub fn target(&self) -> Cow<str> {
-        self.html_element.attributes().get_str("target")
+    pub fn text(&self) -> String {
+        let mut result = String::new();
+        for child in self.html_element.element.node.child_nodes() {
+            result.push_str(&Node::descendant_text_content(&child));
+        }
+        result
     }
 }
 
-impl DOMObject for HTMLBaseElement {
+impl DOMObject for HTMLAnchorElement {
     fn as_node(&self) -> &Node {
         self.html_element.as_node()
     }

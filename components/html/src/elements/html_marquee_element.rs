@@ -3,33 +3,24 @@ use dom::dom_ref::DOMObject;
 use dom::element::Element;
 use dom::node::Node;
 use std::any::Any;
-use std::borrow::Cow;
 
-pub struct HTMLBaseElement {
+pub struct HTMLMarqueeElement {
     html_element: HTMLElement,
 }
 
-impl core::fmt::Debug for HTMLBaseElement {
+impl core::fmt::Debug for HTMLMarqueeElement {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "{:#?}", self.html_element)
     }
 }
 
-impl HTMLBaseElement {
+impl HTMLMarqueeElement {
     pub fn new(html_element: HTMLElement) -> Self {
         Self { html_element }
     }
-
-    pub fn href(&self) -> Cow<str> {
-        self.html_element.attributes().get_str("href")
-    }
-
-    pub fn target(&self) -> Cow<str> {
-        self.html_element.attributes().get_str("target")
-    }
 }
 
-impl DOMObject for HTMLBaseElement {
+impl DOMObject for HTMLMarqueeElement {
     fn as_node(&self) -> &Node {
         self.html_element.as_node()
     }

@@ -3,11 +3,10 @@ use dom::dom_ref::{DOMObject, NodeRef};
 use dom::element::Element;
 use dom::node::Node;
 use std::any::Any;
+use std::borrow::Cow;
 
 pub struct HTMLScriptElement {
     html_element: HTMLElement,
-    src: String,
-    type_: String,
     non_blocking: bool,
     parser_document: Option<NodeRef>,
     already_started: bool,
@@ -23,12 +22,26 @@ impl HTMLScriptElement {
     pub fn new(html_element: HTMLElement) -> Self {
         Self {
             html_element,
-            src: String::new(),
-            type_: String::new(),
             non_blocking: true,
             parser_document: None,
             already_started: false,
         }
+    }
+
+    pub fn src(&self) -> Cow<str> {
+        self.html_element.attributes().get_str("src")
+    }
+
+    pub fn type_(&self) -> Cow<str> {
+        self.html_element.attributes().get_str("type")
+    }
+
+    pub fn async_(&self) -> bool {
+        self.html_element.attributes().get_bool("async")
+    }
+
+    pub fn defer(&self) -> bool {
+        self.html_element.attributes().get_bool("defer")
     }
 
     pub fn set_non_blocking(&mut self, value: bool) {
