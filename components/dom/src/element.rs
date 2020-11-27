@@ -1,8 +1,8 @@
 use super::dom_token_list::DOMTokenList;
 use super::node::Node;
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::ops::{Deref, DerefMut};
-use std::borrow::Cow;
 
 pub struct AttributeMap(HashMap<String, String>);
 

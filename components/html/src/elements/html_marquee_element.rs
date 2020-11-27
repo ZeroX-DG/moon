@@ -5,7 +5,7 @@ use dom::node::Node;
 use std::any::Any;
 
 pub struct HTMLMarqueeElement {
-    html_element: HTMLElement
+    html_element: HTMLElement,
 }
 
 impl core::fmt::Debug for HTMLMarqueeElement {
@@ -16,9 +16,7 @@ impl core::fmt::Debug for HTMLMarqueeElement {
 
 impl HTMLMarqueeElement {
     pub fn new(html_element: HTMLElement) -> Self {
-        Self {
-            html_element
-        }
+        Self { html_element }
     }
 }
 

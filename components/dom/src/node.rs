@@ -105,12 +105,13 @@ impl Node {
         let mut result = String::new();
         for child in node.borrow().as_node().child_nodes() {
             if child.is::<Text>() {
-                result.push_str(&child
-                    .borrow()
-                    .as_any()
-                    .downcast_ref::<Text>()
-                    .unwrap()
-                    .get_data()
+                result.push_str(
+                    &child
+                        .borrow()
+                        .as_any()
+                        .downcast_ref::<Text>()
+                        .unwrap()
+                        .get_data(),
                 );
             }
         }
@@ -127,15 +128,14 @@ impl Node {
         if let Some(parent) = parent {
             let mut parent_borrow = parent.borrow_mut();
             let parent_node = parent_borrow.as_node_mut();
-            
+
             {
                 let first_child = parent_node.first_child().unwrap();
                 let last_child = parent_node.last_child().unwrap();
 
                 if *node_ref == first_child {
                     parent_node.first_child = node.next_sibling();
-                }
-                else if *node_ref == last_child {
+                } else if *node_ref == last_child {
                     parent_node.last_child = node.prev_sibling.clone();
                 }
             }
@@ -161,7 +161,7 @@ impl Node {
                             next.borrow_mut().as_node_mut().prev_sibling = None;
                         }
                     }
-                    break
+                    break;
                 } else {
                     child = c.borrow().as_node().next_sibling();
                 }
@@ -370,7 +370,10 @@ mod test {
         Node::append_child(new_parent.clone(), child.clone());
 
         assert_eq!(parent.borrow().as_node().first_child(), None);
-        assert_eq!(new_parent.borrow().as_node().first_child(), Some(child.clone()));
+        assert_eq!(
+            new_parent.borrow().as_node().first_child(),
+            Some(child.clone())
+        );
         assert_eq!(child.borrow().as_node().parent(), Some(new_parent.clone()));
     }
 }

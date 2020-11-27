@@ -17,9 +17,7 @@ impl core::fmt::Debug for HTMLBaseElement {
 
 impl HTMLBaseElement {
     pub fn new(html_element: HTMLElement) -> Self {
-        Self {
-            html_element,
-        }
+        Self { html_element }
     }
 
     pub fn href(&self) -> Cow<str> {

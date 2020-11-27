@@ -16,9 +16,7 @@ impl core::fmt::Debug for HTMLTitleElement {
 
 impl HTMLTitleElement {
     pub fn new(html_element: HTMLElement) -> Self {
-        Self {
-            html_element,
-        }
+        Self { html_element }
     }
 
     pub fn text(&self) -> String {

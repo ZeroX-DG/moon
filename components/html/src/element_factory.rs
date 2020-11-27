@@ -2,16 +2,8 @@ use dom::dom_ref::{NodeRef, WeakNodeRef};
 use dom::element::Element;
 
 use super::elements::{
-    HTMLBaseElement,
-    HTMLBodyElement,
-    HTMLDivElement,
-    HTMLElement,
-    HTMLHeadElement,
-    HTMLHtmlElement,
-    HTMLScriptElement,
-    HTMLTitleElement,
-    HTMLMarqueeElement,
-    HTMLAnchorElement
+    HTMLAnchorElement, HTMLBaseElement, HTMLBodyElement, HTMLDivElement, HTMLElement,
+    HTMLHeadElement, HTMLHtmlElement, HTMLMarqueeElement, HTMLScriptElement, HTMLTitleElement,
 };
 
 macro_rules! translate {

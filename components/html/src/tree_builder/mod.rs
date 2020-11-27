@@ -375,7 +375,10 @@ impl TreeBuilder {
         })
     }
 
-    fn get_appropriate_place_for_inserting_a_node(&self, target: Option<NodeRef>) -> AdjustedInsertionLocation {
+    fn get_appropriate_place_for_inserting_a_node(
+        &self,
+        target: Option<NodeRef>,
+    ) -> AdjustedInsertionLocation {
         let target = target.unwrap_or(self.open_elements.current_node().unwrap());
 
         let adjusted_location = if self.foster_parenting
@@ -692,7 +695,7 @@ impl TreeBuilder {
                         if index < self.open_elements.len() - 1 {
                             found_element = Some(self.open_elements.get(index + 1));
                         }
-                        break
+                        break;
                     }
                 }
                 found_element
@@ -702,11 +705,12 @@ impl TreeBuilder {
                 .take()
                 .expect("Common ancestor doesn't exists in agency adoption algo");
 
-            let mut bookmark = self.active_formatting_elements
+            let mut bookmark = self
+                .active_formatting_elements
                 .iter()
                 .rposition(|el| match el {
                     Entry::Element(e) => *e == fmt_element,
-                    _ => false
+                    _ => false,
                 })
                 .unwrap();
 
@@ -745,15 +749,14 @@ impl TreeBuilder {
 
                 let node_clone = node.clone();
                 let node_borrow = node_clone.borrow();
-                let node_element = node_borrow
-                    .as_element()
-                    .expect("Node is not an element");
+                let node_element = node_borrow.as_element().expect("Node is not an element");
                 let new_element = self.create_element(Token::Tag {
                     tag_name: node_element.tag_name(),
                     self_closing: false,
                     is_end_tag: false,
                     self_closing_acknowledged: false,
-                    attributes: node_element.attributes()
+                    attributes: node_element
+                        .attributes()
                         .iter()
                         .map(|(k, v)| Attribute::from_name_value(k.clone(), v.clone()))
                         .collect(),
@@ -773,9 +776,10 @@ impl TreeBuilder {
                 last_node = node;
             }
 
-            let insert_place = self.get_appropriate_place_for_inserting_a_node(Some(common_ancestor));
+            let insert_place =
+                self.get_appropriate_place_for_inserting_a_node(Some(common_ancestor));
             self.insert_at(insert_place, last_node);
-            
+
             let node_borrow = fmt_element.borrow();
             let node_element = node_borrow.as_element().expect("Node is not element");
             let new_element = self.create_element(Token::Tag {
@@ -783,7 +787,8 @@ impl TreeBuilder {
                 self_closing: false,
                 is_end_tag: false,
                 self_closing_acknowledged: false,
-                attributes: node_element.attributes()
+                attributes: node_element
+                    .attributes()
                     .iter()
                     .map(|(k, v)| Attribute::from_name_value(k.clone(), v.clone()))
                     .collect(),
@@ -794,8 +799,10 @@ impl TreeBuilder {
 
             self.active_formatting_elements.remove_element(&fmt_element);
             self.active_formatting_elements[bookmark] = Entry::Element(new_element.clone());
-            self.open_elements.remove_first_matching(|n| *n == fmt_element);
-            self.open_elements.insert(furthest_block_index + 1, new_element);
+            self.open_elements
+                .remove_first_matching(|n| *n == fmt_element);
+            self.open_elements
+                .insert(furthest_block_index + 1, new_element);
         }
         AdoptionAgencyOutcome::DoNothing
     }
@@ -3249,8 +3256,8 @@ impl TreeBuilder {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::tokenizer::Tokenizer;
     use crate::elements::HTMLAnchorElement;
+    use crate::tokenizer::Tokenizer;
 
     #[test]
     fn handle_initial_correctly() {
@@ -3301,7 +3308,10 @@ mod test {
         let a = div.borrow().as_node().first_child().unwrap();
 
         let a_borrow = a.borrow();
-        let anchor = a_borrow.as_any().downcast_ref::<HTMLAnchorElement>().unwrap();
+        let anchor = a_borrow
+            .as_any()
+            .downcast_ref::<HTMLAnchorElement>()
+            .unwrap();
         assert_eq!(anchor.href(), "http://google.com".to_string());
         assert_eq!(anchor.text(), "This is a link".to_string());
     }

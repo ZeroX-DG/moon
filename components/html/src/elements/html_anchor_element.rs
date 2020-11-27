@@ -6,7 +6,7 @@ use std::any::Any;
 use std::borrow::Cow;
 
 pub struct HTMLAnchorElement {
-    html_element: HTMLElement
+    html_element: HTMLElement,
 }
 
 impl core::fmt::Debug for HTMLAnchorElement {
@@ -17,9 +17,7 @@ impl core::fmt::Debug for HTMLAnchorElement {
 
 impl HTMLAnchorElement {
     pub fn new(html_element: HTMLElement) -> Self {
-        Self {
-            html_element
-        }
+        Self { html_element }
     }
 
     pub fn href(&self) -> Cow<str> {

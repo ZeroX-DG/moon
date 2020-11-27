@@ -191,7 +191,7 @@ impl Attribute {
             name,
             value,
             prefix: String::new(),
-            namespace: String::new()
+            namespace: String::new(),
         }
     }
 }
