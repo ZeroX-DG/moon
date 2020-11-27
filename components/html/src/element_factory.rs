@@ -1,14 +1,18 @@
 use dom::dom_ref::{NodeRef, WeakNodeRef};
 use dom::element::Element;
 
-use super::elements::HTMLBaseElement;
-use super::elements::HTMLBodyElement;
-use super::elements::HTMLDivElement;
-use super::elements::HTMLElement;
-use super::elements::HTMLHeadElement;
-use super::elements::HTMLHtmlElement;
-use super::elements::HTMLScriptElement;
-use super::elements::HTMLTitleElement;
+use super::elements::{
+    HTMLBaseElement,
+    HTMLBodyElement,
+    HTMLDivElement,
+    HTMLElement,
+    HTMLHeadElement,
+    HTMLHtmlElement,
+    HTMLScriptElement,
+    HTMLTitleElement,
+    HTMLMarqueeElement,
+    HTMLAnchorElement
+};
 
 macro_rules! translate {
     ($tag_name:ident, $element:ident, {$($($matcher:pat)|* => $result:ident),*}) => {
@@ -39,6 +43,8 @@ pub fn create_element(document: WeakNodeRef, tag_name: &str) -> NodeRef {
         "body" => HTMLBodyElement,
         "div" => HTMLDivElement,
         "script" => HTMLScriptElement,
+        "marquee" => HTMLMarqueeElement,
+        "a" => HTMLAnchorElement,
 
         "article"
         | "section" | "nav" | "aside" | "hgroup" | "header" | "footer"

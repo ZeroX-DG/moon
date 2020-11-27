@@ -1,51 +1,51 @@
 use super::HTMLElement;
-use dom::dom_ref::{DOMObject, NodeRef};
+use dom::dom_ref::DOMObject;
 use dom::element::Element;
 use dom::node::Node;
 use std::any::Any;
 
 #[allow(dead_code)]
-pub struct HTMLScriptElement {
+pub struct HTMLMarqueeElement {
     html_element: HTMLElement,
-    src: String,
-    type_: String,
-    non_blocking: bool,
-    parser_document: Option<NodeRef>,
-    already_started: bool,
+    behavior: String,
+    bg_color: String,
+    direction: String,
+    height: String,
+    hspace: String,
+    loop_: usize,
+    scroll_amount: usize,
+    scroll_delay: usize,
+    true_speed: bool,
+    vspace: usize,
+    width: String
 }
 
-impl core::fmt::Debug for HTMLScriptElement {
+impl core::fmt::Debug for HTMLMarqueeElement {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "{:#?}", self.html_element)
     }
 }
 
-impl HTMLScriptElement {
+impl HTMLMarqueeElement {
     pub fn new(html_element: HTMLElement) -> Self {
         Self {
             html_element,
-            src: String::new(),
-            type_: String::new(),
-            non_blocking: true,
-            parser_document: None,
-            already_started: false,
+            behavior: String::new(),
+            bg_color: String::new(),
+            direction: String::new(),
+            height: String::new(),
+            hspace: String::new(),
+            loop_: 0,
+            scroll_amount: 0,
+            scroll_delay: 0,
+            true_speed: true,
+            vspace: 0,
+            width: String::new()
         }
-    }
-
-    pub fn set_non_blocking(&mut self, value: bool) {
-        self.non_blocking = value;
-    }
-
-    pub fn started(&mut self) {
-        self.already_started = true;
-    }
-
-    pub fn set_parser_document(&mut self, parser_document: NodeRef) {
-        self.parser_document = Some(parser_document);
     }
 }
 
-impl DOMObject for HTMLScriptElement {
+impl DOMObject for HTMLMarqueeElement {
     fn as_node(&self) -> &Node {
         self.html_element.as_node()
     }

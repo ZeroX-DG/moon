@@ -10,6 +10,8 @@ mod html_head_element;
 mod html_html_element;
 mod html_script_element;
 mod html_title_element;
+mod html_marquee_element;
+mod html_anchor_element;
 
 pub use html_base_element::*;
 pub use html_body_element::*;
@@ -18,6 +20,8 @@ pub use html_head_element::*;
 pub use html_html_element::*;
 pub use html_script_element::*;
 pub use html_title_element::*;
+pub use html_marquee_element::*;
+pub use html_anchor_element::*;
 
 pub struct HTMLElement {
     element: Element,

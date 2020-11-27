@@ -1,51 +1,48 @@
 use super::HTMLElement;
-use dom::dom_ref::{DOMObject, NodeRef};
+use dom::dom_ref::DOMObject;
 use dom::element::Element;
+use dom::dom_token_list::DOMTokenList;
 use dom::node::Node;
 use std::any::Any;
 
 #[allow(dead_code)]
-pub struct HTMLScriptElement {
+pub struct HTMLAnchorElement {
     html_element: HTMLElement,
-    src: String,
+    target: String,
+    download: String,
+    ping: String,
+    rel: String,
+    rel_list: DOMTokenList,
+    hreflang: String,
     type_: String,
-    non_blocking: bool,
-    parser_document: Option<NodeRef>,
-    already_started: bool,
+    text: String,
+    referrer_policy: String
 }
 
-impl core::fmt::Debug for HTMLScriptElement {
+impl core::fmt::Debug for HTMLAnchorElement {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "{:#?}", self.html_element)
     }
 }
 
-impl HTMLScriptElement {
+impl HTMLAnchorElement {
     pub fn new(html_element: HTMLElement) -> Self {
         Self {
             html_element,
-            src: String::new(),
+            target: String::new(),
+            download: String::new(),
+            ping: String::new(),
+            rel: String::new(),
+            rel_list: DOMTokenList::new(),
+            hreflang: String::new(),
             type_: String::new(),
-            non_blocking: true,
-            parser_document: None,
-            already_started: false,
+            text: String::new(),
+            referrer_policy: String::new()
         }
-    }
-
-    pub fn set_non_blocking(&mut self, value: bool) {
-        self.non_blocking = value;
-    }
-
-    pub fn started(&mut self) {
-        self.already_started = true;
-    }
-
-    pub fn set_parser_document(&mut self, parser_document: NodeRef) {
-        self.parser_document = Some(parser_document);
     }
 }
 
-impl DOMObject for HTMLScriptElement {
+impl DOMObject for HTMLAnchorElement {
     fn as_node(&self) -> &Node {
         self.html_element.as_node()
     }
