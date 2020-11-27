@@ -3,6 +3,7 @@ use dom::dom_ref::DOMObject;
 use dom::element::Element;
 use dom::node::Node;
 use std::any::Any;
+use std::borrow::Cow;
 
 pub struct HTMLAnchorElement {
     html_element: HTMLElement
@@ -21,17 +22,14 @@ impl HTMLAnchorElement {
         }
     }
 
-    pub fn href(&self) -> String {
-        if let Some(href) = self.html_element.attributes().get("href") {
-            return href.clone();
-        }
-        String::new()
+    pub fn href(&self) -> Cow<str> {
+        self.html_element.attributes().get_str("href")
     }
 
     pub fn text(&self) -> String {
         let mut result = String::new();
         for child in self.html_element.element.node.child_nodes() {
-            result.push_str(&Node::text_content(&child));
+            result.push_str(&Node::descendant_text_content(&child));
         }
         result
     }

@@ -3,11 +3,10 @@ use dom::dom_ref::DOMObject;
 use dom::element::Element;
 use dom::node::Node;
 use std::any::Any;
+use std::borrow::Cow;
 
 pub struct HTMLBaseElement {
     html_element: HTMLElement,
-    href: String,
-    target: String,
 }
 
 impl core::fmt::Debug for HTMLBaseElement {
@@ -20,9 +19,15 @@ impl HTMLBaseElement {
     pub fn new(html_element: HTMLElement) -> Self {
         Self {
             html_element,
-            href: String::new(),
-            target: String::new(),
         }
+    }
+
+    pub fn href(&self) -> Cow<str> {
+        self.html_element.attributes().get_str("href")
+    }
+
+    pub fn target(&self) -> Cow<str> {
+        self.html_element.attributes().get_str("target")
     }
 }
 

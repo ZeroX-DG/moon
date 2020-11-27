@@ -81,8 +81,9 @@ impl Node {
         }
     }
 
-    /// Text content of the node
-    pub fn text_content(node: &NodeRef) -> String {
+    /// Descendant text content of the node
+    /// https://dom.spec.whatwg.org/#concept-descendant-text-content
+    pub fn descendant_text_content(node: &NodeRef) -> String {
         if node.is::<Text>() {
             return node
                 .borrow()
@@ -93,7 +94,25 @@ impl Node {
         }
         let mut result = String::new();
         for child in node.borrow().as_node().child_nodes() {
-            result.push_str(&Node::text_content(&child));
+            result.push_str(&Node::descendant_text_content(&child));
+        }
+        result
+    }
+
+    /// Child text content of the node
+    /// https://dom.spec.whatwg.org/#concept-child-text-content
+    pub fn child_text_content(node: &NodeRef) -> String {
+        let mut result = String::new();
+        for child in node.borrow().as_node().child_nodes() {
+            if child.is::<Text>() {
+                result.push_str(&child
+                    .borrow()
+                    .as_any()
+                    .downcast_ref::<Text>()
+                    .unwrap()
+                    .get_data()
+                );
+            }
         }
         result
     }
