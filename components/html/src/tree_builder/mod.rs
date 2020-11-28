@@ -891,28 +891,28 @@ impl TreeBuilder {
                 Entry::Marker => panic!("Unexpected marker while building DOM tree!"),
             };
 
-            let (tag_name, attributes) = {
+            let new_element = {
                 let element = element.borrow();
                 let element = element.as_element();
                 let element = element.unwrap();
-                (element.tag_name().clone(), element.attributes().clone())
-            };
 
-            let new_element = self.insert_html_element(Token::Tag {
-                is_end_tag: false,
-                self_closing: false,
-                self_closing_acknowledged: false,
-                tag_name,
-                attributes: attributes
-                    .into_iter()
-                    .map(|entry| Attribute {
-                        name: entry.0,
-                        value: entry.1,
-                        prefix: String::new(),
-                        namespace: String::new(),
-                    })
+                self.insert_html_element(Token::Tag {
+                    is_end_tag: false,
+                    self_closing: false,
+                    self_closing_acknowledged: false,
+                    tag_name: element.tag_name(),
+                    attributes: element
+                        .attributes()
+                        .iter()
+                        .map(|entry| Attribute {
+                            name: entry.0.clone(),
+                            value: entry.1.clone(),
+                            prefix: String::new(),
+                            namespace: String::new(),
+                        })
                     .collect(),
-            });
+                })
+            };
 
             self.active_formatting_elements[last_index] = Entry::Element(new_element);
 
