@@ -910,7 +910,7 @@ impl TreeBuilder {
                             prefix: String::new(),
                             namespace: String::new(),
                         })
-                    .collect(),
+                        .collect(),
                 })
             };
 
