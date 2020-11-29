@@ -4,13 +4,12 @@ use super::value_processing::{
 };
 use super::values::display::Display;
 use dom::dom_ref::NodeRef;
-use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
-use std::rc::{Rc, Weak};
 use strum::IntoEnumIterator;
+use tree::{TreeNodeRef, TreeNodeWeakRef};
 
-pub type RenderNodeRef = Rc<RefCell<RenderNode>>;
-pub type RenderNodeWeak = Weak<RefCell<RenderNode>>;
+pub type RenderNodeRef = TreeNodeRef<RenderNode>;
+pub type RenderNodeWeak = TreeNodeWeakRef<RenderNode>;
 
 #[derive(Debug)]
 pub struct RenderTree {
@@ -201,12 +200,12 @@ fn build_render_tree_from_node(
         }
     }
 
-    let render_node = Rc::new(RefCell::new(RenderNode {
+    let render_node = TreeNodeRef::new(RenderNode {
         node: node.clone(),
         properties: compute_styles(properties, parent.clone(), cache),
         parent_render_node: parent,
         children: Vec::new(),
-    }));
+    });
 
     render_node.borrow_mut().children = node
         .borrow()
@@ -214,7 +213,7 @@ fn build_render_tree_from_node(
         .child_nodes()
         .into_iter() // this is fine because we clone the node when iterate
         .filter_map(|child| {
-            build_render_tree_from_node(child, &rules, Some(Rc::downgrade(&render_node)), cache)
+            build_render_tree_from_node(child, &rules, Some(render_node.downgrade()), cache)
         })
         .collect();
 
@@ -234,6 +233,7 @@ mod tests {
     use css::cssom::css_rule::CSSRule;
     use test_utils::css::parse_stylesheet;
     use test_utils::dom_creator::*;
+    use std::rc::Rc;
 
     #[test]
     fn build_tree_simple() {

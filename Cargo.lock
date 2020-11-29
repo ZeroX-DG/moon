@@ -1862,6 +1862,7 @@ dependencies = [
  "strum",
  "strum_macros",
  "test_utils",
+ "tree",
 ]
 
 [[package]]
@@ -1951,6 +1952,10 @@ checksum = "75cf45bb0bef80604d001caaec0d09da99611b3c0fd39d3080468875cdb65645"
 dependencies = [
  "serde",
 ]
+
+[[package]]
+name = "tree"
+version = "0.1.0"
 
 [[package]]
 name = "unicode-segmentation"
