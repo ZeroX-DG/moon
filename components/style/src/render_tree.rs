@@ -231,9 +231,9 @@ mod tests {
     use crate::values::length::{Length, LengthUnit};
     use crate::values::number::Number;
     use css::cssom::css_rule::CSSRule;
+    use std::rc::Rc;
     use test_utils::css::parse_stylesheet;
     use test_utils::dom_creator::*;
-    use std::rc::Rc;
 
     #[test]
     fn build_tree_simple() {

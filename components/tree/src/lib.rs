@@ -1,6 +1,6 @@
-use std::rc::{Weak, Rc};
 use std::cell::RefCell;
 use std::ops::Deref;
+use std::rc::{Rc, Weak};
 
 #[derive(Debug)]
 pub struct TreeNodeRef<T>(Rc<RefCell<T>>);
@@ -44,7 +44,7 @@ impl<T> TreeNodeRef<T> {
     }
 }
 
-impl <T> TreeNodeWeakRef<T> {
+impl<T> TreeNodeWeakRef<T> {
     pub fn upgrade(&self) -> Option<TreeNodeRef<T>> {
         match self.0.upgrade() {
             Some(node) => Some(TreeNodeRef(node)),
