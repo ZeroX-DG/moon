@@ -2,7 +2,7 @@
 /// of elements in the render tree. In other words,
 /// this module transforms render tree to layout tree
 /// to prepare for layouting process.
-use super::layout_box::{BoxType, FormattingContext, LayoutBox};
+use super::layout_box::{BoxType, FormattingContext, LayoutBox, LayoutTree, LayoutBoxNode};
 use super::{
     is_block_container_box, is_block_level_element, is_inline_level_element, is_text_node,
 };
@@ -12,16 +12,16 @@ use style::render_tree::RenderNodeRef;
 ///
 /// This will generate boxes for each render node & construct
 /// a layout tree for the layouting process
-pub fn build_layout_tree(root: RenderNodeRef) -> Option<LayoutBox> {
+pub fn build_layout_tree(root: RenderNodeRef, layout_tree: &mut LayoutTree) -> Option<&LayoutBoxNode> {
     if let Some(root_box_type) = get_box_type(&root) {
-        let mut root_box = LayoutBox::new(root.clone(), root_box_type);
+        let mut root_box = layout_tree.new_node_instance(LayoutBox::new(root.clone(), root_box_type));
 
         let children = root
             .borrow()
             .children
             .iter()
-            .filter_map(|child| build_layout_tree(child.clone()))
-            .collect::<Vec<LayoutBox>>();
+            .filter_map(|child| build_layout_tree(child.clone(), layout_tree))
+            .collect::<Vec<&LayoutBoxNode>>();
 
         let has_block = children
             .iter()
@@ -39,11 +39,8 @@ pub fn build_layout_tree(root: RenderNodeRef) -> Option<LayoutBox> {
             _ => { /* This one has no formatting context. It's just a box */ }
         }
 
-        for mut child in children {
-            if let Some(ctx) = root_box.formatting_context.clone() {
-                child.set_parent_formatting_context(ctx);
-            }
-            root_box.add_child(child);
+        for child in children {
+            layout_tree.add_child(root_box, *child);
         }
 
         return Some(root_box);
@@ -117,48 +114,53 @@ mod tests {
             .collect::<Vec<ContextualRule>>();
 
         let render_tree = build_render_tree(dom.clone(), &rules);
-        let layout_tree = build_layout_tree(render_tree.root.unwrap()).unwrap();
+        let mut layout_tree = LayoutTree::new();
+
+        let root = build_layout_tree(render_tree.root.unwrap(), &mut layout_tree).unwrap();
 
         println!("------------------------");
-        print_layout_tree(&layout_tree, 0);
+        print_layout_tree(&root, 0);
 
-        assert_eq!(layout_tree.box_type, BoxType::Block);
+        assert_eq!(root.box_type, BoxType::Block);
         assert_eq!(
-            layout_tree.formatting_context,
+            root.formatting_context,
             Some(FormattingContext::Block)
         );
         // span
-        assert_eq!(layout_tree.children[0].box_type, BoxType::Anonymous);
+        let span = layout_tree.get_node_direct(&root.children[0]);
+        assert_eq!(span.box_type, BoxType::Anonymous);
         assert_eq!(
-            layout_tree.children[0].formatting_context,
+            span.formatting_context,
             Some(FormattingContext::Inline)
         );
         assert_eq!(
-            layout_tree.children[0].children[0].box_type,
+            layout_tree.get_node_direct(&span.children[0]).box_type,
             BoxType::Inline
         );
         // p
-        assert_eq!(layout_tree.children[1].box_type, BoxType::Block);
+        let p = layout_tree.get_node_direct(&root.children[1]);
+        assert_eq!(p.box_type, BoxType::Block);
         assert_eq!(
-            layout_tree.children[1].formatting_context,
+            p.formatting_context,
             Some(FormattingContext::Inline)
         );
         assert_eq!(
-            layout_tree.children[1].children[0].box_type,
+            layout_tree.get_node_direct(&p.children[0]).box_type,
             BoxType::Anonymous
         );
         // last 2 span is grouped
-        assert_eq!(layout_tree.children[2].box_type, BoxType::Anonymous);
+        let grouped = layout_tree.get_node_direct(&p.children[2]);
+        assert_eq!(grouped.box_type, BoxType::Anonymous);
         assert_eq!(
-            layout_tree.children[2].formatting_context,
+            grouped.formatting_context,
             Some(FormattingContext::Inline)
         );
         assert_eq!(
-            layout_tree.children[2].children[0].box_type,
+            layout_tree.get_node_direct(&grouped.children[0]).box_type,
             BoxType::Inline
         );
         assert_eq!(
-            layout_tree.children[2].children[1].box_type,
+            layout_tree.get_node_direct(&grouped.children[1]).box_type,
             BoxType::Inline
         );
     }

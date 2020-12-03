@@ -9,7 +9,7 @@ pub struct Tree<T> {
 
 #[derive(Debug)]
 pub struct TreeNode<T> {
-    id: usize,
+    pub id: usize,
     pub parent: Option<usize>,
     pub children: Vec<usize>,
     inner: T
@@ -41,8 +41,17 @@ impl<T> Tree<T> {
         node_id
     }
 
-    pub fn get_node(&mut self, node_id: usize) -> Option<&TreeNode<T>> {
-        self.arena.get(&node_id)
+    pub fn new_node_instance(&mut self, inner: T) -> &TreeNode<T> {
+        let id = self.new_node(inner);
+        self.get_node(&id).unwrap()
+    }
+
+    pub fn get_node(&mut self, node_id: &usize) -> Option<&TreeNode<T>> {
+        self.arena.get(node_id)
+    }
+
+    pub fn get_node_direct(&mut self, node_id: &usize) -> &TreeNode<T> {
+        self.get_node(node_id).unwrap()
     }
 }
 

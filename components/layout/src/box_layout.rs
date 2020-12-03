@@ -3,7 +3,7 @@
 /// 1. Box width calculation
 /// 2. Box position calculation
 /// 3. Box height calculation
-use super::box_model::{BoxComponent, Edge};
+use super::box_model::{BoxComponent, Edge, Rect};
 use super::layout_box::{BoxType, FormattingContext, LayoutBox};
 use super::{
     is_absolutely_positioned, is_block_level_element, is_float_element, is_in_normal_flow,
@@ -12,11 +12,8 @@ use super::{
 use style::value_processing::Property;
 
 #[derive(Debug)]
-pub struct ContainingBlock {
-    pub x: f32,
-    pub y: f32,
-    pub width: f32,
-    pub height: f32,
+pub struct LayoutContext {
+    pub viewport: Rect,
     pub offset_x: f32,
     pub offset_y: f32,
     pub previous_margin_bottom: f32,
@@ -24,14 +21,15 @@ pub struct ContainingBlock {
 }
 
 /// recursively layout the tree from the root
-pub fn layout(root: &mut LayoutBox, containing_block: &mut ContainingBlock) {
+pub fn layout(root: &mut LayoutBox, context: &mut LayoutContext) {
+    let mut containing_block = &context.viewport;
     compute_width(root, containing_block);
     compute_position(root, containing_block);
     layout_children(root);
     apply_explicit_sizes(root, containing_block);
 }
 
-fn apply_explicit_sizes(root: &mut LayoutBox, containing_block: &mut ContainingBlock) {
+fn apply_explicit_sizes(root: &mut LayoutBox, containing_block: &Rect) {
     let computed_width = root.render_node.borrow().get_style(&Property::Width);
     let computed_height = root.render_node.borrow().get_style(&Property::Height);
 
