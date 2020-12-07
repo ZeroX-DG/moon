@@ -3,10 +3,10 @@
 /// that made up the layout tree.
 use crate::box_model::Rect;
 
+use super::box_layout::ContainingBlock;
 use super::box_model::Dimensions;
 use super::is_block_container_box;
 use style::render_tree::RenderNodeRef;
-use super::box_layout::ContainingBlock;
 
 /// LayoutBox for the layout tree
 #[derive(Debug, Clone)]

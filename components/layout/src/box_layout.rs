@@ -380,7 +380,7 @@ mod tests {
                     x: 0.0,
                     y: 0.0,
                     width: 1200.0,
-                    height: 600.0
+                    height: 600.0,
                 },
                 offset_x: 0.0,
                 offset_y: 0.0,
@@ -445,7 +445,7 @@ mod tests {
                     x: 0.0,
                     y: 0.0,
                     width: 1200.0,
-                    height: 600.0
+                    height: 600.0,
                 },
                 offset_x: 0.0,
                 offset_y: 0.0,
@@ -538,7 +538,7 @@ mod tests {
                     x: 0.0,
                     y: 0.0,
                     width: 1200.0,
-                    height: 600.0
+                    height: 600.0,
                 },
                 offset_x: 0.0,
                 offset_y: 0.0,
