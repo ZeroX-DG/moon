@@ -1,10 +1,12 @@
-use super::box_layout::ContainingBlock;
 /// This module contains the definition of
 /// the layout box, which is the component
 /// that made up the layout tree.
+use crate::box_model::Rect;
+
 use super::box_model::Dimensions;
 use super::is_block_container_box;
 use style::render_tree::RenderNodeRef;
+use super::box_layout::ContainingBlock;
 
 /// LayoutBox for the layout tree
 #[derive(Debug, Clone)]
@@ -73,10 +75,12 @@ impl LayoutBox {
     pub fn as_containing_block(&self) -> ContainingBlock {
         let box_model = self.dimensions.clone();
         ContainingBlock {
-            x: box_model.content.x - box_model.padding.left,
-            y: box_model.content.y - box_model.padding.top,
-            width: box_model.content.width,
-            height: box_model.content.height,
+            rect: Rect {
+                x: box_model.content.x - box_model.padding.left,
+                y: box_model.content.y - box_model.padding.top,
+                width: box_model.content.width,
+                height: box_model.content.height,
+            },
             offset_x: box_model.content.x,
             offset_y: box_model.content.y,
             previous_margin_bottom: 0.0,
