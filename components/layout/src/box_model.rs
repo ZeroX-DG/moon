@@ -5,7 +5,7 @@
 /// Box-model dimensions for each layout box
 #[derive(Debug, Clone)]
 pub struct Dimensions {
-    pub content: ContentArea,
+    pub content: Rect,
     pub padding: EdgeSizes,
     pub margin: EdgeSizes,
     pub border: EdgeSizes,
@@ -13,7 +13,7 @@ pub struct Dimensions {
 
 /// Size of the content area (all in px)
 #[derive(Debug, Clone)]
-pub struct ContentArea {
+pub struct Rect {
     pub width: f32,
     pub height: f32,
     pub x: f32,
@@ -124,7 +124,7 @@ impl Dimensions {
 impl Default for Dimensions {
     fn default() -> Self {
         Self {
-            content: ContentArea {
+            content: Rect {
                 width: 0.0,
                 height: 0.0,
                 x: 0.0,

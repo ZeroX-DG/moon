@@ -3,7 +3,7 @@
 /// 1. Box width calculation
 /// 2. Box position calculation
 /// 3. Box height calculation
-use super::box_model::{BoxComponent, Edge};
+use super::box_model::{BoxComponent, Edge, Rect};
 use super::layout_box::{BoxType, FormattingContext, LayoutBox};
 use super::{
     is_absolutely_positioned, is_block_level_element, is_float_element, is_in_normal_flow,
@@ -13,10 +13,7 @@ use style::value_processing::Property;
 
 #[derive(Debug)]
 pub struct ContainingBlock {
-    pub x: f32,
-    pub y: f32,
-    pub width: f32,
-    pub height: f32,
+    pub rect: Rect,
     pub offset_x: f32,
     pub offset_y: f32,
     pub previous_margin_bottom: f32,
@@ -36,12 +33,12 @@ fn apply_explicit_sizes(root: &mut LayoutBox, containing_block: &mut ContainingB
     let computed_height = root.render_node.borrow().get_style(&Property::Height);
 
     if !computed_width.is_auto() {
-        let used_width = computed_width.to_px(containing_block.width);
+        let used_width = computed_width.to_px(containing_block.rect.width);
         root.box_model().set_width(used_width);
     }
 
     if !computed_height.is_auto() {
-        let used_height = computed_height.to_px(containing_block.height);
+        let used_height = computed_height.to_px(containing_block.rect.height);
         root.box_model().set_height(used_height);
     }
 }
@@ -52,13 +49,13 @@ fn layout_children(root: &mut LayoutBox) {
         layout(child, &mut containing_block);
 
         let child_margin_height = child.dimensions.margin_box_height();
-        containing_block.height +=
+        containing_block.rect.height +=
             child_margin_height - containing_block.collapsed_margins_vertical;
         containing_block.offset_y += child_margin_height - child.dimensions.margin.bottom;
     }
     let computed_height = root.render_node.borrow().get_style(&Property::Height);
     if computed_height.is_auto() {
-        root.box_model().set_height(containing_block.height);
+        root.box_model().set_height(containing_block.rect.height);
     }
 }
 
@@ -92,34 +89,34 @@ fn place_block_in_flow(root: &mut LayoutBox, containing_block: &mut ContainingBl
     box_model.set(
         BoxComponent::Margin,
         Edge::Top,
-        margin_top.to_px(containing_block.width),
+        margin_top.to_px(containing_block.rect.width),
     );
     box_model.set(
         BoxComponent::Margin,
         Edge::Bottom,
-        margin_bottom.to_px(containing_block.width),
+        margin_bottom.to_px(containing_block.rect.width),
     );
 
     box_model.set(
         BoxComponent::Padding,
         Edge::Top,
-        padding_top.to_px(containing_block.width),
+        padding_top.to_px(containing_block.rect.width),
     );
     box_model.set(
         BoxComponent::Padding,
         Edge::Bottom,
-        padding_bottom.to_px(containing_block.width),
+        padding_bottom.to_px(containing_block.rect.width),
     );
 
     box_model.set(
         BoxComponent::Border,
         Edge::Top,
-        border_top.to_px(containing_block.width),
+        border_top.to_px(containing_block.rect.width),
     );
     box_model.set(
         BoxComponent::Border,
         Edge::Bottom,
-        border_bottom.to_px(containing_block.width),
+        border_bottom.to_px(containing_block.rect.width),
     );
 
     let content_area_x = containing_block.offset_x
@@ -180,7 +177,7 @@ fn compute_width(root: &mut LayoutBox, containing_block: &ContainingBlock) {
     let computed_border_right = render_node.get_style(&Property::BorderRightWidth);
     let computed_padding_left = render_node.get_style(&Property::PaddingLeft);
     let computed_padding_right = render_node.get_style(&Property::PaddingRight);
-    let containing_width = containing_block.width;
+    let containing_width = containing_block.rect.width;
 
     let box_width = computed_margin_left.to_px(containing_width)
         + computed_border_left.to_px(containing_width)
@@ -379,10 +376,12 @@ mod tests {
         compute_width(
             &mut layout_tree,
             &mut ContainingBlock {
-                x: 0.0,
-                y: 0.0,
-                width: 1200.0,
-                height: 600.0,
+                rect: Rect {
+                    x: 0.0,
+                    y: 0.0,
+                    width: 1200.0,
+                    height: 600.0,
+                },
                 offset_x: 0.0,
                 offset_y: 0.0,
                 previous_margin_bottom: 0.0,
@@ -442,10 +441,12 @@ mod tests {
         layout(
             &mut layout_tree,
             &mut ContainingBlock {
-                x: 0.0,
-                y: 0.0,
-                width: 1200.0,
-                height: 600.0,
+                rect: Rect {
+                    x: 0.0,
+                    y: 0.0,
+                    width: 1200.0,
+                    height: 600.0,
+                },
                 offset_x: 0.0,
                 offset_y: 0.0,
                 previous_margin_bottom: 0.0,
@@ -533,10 +534,12 @@ mod tests {
         layout(
             &mut layout_tree,
             &mut ContainingBlock {
-                x: 0.0,
-                y: 0.0,
-                width: 1200.0,
-                height: 600.0,
+                rect: Rect {
+                    x: 0.0,
+                    y: 0.0,
+                    width: 1200.0,
+                    height: 600.0,
+                },
                 offset_x: 0.0,
                 offset_y: 0.0,
                 previous_margin_bottom: 0.0,
