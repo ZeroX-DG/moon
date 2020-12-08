@@ -1,165 +1,60 @@
-/// This module is responsible for the box generation
-/// of elements in the render tree. In other words,
-/// this module transforms render tree to layout tree
-/// to prepare for layouting process.
-use super::layout_box::{BoxType, FormattingContext, LayoutBox};
-use super::{
-    is_block_container_box, is_block_level_element, is_inline_level_element, is_text_node,
-};
+/// This module is responsible for the box generation of elements
+/// in the render tree. In other words, this module transforms
+/// render tree to layout tree and prepare for layouting process.
 use style::render_tree::RenderNodeRef;
+use style::value_processing::{Property, Value};
+use style::values::display::Display;
+use crate::layout_box::{BaseBox, BlockLevelBox, FormattingContextRef, LayoutBox};
+use crate::layout_box::block::BlockContainerBox;
 
-/// Build the layout tree from root render node
-///
-/// This will generate boxes for each render node & construct
-/// a layout tree for the layouting process
+/// Build the layout tree from the root render node tree
+/// which is the root `html` tag/element.
 pub fn build_layout_tree(root: RenderNodeRef) -> Option<LayoutBox> {
-    if let Some(root_box_type) = get_box_type(&root) {
-        let mut root_box = LayoutBox::new(root.clone(), root_box_type);
-
-        let children = root
-            .borrow()
-            .children
-            .iter()
-            .filter_map(|child| build_layout_tree(child.clone()))
-            .collect::<Vec<LayoutBox>>();
-
-        let has_block = children
-            .iter()
-            .find(|child| match child.box_type {
-                BoxType::Block => true,
-                _ => false,
-            })
-            .is_some();
-
-        match has_block {
-            true => root_box.set_formatting_context(FormattingContext::Block),
-            false if is_block_container_box(&root_box) => {
-                root_box.set_formatting_context(FormattingContext::Inline);
-            }
-            _ => { /* This one has no formatting context. It's just a box */ }
-        }
-
-        for mut child in children {
-            if let Some(ctx) = root_box.formatting_context.clone() {
-                child.set_parent_formatting_context(ctx);
-            }
-            root_box.add_child(child);
-        }
-
-        return Some(root_box);
-    }
-    println!("Don't know which box type for this: {:#?}", root);
-    None
+    build_layout_tree_recursive(root, None)
 }
 
-/// Get a box type for a node
-pub fn get_box_type(root: &RenderNodeRef) -> Option<BoxType> {
-    if is_text_node(&root) {
-        Some(BoxType::Anonymous)
-    } else if is_block_level_element(&root) {
-        Some(BoxType::Block)
-    } else if is_inline_level_element(&root) {
-        Some(BoxType::Inline)
-    } else {
-        None
-    }
+/// Recursively build the layout tree.
+fn build_layout_tree_recursive(
+    node: RenderNodeRef,
+    formatting_context: Option<FormattingContextRef>
+) -> Option<LayoutBox> {
+    // Determine the box type that the node generate
+    // Determine the formatting context that the box establish
+    // Build the layout tree of the children of the nodes
+    // Add those children boxes into the current box
+    // Return the current box
+    let layout_box = build_box(&node, &formatting_context);
+
+    layout_box
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::layout_box::*;
-    use crate::test_utils::print_layout_tree;
-    use css::cssom::css_rule::CSSRule;
-    use style::render_tree::build_render_tree;
-    use style::value_processing::*;
-    use test_utils::css::parse_stylesheet;
-    use test_utils::dom_creator::*;
-    use test_utils::printing::print_dom_tree;
+/// Build the layout box base on the element
+/// display value and parent formatting context.
+fn build_box(
+    node: &RenderNodeRef,
+    parent_context: &Option<FormattingContextRef>
+) -> Option<LayoutBox> {
+    if node.borrow().node.is::<dom::text::Text>() {
+        // TODO: Support text nodes when we support text run boxes
+        return None;
+    }
 
-    #[test]
-    fn test_build_tree() {
-        let dom = element(
-            "div",
-            vec![
-                element("span", vec![text("hello")]),
-                element("p", vec![text("world")]),
-                element("span", vec![text("hello")]),
-                element("span", vec![text("hello")]),
-            ],
-        );
+    let display_value = node.borrow().get_style(&Property::Display);
 
-        print_dom_tree(dom.clone(), 0);
-
-        let css = r#"
-        div {
-            display: block;
+    match display_value.inner() {
+        // if an element is display 'block', it generates block box
+        Value::Display(Display::Block) => {
+            let formatting_context = match parent_context {
+                Some(ctx) => *ctx.clone(),
+                None => FormattingContextRef::new_block_context()
+            };
+            let block_box = BlockContainerBox {
+                base: BaseBox::new(node.clone(), formatting_context)
+            };
+            let block_container = BlockLevelBox::BlockContainerBox(block_box);
+            let layout_box = LayoutBox::BlockLevelBox(block_container);
+            Some(layout_box)
         }
-        p {
-            display: block;
-        }
-        span {
-            display: inline;
-        }
-        "#;
-
-        let stylesheet = parse_stylesheet(css);
-
-        let rules = stylesheet
-            .iter()
-            .map(|rule| match rule {
-                CSSRule::Style(style) => ContextualRule {
-                    inner: style,
-                    location: CSSLocation::Embedded,
-                    origin: CascadeOrigin::User,
-                },
-            })
-            .collect::<Vec<ContextualRule>>();
-
-        let render_tree = build_render_tree(dom.clone(), &rules);
-        let layout_tree = build_layout_tree(render_tree.root.unwrap()).unwrap();
-
-        println!("------------------------");
-        print_layout_tree(&layout_tree, 0);
-
-        assert_eq!(layout_tree.box_type, BoxType::Block);
-        assert_eq!(
-            layout_tree.formatting_context,
-            Some(FormattingContext::Block)
-        );
-        // span
-        assert_eq!(layout_tree.children[0].box_type, BoxType::Anonymous);
-        assert_eq!(
-            layout_tree.children[0].formatting_context,
-            Some(FormattingContext::Inline)
-        );
-        assert_eq!(
-            layout_tree.children[0].children[0].box_type,
-            BoxType::Inline
-        );
-        // p
-        assert_eq!(layout_tree.children[1].box_type, BoxType::Block);
-        assert_eq!(
-            layout_tree.children[1].formatting_context,
-            Some(FormattingContext::Inline)
-        );
-        assert_eq!(
-            layout_tree.children[1].children[0].box_type,
-            BoxType::Anonymous
-        );
-        // last 2 span is grouped
-        assert_eq!(layout_tree.children[2].box_type, BoxType::Anonymous);
-        assert_eq!(
-            layout_tree.children[2].formatting_context,
-            Some(FormattingContext::Inline)
-        );
-        assert_eq!(
-            layout_tree.children[2].children[0].box_type,
-            BoxType::Inline
-        );
-        assert_eq!(
-            layout_tree.children[2].children[1].box_type,
-            BoxType::Inline
-        );
+        _ => None
     }
 }

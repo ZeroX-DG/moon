@@ -43,15 +43,15 @@ pub enum BoxComponent {
 }
 
 impl Dimensions {
-    pub fn set_width(&mut self, width: f32) {
+    pub fn set_content_width(&mut self, width: f32) {
         self.content.width = width;
     }
 
-    pub fn set_height(&mut self, height: f32) {
+    pub fn set_content_height(&mut self, height: f32) {
         self.content.height = height;
     }
 
-    pub fn set_position(&mut self, x: f32, y: f32) {
+    pub fn set_content_position(&mut self, x: f32, y: f32) {
         self.content.x = x;
         self.content.y = y;
     }
@@ -109,15 +109,22 @@ impl Dimensions {
         self.content.width + self.padding.left + self.padding.right
     }
 
-    pub fn padding_box_position(&self) -> (f32, f32) {
-        (
-            self.content.x - self.padding.left,
-            self.content.y - self.padding.top,
-        )
+    pub fn padding_box(&self) -> Rect {
+        Rect {
+            x: self.content.x - self.padding.left,
+            y: self.content.y - self.padding.top,
+            width: self.padding_box_width(),
+            height: self.padding_box_height()
+        }
     }
 
-    pub fn padding_box_size(&self) -> (f32, f32) {
-        (self.padding_box_width(), self.padding_box_height())
+    pub fn margin_box(&self) -> Rect {
+        Rect {
+            x: self.content.x - self.padding.left - self.border.left - self.margin.left,
+            y: self.content.y - self.padding.top - self.border.top - self.margin.top,
+            width: self.margin_box_width(),
+            height: self.margin_box_height()
+        }
     }
 }
 
