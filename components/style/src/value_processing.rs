@@ -380,7 +380,7 @@ impl Value {
         match property {
             Property::BackgroundColor => Value::Color(Color::transparent()),
             Property::Color => Value::Color(Color::black()),
-            Property::Display => Value::Display(Display::Inline),
+            Property::Display => Value::Display(Display::new_inline()),
             Property::Width => Value::Auto,
             Property::Height => Value::Auto,
             Property::MarginTop => Value::Length(Length::zero()),
