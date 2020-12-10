@@ -77,3 +77,13 @@ impl Display {
         })
     }
 }
+
+impl FullDisplay {
+    pub fn inner(&self) -> &InnerDisplayType {
+        &self.inner
+    }
+
+    pub fn outer(&self) -> &OuterDisplayType {
+        &self.outer
+    }
+}

@@ -123,7 +123,7 @@ pub enum FormattingContext {
     Inline
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct FormattingContextRef(Rc<FormattingContext>);
 
 impl Deref for FormattingContextRef {
@@ -151,6 +151,54 @@ impl BaseBox {
             dimensions: Default::default()
         }
     }
+
+    pub fn formatting_context(&self) -> FormattingContextRef { 
+        self.formatting_context.clone()
+    }
+}
+
+impl LayoutBox {
+    pub fn add_child(&mut self, child: LayoutBox) {
+        match self {
+            LayoutBox::BlockLevelBox(b) => b.add_child(child),
+            LayoutBox::InlineLevelBox(b) => b.add_child(child)
+        }
+    }
+
+    pub fn formatting_context(&self) -> FormattingContextRef {
+        match self {
+            LayoutBox::BlockLevelBox(bl) => bl.formatting_context(),
+            LayoutBox::InlineLevelBox(il) => il.formatting_context(),
+        }
+    }
+}
+
+impl BlockLevelBox {
+    pub fn formatting_context(&self) -> FormattingContextRef {
+        match self {
+            BlockLevelBox::BlockContainerBox(b) => b.formatting_context(),
+            BlockLevelBox::AnonymousBlockBox(b) => b.formatting_context()
+        }
+    }
+
+    pub fn add_child(&mut self, child: LayoutBox) {
+        match self {
+            BlockLevelBox::BlockContainerBox(b) => b.add_child(child),
+            BlockLevelBox::AnonymousBlockBox(b) => b.add_child(child),
+        }
+    }
+}
+
+impl InlineLevelBox {
+    pub fn formatting_context(&self) -> FormattingContextRef {
+        match self {
+            InlineLevelBox::AtomicInlineLevelBox(b) => b.formatting_context(),
+            InlineLevelBox::AnonymousInlineBox(b) => b.formatting_context(),
+            InlineLevelBox::InlineBox(b) => b.formatting_context()
+        }
+    }
+
+    pub fn add_child(&mut self, child: LayoutBox) {}
 }
 
 #[macro_export]
