@@ -4,30 +4,56 @@
 /// to prepare for layouting process.
 use super::layout_box::{LayoutBox, BoxType};
 use style::render_tree::RenderNodeRef;
-use std::rc::Rc;
+use style::value_processing::{Property, Value};
+use style::values::display::{Display, OuterDisplayType, InnerDisplayType};
 
-pub struct TreeBuilder {
-    parent_stack: Vec<Rc<LayoutBox>>
+pub struct TreeBuilder<'a> {
+    parent_stack: Vec<&'a LayoutBox>
 }
 
-impl TreeBuilder {
+impl<'a> TreeBuilder<'a> {
     pub fn new() -> Self {
         Self {
             parent_stack: Vec::new()
         }
     }
 
-    pub fn build_layout_tree(&self, node: RenderNodeRef) -> Option<LayoutBox> {
+    pub fn build_layout_tree(&mut self, node: RenderNodeRef) -> Option<LayoutBox> {
         let layout_box = build_box_by_display(&node);
 
-        for child in node.borrow().children {
-            self.build_layout_tree(child.clone());
+        if let Some(lb) = layout_box {
+            for child in node.borrow().children {
+                self.parent_stack.push(&lb);
+                self.build_layout_tree(child.clone());
+                self.parent_stack.pop();
+            }
         }
-
+        
         layout_box
     }
 }
 
 fn build_box_by_display(node: &RenderNodeRef) -> Option<LayoutBox> {
-    return None
+    let display = node.borrow().get_style(&Property::Display);
+
+    match display.inner() {
+        Value::Display(d) => match d {
+            Display::Full(outer, inner) => match (outer, inner) {
+                (OuterDisplayType::Block, InnerDisplayType::Flow) => {
+                    let layout_box = LayoutBox::new(node.clone(), BoxType::Block);
+                    Some(layout_box)
+                }
+                (OuterDisplayType::Inline, InnerDisplayType::Flow) => {
+                    let layout_box = LayoutBox::new(node.clone(), BoxType::Inline);
+                    Some(layout_box)
+                }
+                _ => None
+            }
+            _ => {
+                log::warn!("Unsupport display type: {:#?}", d);
+                None
+            }
+        }
+        _ => unreachable!()
+    }
 }

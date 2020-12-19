@@ -774,6 +774,7 @@ version = "0.1.0"
 dependencies = [
  "css",
  "dom",
+ "log",
  "style",
  "test_utils",
 ]
