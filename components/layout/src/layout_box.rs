@@ -39,10 +39,11 @@ pub enum BoxType {
     /// Inline-level box
     Inline,
 
-    /// Anonymous inline / Anonymous block box
-    /// depending on the formatting context of
-    /// the parent box
-    Anonymous,
+    /// Anonymous inline-level box
+    AnonymousInline,
+
+    /// Anonymous block-level box
+    AnonymousBlock,
 }
 
 impl LayoutBox {
@@ -62,6 +63,14 @@ impl LayoutBox {
 
     pub fn to_string(&self) -> String {
         dump_layout_tree(&self, 0)
+    }
+
+    pub fn add_child(&mut self, child: LayoutBox) {
+        self.children.push(child);
+    }
+
+    pub fn set_formatting_context(&mut self, context: FormattingContext) {
+        self.formatting_context = Some(context);
     }
 }
 

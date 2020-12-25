@@ -777,6 +777,7 @@ dependencies = [
  "log",
  "style",
  "test_utils",
+ "tree",
 ]
 
 [[package]]
