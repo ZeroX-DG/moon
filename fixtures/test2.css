@@ -3,22 +3,24 @@ html, body {
 }
 
 div {
-    display: inline;
+    display: block;
 }
 
 #blue {
     background-color: blue;
-    height: 340px;
-    width: 30px;
+    padding: 20px;
 }
+
 #red {
+    display: inline;
     background-color: red;
     height: 340px;
     width: 30px;
 }
 
 #yellow {
+    display: inline;
     background-color: yellow;
     height: 20px;
-    width: 30px;
+    width: 120px;
 }
