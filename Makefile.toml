@@ -26,4 +26,4 @@ args = ["run"]
 workspace = false
 dependencies = ["renderer"]
 command = "cargo"
-args = ["run", "--", "--html", "fixtures/test.html", "--css", "fixtures/test.css"]
+args = ["run", "--", "--html", "fixtures/test2.html", "--css", "fixtures/test2.css"]

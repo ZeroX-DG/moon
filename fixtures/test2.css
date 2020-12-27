@@ -3,18 +3,18 @@ html, body {
 }
 
 div {
-    display: block;
+    display: inline;
 }
+
 #blue {
     background-color: blue;
     height: 340px;
-    width: 50%;
+    width: 30px;
 }
 #red {
     background-color: red;
-    height: 200px;
-    margin-top: 20px;
-    padding-left: 10px;
+    height: 340px;
+    width: 30px;
 }
 
 #yellow {

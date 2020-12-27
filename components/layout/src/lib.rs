@@ -6,7 +6,6 @@ pub mod layout_box;
 pub mod tree_builder;
 
 use box_model::Rect;
-use formatting_context::FormattingContext;
 use layout::LayoutContext;
 use layout_box::LayoutBox;
 use style::render_tree::RenderTree;
@@ -16,7 +15,6 @@ pub fn compute_layout(root: &mut LayoutBox, viewport: &Rect) {
     layout::layout(
         root,
         viewport,
-        &FormattingContext::Flow(flow::FormattingContext::Block),
         &LayoutContext {
             offset_x: 0.,
             offset_y: 0.,

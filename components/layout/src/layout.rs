@@ -21,11 +21,10 @@ pub(crate) struct LayoutContext {
 pub(crate) fn layout(
     root: &mut LayoutBox,
     containing_block: &Rect,
-    parent_context: &FormattingContext,
     context: &LayoutContext,
 ) {
     compute_width(root, containing_block);
-    compute_position(root, containing_block, parent_context, context);
+    compute_position(root, containing_block, context);
     layout_children(root);
     apply_explicit_sizes(root, containing_block);
 }
@@ -46,11 +45,8 @@ fn layout_children(root: &mut LayoutBox) {
         .expect("No formatting context to layout children");
 
     for child in root.children.iter_mut() {
-        layout(child, containing_block, &formatting_context, &context);
-
-        let child_margin_height = child.dimensions.margin_box_height();
-        context.height += child_margin_height;
-        context.offset_y += child_margin_height - child.dimensions.margin.bottom;
+        layout(child, containing_block, &context);
+        update_context(child, &formatting_context, &mut context);
     }
 
     if let Some(render_node) = &root.render_node {
@@ -61,18 +57,71 @@ fn layout_children(root: &mut LayoutBox) {
     }
 }
 
+/// Update the layout context to decide where the next box will be rendered.
+/// This behavior is depend on different type of layout.
+// TODO: Make sure that when we support new layout this will still work, and
+// we won't have to touch compute_position function
+fn update_context(root: &LayoutBox, parent_context: &FormattingContext, context: &mut LayoutContext) {
+    match parent_context {
+        FormattingContext::Flow(flow::FormattingContext::Block) => {
+            flow::block::update_context(root, context)
+        },
+        FormattingContext::Flow(flow::FormattingContext::Inline) => {
+            flow::inline::update_context(root, context)
+        },
+        _ => unimplemented!("Unsupported formatting context: {:?}", parent_context),
+    }
+}
+
 fn compute_position(
     root: &mut LayoutBox,
     containing_block: &Rect,
-    parent_context: &FormattingContext,
     context: &LayoutContext,
 ) {
-    match parent_context {
-        FormattingContext::Flow(flow::FormattingContext::Block) => {
-            flow::block::compute_position(root, containing_block, context)
-        }
-        _ => unimplemented!("Unsupported formatting context: {:?}", parent_context),
+    let render_node = root.render_node.clone();
+    let box_model = root.box_model();
+
+    if let Some(render_node) = render_node {
+        let render_node = render_node.borrow();
+
+        let margin_top = render_node
+            .get_style(&Property::MarginTop)
+            .to_px(containing_block.width);
+        let margin_bottom = render_node
+            .get_style(&Property::MarginBottom)
+            .to_px(containing_block.width);
+
+        let border_top = render_node
+            .get_style(&Property::BorderTopWidth)
+            .to_px(containing_block.width);
+        let border_bottom = render_node
+            .get_style(&Property::BorderBottomWidth)
+            .to_px(containing_block.width);
+
+        let padding_top = render_node
+            .get_style(&Property::PaddingTop)
+            .to_px(containing_block.width);
+        let padding_bottom = render_node
+            .get_style(&Property::PaddingBottom)
+            .to_px(containing_block.width);
+
+        box_model.set(BoxComponent::Margin, Edge::Top, margin_top);
+        box_model.set(BoxComponent::Margin, Edge::Bottom, margin_bottom);
+
+        box_model.set(BoxComponent::Padding, Edge::Top, padding_top);
+        box_model.set(BoxComponent::Padding, Edge::Bottom, padding_bottom);
+
+        box_model.set(BoxComponent::Border, Edge::Top, border_top);
+        box_model.set(BoxComponent::Border, Edge::Bottom, border_bottom);
     }
+
+    let content_area_x =
+        context.offset_x + box_model.margin.left + box_model.border.left + box_model.padding.left;
+
+    let content_area_y = context.offset_y + box_model.border.top + box_model.padding.top;
+
+    root.box_model()
+        .set_position(content_area_x, content_area_y);
 }
 
 fn compute_width(root: &mut LayoutBox, containing_block: &Rect) {
