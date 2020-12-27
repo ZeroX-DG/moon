@@ -3,7 +3,7 @@ use crate::layout::LayoutContext;
 use crate::layout_box::LayoutBox;
 use style::value_processing::Property;
 
-pub fn compute_position(root: &mut LayoutBox, containing_block: &Rect, context: &LayoutContext) {
+pub(crate) fn compute_position(root: &mut LayoutBox, containing_block: &Rect, context: &LayoutContext) {
     let render_node = root.render_node.clone();
     let box_model = root.box_model();
 

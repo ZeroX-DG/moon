@@ -16,25 +16,27 @@ pub fn render_layout_box(root: &LayoutBox, display_list: &mut DisplayList) {
 }
 
 fn render_background(root: &LayoutBox, display_list: &mut DisplayList) {
-    let render_node = root.render_node.borrow();
-    let background = render_node.get_style(&Property::BackgroundColor);
+    if let Some(render_node) = &root.render_node {
+        let render_node = render_node.borrow();
+        let background = render_node.get_style(&Property::BackgroundColor);
 
-    let paint = Paint {
-        style: PaintStyle::Fill,
-        color: style_color_to_paint_color(background.inner()).unwrap_or_default(),
-    };
+        let paint = Paint {
+            style: PaintStyle::Fill,
+            color: style_color_to_paint_color(background.inner()).unwrap_or_default(),
+        };
 
-    let (x, y) = root.dimensions.padding_box_position();
-    let (width, height) = root.dimensions.padding_box_size();
+        let (x, y) = root.dimensions.padding_box_position();
+        let (width, height) = root.dimensions.padding_box_size();
 
-    let rect = Rect {
-        x,
-        y,
-        width,
-        height,
-    };
+        let rect = Rect {
+            x,
+            y,
+            width,
+            height,
+        };
 
-    display_list.push(DisplayCommand::DrawRect(rect, paint));
+        display_list.push(DisplayCommand::DrawRect(rect, paint));
+    }
 }
 
 fn style_color_to_paint_color(style_color: &Value) -> Option<PaintColor> {

@@ -10,7 +10,7 @@ use style::value_processing::Property;
 
 use super::flow;
 
-pub struct LayoutContext {
+pub(crate) struct LayoutContext {
     pub offset_x: f32,
     pub offset_y: f32,
     pub width: f32,
@@ -18,7 +18,7 @@ pub struct LayoutContext {
 }
 
 /// recursively layout the tree from the root
-pub fn layout(
+pub(crate) fn layout(
     root: &mut LayoutBox,
     containing_block: &Rect,
     parent_context: &FormattingContext,
@@ -76,7 +76,10 @@ fn compute_position(
 }
 
 fn compute_width(root: &mut LayoutBox, containing_block: &Rect) {
-    let render_node = root.render_node.clone().unwrap();
+    let render_node = match &root.render_node {
+        Some(node) => node.clone(),
+        None => return
+    };
     let is_inline = root.is_inline();
     let is_block = root.is_block();
     let is_float = root.is_float();
