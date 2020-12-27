@@ -10,38 +10,66 @@ use style::value_processing::Property;
 
 use super::flow;
 
+pub struct LayoutContext {
+    pub offset_x: f32,
+    pub offset_y: f32,
+    pub width: f32,
+    pub height: f32,
+}
+
 /// recursively layout the tree from the root
-pub fn layout(root: &mut LayoutBox, containing_block: &Rect, parent_context: &FormattingContext) {
+pub fn layout(
+    root: &mut LayoutBox,
+    containing_block: &Rect,
+    parent_context: &FormattingContext,
+    context: &LayoutContext,
+) {
     compute_width(root, containing_block);
-    compute_position(root, containing_block, parent_context);
+    compute_position(root, containing_block, parent_context, context);
     layout_children(root);
     apply_explicit_sizes(root, containing_block);
 }
 
 fn layout_children(root: &mut LayoutBox) {
-    // let mut containing_block = root.as_containing_block();
-    // for child in root.children.iter_mut() {
-    //     layout(child, &mut containing_block);
+    let mut context = LayoutContext {
+        offset_x: root.dimensions.content.x,
+        offset_y: root.dimensions.content.y,
+        width: root.dimensions.content.width,
+        height: root.dimensions.content.height,
+    };
 
-    //     let child_margin_height = child.dimensions.margin_box_height();
-    //     containing_block.rect.height +=
-    //         child_margin_height - containing_block.collapsed_margins_vertical;
-    //     containing_block.offset_y += child_margin_height - child.dimensions.margin.bottom;
-    // }
-    // let computed_height = root.render_node.borrow().get_style(&Property::Height);
-    // if computed_height.is_auto() {
-    //     root.box_model().set_height(containing_block.rect.height);
-    // }
+    let containing_block = &root.dimensions.content;
+
+    let formatting_context = root
+        .formatting_context
+        .clone()
+        .expect("No formatting context to layout children");
+
+    for child in root.children.iter_mut() {
+        layout(child, containing_block, &formatting_context, &context);
+
+        let child_margin_height = child.dimensions.margin_box_height();
+        context.height += child_margin_height;
+        context.offset_y += child_margin_height - child.dimensions.margin.bottom;
+    }
+
+    if let Some(render_node) = &root.render_node {
+        let computed_height = render_node.borrow().get_style(&Property::Height);
+        if computed_height.is_auto() {
+            root.box_model().set_height(context.height);
+        }
+    }
 }
 
 fn compute_position(
     root: &mut LayoutBox,
     containing_block: &Rect,
     parent_context: &FormattingContext,
+    context: &LayoutContext,
 ) {
     match parent_context {
         FormattingContext::Flow(flow::FormattingContext::Block) => {
-            flow::block::compute_position(root, containing_block)
+            flow::block::compute_position(root, containing_block, context)
         }
         _ => unimplemented!("Unsupported formatting context: {:?}", parent_context),
     }

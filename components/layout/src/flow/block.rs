@@ -1,8 +1,9 @@
 use crate::box_model::{BoxComponent, Edge, Rect};
+use crate::layout::LayoutContext;
 use crate::layout_box::LayoutBox;
 use style::value_processing::Property;
 
-pub fn compute_position(root: &mut LayoutBox, containing_block: &Rect) {
+pub fn compute_position(root: &mut LayoutBox, containing_block: &Rect, context: &LayoutContext) {
     let render_node = root.render_node.clone();
     let box_model = root.box_model();
 
@@ -32,18 +33,18 @@ pub fn compute_position(root: &mut LayoutBox, containing_block: &Rect) {
 
         box_model.set(BoxComponent::Margin, Edge::Top, margin_top);
         box_model.set(BoxComponent::Margin, Edge::Bottom, margin_bottom);
-    
+
         box_model.set(BoxComponent::Padding, Edge::Top, padding_top);
         box_model.set(BoxComponent::Padding, Edge::Bottom, padding_bottom);
-    
+
         box_model.set(BoxComponent::Border, Edge::Top, border_top);
         box_model.set(BoxComponent::Border, Edge::Bottom, border_bottom);
     }
 
     let content_area_x =
-        0.0 + box_model.margin.left + box_model.border.left + box_model.padding.left;
+        context.offset_x + box_model.margin.left + box_model.border.left + box_model.padding.left;
 
-    let content_area_y = 0.0 + box_model.border.top + box_model.padding.top;
+    let content_area_y = context.offset_y + box_model.border.top + box_model.padding.top;
 
     root.box_model()
         .set_position(content_area_x, content_area_y);
