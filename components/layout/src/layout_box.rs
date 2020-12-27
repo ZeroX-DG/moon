@@ -2,7 +2,11 @@
 /// the layout box, which is the component
 /// that made up the layout tree.
 use super::box_model::Dimensions;
+use super::formatting_context::FormattingContext;
 use style::render_tree::RenderNodeRef;
+use style::value_processing::{Property, Value};
+use style::values::float::Float;
+use style::values::position::Position;
 
 /// LayoutBox for the layout tree
 #[derive(Debug, Clone)]
@@ -21,13 +25,6 @@ pub struct LayoutBox {
 
     /// The children of this box
     pub children: Vec<LayoutBox>,
-}
-
-/// Formatting context of each box
-#[derive(Debug, Clone, PartialEq)]
-pub enum FormattingContext {
-    Block,
-    Inline,
 }
 
 /// Different box types for each layout box
@@ -69,6 +66,53 @@ impl LayoutBox {
         self.box_type == BoxType::Inline
     }
 
+    pub fn is_block(&self) -> bool {
+        self.box_type == BoxType::Block
+    }
+
+    pub fn is_float(&self) -> bool {
+        match &self.render_node {
+            Some(node) => match node.borrow().get_style(&Property::Float).inner() {
+                Value::Float(Float::None) => false,
+                _ => true
+            },
+            _ => false
+        }
+    }
+
+    pub fn is_non_replaced(&self) -> bool {
+        match &self.render_node {
+            Some(node) => match node.borrow().node.borrow().as_element() {
+                Some(e) => match e.tag_name().as_str() {
+                    "video" | "image" | "img" | "canvas" => false,
+                    _ => true
+                },
+                _ => true
+            }
+            _ => true
+        }
+    }
+
+    // TODO: change to the correct behavior of inline block
+    pub fn is_inline_block(&self) -> bool {
+        self.is_inline()
+    }
+
+    // TODO: change to the correct behavior to detect normal flow
+    pub fn is_in_normal_flow(&self) -> bool {
+        true
+    }
+
+    pub fn is_absolutely_positioned(&self) -> bool {
+        match &self.render_node {
+            Some(node) => match node.borrow().get_style(&Property::Position).inner() {
+                Value::Position(Position::Absolute) => true,
+                _ => false
+            },
+            _ => false
+        }
+    }
+
     pub fn box_model(&mut self) -> &mut Dimensions {
         &mut self.dimensions
     }
@@ -91,7 +135,7 @@ fn dump_layout_tree(root: &LayoutBox, level: usize) -> String {
     let child_nodes = &root.children;
 
     let formatting_context = match &root.formatting_context {
-        Some(s) => format!("{:?} Formatting Context", s),
+        Some(s) => format!("{:?}", s),
         None => format!("no formatting context")
     };
 

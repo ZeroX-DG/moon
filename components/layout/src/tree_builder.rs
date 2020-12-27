@@ -2,12 +2,15 @@
 /// of elements in the render tree. In other words,
 /// this module transforms render tree to layout tree
 /// to prepare for layouting process.
-use super::layout_box::{LayoutBox, BoxType, FormattingContext};
+use super::layout_box::{LayoutBox, BoxType};
+use super::formatting_context::FormattingContext;
 use style::render_tree::RenderNodeRef;
 use style::value_processing::{Property, Value};
 use style::values::display::{Display, OuterDisplayType, InnerDisplayType};
 use std::rc::Rc;
 use std::cell::RefCell;
+
+use super::flow;
 
 pub struct TreeBuilder {
     parent_stack: Rc<RefCell<Vec<*mut LayoutBox>>>,
@@ -93,19 +96,19 @@ unsafe fn get_parent_for_inline<'a>(parent_stack: Rc<RefCell<Vec<*mut LayoutBox>
         .as_mut()
         .expect("Can't get mutable reference to parent");
 
-    if let Some(FormattingContext::Inline) = formatting_context {
+    if let Some(FormattingContext::Flow(flow::FormattingContext::Inline)) = formatting_context {
         return parent_mut;
     }
 
     if let Some(last) = parent_mut.children.last() {
-        if !last.is_anonymous() || last.formatting_context != Some(FormattingContext::Inline) {
+        if !last.is_anonymous() || last.formatting_context != Some(FormattingContext::Flow(flow::FormattingContext::Inline)) {
             let mut anonymous = LayoutBox::new_anonymous(BoxType::Block);
-            anonymous.set_formatting_context(FormattingContext::Inline);
+            anonymous.set_formatting_context(FormattingContext::Flow(flow::FormattingContext::Inline));
             parent_mut.add_child(anonymous);
         }
     } else {
         let mut anonymous = LayoutBox::new_anonymous(BoxType::Block);
-        anonymous.set_formatting_context(FormattingContext::Inline);
+        anonymous.set_formatting_context(FormattingContext::Flow(flow::FormattingContext::Inline));
         parent_mut.add_child(anonymous);
     }
 
@@ -146,13 +149,13 @@ unsafe fn get_parent_for_block<'a>(parent_stack: Rc<RefCell<Vec<*mut LayoutBox>>
         .as_mut()
         .expect("Can't get mutable reference to parent");
 
-    if let Some(FormattingContext::Inline) = formatting_context {
+    if let Some(FormattingContext::Flow(flow::FormattingContext::Inline)) = formatting_context {
         let children = parent_mut.children.drain(..).collect::<Vec<_>>();
         let mut anonymous = LayoutBox::new_anonymous(BoxType::Block);
         anonymous.children = children;
-        anonymous.set_formatting_context(FormattingContext::Inline);
+        anonymous.set_formatting_context(FormattingContext::Flow(flow::FormattingContext::Inline));
         parent_mut.add_child(anonymous);
-        parent_mut.set_formatting_context(FormattingContext::Block);
+        parent_mut.set_formatting_context(FormattingContext::Flow(flow::FormattingContext::Block));
     }
 
     return parent_mut;
@@ -178,14 +181,14 @@ fn build_box_by_display(node: &RenderNodeRef) -> Option<LayoutBox> {
             Display::Full(outer, inner) => match (outer, inner) {
                 (OuterDisplayType::Block, InnerDisplayType::Flow) => {
                     let formatting_context = if establish_inline_context(node) {
-                        FormattingContext::Inline
+                        FormattingContext::Flow(flow::FormattingContext::Inline)
                     } else {
-                        FormattingContext::Block
+                        FormattingContext::Flow(flow::FormattingContext::Block)
                     };
                     (BoxType::Block, formatting_context)
                 }
                 (OuterDisplayType::Inline, InnerDisplayType::Flow) => {
-                    (BoxType::Inline, FormattingContext::Inline)
+                    (BoxType::Inline, FormattingContext::Flow(flow::FormattingContext::Inline))
                 }
                 _ => return None
             }
@@ -256,9 +259,11 @@ mod tests {
     #[test]
     fn test_block_break_inline() {
         let dom = element("div", vec![
-            element("span", vec![
+            element("div", vec![
                 element("span", vec![]),
                 element("p", vec![]),
+                element("a", vec![]),
+                element("a", vec![]),
                 element("a", vec![])
             ])
         ]);
