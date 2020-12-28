@@ -51,7 +51,7 @@ fn layout_children(root: &mut LayoutBox) {
 
     if let Some(render_node) = &root.render_node {
         let computed_height = render_node.borrow().get_style(&Property::Height);
-        if computed_height.is_auto() {
+        if computed_height.is_auto() || root.is_inline() {
             root.box_model().set_height(context.height);
         }
     }
@@ -291,6 +291,10 @@ fn compute_width(root: &mut LayoutBox, containing_block: &Rect) {
 }
 
 fn apply_explicit_sizes(root: &mut LayoutBox, containing_block: &Rect) {
+    if root.is_inline() {
+        return
+    }
+
     if let Some(render_node) = &root.render_node {
         let computed_width = render_node.borrow().get_style(&Property::Width);
         let computed_height = render_node.borrow().get_style(&Property::Height);
