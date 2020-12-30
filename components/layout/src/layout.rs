@@ -63,10 +63,10 @@ fn layout_children(root: &mut LayoutBox) {
 // we won't have to touch compute_position function
 fn update_context(root: &LayoutBox, parent_context: &FormattingContext, context: &mut LayoutContext) {
     match parent_context {
-        FormattingContext::Flow(flow::FormattingContext::Block) => {
+        FormattingContext::Block => {
             flow::block::update_context(root, context)
         },
-        FormattingContext::Flow(flow::FormattingContext::Inline) => {
+        FormattingContext::Inline => {
             flow::inline::update_context(root, context)
         },
         _ => unimplemented!("Unsupported formatting context: {:?}", parent_context),
