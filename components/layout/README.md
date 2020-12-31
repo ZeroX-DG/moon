@@ -13,7 +13,7 @@ The layout process decides where the elements on the web page will be displayed.
 
 This is the process build a tree of `LayoutBox` from the render tree. The algorithm for this step is roughly like this:
 
-```rs
+```rust
 pub fn build_layout_tree(node: RenderNode) {
   // 1. Create the box for the node
 
@@ -67,7 +67,7 @@ A layout tree should looks like this:
 
 The algorithm for box creation:
 
-```rs
+```rust
 fn create_box(node: RenderNode) -> LayoutBox {
   // 1. If the render node is a text node return a text run
   // 2. Match the box outer display type
@@ -78,7 +78,7 @@ fn create_box(node: RenderNode) -> LayoutBox {
 
 The algorithm for finding insertion place
 
-```rs
+```rust
 fn find_insertion_place(parent_stack: &mut Vec<LayoutBox>, layout_box: &LayoutBox) -> &mut LayoutBox {
   // 1. If the layout_box is an InlineLevelBox
   //   1. If the last box in the parent stack doesn't have all inline children
@@ -103,7 +103,7 @@ fn find_insertion_place(parent_stack: &mut Vec<LayoutBox>, layout_box: &LayoutBo
 
 This process decides the size and position of each box.
 
-```rs
+```rust
 impl LayoutBox {
   fn layout(&mut self) {
     let mut context = self.establish_formatting_context();
@@ -123,7 +123,7 @@ impl LayoutBox {
 
 Each formatting should share these behavior:
 
-```rs
+```rust
 pub struct BaseFormattingContext {
   offset_x: f32,
   offset_y: f32,
@@ -169,7 +169,7 @@ Each formatting context has it own way to calculate size and position:
 
 In block formatting context every box is placed in a vertical direction one after each other.
 
-```rs
+```rust
 impl FormattingContext for BlockFormattingContext {
   fn base(&self) -> &BaseFormattingContext {
     &self.base
@@ -195,7 +195,7 @@ impl FormattingContext for BlockFormattingContext {
 
 In inline formatting context every box is placed in a horizontal direction one after each other.
 
-```rs
+```rust
 impl FormattingContext for InlineFormattingContext {
   fn base(&self) -> &BaseFormattingContext {
     &self.base
