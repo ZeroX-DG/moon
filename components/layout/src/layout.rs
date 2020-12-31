@@ -4,79 +4,47 @@
 /// 2. Box position calculation
 /// 3. Box height calculation
 use super::box_model::{BoxComponent, Edge, Rect};
-use super::formatting_context::FormattingContext;
+use super::formatting_context::{FormattingContext, FormattingContextType, FormattingContextData};
 use super::layout_box::LayoutBox;
 use style::value_processing::Property;
-
-use super::flow;
-
-pub(crate) struct LayoutContext {
-    pub offset_x: f32,
-    pub offset_y: f32,
-    pub width: f32,
-    pub height: f32,
-}
 
 /// recursively layout the tree from the root
 pub(crate) fn layout(
     root: &mut LayoutBox,
     containing_block: &Rect,
-    context: &LayoutContext,
+    context: &FormattingContextData,
 ) {
     compute_width(root, containing_block);
     compute_position(root, containing_block, context);
-    layout_children(root);
-    apply_explicit_sizes(root, containing_block);
-}
 
-fn layout_children(root: &mut LayoutBox) {
-    let mut context = LayoutContext {
-        offset_x: root.dimensions.content.x,
-        offset_y: root.dimensions.content.y,
-        width: root.dimensions.content.width,
-        height: root.dimensions.content.height,
-    };
-
-    let containing_block = &root.dimensions.content;
-
-    let formatting_context = root
-        .formatting_context
-        .clone()
-        .expect("No formatting context to layout children");
+    let mut inner_context = establish_context(root);
 
     for child in root.children.iter_mut() {
-        layout(child, containing_block, &context);
-        update_context(child, &formatting_context, &mut context);
+        inner_context.layout_child(child);
     }
 
     if let Some(render_node) = &root.render_node {
         let computed_height = render_node.borrow().get_style(&Property::Height);
-        if computed_height.is_auto() || root.is_inline() {
-            root.box_model().set_height(context.height);
+        if computed_height.is_auto() {
+            root.box_model().set_height(inner_context.data.height);
         }
     }
+
+    apply_explicit_sizes(root, containing_block);
 }
 
-/// Update the layout context to decide where the next box will be rendered.
-/// This behavior is depend on different type of layout.
-// TODO: Make sure that when we support new layout this will still work, and
-// we won't have to touch compute_position function
-fn update_context(root: &LayoutBox, parent_context: &FormattingContext, context: &mut LayoutContext) {
-    match parent_context {
-        FormattingContext::Block => {
-            flow::block::update_context(root, context)
-        },
-        FormattingContext::Inline => {
-            flow::inline::update_context(root, context)
-        },
-        _ => unimplemented!("Unsupported formatting context: {:?}", parent_context),
+fn establish_context(root: &LayoutBox) -> FormattingContext {
+    if root.is_inline() {
+        return FormattingContext::new(FormattingContextType::Inline, root);
     }
+
+    return FormattingContext::new(FormattingContextType::Block, root);
 }
 
 fn compute_position(
     root: &mut LayoutBox,
     containing_block: &Rect,
-    context: &LayoutContext,
+    context: &FormattingContextData,
 ) {
     let render_node = root.render_node.clone();
     let box_model = root.box_model();

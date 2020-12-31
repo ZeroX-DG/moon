@@ -12,7 +12,7 @@ pub struct Dimensions {
 }
 
 /// Size of the content area (all in px)
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Rect {
     pub width: f32,
     pub height: f32,

@@ -2,7 +2,6 @@
 /// the layout box, which is the component
 /// that made up the layout tree.
 use super::box_model::Dimensions;
-use super::formatting_context::FormattingContext;
 use style::render_tree::RenderNodeRef;
 use style::value_processing::{Property, Value};
 use style::values::float::Float;
@@ -20,8 +19,8 @@ pub struct LayoutBox {
     /// The render node that generate this box
     pub render_node: Option<RenderNodeRef>,
 
-    /// The formatting context that this block establish
-    pub formatting_context: Option<FormattingContext>,
+    /// Indicate if this box only contain inline
+    pub children_are_inline: bool,
 
     /// The children of this box
     pub children: Vec<LayoutBox>,
@@ -43,7 +42,7 @@ impl LayoutBox {
             box_type,
             render_node: Some(node),
             dimensions: Dimensions::default(),
-            formatting_context: None,
+            children_are_inline: false,
             children: Vec::new(),
         }
     }
@@ -53,7 +52,7 @@ impl LayoutBox {
             box_type,
             render_node: None,
             dimensions: Dimensions::default(),
-            formatting_context: None,
+            children_are_inline: false,
             children: Vec::new()
         }
     }
@@ -125,8 +124,12 @@ impl LayoutBox {
         self.children.push(child);
     }
 
-    pub fn set_formatting_context(&mut self, context: FormattingContext) {
-        self.formatting_context = Some(context);
+    pub fn set_children_inline(&mut self, value: bool) {
+        self.children_are_inline = value;
+    }
+
+    pub fn children_are_inline(&self) -> bool {
+        self.children_are_inline
     }
 }
 
@@ -134,26 +137,19 @@ fn dump_layout_tree(root: &LayoutBox, level: usize) -> String {
     let mut result = String::new();
     let child_nodes = &root.children;
 
-    let formatting_context = match &root.formatting_context {
-        Some(s) => format!("{:?}", s),
-        None => format!("no formatting context")
-    };
-
     if let Some(node) = &root.render_node {
         result.push_str(&format!(
-            "{}[{:?}] {:#?} establish {}\n",
+            "{}[{:?}] {:#?}\n",
             "  ".repeat(level),
             root.box_type,
-            node.borrow().node,
-            formatting_context
+            node.borrow().node
         ));
     }
     else {
         result.push_str(&format!(
-            "{}[Anonymous {:?}] establish {}\n",
+            "{}[Anonymous {:?}]\n",
             "  ".repeat(level),
-            root.box_type,
-            formatting_context
+            root.box_type
         ));
     }
 

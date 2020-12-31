@@ -3,7 +3,6 @@
 /// this module transforms render tree to layout tree
 /// to prepare for layouting process.
 use super::layout_box::{LayoutBox, BoxType};
-use super::formatting_context::FormattingContext;
 use style::render_tree::RenderNodeRef;
 use style::value_processing::{Property, Value};
 use style::values::display::{Display, OuterDisplayType, InnerDisplayType};
@@ -85,28 +84,23 @@ unsafe fn get_parent_for_inline<'a>(parent_stack: Rc<RefCell<Vec<*mut LayoutBox>
         .last()
         .expect("No parent in stack");
 
-    let formatting_context = &parent
-        .as_ref()
-        .unwrap()
-        .formatting_context;
-
     let parent_mut = parent
         .as_mut()
         .expect("Can't get mutable reference to parent");
 
-    if let Some(FormattingContext::Inline) = formatting_context {
+    if parent_mut.children_are_inline() {
         return parent_mut;
     }
 
     if let Some(last) = parent_mut.children.last() {
-        if !last.is_anonymous() || last.formatting_context != Some(FormattingContext::Inline) {
+        if !last.is_anonymous() || !last.children_are_inline() {
             let mut anonymous = LayoutBox::new_anonymous(BoxType::Block);
-            anonymous.set_formatting_context(FormattingContext::Inline);
+            anonymous.set_children_inline(true);
             parent_mut.add_child(anonymous);
         }
     } else {
         let mut anonymous = LayoutBox::new_anonymous(BoxType::Block);
-        anonymous.set_formatting_context(FormattingContext::Inline);
+        anonymous.set_children_inline(true);
         parent_mut.add_child(anonymous);
     }
 
@@ -138,28 +132,23 @@ unsafe fn get_parent_for_block<'a>(parent_stack: Rc<RefCell<Vec<*mut LayoutBox>>
         parent = parent_stack[index];
     }
 
-    let formatting_context = &parent
-        .as_ref()
-        .unwrap()
-        .formatting_context;
-
     let parent_mut = parent
         .as_mut()
         .expect("Can't get mutable reference to parent");
 
-    if let Some(FormattingContext::Inline) = formatting_context {
+    if parent_mut.children_are_inline() {
         let children = parent_mut.children.drain(..).collect::<Vec<_>>();
         let mut anonymous = LayoutBox::new_anonymous(BoxType::Block);
         anonymous.children = children;
-        anonymous.set_formatting_context(FormattingContext::Inline);
+        anonymous.set_children_inline(true);
         parent_mut.add_child(anonymous);
-        parent_mut.set_formatting_context(FormattingContext::Block);
+        parent_mut.set_children_inline(false);
     }
 
     return parent_mut;
 }
 
-fn establish_inline_context(node: &RenderNodeRef) -> bool {
+fn all_inline_children(node: &RenderNodeRef) -> bool {
     for child in &node.borrow().children {
         match child.borrow().get_style(&Property::Display).inner() {
             Value::Display(
@@ -174,19 +163,14 @@ fn establish_inline_context(node: &RenderNodeRef) -> bool {
 fn build_box_by_display(node: &RenderNodeRef) -> Option<LayoutBox> {
     let display = node.borrow().get_style(&Property::Display);
 
-    let (box_type, formatting_context) = match display.inner() {
+    let box_type = match display.inner() {
         Value::Display(d) => match d {
             Display::Full(outer, inner) => match (outer, inner) {
                 (OuterDisplayType::Block, InnerDisplayType::Flow) => {
-                    let formatting_context = if establish_inline_context(node) {
-                        FormattingContext::Inline
-                    } else {
-                        FormattingContext::Block
-                    };
-                    (BoxType::Block, formatting_context)
+                    BoxType::Block
                 }
                 (OuterDisplayType::Inline, InnerDisplayType::Flow) => {
-                    (BoxType::Inline, FormattingContext::Inline)
+                    BoxType::Inline
                 }
                 _ => return None
             }
@@ -198,8 +182,15 @@ fn build_box_by_display(node: &RenderNodeRef) -> Option<LayoutBox> {
         _ => unreachable!()
     };
 
-    let mut layout_box = LayoutBox::new(node.clone(), box_type);
-    layout_box.set_formatting_context(formatting_context);
+    let mut layout_box = LayoutBox::new(node.clone(), box_type.clone());
+
+    if all_inline_children(node) {
+        layout_box.set_children_inline(true);
+    }
+
+    if let BoxType::Inline = layout_box.box_type {
+        layout_box.set_children_inline(true);
+    }
 
     Some(layout_box)
 }
