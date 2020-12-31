@@ -122,19 +122,22 @@ unsafe fn get_parent_for_inline<'a>(
 unsafe fn get_parent_for_block<'a>(
     parent_stack: Rc<RefCell<Vec<*mut LayoutBox>>>,
 ) -> &'a mut LayoutBox {
-    let parent_stack = parent_stack.borrow();
-    let mut index = parent_stack.len() - 1;
-    let mut parent = parent_stack[index];
+    let mut parent_stack = parent_stack.borrow_mut();
 
-    while let BoxType::Inline = parent.as_ref().unwrap().box_type {
-        if index == 0 {
-            panic!("No block parent found")
+    while let Some(parent_box) = parent_stack.last() {
+        if parent_box.as_ref().unwrap().box_type == BoxType::Inline {
+            parent_stack.pop();
+        } else {
+            break
         }
-        index -= 1;
-        parent = parent_stack[index];
     }
 
-    let parent_mut = parent
+    if parent_stack.last().is_none() {
+        panic!("Can't find block parent for block box");
+    }
+
+    let parent_mut = parent_stack.last()
+        .unwrap()
         .as_mut()
         .expect("Can't get mutable reference to parent");
 
