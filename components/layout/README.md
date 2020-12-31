@@ -146,7 +146,7 @@ pub trait FormattingContext {
 
   fn base(&self) -> &BaseFormattingContext;
 
-  fn update_new_data(&self, layout_box: &LayoutBox);
+  fn update_new_data(&mut self, layout_box: &LayoutBox);
 
   fn calculate_position(&mut self, layout_box: &mut LayoutBox) {
     // 1. Set the x = offset x of the context + box's margin left + padding left + border left
