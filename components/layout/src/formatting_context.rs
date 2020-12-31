@@ -16,21 +16,11 @@ pub trait FormattingContext {
             self.calculate_position(layout_box, containing_block);
             layout_box.layout();
             self.update_new_data(layout_box);
-            self.calculate_height(layout_box);
             self.apply_explicit_sizes(layout_box, containing_block);
         }
     }
 
     fn calculate_width(&mut self, layout_box: &mut LayoutBox);
-
-    fn calculate_height(&self, layout_box: &mut LayoutBox) {
-        if let Some(render_node) = &layout_box.render_node {
-            let computed_height = render_node.borrow().get_style(&Property::Height);
-            if computed_height.is_auto() {
-                layout_box.box_model().set_height(self.base().height);
-            }
-        }
-    }
 
     fn base(&self) -> &BaseFormattingContext;
 

@@ -140,6 +140,7 @@ impl LayoutBox {
     pub fn layout(&mut self) {
         let mut context = self.establish_formatting_context();
         context.layout(self.children.iter_mut().collect(), &self.dimensions.content);
+        self.dimensions.set_height(context.base().height);
     }
 
     fn establish_formatting_context(&self) -> Box<dyn FormattingContext> {
