@@ -2,10 +2,15 @@
 /// the layout box, which is the component
 /// that made up the layout tree.
 use super::box_model::Dimensions;
+use super::formatting_context::FormattingContext;
 use style::render_tree::RenderNodeRef;
 use style::value_processing::{Property, Value};
 use style::values::float::Float;
 use style::values::position::Position;
+use style::values::display::{Display, InnerDisplayType};
+
+use super::flow::inline::InlineFormattingContext;
+use super::flow::block::BlockFormattingContext;
 
 /// LayoutBox for the layout tree
 #[derive(Debug, Clone)]
@@ -130,6 +135,38 @@ impl LayoutBox {
 
     pub fn children_are_inline(&self) -> bool {
         self.children_are_inline
+    }
+
+    pub fn layout(&mut self) {
+        let mut context = self.establish_formatting_context();
+        context.layout(self.children.iter_mut().collect(), &self.dimensions.content);
+    }
+
+    fn establish_formatting_context(&self) -> Box<dyn FormattingContext> {
+        if let Some(node) = &self.render_node {
+            let node = node.borrow();
+            let display = node.get_style(&Property::Display);
+            let inner_display = match display.inner() {
+                Value::Display(Display::Full(_, inner)) => inner,
+                _ => unreachable!()
+            };
+
+            match inner_display {
+                InnerDisplayType::Flow => {
+                    if self.children_are_inline() {
+                        Box::new(InlineFormattingContext::new(&self.dimensions.content))
+                    } else {
+                        Box::new(BlockFormattingContext::new(&self.dimensions.content))
+                    }
+                }
+                _ => unimplemented!("Unsupported display type: {:#?}", display)
+            }
+        } else {
+            if self.children_are_inline() {
+                return Box::new(InlineFormattingContext::new(&self.dimensions.content));
+            }
+            return Box::new(BlockFormattingContext::new(&self.dimensions.content));
+        }
     }
 }
 
