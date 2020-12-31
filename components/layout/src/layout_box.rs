@@ -33,7 +33,7 @@ pub enum BoxType {
     Block,
 
     /// Inline-level box
-    Inline
+    Inline,
 }
 
 impl LayoutBox {
@@ -53,7 +53,7 @@ impl LayoutBox {
             render_node: None,
             dimensions: Dimensions::default(),
             children_are_inline: false,
-            children: Vec::new()
+            children: Vec::new(),
         }
     }
 
@@ -73,9 +73,9 @@ impl LayoutBox {
         match &self.render_node {
             Some(node) => match node.borrow().get_style(&Property::Float).inner() {
                 Value::Float(Float::None) => false,
-                _ => true
+                _ => true,
             },
-            _ => false
+            _ => false,
         }
     }
 
@@ -84,11 +84,11 @@ impl LayoutBox {
             Some(node) => match node.borrow().node.borrow().as_element() {
                 Some(e) => match e.tag_name().as_str() {
                     "video" | "image" | "img" | "canvas" => false,
-                    _ => true
+                    _ => true,
                 },
-                _ => true
-            }
-            _ => true
+                _ => true,
+            },
+            _ => true,
         }
     }
 
@@ -106,9 +106,9 @@ impl LayoutBox {
         match &self.render_node {
             Some(node) => match node.borrow().get_style(&Property::Position).inner() {
                 Value::Position(Position::Absolute) => true,
-                _ => false
+                _ => false,
             },
-            _ => false
+            _ => false,
         }
     }
 
@@ -144,8 +144,7 @@ fn dump_layout_tree(root: &LayoutBox, level: usize) -> String {
             root.box_type,
             node.borrow().node
         ));
-    }
-    else {
+    } else {
         result.push_str(&format!(
             "{}[Anonymous {:?}]\n",
             "  ".repeat(level),
@@ -153,7 +152,6 @@ fn dump_layout_tree(root: &LayoutBox, level: usize) -> String {
         ));
     }
 
-    
     for node in child_nodes {
         result.push_str(&dump_layout_tree(node, level + 1));
     }

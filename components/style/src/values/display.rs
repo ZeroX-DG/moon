@@ -4,14 +4,14 @@ use css::tokenizer::token::Token;
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum Display {
     Full(OuterDisplayType, InnerDisplayType),
-    Box(DisplayBox)
+    Box(DisplayBox),
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum OuterDisplayType {
     Block,
     Inline,
-    RunIn
+    RunIn,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
@@ -20,13 +20,13 @@ pub enum InnerDisplayType {
     FlowRoot,
     Table,
     Flex,
-    Grid
+    Grid,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum DisplayBox {
     Contents,
-    None
+    None,
 }
 
 macro_rules! match_ident {
@@ -52,7 +52,7 @@ impl Display {
                 "block" => Self::new_block(),
                 "inline" => Self::new_inline()
             }),
-            _ => None
+            _ => None,
         }
     }
 

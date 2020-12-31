@@ -4,7 +4,7 @@
 /// 2. Box position calculation
 /// 3. Box height calculation
 use super::box_model::{BoxComponent, Edge, Rect};
-use super::formatting_context::{FormattingContext, FormattingContextType, FormattingContextData};
+use super::formatting_context::{FormattingContext, FormattingContextData, FormattingContextType};
 use super::layout_box::LayoutBox;
 use style::value_processing::Property;
 
@@ -95,7 +95,7 @@ fn compute_position(
 fn compute_width(root: &mut LayoutBox, containing_block: &Rect) {
     let render_node = match &root.render_node {
         Some(node) => node.clone(),
-        None => return
+        None => return,
     };
     let is_inline = root.is_inline();
     let is_block = root.is_block();
@@ -260,7 +260,7 @@ fn compute_width(root: &mut LayoutBox, containing_block: &Rect) {
 
 fn apply_explicit_sizes(root: &mut LayoutBox, containing_block: &Rect) {
     if root.is_inline() {
-        return
+        return;
     }
 
     if let Some(render_node) = &root.render_node {

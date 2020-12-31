@@ -1,13 +1,13 @@
-use super::layout_box::LayoutBox;
-use super::layout::layout;
 use super::box_model::Rect;
+use super::layout::layout;
+use super::layout_box::LayoutBox;
 
 /// Formatting context of each box
 #[derive(Debug, Clone, PartialEq)]
 pub struct FormattingContext {
     pub type_: FormattingContextType,
     pub data: FormattingContextData,
-    pub containing_block: Rect
+    pub containing_block: Rect,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -15,7 +15,7 @@ pub enum FormattingContextType {
     Inline,
     Block,
     Flex,
-    Grid
+    Grid,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -34,9 +34,9 @@ impl FormattingContext {
                 offset_x: established_box.dimensions.content.x,
                 offset_y: established_box.dimensions.content.y,
                 width: established_box.dimensions.content.width,
-                height: established_box.dimensions.content.height
+                height: established_box.dimensions.content.height,
             },
-            containing_block: established_box.dimensions.content.clone()
+            containing_block: established_box.dimensions.content.clone(),
         }
     }
 
@@ -49,7 +49,7 @@ impl FormattingContext {
         match self.type_ {
             FormattingContextType::Inline => self.update_inline_layout(child),
             FormattingContextType::Block => self.update_block_layout(child),
-            _ => unimplemented!("Unsupported context: {:#?}", self.type_)
+            _ => unimplemented!("Unsupported context: {:#?}", self.type_),
         }
     }
 

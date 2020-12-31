@@ -2,23 +2,23 @@
 /// of elements in the render tree. In other words,
 /// this module transforms render tree to layout tree
 /// to prepare for layouting process.
-use super::layout_box::{LayoutBox, BoxType};
+use super::layout_box::{BoxType, LayoutBox};
+use std::cell::RefCell;
+use std::rc::Rc;
 use style::render_tree::RenderNodeRef;
 use style::value_processing::{Property, Value};
-use style::values::display::{Display, OuterDisplayType, InnerDisplayType};
-use std::rc::Rc;
-use std::cell::RefCell;
+use style::values::display::{Display, InnerDisplayType, OuterDisplayType};
 
 pub struct TreeBuilder {
     parent_stack: Rc<RefCell<Vec<*mut LayoutBox>>>,
-    root: RenderNodeRef
+    root: RenderNodeRef,
 }
 
 impl TreeBuilder {
     pub fn new(root: RenderNodeRef) -> Self {
         Self {
             parent_stack: Rc::new(RefCell::new(Vec::new())),
-            root
+            root,
         }
     }
 
@@ -27,7 +27,7 @@ impl TreeBuilder {
         let root = self.root.clone();
         let mut root_box = match build_box_by_display(&root) {
             Some(b) => b,
-            None => return None
+            None => return None,
         };
 
         self.parent_stack.borrow_mut().push(&mut root_box);
@@ -43,10 +43,10 @@ impl TreeBuilder {
     fn build_layout_tree(&mut self, node: RenderNodeRef) -> Option<&LayoutBox> {
         let layout_box = match build_box_by_display(&node) {
             Some(b) => b,
-            None => return None
+            None => return None,
         };
 
-        let parent =  unsafe {
+        let parent = unsafe {
             if layout_box.is_inline() {
                 get_parent_for_inline(self.parent_stack.clone())
             } else {
@@ -78,11 +78,11 @@ impl TreeBuilder {
 /// Otherwise, if the nearest parent established a block formatting context
 /// then create an anonymous block-level box to wrap the inline-box in before
 /// inserting into the parent.
-unsafe fn get_parent_for_inline<'a>(parent_stack: Rc<RefCell<Vec<*mut LayoutBox>>>) -> &'a mut LayoutBox {
+unsafe fn get_parent_for_inline<'a>(
+    parent_stack: Rc<RefCell<Vec<*mut LayoutBox>>>,
+) -> &'a mut LayoutBox {
     let parent_stack = parent_stack.borrow();
-    let parent = parent_stack
-        .last()
-        .expect("No parent in stack");
+    let parent = parent_stack.last().expect("No parent in stack");
 
     let parent_mut = parent
         .as_mut()
@@ -119,7 +119,9 @@ unsafe fn get_parent_for_inline<'a>(parent_stack: Rc<RefCell<Vec<*mut LayoutBox>
 /// inline-level boxes currently in the parent. After that, set the
 /// formatting context of parent to block and insert the box as a direct
 /// children of the parent.
-unsafe fn get_parent_for_block<'a>(parent_stack: Rc<RefCell<Vec<*mut LayoutBox>>>) -> &'a mut LayoutBox {
+unsafe fn get_parent_for_block<'a>(
+    parent_stack: Rc<RefCell<Vec<*mut LayoutBox>>>,
+) -> &'a mut LayoutBox {
     let parent_stack = parent_stack.borrow();
     let mut index = parent_stack.len() - 1;
     let mut parent = parent_stack[index];
@@ -151,9 +153,7 @@ unsafe fn get_parent_for_block<'a>(parent_stack: Rc<RefCell<Vec<*mut LayoutBox>>
 fn all_inline_children(node: &RenderNodeRef) -> bool {
     for child in &node.borrow().children {
         match child.borrow().get_style(&Property::Display).inner() {
-            Value::Display(
-                Display::Full(OuterDisplayType::Block, _)
-            ) => return false,
+            Value::Display(Display::Full(OuterDisplayType::Block, _)) => return false,
             _ => {}
         }
     }
@@ -166,20 +166,16 @@ fn build_box_by_display(node: &RenderNodeRef) -> Option<LayoutBox> {
     let box_type = match display.inner() {
         Value::Display(d) => match d {
             Display::Full(outer, inner) => match (outer, inner) {
-                (OuterDisplayType::Block, InnerDisplayType::Flow) => {
-                    BoxType::Block
-                }
-                (OuterDisplayType::Inline, InnerDisplayType::Flow) => {
-                    BoxType::Inline
-                }
-                _ => return None
-            }
+                (OuterDisplayType::Block, InnerDisplayType::Flow) => BoxType::Block,
+                (OuterDisplayType::Inline, InnerDisplayType::Flow) => BoxType::Inline,
+                _ => return None,
+            },
             _ => {
                 log::warn!("Unsupport display type: {:#?}", d);
                 return None;
             }
-        }
-        _ => unreachable!()
+        },
+        _ => unreachable!(),
     };
 
     let mut layout_box = LayoutBox::new(node.clone(), box_type.clone());
@@ -198,22 +194,28 @@ fn build_box_by_display(node: &RenderNodeRef) -> Option<LayoutBox> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use test_utils::dom_creator::*;
-    use test_utils::css::parse_stylesheet;
     use css::cssom::css_rule::CSSRule;
-    use style::value_processing::{CSSLocation, CascadeOrigin, ContextualRule};
     use style::build_render_tree;
+    use style::value_processing::{CSSLocation, CascadeOrigin, ContextualRule};
+    use test_utils::css::parse_stylesheet;
+    use test_utils::dom_creator::*;
 
     #[test]
     fn test_build_simple() {
-        let dom = element("div", vec![
-            element("span", vec![]),
-            element("p", vec![
+        let dom = element(
+            "div",
+            vec![
                 element("span", vec![]),
-                element("span", vec![]),
-                element("span", vec![])
-            ])
-        ]);
+                element(
+                    "p",
+                    vec![
+                        element("span", vec![]),
+                        element("span", vec![]),
+                        element("span", vec![]),
+                    ],
+                ),
+            ],
+        );
 
         let css = r#"
         p, div {
@@ -247,15 +249,19 @@ mod tests {
 
     #[test]
     fn test_block_break_inline() {
-        let dom = element("div", vec![
-            element("div", vec![
-                element("span", vec![]),
-                element("p", vec![]),
-                element("a", vec![]),
-                element("a", vec![]),
-                element("a", vec![])
-            ])
-        ]);
+        let dom = element(
+            "div",
+            vec![element(
+                "div",
+                vec![
+                    element("span", vec![]),
+                    element("p", vec![]),
+                    element("a", vec![]),
+                    element("a", vec![]),
+                    element("a", vec![]),
+                ],
+            )],
+        );
 
         let css = r#"
         p, div {

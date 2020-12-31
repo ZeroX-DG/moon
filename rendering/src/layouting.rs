@@ -1,7 +1,7 @@
 use css::cssom::css_rule::CSSRule;
 use css::cssom::stylesheet::StyleSheet;
 use dom::dom_ref::NodeRef;
-use layout::{box_model::Rect, layout_box::LayoutBox, build_layout_tree};
+use layout::{box_model::Rect, build_layout_tree, layout_box::LayoutBox};
 use style::render_tree::build_render_tree;
 use style::value_processing::{CSSLocation, CascadeOrigin, ContextualRule};
 

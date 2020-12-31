@@ -137,7 +137,7 @@ impl Dimensions {
             x,
             y,
             width,
-            height
+            height,
         }
     }
 
@@ -148,7 +148,7 @@ impl Dimensions {
             x,
             y,
             width,
-            height
+            height,
         }
     }
 }
