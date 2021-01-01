@@ -50,7 +50,8 @@ impl Display {
                 "none" => Display::Box(DisplayBox::None),
                 "contents" => Display::Box(DisplayBox::Contents),
                 "block" => Self::new_block(),
-                "inline" => Self::new_inline()
+                "inline" => Self::new_inline(),
+                "inline-block" => Display::Full(OuterDisplayType::Inline, InnerDisplayType::FlowRoot)
             }),
             _ => None,
         }

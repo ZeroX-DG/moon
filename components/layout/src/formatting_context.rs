@@ -81,7 +81,7 @@ pub trait FormattingContext {
     }
 
     fn apply_explicit_sizes(&mut self, layout_box: &mut LayoutBox, containing_block: &Rect) {
-        if layout_box.is_inline() {
+        if layout_box.is_inline() && !layout_box.is_inline_block() {
             return;
         }
 

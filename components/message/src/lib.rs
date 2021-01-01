@@ -27,14 +27,14 @@ impl Message for KernelMessage {
         let value = read_value(r).map_err(|e| IpcError::Read(e.to_string()))?;
         let inner: KernelMessage =
             from_value(value).map_err(|e| IpcError::Deserialize(e.to_string()))?;
-        log::debug!("<< Kernel {:?}", inner);
+        //log::debug!("<< Kernel {:?}", inner);
         let r = Some(inner);
 
         Ok(r)
     }
 
     fn write(self, w: &mut impl Write) -> Result<(), IpcError> {
-        log::debug!(">> Kernel {:?}", self);
+        //log::debug!(">> Kernel {:?}", self);
         let value = to_value(self).map_err(|e| IpcError::Serialize(e.to_string()))?;
         write_value(w, &value).map_err(|e| IpcError::Write(e.to_string()))?;
         w.flush().map_err(|e| IpcError::Write(e.to_string()))?;

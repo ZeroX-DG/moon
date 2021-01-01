@@ -51,9 +51,9 @@ impl FormattingContext for BlockFormattingContext {
             + computed_border_right.to_px(containing_width)
             + computed_margin_right.to_px(containing_width);
 
-        let mut used_width = layout_box.box_model().content.width;
-        let mut used_margin_left = layout_box.box_model().margin.left;
-        let mut used_margin_right = layout_box.box_model().margin.right;
+        let mut used_width = computed_width.to_px(containing_width);
+        let mut used_margin_left = computed_margin_left.to_px(containing_width);
+        let mut used_margin_right = computed_margin_right.to_px(containing_width);
 
         // 3. block-level, non-replaced elements in normal flow
         if layout_box.is_non_replaced() {
