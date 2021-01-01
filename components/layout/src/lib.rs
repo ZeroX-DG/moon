@@ -2,6 +2,7 @@ pub mod box_model;
 pub mod flow;
 pub mod formatting_context;
 pub mod layout_box;
+pub mod layout_printer;
 pub mod tree_builder;
 
 use box_model::Rect;
@@ -16,8 +17,8 @@ pub fn compute_layout(root: &mut LayoutBox, viewport: &Rect) {
     context.layout(vec![root], viewport);
 }
 
-pub fn build_layout_tree(tree: RenderTree) -> Option<LayoutBox> {
-    let layout_tree_builder = TreeBuilder::new(tree.root.unwrap());
+pub fn build_layout_tree(tree: &RenderTree) -> Option<LayoutBox> {
+    let layout_tree_builder = TreeBuilder::new(tree.root.clone().unwrap());
 
     layout_tree_builder.build()
 }
