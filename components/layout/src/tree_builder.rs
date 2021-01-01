@@ -128,7 +128,7 @@ unsafe fn get_parent_for_block<'a>(
         if parent_box.as_ref().unwrap().box_type == BoxType::Inline {
             parent_stack.pop();
         } else {
-            break
+            break;
         }
     }
 
@@ -136,7 +136,8 @@ unsafe fn get_parent_for_block<'a>(
         panic!("Can't find block parent for block box");
     }
 
-    let parent_mut = parent_stack.last()
+    let parent_mut = parent_stack
+        .last()
         .unwrap()
         .as_mut()
         .expect("Can't get mutable reference to parent");

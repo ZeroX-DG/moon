@@ -5,12 +5,12 @@ use super::box_model::Dimensions;
 use super::formatting_context::FormattingContext;
 use style::render_tree::RenderNodeRef;
 use style::value_processing::{Property, Value};
+use style::values::display::{Display, InnerDisplayType};
 use style::values::float::Float;
 use style::values::position::Position;
-use style::values::display::{Display, InnerDisplayType};
 
-use super::flow::inline::InlineFormattingContext;
 use super::flow::block::BlockFormattingContext;
+use super::flow::inline::InlineFormattingContext;
 
 /// LayoutBox for the layout tree
 #[derive(Debug, Clone)]
@@ -166,7 +166,7 @@ impl LayoutBox {
             let display = node.get_style(&Property::Display);
             let inner_display = match display.inner() {
                 Value::Display(Display::Full(_, inner)) => inner,
-                _ => unreachable!()
+                _ => unreachable!(),
             };
 
             match inner_display {
@@ -177,7 +177,7 @@ impl LayoutBox {
                         Box::new(BlockFormattingContext::new(&self.dimensions.content))
                     }
                 }
-                _ => unimplemented!("Unsupported display type: {:#?}", display)
+                _ => unimplemented!("Unsupported display type: {:#?}", display),
             }
         } else {
             if self.children_are_inline() {
@@ -191,7 +191,7 @@ impl LayoutBox {
 #[allow(dead_code)]
 pub(crate) enum LayoutDumpSpecificity {
     Structure,
-    StructureAndDimensions
+    StructureAndDimensions,
 }
 
 fn dump_layout_tree(root: &LayoutBox, level: usize, specificity: &LayoutDumpSpecificity) -> String {
@@ -206,7 +206,7 @@ fn dump_layout_tree(root: &LayoutBox, level: usize, specificity: &LayoutDumpSpec
             root.dimensions.content.y,
             root.dimensions.content.width,
             root.dimensions.content.height
-        )
+        ),
     };
 
     if let Some(node) = &root.render_node {

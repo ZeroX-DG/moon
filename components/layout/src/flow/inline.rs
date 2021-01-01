@@ -1,9 +1,9 @@
+use crate::box_model::{BoxComponent, Edge, Rect};
 use crate::formatting_context::{BaseFormattingContext, FormattingContext};
 use crate::layout_box::LayoutBox;
-use crate::box_model::{Rect, BoxComponent, Edge};
 
 pub struct InlineFormattingContext {
-    base: BaseFormattingContext
+    base: BaseFormattingContext,
 }
 
 impl InlineFormattingContext {
@@ -14,7 +14,7 @@ impl InlineFormattingContext {
                 offset_y: rect.y,
                 width: 0.,
                 height: 0.,
-            }
+            },
         }
     }
 }

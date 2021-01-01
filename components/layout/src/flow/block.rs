@@ -1,11 +1,11 @@
+use crate::box_model::{BoxComponent, Edge, Rect};
 use crate::formatting_context::{BaseFormattingContext, FormattingContext};
 use crate::layout_box::LayoutBox;
-use crate::box_model::{Rect, BoxComponent, Edge};
 use style::value_processing::Property;
 
 pub struct BlockFormattingContext {
     base: BaseFormattingContext,
-    containing_block: Rect
+    containing_block: Rect,
 }
 
 impl BlockFormattingContext {
@@ -17,7 +17,7 @@ impl BlockFormattingContext {
                 width: 0.,
                 height: 0.,
             },
-            containing_block: rect.clone()
+            containing_block: rect.clone(),
         }
     }
 }
@@ -26,7 +26,7 @@ impl FormattingContext for BlockFormattingContext {
     fn base(&self) -> &BaseFormattingContext {
         &self.base
     }
-    
+
     fn calculate_width(&mut self, layout_box: &mut LayoutBox) {
         let render_node = match &layout_box.render_node {
             Some(node) => node.clone(),
@@ -107,7 +107,8 @@ impl FormattingContext for BlockFormattingContext {
                         used_width = underflow;
                     } else {
                         used_width = 0.;
-                        used_margin_right = computed_margin_right.to_px(containing_width) + underflow;
+                        used_margin_right =
+                            computed_margin_right.to_px(containing_width) + underflow;
                     }
                 }
                 // If both 'margin-left' and 'margin-right' are 'auto', their
@@ -162,13 +163,13 @@ impl FormattingContext for BlockFormattingContext {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::box_model::Rect;
+    use crate::tree_builder::*;
     use css::cssom::css_rule::CSSRule;
     use style::build_render_tree;
     use style::value_processing::{CSSLocation, CascadeOrigin, ContextualRule};
     use test_utils::css::parse_stylesheet;
     use test_utils::dom_creator::*;
-    use crate::tree_builder::*;
-    use crate::box_model::Rect;
 
     #[test]
     fn test_block_layout_simple() {
@@ -215,15 +216,18 @@ mod tests {
             x: 0.,
             y: 0.,
             width: 1600.,
-            height: 900.
+            height: 900.,
         });
 
-        formatting_context.layout(vec![&mut layout_box], &Rect {
-            x: 0.,
-            y: 0.,
-            width: 1600.,
-            height: 900.
-        });
+        formatting_context.layout(
+            vec![&mut layout_box],
+            &Rect {
+                x: 0.,
+                y: 0.,
+                width: 1600.,
+                height: 900.,
+            },
+        );
 
         //println!("{}", layout_box.dump(&LayoutDumpSpecificity::StructureAndDimensions));
 
