@@ -70,7 +70,11 @@ fn get_formatting_context(layout_box: &LayoutBox) -> Box<dyn FormattingContext> 
     }
 }
 
-fn calculate_position(base: &BaseFormattingContext, layout_box: &mut LayoutBox, containing_block: &Rect) {
+fn calculate_position(
+    base: &BaseFormattingContext,
+    layout_box: &mut LayoutBox,
+    containing_block: &Rect,
+) {
     let render_node = layout_box.render_node.clone();
     let box_model = layout_box.box_model();
 
@@ -108,15 +112,11 @@ fn calculate_position(base: &BaseFormattingContext, layout_box: &mut LayoutBox, 
         box_model.set(BoxComponent::Border, Edge::Bottom, border_bottom);
     }
 
-    let content_area_x = base.offset_x
-        + box_model.margin.left
-        + box_model.border.left
-        + box_model.padding.left;
+    let content_area_x =
+        base.offset_x + box_model.margin.left + box_model.border.left + box_model.padding.left;
 
-    let content_area_y = base.offset_y
-        + box_model.margin.top
-        + box_model.border.top
-        + box_model.padding.top;
+    let content_area_y =
+        base.offset_y + box_model.margin.top + box_model.border.top + box_model.padding.top;
 
     layout_box
         .box_model()

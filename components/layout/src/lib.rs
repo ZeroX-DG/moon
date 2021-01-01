@@ -2,8 +2,8 @@ pub mod box_model;
 pub mod flow;
 pub mod formatting_context;
 pub mod layout_box;
-pub mod tree_builder;
 pub mod layout_printer;
+pub mod tree_builder;
 
 use box_model::Rect;
 use flow::block::BlockFormattingContext;
