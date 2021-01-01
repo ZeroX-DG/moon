@@ -2,15 +2,11 @@
 /// the layout box, which is the component
 /// that made up the layout tree.
 use super::box_model::Dimensions;
-use super::formatting_context::FormattingContext;
 use style::render_tree::RenderNodeRef;
 use style::value_processing::{Property, Value};
-use style::values::display::{Display, InnerDisplayType};
 use style::values::float::Float;
 use style::values::position::Position;
-
-use super::flow::block::BlockFormattingContext;
-use super::flow::inline::InlineFormattingContext;
+use style::values::display::{Display, InnerDisplayType};
 
 /// LayoutBox for the layout tree
 #[derive(Debug, Clone)]
@@ -126,15 +122,6 @@ impl LayoutBox {
         &mut self.dimensions
     }
 
-    pub fn to_string(&self) -> String {
-        dump_layout_tree(&self, 0, &LayoutDumpSpecificity::Structure)
-    }
-
-    #[allow(dead_code)]
-    pub(crate) fn dump(&self, specificity: &LayoutDumpSpecificity) -> String {
-        dump_layout_tree(&self, 0, specificity)
-    }
-
     pub fn add_child(&mut self, child: LayoutBox) {
         self.children.push(child);
     }
@@ -155,87 +142,4 @@ impl LayoutBox {
         }
         return true;
     }
-
-    pub fn layout(&mut self) {
-        let mut context = self.establish_formatting_context();
-        context.layout(self.children.iter_mut().collect(), &self.dimensions.content);
-
-        if self.is_height_auto() {
-            self.dimensions.set_height(context.base().height);
-        }
-    }
-
-    fn establish_formatting_context(&self) -> Box<dyn FormattingContext> {
-        if let Some(node) = &self.render_node {
-            let node = node.borrow();
-            let display = node.get_style(&Property::Display);
-            let inner_display = match display.inner() {
-                Value::Display(Display::Full(_, inner)) => inner,
-                _ => unreachable!(),
-            };
-
-            match inner_display {
-                InnerDisplayType::Flow => {
-                    if self.children_are_inline() {
-                        Box::new(InlineFormattingContext::new(&self.dimensions.content))
-                    } else {
-                        Box::new(BlockFormattingContext::new(&self.dimensions.content))
-                    }
-                }
-                InnerDisplayType::FlowRoot => {
-                    Box::new(BlockFormattingContext::new(&self.dimensions.content))
-                }
-                _ => unimplemented!("Unsupported display type: {:#?}", display),
-            }
-        } else {
-            if self.children_are_inline() {
-                return Box::new(InlineFormattingContext::new(&self.dimensions.content));
-            }
-            return Box::new(BlockFormattingContext::new(&self.dimensions.content));
-        }
-    }
-}
-
-#[allow(dead_code)]
-pub(crate) enum LayoutDumpSpecificity {
-    Structure,
-    StructureAndDimensions,
-}
-
-fn dump_layout_tree(root: &LayoutBox, level: usize, specificity: &LayoutDumpSpecificity) -> String {
-    let mut result = String::new();
-    let child_nodes = &root.children;
-
-    let dimensions_str = match specificity {
-        LayoutDumpSpecificity::Structure => String::new(),
-        LayoutDumpSpecificity::StructureAndDimensions => format!(
-            "(x: {}| y: {}| w: {}| h: {})",
-            root.dimensions.content.x,
-            root.dimensions.content.y,
-            root.dimensions.content.width,
-            root.dimensions.content.height
-        ),
-    };
-
-    if let Some(node) = &root.render_node {
-        result.push_str(&format!(
-            "{}[{:?}] {:#?} {}\n",
-            "  ".repeat(level),
-            root.box_type,
-            node.borrow().node,
-            dimensions_str
-        ));
-    } else {
-        result.push_str(&format!(
-            "{}[Anonymous {:?}] {}\n",
-            "  ".repeat(level),
-            root.box_type,
-            dimensions_str
-        ));
-    }
-
-    for node in child_nodes {
-        result.push_str(&dump_layout_tree(node, level + 1, specificity));
-    }
-    return result;
 }
