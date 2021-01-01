@@ -1,8 +1,10 @@
-mod layouting;
+mod layout_engine;
 mod parsing;
 
-use css::cssom::stylesheet::StyleSheet;
 use dom::dom_ref::NodeRef;
+use layout::box_model::Rect;
+use layout::layout_printer::{layout_to_string, DumpSpecificity};
+use layout_engine::LayoutEngine;
 
 use ipc::{Client, Sender};
 use message::{KernelMessage, RendererMessage};
@@ -28,7 +30,7 @@ pub struct Renderer<'a> {
     id: String,
     sender: &'a mut Sender<RendererMessage>,
     document: Option<NodeRef>,
-    stylesheets: Vec<StyleSheet>,
+    layout_engine: LayoutEngine,
 }
 
 impl<'a> Renderer<'a> {
@@ -37,7 +39,12 @@ impl<'a> Renderer<'a> {
             id: nanoid::simple(),
             sender,
             document: None,
-            stylesheets: Vec::new(),
+            layout_engine: LayoutEngine::new(Rect {
+                x: 0.,
+                y: 0.,
+                width: 500.,
+                height: 300.,
+            }),
         }
     }
 
@@ -49,11 +56,11 @@ impl<'a> Renderer<'a> {
         match msg {
             KernelMessage::LoadHTMLLocal(path) => {
                 self.load_html_local(path);
-                self.reflow(self.document.clone());
+                self.repaint();
             }
             KernelMessage::LoadCSSLocal(path) => {
                 self.load_css_local(path);
-                self.reflow(self.document.clone());
+                self.repaint();
             }
             _ => {
                 log::debug!("Unknown kernel message: {:?}", msg);
@@ -61,13 +68,13 @@ impl<'a> Renderer<'a> {
         }
     }
 
-    fn reflow(&mut self, root: Option<NodeRef>) {
-        if let Some(root) = root {
-            let new_layout = layouting::layout(&root, &self.stylesheets, 500.0, 300.0);
-
-            log::debug!("{}", new_layout.to_string());
-
-            let display_list = painting::build_display_list(&new_layout);
+    fn repaint(&mut self) {
+        if let Some(layout_tree) = self.layout_engine.layout_tree() {
+            log::debug!(
+                "Generated layout box tree:\n {}",
+                layout_to_string(layout_tree, 0, &DumpSpecificity::StructureAndDimensions)
+            );
+            let display_list = painting::build_display_list(layout_tree);
 
             self.sender
                 .send(RendererMessage::RePaint(display_list))
@@ -78,6 +85,7 @@ impl<'a> Renderer<'a> {
     fn load_html_local(&mut self, path: String) {
         if let Ok(html) = fs::read_to_string(&path) {
             let dom = parsing::parse_html(html);
+            self.layout_engine.load_dom_tree(&dom);
             self.document = Some(dom);
         } else {
             self.sender
@@ -89,7 +97,7 @@ impl<'a> Renderer<'a> {
     fn load_css_local(&mut self, path: String) {
         if let Ok(css) = fs::read_to_string(&path) {
             let stylesheet = parsing::parse_css(css);
-            self.stylesheets.push(stylesheet);
+            self.layout_engine.append_stylesheet(stylesheet);
         } else {
             self.sender
                 .send(RendererMessage::ResourceNotFound(path))
