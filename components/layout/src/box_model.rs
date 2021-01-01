@@ -12,7 +12,7 @@ pub struct Dimensions {
 }
 
 /// Size of the content area (all in px)
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Rect {
     pub width: f32,
     pub height: f32,
@@ -101,6 +101,12 @@ impl Dimensions {
             + self.margin.right
     }
 
+    pub fn margin_box_position(&self) -> (f32, f32) {
+        let x = self.content.x - self.padding.left - self.border.left - self.margin.left;
+        let y = self.content.y - self.padding.top - self.border.top - self.margin.top;
+        (x, y)
+    }
+
     pub fn padding_box_height(&self) -> f32 {
         self.content.height + self.padding.top + self.padding.bottom
     }
@@ -118,6 +124,32 @@ impl Dimensions {
 
     pub fn padding_box_size(&self) -> (f32, f32) {
         (self.padding_box_width(), self.padding_box_height())
+    }
+
+    pub fn content_box(&self) -> Rect {
+        self.content.clone()
+    }
+
+    pub fn padding_box(&self) -> Rect {
+        let (x, y) = self.padding_box_position();
+        let (width, height) = self.padding_box_size();
+        Rect {
+            x,
+            y,
+            width,
+            height,
+        }
+    }
+
+    pub fn margin_box(&self) -> Rect {
+        let (x, y) = self.margin_box_position();
+        let (width, height) = (self.margin_box_width(), self.margin_box_height());
+        Rect {
+            x,
+            y,
+            width,
+            height,
+        }
     }
 }
 

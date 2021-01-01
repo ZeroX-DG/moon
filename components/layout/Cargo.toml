@@ -9,6 +9,7 @@ edition = "2018"
 [dependencies]
 style = { version = "*", path = "../style" }
 dom = { version = "*", path = "../dom" }
+log = "*"
 
 [dev-dependencies]
 test_utils = { version = "*", path = "../test_utils" }

@@ -1,12 +1,16 @@
 /// This module contains the definition of
 /// the layout box, which is the component
 /// that made up the layout tree.
-use crate::box_model::Rect;
-
-use super::box_layout::ContainingBlock;
 use super::box_model::Dimensions;
-use super::is_block_container_box;
+use super::formatting_context::FormattingContext;
 use style::render_tree::RenderNodeRef;
+use style::value_processing::{Property, Value};
+use style::values::display::{Display, InnerDisplayType};
+use style::values::float::Float;
+use style::values::position::Position;
+
+use super::flow::block::BlockFormattingContext;
+use super::flow::inline::InlineFormattingContext;
 
 /// LayoutBox for the layout tree
 #[derive(Debug, Clone)]
@@ -18,23 +22,13 @@ pub struct LayoutBox {
     pub dimensions: Dimensions,
 
     /// The render node that generate this box
-    pub render_node: RenderNodeRef,
+    pub render_node: Option<RenderNodeRef>,
 
-    /// The formatting context that this block establish
-    pub formatting_context: Option<FormattingContext>,
-
-    /// The parent formatting context that this element participate in
-    pub parent_formatting_context: Option<FormattingContext>,
+    /// Indicate if this box only contain inline
+    pub children_are_inline: bool,
 
     /// The children of this box
     pub children: Vec<LayoutBox>,
-}
-
-/// Formatting context of each box
-#[derive(Debug, Clone, PartialEq)]
-pub enum FormattingContext {
-    Block,
-    Inline,
 }
 
 /// Different box types for each layout box
@@ -45,128 +39,195 @@ pub enum BoxType {
 
     /// Inline-level box
     Inline,
-
-    /// Anonymous inline / Anonymous block box
-    /// depending on the formatting context of
-    /// the parent box
-    Anonymous,
 }
 
 impl LayoutBox {
     pub fn new(node: RenderNodeRef, box_type: BoxType) -> Self {
         Self {
             box_type,
-            render_node: node,
+            render_node: Some(node),
             dimensions: Dimensions::default(),
-            formatting_context: None,
-            parent_formatting_context: None,
+            children_are_inline: false,
             children: Vec::new(),
         }
     }
 
-    pub fn is_block_container_box(&self) -> bool {
-        is_block_container_box(self)
+    pub fn new_anonymous(box_type: BoxType) -> Self {
+        Self {
+            box_type,
+            render_node: None,
+            dimensions: Dimensions::default(),
+            children_are_inline: false,
+            children: Vec::new(),
+        }
+    }
+
+    pub fn is_anonymous(&self) -> bool {
+        self.render_node.is_none()
+    }
+
+    pub fn is_inline(&self) -> bool {
+        self.box_type == BoxType::Inline
+    }
+
+    pub fn is_block(&self) -> bool {
+        self.box_type == BoxType::Block
+    }
+
+    pub fn is_float(&self) -> bool {
+        match &self.render_node {
+            Some(node) => match node.borrow().get_style(&Property::Float).inner() {
+                Value::Float(Float::None) => false,
+                _ => true,
+            },
+            _ => false,
+        }
+    }
+
+    pub fn is_non_replaced(&self) -> bool {
+        match &self.render_node {
+            Some(node) => match node.borrow().node.borrow().as_element() {
+                Some(e) => match e.tag_name().as_str() {
+                    "video" | "image" | "img" | "canvas" => false,
+                    _ => true,
+                },
+                _ => true,
+            },
+            _ => true,
+        }
+    }
+
+    // TODO: change to the correct behavior of inline block
+    pub fn is_inline_block(&self) -> bool {
+        self.is_inline()
+    }
+
+    // TODO: change to the correct behavior to detect normal flow
+    pub fn is_in_normal_flow(&self) -> bool {
+        true
+    }
+
+    pub fn is_absolutely_positioned(&self) -> bool {
+        match &self.render_node {
+            Some(node) => match node.borrow().get_style(&Property::Position).inner() {
+                Value::Position(Position::Absolute) => true,
+                _ => false,
+            },
+            _ => false,
+        }
     }
 
     pub fn box_model(&mut self) -> &mut Dimensions {
         &mut self.dimensions
     }
 
-    pub fn as_containing_block(&self) -> ContainingBlock {
-        let box_model = self.dimensions.clone();
-        ContainingBlock {
-            rect: Rect {
-                x: box_model.content.x - box_model.padding.left,
-                y: box_model.content.y - box_model.padding.top,
-                width: box_model.content.width,
-                height: box_model.content.height,
-            },
-            offset_x: box_model.content.x,
-            offset_y: box_model.content.y,
-            previous_margin_bottom: 0.0,
-            collapsed_margins_vertical: 0.0,
-        }
+    pub fn to_string(&self) -> String {
+        dump_layout_tree(&self, 0, &LayoutDumpSpecificity::Structure)
+    }
+
+    #[allow(dead_code)]
+    pub(crate) fn dump(&self, specificity: &LayoutDumpSpecificity) -> String {
+        dump_layout_tree(&self, 0, specificity)
     }
 
     pub fn add_child(&mut self, child: LayoutBox) {
-        match self.formatting_context {
-            Some(FormattingContext::Block) => {
-                // ensure that all child is block-level boxes
-                match child.box_type {
-                    BoxType::Block => {
-                        if self.box_type == BoxType::Inline {
-                            // adding block box to inline box
-                            // the inline box should be break in 2
-                            // TODO: Implement this (we need to access parent box somehow)
-                        }
-                        self.children.push(child);
-                    }
-                    BoxType::Anonymous => {
-                        self.children.push(child);
-                    }
-                    BoxType::Inline => {
-                        self.get_anonymous_block_for_inline().add_child(child);
+        self.children.push(child);
+    }
+
+    pub fn set_children_inline(&mut self, value: bool) {
+        self.children_are_inline = value;
+    }
+
+    pub fn children_are_inline(&self) -> bool {
+        self.children_are_inline
+    }
+
+    pub fn is_height_auto(&self) -> bool {
+        if let Some(node) = &self.render_node {
+            let computed_height = node.borrow().get_style(&Property::Height);
+
+            return computed_height.is_auto();
+        }
+        return true;
+    }
+
+    pub fn layout(&mut self) {
+        let mut context = self.establish_formatting_context();
+        context.layout(self.children.iter_mut().collect(), &self.dimensions.content);
+
+        if self.is_height_auto() {
+            self.dimensions.set_height(context.base().height);
+        }
+    }
+
+    fn establish_formatting_context(&self) -> Box<dyn FormattingContext> {
+        if let Some(node) = &self.render_node {
+            let node = node.borrow();
+            let display = node.get_style(&Property::Display);
+            let inner_display = match display.inner() {
+                Value::Display(Display::Full(_, inner)) => inner,
+                _ => unreachable!(),
+            };
+
+            match inner_display {
+                InnerDisplayType::Flow => {
+                    if self.children_are_inline() {
+                        Box::new(InlineFormattingContext::new(&self.dimensions.content))
+                    } else {
+                        Box::new(BlockFormattingContext::new(&self.dimensions.content))
                     }
                 }
+                _ => unimplemented!("Unsupported display type: {:#?}", display),
             }
-            Some(FormattingContext::Inline) => {
-                // if a box has a inline formatting context
-                // all of its children is inline boxes or anonymous inline boxes
-                self.children.push(child);
+        } else {
+            if self.children_are_inline() {
+                return Box::new(InlineFormattingContext::new(&self.dimensions.content));
             }
-            _ => {
-                println!("This is just a box, it shouldn't contains anything");
-            }
+            return Box::new(BlockFormattingContext::new(&self.dimensions.content));
         }
-    }
-
-    fn get_anonymous_block_for_inline(&mut self) -> &mut LayoutBox {
-        let mut use_last_child = false;
-        if let Some(last_child) = self.children.last() {
-            if let BoxType::Anonymous = last_child.box_type {
-                if let Some(FormattingContext::Inline) = last_child.formatting_context {
-                    use_last_child = true;
-                }
-            }
-        }
-
-        if use_last_child {
-            return self.children.last_mut().unwrap();
-        }
-        let mut new_box = LayoutBox::new(self.render_node.clone(), BoxType::Anonymous);
-        new_box.set_formatting_context(FormattingContext::Inline);
-        self.children.push(new_box);
-        self.children.last_mut().unwrap()
-    }
-
-    pub fn set_formatting_context(&mut self, context: FormattingContext) {
-        self.formatting_context = Some(context);
-    }
-
-    pub fn set_parent_formatting_context(&mut self, context: FormattingContext) {
-        self.parent_formatting_context = Some(context);
-    }
-
-    pub fn to_string(&self) -> String {
-        dump_layout_tree(&self, 0)
     }
 }
 
-fn dump_layout_tree(root: &LayoutBox, level: usize) -> String {
+#[allow(dead_code)]
+pub(crate) enum LayoutDumpSpecificity {
+    Structure,
+    StructureAndDimensions,
+}
+
+fn dump_layout_tree(root: &LayoutBox, level: usize, specificity: &LayoutDumpSpecificity) -> String {
     let mut result = String::new();
     let child_nodes = &root.children;
-    result.push_str(&format!(
-        "{}{:#?}({:#?})(x: {} | y: {} | width: {} | height: {})\n",
-        "    ".repeat(level),
-        root.box_type,
-        root.render_node.borrow().node,
-        root.dimensions.content.x,
-        root.dimensions.content.y,
-        root.dimensions.content.width,
-        root.dimensions.content.height
-    ));
+
+    let dimensions_str = match specificity {
+        LayoutDumpSpecificity::Structure => String::new(),
+        LayoutDumpSpecificity::StructureAndDimensions => format!(
+            "(x: {}| y: {}| w: {}| h: {})",
+            root.dimensions.content.x,
+            root.dimensions.content.y,
+            root.dimensions.content.width,
+            root.dimensions.content.height
+        ),
+    };
+
+    if let Some(node) = &root.render_node {
+        result.push_str(&format!(
+            "{}[{:?}] {:#?} {}\n",
+            "  ".repeat(level),
+            root.box_type,
+            node.borrow().node,
+            dimensions_str
+        ));
+    } else {
+        result.push_str(&format!(
+            "{}[Anonymous {:?}] {}\n",
+            "  ".repeat(level),
+            root.box_type,
+            dimensions_str
+        ));
+    }
+
     for node in child_nodes {
-        result.push_str(&dump_layout_tree(node, level + 1));
+        result.push_str(&dump_layout_tree(node, level + 1, specificity));
     }
     return result;
 }

@@ -27,3 +27,9 @@ workspace = false
 dependencies = ["renderer"]
 command = "cargo"
 args = ["run", "--", "--html", "fixtures/test.html", "--css", "fixtures/test.css"]
+
+[tasks.try]
+workspace = false
+dependencies = ["renderer"]
+command = "cargo"
+args = ["run", "--", "--html", "fixtures/${@}.html", "--css", "fixtures/${@}.css"]

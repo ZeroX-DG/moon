@@ -2,7 +2,7 @@ use super::inheritable::INHERITABLES;
 use super::value_processing::{
     apply_styles, compute, ComputeContext, ContextualRule, Properties, Property, Value, ValueRef,
 };
-use super::values::display::Display;
+use super::values::display::{Display, DisplayBox};
 use dom::dom_ref::NodeRef;
 use std::collections::{HashMap, HashSet};
 use strum::IntoEnumIterator;
@@ -194,7 +194,7 @@ fn build_render_tree_from_node(
     // Filter display none from render tree
     if let Some(display_value) = properties.get(&Property::Display) {
         if let Some(value) = display_value {
-            if let Value::Display(Display::None) = value {
+            if let Value::Display(Display::Box(DisplayBox::None)) = value {
                 return None;
             }
         }
@@ -295,7 +295,7 @@ mod tests {
         );
         assert_eq!(
             child_styles.get(&Property::Display),
-            Some(&ValueRef(Rc::new(Value::Display(Display::Block))))
+            Some(&ValueRef(Rc::new(Value::Display(Display::new_block()))))
         );
     }
 
