@@ -158,3 +158,78 @@ impl FormattingContext for BlockFormattingContext {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use css::cssom::css_rule::CSSRule;
+    use style::build_render_tree;
+    use style::value_processing::{CSSLocation, CascadeOrigin, ContextualRule};
+    use test_utils::css::parse_stylesheet;
+    use test_utils::dom_creator::*;
+    use crate::tree_builder::*;
+    use crate::box_model::Rect;
+
+    #[test]
+    fn test_block_layout_simple() {
+        let dom = element(
+            "div",
+            vec![
+                element("div.box", vec![]),
+                element("div.box", vec![]),
+                element("div.box", vec![]),
+                element("div.box", vec![]),
+            ],
+        );
+
+        let css = r#"
+        div {
+            display: block;
+        }
+        .box {
+            height: 10px;
+        }"#;
+
+        let stylesheet = parse_stylesheet(css);
+
+        let rules = stylesheet
+            .iter()
+            .map(|rule| match rule {
+                CSSRule::Style(style) => ContextualRule {
+                    inner: style,
+                    location: CSSLocation::Embedded,
+                    origin: CascadeOrigin::User,
+                },
+            })
+            .collect::<Vec<ContextualRule>>();
+
+        let render_tree = build_render_tree(dom.clone(), &rules);
+
+        let layout_tree_builder = TreeBuilder::new(render_tree.root.unwrap());
+
+        let layout_box = layout_tree_builder.build();
+
+        let mut layout_box = layout_box.unwrap();
+
+        let mut formatting_context = BlockFormattingContext::new(&Rect {
+            x: 0.,
+            y: 0.,
+            width: 1600.,
+            height: 900.
+        });
+
+        formatting_context.layout(vec![&mut layout_box], &Rect {
+            x: 0.,
+            y: 0.,
+            width: 1600.,
+            height: 900.
+        });
+
+        //println!("{}", layout_box.dump(&LayoutDumpSpecificity::StructureAndDimensions));
+
+        assert_eq!(formatting_context.base().height, 40.);
+        assert_eq!(formatting_context.base().width, 1600.);
+        assert_eq!(formatting_context.base().offset_y, 40.);
+        assert_eq!(formatting_context.base().offset_x, 0.);
+    }
+}

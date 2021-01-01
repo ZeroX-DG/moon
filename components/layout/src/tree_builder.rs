@@ -252,23 +252,36 @@ mod tests {
 
         let layout_box = layout_tree_builder.build();
 
-        println!("{}", layout_box.unwrap().to_string());
+        let layout_box = layout_box.unwrap();
+
+        // The result box tree should look like this
+        // [Block] - Div
+        //   |- [Block Anonymous]
+        //        |- [Inline] - Span
+        //   |- [Block] - P
+        //        |- [Inline] - Span
+        //        |- [Inline] - Span
+        //        |- [Inline] - Span
+
+        assert!(layout_box.box_type == BoxType::Block);
+
+        assert!(layout_box.children[0].box_type == BoxType::Block);
+        assert!(layout_box.children[0].is_anonymous());
+
+        assert!(layout_box.children[1].box_type == BoxType::Block);
     }
 
     #[test]
     fn test_block_break_inline() {
         let dom = element(
             "div",
-            vec![element(
-                "div",
-                vec![
-                    element("span", vec![]),
-                    element("p", vec![]),
-                    element("a", vec![]),
-                    element("a", vec![]),
-                    element("a", vec![]),
-                ],
-            )],
+            vec![
+                element("span", vec![]),
+                element("p", vec![]),
+                element("a", vec![]),
+                element("a", vec![]),
+                element("a", vec![]),
+            ],
         );
 
         let css = r#"
@@ -298,6 +311,29 @@ mod tests {
 
         let layout_box = layout_tree_builder.build();
 
-        println!("{}", layout_box.unwrap().to_string());
+        let layout_box = layout_box.unwrap();
+
+        // The result box tree should look like this
+        // [Block] - Div
+        //   |- [Block Anonymous]
+        //        |- [Inline] - Span
+        //   |- [Block] - P
+        //   |- [Block Anonymous]
+        //        |- [Inline] - A
+        //        |- [Inline] - A
+        //        |- [Inline] - A
+
+        assert!(layout_box.box_type == BoxType::Block);
+
+        assert!(layout_box.children.len() == 3);
+
+        assert!(layout_box.children[0].box_type == BoxType::Block);
+        assert!(layout_box.children[0].is_anonymous());
+
+        assert!(layout_box.children[1].box_type == BoxType::Block);
+        assert!(!layout_box.children[1].is_anonymous());
+
+        assert!(layout_box.children[2].box_type == BoxType::Block);
+        assert!(layout_box.children[2].is_anonymous());
     }
 }

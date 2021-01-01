@@ -122,7 +122,12 @@ impl LayoutBox {
     }
 
     pub fn to_string(&self) -> String {
-        dump_layout_tree(&self, 0)
+        dump_layout_tree(&self, 0, &LayoutDumpSpecificity::Structure)
+    }
+
+    #[allow(dead_code)]
+    pub(crate) fn dump(&self, specificity: &LayoutDumpSpecificity) -> String {
+        dump_layout_tree(&self, 0, specificity)
     }
 
     pub fn add_child(&mut self, child: LayoutBox) {
@@ -137,10 +142,22 @@ impl LayoutBox {
         self.children_are_inline
     }
 
+    pub fn is_height_auto(&self) -> bool {
+        if let Some(node) = &self.render_node {
+            let computed_height = node.borrow().get_style(&Property::Height);
+
+            return computed_height.is_auto();
+        }
+        return true;
+    }
+
     pub fn layout(&mut self) {
         let mut context = self.establish_formatting_context();
         context.layout(self.children.iter_mut().collect(), &self.dimensions.content);
-        self.dimensions.set_height(context.base().height);
+
+        if self.is_height_auto() {
+            self.dimensions.set_height(context.base().height);
+        }
     }
 
     fn establish_formatting_context(&self) -> Box<dyn FormattingContext> {
@@ -171,27 +188,46 @@ impl LayoutBox {
     }
 }
 
-fn dump_layout_tree(root: &LayoutBox, level: usize) -> String {
+#[allow(dead_code)]
+pub(crate) enum LayoutDumpSpecificity {
+    Structure,
+    StructureAndDimensions
+}
+
+fn dump_layout_tree(root: &LayoutBox, level: usize, specificity: &LayoutDumpSpecificity) -> String {
     let mut result = String::new();
     let child_nodes = &root.children;
 
+    let dimensions_str = match specificity {
+        LayoutDumpSpecificity::Structure => String::new(),
+        LayoutDumpSpecificity::StructureAndDimensions => format!(
+            "(x: {}| y: {}| w: {}| h: {})",
+            root.dimensions.content.x,
+            root.dimensions.content.y,
+            root.dimensions.content.width,
+            root.dimensions.content.height
+        )
+    };
+
     if let Some(node) = &root.render_node {
         result.push_str(&format!(
-            "{}[{:?}] {:#?}\n",
+            "{}[{:?}] {:#?} {}\n",
             "  ".repeat(level),
             root.box_type,
-            node.borrow().node
+            node.borrow().node,
+            dimensions_str
         ));
     } else {
         result.push_str(&format!(
-            "{}[Anonymous {:?}]\n",
+            "{}[Anonymous {:?}] {}\n",
             "  ".repeat(level),
-            root.box_type
+            root.box_type,
+            dimensions_str
         ));
     }
 
     for node in child_nodes {
-        result.push_str(&dump_layout_tree(node, level + 1));
+        result.push_str(&dump_layout_tree(node, level + 1, specificity));
     }
     return result;
 }
