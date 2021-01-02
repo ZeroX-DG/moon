@@ -43,7 +43,6 @@ impl FormattingContext for InlineFormattingContext {
         let mut used_margin_left = computed_margin_left.to_px(containing_width);
         let mut used_margin_right = computed_margin_right.to_px(containing_width);
 
-
         if layout_box.is_non_replaced() && !layout_box.is_inline_block() {
             used_width = 0.0;
             used_margin_left = 0.0;

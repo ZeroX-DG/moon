@@ -4,9 +4,9 @@
 use super::box_model::Dimensions;
 use style::render_tree::RenderNodeRef;
 use style::value_processing::{Property, Value};
+use style::values::display::{Display, InnerDisplayType};
 use style::values::float::Float;
 use style::values::position::Position;
-use style::values::display::{Display, InnerDisplayType};
 
 /// LayoutBox for the layout tree
 #[derive(Debug, Clone)]
