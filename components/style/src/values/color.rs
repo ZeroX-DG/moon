@@ -11,6 +11,15 @@ pub enum Color {
 
 impl Eq for Color {}
 
+macro_rules! match_keyword {
+    ($keyword:ident, { $($match_key:expr => $value:expr),* }) => {
+        match $keyword {
+            $(n if n.trim().eq_ignore_ascii_case($match_key) => Some($value)),*,
+            _ => None
+        }
+    };
+}
+
 impl Color {
     pub fn parse(values: &[ComponentValue]) -> Option<Self> {
         match values.iter().next() {
@@ -27,102 +36,101 @@ impl Color {
     }
 
     fn parse_color_keyword(keyword: &str) -> Option<Self> {
-        match keyword {
-            n if n.eq_ignore_ascii_case("currentColor") => Some(Color::CurrentColor),
-            n if n.eq_ignore_ascii_case("transparent") => Some(Color::transparent()),
-            n if n.eq_ignore_ascii_case("black") => Some(Color::black()),
-            n if n.eq_ignore_ascii_case("silver") => Some(Color::Rgba(
+        match_keyword!(keyword, {
+            "currentColor" => Color::CurrentColor,
+            "transparent" => Color::transparent(),
+            "black" => Color::black(),
+            "silver" => Color::Rgba(
                 192.0.into(),
                 192.0.into(),
                 192.0.into(),
                 255.0.into(),
-            )),
-            n if n.eq_ignore_ascii_case("gray") => Some(Color::Rgba(
+            ),
+            "gray" => Color::Rgba(
                 128.0.into(),
                 128.0.into(),
                 128.0.into(),
                 255.0.into(),
-            )),
-            n if n.eq_ignore_ascii_case("white") => Some(Color::Rgba(
+            ),
+            "white" => Color::Rgba(
                 255.0.into(),
                 255.0.into(),
                 255.0.into(),
                 255.0.into(),
-            )),
-            n if n.eq_ignore_ascii_case("maroon") => Some(Color::Rgba(
+            ),
+            "maroon" => Color::Rgba(
                 128.0.into(),
                 0.0.into(),
                 0.0.into(),
                 255.0.into(),
-            )),
-            n if n.eq_ignore_ascii_case("red") => Some(Color::Rgba(
+            ),
+            "red" => Color::Rgba(
                 255.0.into(),
                 0.0.into(),
                 0.0.into(),
                 255.0.into(),
-            )),
-            n if n.eq_ignore_ascii_case("purple") => Some(Color::Rgba(
+            ),
+            "purple" => Color::Rgba(
                 128.0.into(),
                 0.0.into(),
                 128.0.into(),
                 255.0.into(),
-            )),
-            n if n.eq_ignore_ascii_case("fuchsia") => Some(Color::Rgba(
+            ),
+            "fuchsia" => Color::Rgba(
                 255.0.into(),
                 0.0.into(),
                 255.0.into(),
                 255.0.into(),
-            )),
-            n if n.eq_ignore_ascii_case("green") => Some(Color::Rgba(
-                0.0.into(),
-                128.0.into(),
-                0.0.into(),
-                255.0.into(),
-            )),
-            n if n.eq_ignore_ascii_case("lime") => Some(Color::Rgba(
-                0.0.into(),
-                255.0.into(),
-                0.0.into(),
-                255.0.into(),
-            )),
-            n if n.eq_ignore_ascii_case("olive") => Some(Color::Rgba(
-                128.0.into(),
-                128.0.into(),
-                0.0.into(),
-                255.0.into(),
-            )),
-            n if n.eq_ignore_ascii_case("yellow") => Some(Color::Rgba(
-                255.0.into(),
-                255.0.into(),
-                0.0.into(),
-                255.0.into(),
-            )),
-            n if n.eq_ignore_ascii_case("navy") => Some(Color::Rgba(
-                0.0.into(),
+            ),
+            "green" => Color::Rgba(
                 0.0.into(),
                 128.0.into(),
+                0.0.into(),
                 255.0.into(),
-            )),
-            n if n.eq_ignore_ascii_case("blue") => Some(Color::Rgba(
+            ),
+            "lime" => Color::Rgba(
+                0.0.into(),
+                255.0.into(),
+                0.0.into(),
+                255.0.into(),
+            ),
+            "olive" => Color::Rgba(
+                128.0.into(),
+                128.0.into(),
+                0.0.into(),
+                255.0.into(),
+            ),
+            "yellow" => Color::Rgba(
+                255.0.into(),
+                255.0.into(),
+                0.0.into(),
+                255.0.into(),
+            ),
+            "navy" => Color::Rgba(
+                0.0.into(),
+                0.0.into(),
+                128.0.into(),
+                255.0.into(),
+            ),
+            "blue" => Color::Rgba(
                 0.0.into(),
                 0.0.into(),
                 255.0.into(),
                 255.0.into(),
-            )),
-            n if n.eq_ignore_ascii_case("teal") => Some(Color::Rgba(
+            ),
+            "teal" => Color::Rgba(
                 0.0.into(),
                 128.0.into(),
                 128.0.into(),
                 255.0.into(),
-            )),
-            n if n.eq_ignore_ascii_case("aqua") => Some(Color::Rgba(
+            ),
+            "aqua" => Color::Rgba(
                 0.0.into(),
                 255.0.into(),
                 255.0.into(),
                 255.0.into(),
-            )),
-            _ => None,
-        }
+            )
+        })
     }
 
     fn parse_rgba_function(function: &Function, with_alpha: bool) -> Option<Self> {
@@ -163,6 +171,6 @@ impl Color {
     }
 
     pub fn black() -> Self {
-        Color::Rgba(0.0.into(), 0.0.into(), 0.0.into(), 1.0.into())
+        Color::Rgba(0.0.into(), 0.0.into(), 0.0.into(), 255.0.into())
     }
 }
