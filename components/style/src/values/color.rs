@@ -30,17 +30,15 @@ impl Color {
             },
             Some(ComponentValue::PerservedToken(Token::Ident(keyword))) => {
                 Color::parse_color_keyword(&keyword)
-            },
-            Some(ComponentValue::PerservedToken(Token::Hash(data, _))) => {
-                Color::parse_hex(&data)
-            },
+            }
+            Some(ComponentValue::PerservedToken(Token::Hash(data, _))) => Color::parse_hex(&data),
             _ => None,
         }
     }
 
     fn parse_hex(hex: &str) -> Option<Self> {
         let mut chars = hex.chars();
-        
+
         fn parse_digit(chars: &mut std::str::Chars) -> Option<u32> {
             if let Some(ch) = chars.next() {
                 return ch.to_digit(16);
@@ -61,29 +59,29 @@ impl Color {
         if hex.len() == 3 {
             let r = match parse_digit(&mut chars) {
                 Some(d) => d * 0x11,
-                _ => return None
+                _ => return None,
             };
             let g = match parse_digit(&mut chars) {
                 Some(d) => d * 0x11,
-                _ => return None
+                _ => return None,
             };
             let b = match parse_digit(&mut chars) {
                 Some(d) => d * 0x11,
-                _ => return None
+                _ => return None,
             };
             Some(Color::Rgba(r.into(), g.into(), b.into(), 255.0.into()))
         } else if hex.len() == 6 {
             let r = match parse_pair_digit(&mut chars) {
                 Some(d) => d,
-                _ => return None
+                _ => return None,
             };
             let g = match parse_pair_digit(&mut chars) {
                 Some(d) => d,
-                _ => return None
+                _ => return None,
             };
             let b = match parse_pair_digit(&mut chars) {
                 Some(d) => d,
-                _ => return None
+                _ => return None,
             };
             Some(Color::Rgba(r.into(), g.into(), b.into(), 255.0.into()))
         } else {
