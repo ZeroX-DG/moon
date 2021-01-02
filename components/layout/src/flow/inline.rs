@@ -58,7 +58,7 @@ impl FormattingContext for InlineFormattingContext {
                 used_margin_right = 0.0;
             }
             if computed_width.is_auto() {
-                
+                // TODO: Support auto width when we have shrink-to-fit width
             }
         }
 
