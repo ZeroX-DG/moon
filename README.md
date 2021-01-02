@@ -55,13 +55,11 @@ Bold text is what I'm working on
 - [x] :flower_playing_cards: Layout process
   - [x] Box model
   - [x] Box tree generation
+  - [ ] **Line fragmentation**
   - [x] Layouts
-    - [x] Flow
-      - [ ] Inline layout
-      - [x] Block layout
+    - [x] Flow (Block and inline)
     - [ ] Flex
     - [ ] Grid
-  - [ ] **Line fragmentation**
 - [ ] :art: Rendering
   - [x] Display list
   - [x] **GPU rendering** (still WIP to support all drawing operations)
