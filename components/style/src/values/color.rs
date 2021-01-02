@@ -30,8 +30,64 @@ impl Color {
             },
             Some(ComponentValue::PerservedToken(Token::Ident(keyword))) => {
                 Color::parse_color_keyword(&keyword)
-            }
+            },
+            Some(ComponentValue::PerservedToken(Token::Hash(data, _))) => {
+                Color::parse_hex(&data)
+            },
             _ => None,
+        }
+    }
+
+    fn parse_hex(hex: &str) -> Option<Self> {
+        let mut chars = hex.chars();
+        
+        fn parse_digit(chars: &mut std::str::Chars) -> Option<u32> {
+            if let Some(ch) = chars.next() {
+                return ch.to_digit(16);
+            }
+            None
+        }
+
+        fn parse_pair_digit(chars: &mut std::str::Chars) -> Option<u32> {
+            let pair: String = chars.take(2).collect();
+
+            if pair.len() == 2 {
+                return u32::from_str_radix(&pair, 16).ok();
+            }
+
+            None
+        }
+
+        if hex.len() == 3 {
+            let r = match parse_digit(&mut chars) {
+                Some(d) => d * 0x11,
+                _ => return None
+            };
+            let g = match parse_digit(&mut chars) {
+                Some(d) => d * 0x11,
+                _ => return None
+            };
+            let b = match parse_digit(&mut chars) {
+                Some(d) => d * 0x11,
+                _ => return None
+            };
+            Some(Color::Rgba(r.into(), g.into(), b.into(), 255.0.into()))
+        } else if hex.len() == 6 {
+            let r = match parse_pair_digit(&mut chars) {
+                Some(d) => d,
+                _ => return None
+            };
+            let g = match parse_pair_digit(&mut chars) {
+                Some(d) => d,
+                _ => return None
+            };
+            let b = match parse_pair_digit(&mut chars) {
+                Some(d) => d,
+                _ => return None
+            };
+            Some(Color::Rgba(r.into(), g.into(), b.into(), 255.0.into()))
+        } else {
+            None
         }
     }
 

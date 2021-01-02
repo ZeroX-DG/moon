@@ -32,6 +32,12 @@ impl Into<Number> for f32 {
     }
 }
 
+impl Into<Number> for u32 {
+    fn into(self) -> Number {
+        Number(self as f32)
+    }
+}
+
 impl Number {
     pub fn as_u8(&self) -> u8 {
         self.0 as u8
