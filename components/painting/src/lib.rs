@@ -1,32 +1,23 @@
-mod components;
+mod values;
 mod render;
+mod display_command;
 
-pub use components::*;
+pub use values::*;
+pub use display_command::DisplayCommand;
 
 use layout::layout_box::LayoutBox;
 use render::render_layout_box;
-use serde::{Deserialize, Serialize};
-
-#[derive(Debug, Serialize, Deserialize)]
-pub enum DisplayCommand {
-    DrawRect(Rect, Paint),
-}
 
 pub type DisplayList = Vec<DisplayCommand>;
 
-pub trait Painter<Canvas> {
-    fn clear(&mut self, canvas: &mut Canvas);
-    fn paint_rect(&mut self, rect: &Rect, paint: &Paint, canvas: &mut Canvas);
+pub trait Painter {
+    fn clear(&mut self);
+    fn paint_rect(&mut self, rect: &Rect, paint: &Paint);
 }
 
-pub fn paint<P, C>(display_list: &DisplayList, painter: &mut P, canvas: &mut C)
-where
-    P: Painter<C>,
-{
-    painter.clear(canvas);
-
+pub fn paint(display_list: &DisplayList, painter: &mut dyn Painter) {
     for command in display_list {
-        execute_display_command(command, painter, canvas);
+        execute_display_command(command, painter);
     }
 }
 
@@ -38,11 +29,8 @@ pub fn build_display_list(root: &LayoutBox) -> DisplayList {
     display_list
 }
 
-fn execute_display_command<P, C>(command: &DisplayCommand, painter: &mut P, canvas: &mut C)
-where
-    P: Painter<C>,
-{
+fn execute_display_command(command: &DisplayCommand, painter: &mut dyn Painter) {
     match command {
-        DisplayCommand::DrawRect(rect, paint) => painter.paint_rect(rect, paint, canvas),
+        DisplayCommand::DrawRect(rect, paint) => painter.paint_rect(rect, paint),
     }
 }

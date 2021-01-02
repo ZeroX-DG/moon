@@ -1,5 +1,5 @@
-use super::components::paint::{Paint, PaintColor, PaintStyle};
-use super::components::Rect;
+use super::values::{Paint, PaintColor, PaintStyle};
+use super::values::Rect;
 use super::{DisplayCommand, DisplayList};
 use layout::layout_box::LayoutBox;
 use style::value_processing::Property;
