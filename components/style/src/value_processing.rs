@@ -13,28 +13,11 @@ use std::ops::Deref;
 use std::rc::Rc;
 use strum_macros::*;
 
-// expand
-use super::expand::border::expand_border;
-use super::expand::border_color::expand_border_color;
-use super::expand::border_style::expand_border_style;
-use super::expand::border_width::expand_border_width;
-use super::expand::margin::expand_margin;
-use super::expand::padding::expand_padding;
-use super::expand::ExpandOutput;
+use super::expand::prelude::*;
+use super::values::prelude::*;
 
 // computes
 use super::computes::color::compute_color;
-
-// values
-use super::values::border_style::BorderStyle;
-use super::values::border_width::BorderWidth;
-use super::values::color::Color;
-use super::values::direction::Direction;
-use super::values::display::Display;
-use super::values::float::Float;
-use super::values::length::Length;
-use super::values::percentage::Percentage;
-use super::values::position::Position;
 
 type DeclaredValuesMap = HashMap<Property, Vec<PropertyDeclaration>>;
 
@@ -68,6 +51,10 @@ pub enum Property {
     BorderRightColor,
     BorderBottomColor,
     BorderLeftColor,
+    BorderTopLeftRadius,
+    BorderTopRightRadius,
+    BorderBottomLeftRadius,
+    BorderBottomRightRadius,
     Position,
     Float,
     Left,
@@ -373,6 +360,22 @@ impl Value {
                 Direction | Inherit | Initial | Unset;
                 tokens
             ),
+            Property::BorderTopLeftRadius => parse_value!(
+                Length | Percentage | Inherit | Initial | Unset;
+                tokens
+            ),
+            Property::BorderTopRightRadius => parse_value!(
+                Length | Percentage | Inherit | Initial | Unset;
+                tokens
+            ),
+            Property::BorderBottomLeftRadius => parse_value!(
+                Length | Percentage | Inherit | Initial | Unset;
+                tokens
+            ),
+            Property::BorderBottomRightRadius => parse_value!(
+                Length | Percentage | Inherit | Initial | Unset;
+                tokens
+            ),
         }
     }
 
@@ -410,6 +413,10 @@ impl Value {
             Property::Bottom => Value::Auto,
             Property::Top => Value::Auto,
             Property::Direction => Value::Direction(Direction::Ltr),
+            Property::BorderTopLeftRadius => Value::Length(Length::zero()),
+            Property::BorderTopRightRadius => Value::Length(Length::zero()),
+            Property::BorderBottomLeftRadius => Value::Length(Length::zero()),
+            Property::BorderBottomRightRadius => Value::Length(Length::zero()),
         }
     }
 }
@@ -437,6 +444,10 @@ impl Property {
             "top" => Some(Property::Top),
             "bottom" => Some(Property::Bottom),
             "direction" => Some(Property::Direction),
+            "border-top-left-radius" => Some(Property::BorderTopLeftRadius),
+            "border-top-right-radius" => Some(Property::BorderTopRightRadius),
+            "border-bottom-left-radius" => Some(Property::BorderBottomLeftRadius),
+            "border-bottom-right-radius" => Some(Property::BorderBottomRightRadius),
             _ => None,
         }
     }
@@ -492,6 +503,7 @@ fn get_expander_shorthand_property(
         "border-style" => Some(&expand_border_style),
         "border-width" => Some(&expand_border_width),
         "border-color" => Some(&expand_border_color),
+        "border-radius" => Some(&expand_border_radius),
         _ => None,
     }
 }

@@ -1,9 +1,21 @@
 use crate::value_processing::{Property, Value};
 pub type ExpandOutput = Option<Vec<(Property, Option<Value>)>>;
 
-pub mod border;
-pub mod border_color;
-pub mod border_style;
-pub mod border_width;
-pub mod margin;
-pub mod padding;
+mod border;
+mod border_color;
+mod border_style;
+mod border_width;
+mod margin;
+mod padding;
+mod border_radius;
+
+pub(crate) mod prelude {
+    pub use super::border::expand_border;
+    pub use super::border_color::expand_border_color;
+    pub use super::border_style::expand_border_style;
+    pub use super::border_width::expand_border_width;
+    pub use super::margin::expand_margin;
+    pub use super::padding::expand_padding;
+    pub use super::border_radius::expand_border_radius;
+    pub use super::ExpandOutput;
+}
