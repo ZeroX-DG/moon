@@ -60,6 +60,9 @@ fn get_formatting_context(layout_box: &LayoutBox) -> Box<dyn FormattingContext> 
                     Box::new(BlockFormattingContext::new(&layout_box.dimensions.content))
                 }
             }
+            InnerDisplayType::FlowRoot => {
+                Box::new(BlockFormattingContext::new(&layout_box.dimensions.content))
+            }
             _ => unimplemented!("Unsupported display type: {:#?}", display),
         }
     } else {
@@ -124,7 +127,7 @@ fn calculate_position(
 }
 
 fn apply_explicit_sizes(layout_box: &mut LayoutBox, containing_block: &Rect) {
-    if layout_box.is_inline() {
+    if layout_box.is_inline() && !layout_box.is_inline_block() {
         return;
     }
 

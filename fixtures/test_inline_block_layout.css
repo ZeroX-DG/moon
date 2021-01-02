@@ -1,0 +1,41 @@
+html, body {
+  display: block;
+}
+
+div {
+    display: block;
+}
+
+.box {
+    display: inline-block;
+    height: 150px;
+    width: 10%;
+}
+
+.blue {
+    background-color: rgb(0, 0, 255);
+}
+
+.red {
+    background-color: rgb(255, 0, 0);
+}
+
+.yellow {
+    background-color: rgb(255, 255, 0);
+}
+
+.orange {
+    background-color: rgb(255, 165, 0);
+}
+
+.purple {
+    background-color: rgb(75, 0, 130);
+}
+
+.pink {
+    background-color: rgb(238, 130, 238);
+}
+
+.green {
+    background-color: rgb(0, 128, 0);
+}

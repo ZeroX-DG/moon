@@ -4,6 +4,7 @@
 use super::box_model::Dimensions;
 use style::render_tree::RenderNodeRef;
 use style::value_processing::{Property, Value};
+use style::values::display::{Display, InnerDisplayType};
 use style::values::float::Float;
 use style::values::position::Position;
 
@@ -92,9 +93,14 @@ impl LayoutBox {
         }
     }
 
-    // TODO: change to the correct behavior of inline block
     pub fn is_inline_block(&self) -> bool {
-        self.is_inline()
+        match &self.render_node {
+            Some(node) => match node.borrow().get_style(&Property::Display).inner() {
+                Value::Display(Display::Full(_, InnerDisplayType::FlowRoot)) => self.is_inline(),
+                _ => false,
+            },
+            _ => false,
+        }
     }
 
     // TODO: change to the correct behavior to detect normal flow

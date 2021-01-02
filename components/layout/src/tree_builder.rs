@@ -125,7 +125,8 @@ unsafe fn get_parent_for_block<'a>(
     let mut parent_stack = parent_stack.borrow_mut();
 
     while let Some(parent_box) = parent_stack.last() {
-        if parent_box.as_ref().unwrap().box_type == BoxType::Inline {
+        let current_box = parent_box.as_ref().unwrap();
+        if !current_box.is_inline_block() && current_box.is_inline() {
             parent_stack.pop();
         } else {
             break;
@@ -176,7 +177,8 @@ fn build_box_by_display(node: &RenderNodeRef) -> Option<LayoutBox> {
         Value::Display(d) => match d {
             Display::Full(outer, inner) => match (outer, inner) {
                 (OuterDisplayType::Block, InnerDisplayType::Flow) => BoxType::Block,
-                (OuterDisplayType::Inline, InnerDisplayType::Flow) => BoxType::Inline,
+                (OuterDisplayType::Inline, InnerDisplayType::Flow)
+                | (OuterDisplayType::Inline, InnerDisplayType::FlowRoot) => BoxType::Inline,
                 _ => return None,
             },
             _ => {
@@ -193,8 +195,10 @@ fn build_box_by_display(node: &RenderNodeRef) -> Option<LayoutBox> {
         layout_box.set_children_inline(true);
     }
 
-    if let BoxType::Inline = layout_box.box_type {
-        layout_box.set_children_inline(true);
+    if !layout_box.is_inline_block() {
+        if let BoxType::Inline = layout_box.box_type {
+            layout_box.set_children_inline(true);
+        }
     }
 
     Some(layout_box)

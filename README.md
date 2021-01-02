@@ -43,7 +43,7 @@ Bold text is what I'm working on
 - [x] :memo: HTML Parsing
   - [x] HTML tokenizer
   - [x] HTML dom tree builder (85% specs)
-- [ ] :electric_plug: **CSSOM API**
+- [ ] :electric_plug: CSSOM API
 - [x] :memo: CSS Parsing
   - [x] CSS tokenizer
   - [x] CSSOM parser/tree builder
@@ -54,10 +54,14 @@ Bold text is what I'm working on
   - [x] Selector matching
 - [x] :flower_playing_cards: Layout process
   - [x] Box model
-  - [x] Box generation
-  - [x] **Box width calculation** (only non-replaced element, the rest are WIP)
-  - [x] Box height calculation
-  - [x] **Box position calculation** (only in-flow element, the rest are WIP)
+  - [x] Box tree generation
+  - [x] Layouts
+    - [x] Flow
+      - [ ] Inline layout
+      - [x] Block layout
+    - [ ] Flex
+    - [ ] Grid
+  - [ ] **Line fragmentation**
 - [ ] :art: Rendering
   - [x] Display list
   - [x] **GPU rendering** (still WIP to support all drawing operations)
