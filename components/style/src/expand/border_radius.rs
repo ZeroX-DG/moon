@@ -29,7 +29,10 @@ pub fn expand_border_radius(values: &[&[ComponentValue]]) -> ExpandOutput {
 
         return Some(vec![
             (Property::BorderTopLeftRadius, top_left_bottom_right.clone()),
-            (Property::BorderTopRightRadius, top_right_bottom_left.clone()),
+            (
+                Property::BorderTopRightRadius,
+                top_right_bottom_left.clone(),
+            ),
             (Property::BorderBottomLeftRadius, top_right_bottom_left),
             (Property::BorderBottomRightRadius, top_left_bottom_right),
         ]);
@@ -46,7 +49,10 @@ pub fn expand_border_radius(values: &[&[ComponentValue]]) -> ExpandOutput {
 
         return Some(vec![
             (Property::BorderTopLeftRadius, top_left),
-            (Property::BorderTopRightRadius, top_right_bottom_left.clone()),
+            (
+                Property::BorderTopRightRadius,
+                top_right_bottom_left.clone(),
+            ),
             (Property::BorderBottomLeftRadius, top_right_bottom_left),
             (Property::BorderBottomRightRadius, bottom_right),
         ]);
@@ -58,7 +64,11 @@ pub fn expand_border_radius(values: &[&[ComponentValue]]) -> ExpandOutput {
         let bottom_right = Value::parse(&Property::BorderTopLeftRadius, values[2]);
         let bottom_left = Value::parse(&Property::BorderTopLeftRadius, values[3]);
 
-        if top_left.is_none() || top_right.is_none() || bottom_right.is_none() || bottom_left.is_none() {
+        if top_left.is_none()
+            || top_right.is_none()
+            || bottom_right.is_none()
+            || bottom_left.is_none()
+        {
             return None;
         }
 
