@@ -1,36 +1,35 @@
-mod values;
+mod rect;
 mod render;
-mod display_command;
-
-pub use values::*;
-pub use display_command::DisplayCommand;
+mod painter;
+mod color;
+mod command;
+mod paint_functions;
 
 use layout::layout_box::LayoutBox;
-use render::render_layout_box;
+use render::PaintChainBuilder;
+use command::DisplayCommand;
 
-pub type DisplayList = Vec<DisplayCommand>;
+pub use render::DisplayList;
+pub use painter::Painter;
+pub use color::*;
+pub use rect::*;
 
-pub trait Painter {
-    fn clear(&mut self);
-    fn paint_rect(&mut self, rect: &Rect, paint: &Paint);
-}
+use paint_functions::background::paint_background;
+
 
 pub fn paint(display_list: &DisplayList, painter: &mut dyn Painter) {
     for command in display_list {
-        execute_display_command(command, painter);
+        match command {
+            DisplayCommand::FillRect(rect, color) => painter.fill_rect(&rect, &color),
+            _ => {}
+        }
     }
 }
 
-pub fn build_display_list(root: &LayoutBox) -> DisplayList {
-    let mut display_list = Vec::new();
+pub fn build_display_list(layout_box: &LayoutBox) -> DisplayList {
+    let chain = PaintChainBuilder::new_chain()
+        .then(&paint_background)
+        .build();
 
-    render_layout_box(root, &mut display_list);
-
-    display_list
-}
-
-fn execute_display_command(command: &DisplayCommand, painter: &mut dyn Painter) {
-    match command {
-        DisplayCommand::DrawRect(rect, paint) => painter.paint_rect(rect, paint),
-    }
+    chain.paint(layout_box)
 }

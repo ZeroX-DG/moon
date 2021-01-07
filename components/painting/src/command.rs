@@ -1,7 +1,9 @@
 use serde::{Deserialize, Serialize};
-use super::values::{Rect, Paint};
+use super::rect::Rect;
+use super::color::Color;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum DisplayCommand {
-    DrawRect(Rect, Paint),
+    FillRect(Rect, Color),
+    StrokeRect(Rect, Color),
 }

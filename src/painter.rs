@@ -1,4 +1,5 @@
-use painting::{Paint, PaintColor, PaintStyle, Painter, Rect};
+use painting::Painter;
+use painting::{Color, Rect};
 use skulpin::skia_safe;
 use skulpin::skia_safe::Canvas;
 
@@ -12,7 +13,7 @@ impl SkiaPainter {
         Self { paint }
     }
 
-    pub fn translate_color(color: &PaintColor) -> skia_safe::Color {
+    pub fn translate_color(color: &Color) -> skia_safe::Color {
         skia_safe::Color::from_argb(color.a, color.r, color.g, color.b)
     }
 }
