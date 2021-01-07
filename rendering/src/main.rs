@@ -3,48 +3,23 @@ mod parsing;
 
 use dom::dom_ref::NodeRef;
 use layout::box_model::Rect;
-use layout::layout_printer::{layout_to_string, DumpSpecificity};
 use layout_engine::LayoutEngine;
+use clap::{App, Arg, ArgMatches};
+use parsing::{parse_css, parse_html};
+use std::io::Read;
 
-use ipc::{Client, Sender};
-use message::{KernelMessage, RendererMessage};
-use std::fs;
-use std::io::{self, Stdin, StdinLock, Stdout, StdoutLock};
-
-use lazy_static::lazy_static;
-
-lazy_static! {
-    static ref STDIN: Stdin = io::stdin();
-    static ref STDOUT: Stdout = io::stdout();
-}
-
-pub fn stdinlock() -> StdinLock<'static> {
-    STDIN.lock()
-}
-
-pub fn stdoutlock() -> StdoutLock<'static> {
-    STDOUT.lock()
-}
-
-pub struct Renderer<'a> {
+pub struct Renderer {
     id: String,
-    sender: &'a mut Sender<RendererMessage>,
     document: Option<NodeRef>,
     layout_engine: LayoutEngine,
 }
 
-impl<'a> Renderer<'a> {
-    pub fn new(sender: &'a mut Sender<RendererMessage>) -> Self {
+impl Renderer{
+    pub fn new(viewport: Rect) -> Self {
         Self {
             id: nanoid::simple(),
-            sender,
             document: None,
-            layout_engine: LayoutEngine::new(Rect {
-                x: 0.,
-                y: 0.,
-                width: 500.,
-                height: 300.,
-            }),
+            layout_engine: LayoutEngine::new(viewport),
         }
     }
 
@@ -52,57 +27,24 @@ impl<'a> Renderer<'a> {
         &self.id
     }
 
-    pub fn handle_kernel_msg(&mut self, msg: KernelMessage) {
-        match msg {
-            KernelMessage::LoadHTMLLocal(path) => {
-                self.load_html_local(path);
-                self.repaint();
-            }
-            KernelMessage::LoadCSSLocal(path) => {
-                self.load_css_local(path);
-                self.repaint();
-            }
-            _ => {
-                log::debug!("Unknown kernel message: {:?}", msg);
-            }
-        }
+    pub fn load_html(&mut self, input: &mut dyn Read) {
+        let mut html = String::new();
+        input.read_to_string(&mut html).expect("Cannot read HTML");
+
+        let dom = parse_html(html);
+
+        self.document = Some(dom.clone());
+
+        self.layout_engine.load_dom_tree(&dom);
     }
 
-    fn repaint(&mut self) {
-        if let Some(layout_tree) = self.layout_engine.layout_tree() {
-            log::debug!(
-                "Generated layout box tree:\n {}",
-                layout_to_string(layout_tree, 0, &DumpSpecificity::StructureAndDimensions)
-            );
-            let display_list = painting::build_display_list(layout_tree);
+    pub fn load_css(&mut self, input: &mut dyn Read) {
+        let mut css = String::new();
+        input.read_to_string(&mut css).expect("Cannot read CSS");
 
-            self.sender
-                .send(RendererMessage::RePaint(display_list))
-                .expect("Can't send display list");
-        }
-    }
+        let style = parse_css(css);
 
-    fn load_html_local(&mut self, path: String) {
-        if let Ok(html) = fs::read_to_string(&path) {
-            let dom = parsing::parse_html(html);
-            self.layout_engine.load_dom_tree(&dom);
-            self.document = Some(dom);
-        } else {
-            self.sender
-                .send(RendererMessage::ResourceNotFound(path))
-                .expect("Can't send response");
-        }
-    }
-
-    fn load_css_local(&mut self, path: String) {
-        if let Ok(css) = fs::read_to_string(&path) {
-            let stylesheet = parsing::parse_css(css);
-            self.layout_engine.append_stylesheet(stylesheet);
-        } else {
-            self.sender
-                .send(RendererMessage::ResourceNotFound(path))
-                .expect("Can't send response");
-        }
+        self.layout_engine.append_stylesheet(style);
     }
 }
 
@@ -115,22 +57,45 @@ fn init_logging(id: &str) {
     simple_logging::log_to_file(log_dir, log::LevelFilter::Debug).expect("Can not open log file");
 }
 
+fn accept_cli<'a>() -> ArgMatches<'a> {
+    App::new("Moon Renderer")
+        .version("1.0")
+        .author("Viet-Hung Nguyen <viethungax@gmail.com>")
+        .about("Renderer for moon browser")
+        .arg(
+            Arg::with_name("html")
+                .required(true)
+                .long("html")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("css")
+                .required(true)
+                .long("css")
+                .takes_value(true),
+        )
+        .get_matches()
+}
+
 fn main() {
-    let mut ipc = Client::<KernelMessage, RendererMessage>::new(stdinlock, stdoutlock);
-    let mut renderer = Renderer::new(&mut ipc.sender);
+    let matches = accept_cli();
+    let viewport = Rect {
+        x: 0.,
+        y: 0.,
+        width: 500.,
+        height: 300.
+    };
+    let mut renderer = Renderer::new(viewport);
+
+    if let Some(html_path) = matches.value_of("html") {
+        let mut html_file = std::fs::File::open(html_path).expect("Unable to open HTML file");
+        renderer.load_html(&mut html_file);
+    }
+
+    if let Some(css_path) = matches.value_of("css") {
+        let mut css_file = std::fs::File::open(css_path).expect("Unable to open CSS file");
+        renderer.load_css(&mut css_file);
+    }
 
     init_logging(renderer.id());
-
-    loop {
-        match ipc.receiver.recv() {
-            Ok(msg) => {
-                if let KernelMessage::Exit = msg {
-                    log::info!("Received exit. Goodbye!");
-                    break;
-                }
-                renderer.handle_kernel_msg(msg);
-            }
-            Err(_) => break,
-        }
-    }
 }
