@@ -1,5 +1,6 @@
 mod layout_engine;
 mod parsing;
+mod painter;
 
 use dom::dom_ref::NodeRef;
 use layout::box_model::Rect;
@@ -48,7 +49,7 @@ impl Renderer{
     }
 }
 
-fn init_logging(id: &str) {
+fn init_logging(_id: &str) {
     let mut log_dir = dirs::home_dir().expect("Home directory not found");
     log_dir.push("/tmp/moon");
     std::fs::create_dir_all(&log_dir).expect("Cannot create log directory");
@@ -88,12 +89,14 @@ fn main() {
     let mut renderer = Renderer::new(viewport);
 
     if let Some(html_path) = matches.value_of("html") {
-        let mut html_file = std::fs::File::open(html_path).expect("Unable to open HTML file");
+        let mut html_file = std::fs::File::open(html_path)
+            .expect("Unable to open HTML file");
         renderer.load_html(&mut html_file);
     }
 
     if let Some(css_path) = matches.value_of("css") {
-        let mut css_file = std::fs::File::open(css_path).expect("Unable to open CSS file");
+        let mut css_file = std::fs::File::open(css_path)
+            .expect("Unable to open CSS file");
         renderer.load_css(&mut css_file);
     }
 
