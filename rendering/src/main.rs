@@ -1,11 +1,14 @@
 mod layout_engine;
+mod paint;
 mod parsing;
-mod painter;
 
+use clap::{App, Arg, ArgMatches};
 use dom::dom_ref::NodeRef;
+use futures::executor::block_on;
+use image::{ImageBuffer, Rgba};
 use layout::box_model::Rect;
 use layout_engine::LayoutEngine;
-use clap::{App, Arg, ArgMatches};
+use paint::Painter;
 use parsing::{parse_css, parse_html};
 use std::io::Read;
 
@@ -13,14 +16,19 @@ pub struct Renderer {
     id: String,
     document: Option<NodeRef>,
     layout_engine: LayoutEngine,
+    painter: Painter,
+    viewport: Rect,
 }
 
-impl Renderer{
-    pub fn new(viewport: Rect) -> Self {
+impl Renderer {
+    pub async fn new(viewport: Rect) -> Self {
+        let painter = Painter::new(viewport.width as u32, viewport.height as u32).await;
         Self {
             id: nanoid::simple(),
             document: None,
-            layout_engine: LayoutEngine::new(viewport),
+            layout_engine: LayoutEngine::new(viewport.clone()),
+            painter,
+            viewport,
         }
     }
 
@@ -46,6 +54,23 @@ impl Renderer{
         let style = parse_css(css);
 
         self.layout_engine.append_stylesheet(style);
+    }
+
+    pub async fn repaint(&mut self) {
+        if let Some(layout_tree) = self.layout_engine.layout_tree() {
+            let display_list = painting::build_display_list(layout_tree);
+            painting::paint(&display_list, &mut self.painter);
+            let data = self.painter.paint().await;
+
+            let buffer = ImageBuffer::<Rgba<u8>, _>::from_raw(
+                self.viewport.width as u32,
+                self.viewport.height as u32,
+                data,
+            )
+            .unwrap();
+
+            buffer.save("image.png").unwrap();
+        }
     }
 }
 
@@ -78,27 +103,31 @@ fn accept_cli<'a>() -> ArgMatches<'a> {
         .get_matches()
 }
 
-fn main() {
+async fn run() {
     let matches = accept_cli();
     let viewport = Rect {
         x: 0.,
         y: 0.,
         width: 500.,
-        height: 300.
+        height: 300.,
     };
-    let mut renderer = Renderer::new(viewport);
+    let mut renderer = Renderer::new(viewport).await;
+
+    init_logging(renderer.id());
 
     if let Some(html_path) = matches.value_of("html") {
-        let mut html_file = std::fs::File::open(html_path)
-            .expect("Unable to open HTML file");
+        let mut html_file = std::fs::File::open(html_path).expect("Unable to open HTML file");
         renderer.load_html(&mut html_file);
     }
 
     if let Some(css_path) = matches.value_of("css") {
-        let mut css_file = std::fs::File::open(css_path)
-            .expect("Unable to open CSS file");
+        let mut css_file = std::fs::File::open(css_path).expect("Unable to open CSS file");
         renderer.load_css(&mut css_file);
     }
 
-    init_logging(renderer.id());
+    renderer.repaint().await;
+}
+
+fn main() {
+    block_on(run());
 }
