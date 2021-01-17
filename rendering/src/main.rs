@@ -60,16 +60,17 @@ impl Renderer {
         if let Some(layout_tree) = self.layout_engine.layout_tree() {
             let display_list = painting::build_display_list(layout_tree);
             painting::paint(&display_list, &mut self.painter);
-            let data = self.painter.paint().await;
 
-            let buffer = ImageBuffer::<Rgba<u8>, _>::from_raw(
-                self.viewport.width as u32,
-                self.viewport.height as u32,
-                data,
-            )
-            .unwrap();
-
-            buffer.save("image.png").unwrap();
+            if let Some(data) = self.painter.paint().await {
+                let buffer = ImageBuffer::<Rgba<u8>, _>::from_raw(
+                    self.viewport.width as u32,
+                    self.viewport.height as u32,
+                    data,
+                )
+                .unwrap();
+    
+                buffer.save("image.png").unwrap();
+            }
         }
     }
 }

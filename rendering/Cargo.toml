@@ -22,3 +22,4 @@ clap = "*"
 futures = "*"
 shaderc = "0.7"
 image = "*"
+bytemuck = { version = "1.5.0", features = ["derive"] }
