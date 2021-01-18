@@ -13,7 +13,8 @@ pub struct WgpuPaintData<'a> {
     pub vertex_buffer: wgpu::Buffer,
     pub index_buffer: wgpu::Buffer,
     pub pipeline: &'a wgpu::RenderPipeline,
-    pub nums_vertices: u32
+    pub bind_group: &'a wgpu::BindGroup,
+    pub nums_indexes: u32
 }
 
 pub const TEXTURE_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Rgba8UnormSrgb;
@@ -50,8 +51,9 @@ impl WgpuPainter {
 
         let texture_view = texture.create_view(&Default::default());
 
+        let alignment = wgpu::COPY_BYTES_PER_ROW_ALIGNMENT;
         let unpadded_bytes_per_row = 4 * width;
-        let padding = 256 - unpadded_bytes_per_row % 256;
+        let padding = alignment - unpadded_bytes_per_row % alignment;
         let bytes_per_row = padding + unpadded_bytes_per_row;
 
         let output_buffer_size = (bytes_per_row * height) as wgpu::BufferAddress;
@@ -103,17 +105,19 @@ impl WgpuPainter {
             let mut render_pass = encoder.begin_render_pass(&render_pass_desc);
 
             for paint_data in data {
+                render_pass.set_bind_group(0, paint_data.bind_group, &[]);
                 render_pass.set_pipeline(&paint_data.pipeline);
                 render_pass.set_index_buffer(paint_data.index_buffer.slice(..));
                 render_pass.set_vertex_buffer(0, paint_data.vertex_buffer.slice(..));
-                render_pass.draw(0..paint_data.nums_vertices, 0..1);
+                render_pass.draw_indexed(0..paint_data.nums_indexes, 0, 0..1);
             }
         }
 
         let (width, height) = self.viewport;
 
+        let alignment = wgpu::COPY_BYTES_PER_ROW_ALIGNMENT;
         let unpadded_bytes_per_row = 4 * width;
-        let padding = 256 - unpadded_bytes_per_row % 256;
+        let padding = alignment - unpadded_bytes_per_row % alignment;
         let bytes_per_row = padding + unpadded_bytes_per_row;
 
         encoder.copy_texture_to_buffer(
@@ -147,7 +151,34 @@ impl WgpuPainter {
         self.device.poll(wgpu::Maintain::Wait);
 
         match mapping.await {
-            Ok(()) => Some(self.output_buffer.slice(..).get_mapped_range().to_vec()),
+            Ok(()) => {
+                // Because the output data has aligned with wgpu::COPY_BYTES_PER_ROW_ALIGNMENT,
+                // we need to "unalign" the output data so it become valid data.
+                // 
+                // TODO: Remove this step when we don't have to align the data anymore.
+                // See: https://github.com/gfx-rs/wgpu/issues/988
+                let aligned_output = self.output_buffer.slice(..)
+                    .get_mapped_range()
+                    .to_vec();
+
+                let (width, height) = self.viewport;
+                let alignment = wgpu::COPY_BYTES_PER_ROW_ALIGNMENT;
+                let unpadded_bytes_per_row = 4 * width;
+                let padding = alignment - unpadded_bytes_per_row % alignment;
+                let bytes_per_row = padding + unpadded_bytes_per_row;
+                
+                let mut output = Vec::new();
+
+                let mut row_pointer: usize = 0;
+
+                for _ in 0..height {
+                    let row = &aligned_output[row_pointer..row_pointer + unpadded_bytes_per_row as usize];
+                    output.extend_from_slice(row);
+                    row_pointer += bytes_per_row as usize;
+                }
+
+                Some(output)
+            },
             Err(e) => {
                 log::error!("Error while getting output: {}", e);
                 None
