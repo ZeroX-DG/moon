@@ -17,7 +17,7 @@ pub struct WgpuPaintData<'a> {
     pub nums_indexes: u32
 }
 
-pub const TEXTURE_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Rgba8UnormSrgb;
+pub const TEXTURE_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Rgba8Unorm;
 
 impl WgpuPainter {
     pub async fn new(width: u32, height: u32) -> Self {
