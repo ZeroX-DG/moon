@@ -7,8 +7,5 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-ipc = { version = "*", path = "../ipc" }
 serde = { version = "*", features = ["derive"] }
-rmpv = { git = "https://github.com/3Hren/msgpack-rust", version = "*", features = ["with-serde"] }
 log = "*"
-painting = { version = "*", path = "../painting" }

@@ -25,8 +25,8 @@ members = [
 [dependencies]
 ipc = { version = "*", path = "./components/ipc" }
 message = { version = "*", path = "./components/message" }
-painting = { version = "*", path = "./components/painting" }
-skulpin = { version = "*", default-features = false, features = ["skulpin_winit", "skia_complete", "winit-22"] }
+pixels = "0.2"
+winit = "0.24.0"
 simple-logging = "*"
 dirs = "2.0.2"
 log = "*"

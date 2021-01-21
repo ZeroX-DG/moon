@@ -5,7 +5,6 @@ mod parsing;
 use clap::{App, Arg, ArgMatches};
 use dom::dom_ref::NodeRef;
 use futures::executor::block_on;
-use image::{ImageBuffer, Rgba};
 use layout::box_model::Rect;
 use layout_engine::LayoutEngine;
 use paint::Painter;
@@ -62,14 +61,7 @@ impl Renderer {
             painting::paint(&display_list, &mut self.painter);
 
             if let Some(data) = self.painter.paint().await {
-                let buffer = ImageBuffer::<Rgba<u8>, _>::from_raw(
-                    self.viewport.width as u32,
-                    self.viewport.height as u32,
-                    data,
-                )
-                .unwrap();
-    
-                buffer.save("image.png").unwrap();
+                
             }
         }
     }

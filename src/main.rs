@@ -1,14 +1,14 @@
 // mod kernel;
 // mod logging;
-// mod painter;
 // mod renderer_handler;
-// mod ui;
+// mod window;
 
 // use clap::{App, Arg, ArgMatches};
 // use kernel::Kernel;
 // use logging::init_logging;
 // use message::KernelMessage;
-// use ui::run_ui_loop;
+use ipc::IpcMain;
+use message::KernelMessage;
 
 // fn init_cli<'a>() -> ArgMatches<'a> {
 //     App::new("Moon")
@@ -50,13 +50,13 @@ fn main() {
     //         .expect("Unable to send CSS path to renderer");
     // }
 
-    // // Initialize a channel to pass the display list
+    // // Initialize a channel to pass the bitmap data
     // // back to the UI loop for rendering.
-    // let (tx, rx) = flume::bounded::<painting::DisplayList>(1);
+    // let (tx, rx) = flume::bounded::<Vec<u8>>(1);
 
     // std::thread::spawn(move || {
     //     kernel.main_loop(tx);
     // });
 
-    // run_ui_loop(rx);
+    // window::run_ui_loop(rx);
 }
