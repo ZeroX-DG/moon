@@ -1042,8 +1042,8 @@ dependencies = [
  "bincode",
  "flume",
  "log",
+ "message",
  "nanoid",
- "serde",
 ]
 
 [[package]]

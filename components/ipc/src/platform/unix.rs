@@ -1,10 +1,10 @@
 use crate::IpcError;
 use bincode;
-use serde::{de::DeserializeOwned, Serialize};
 use std::io::{Read, Write};
 use std::os::unix::net::{UnixListener, UnixStream};
 use std::sync::{Arc, Mutex};
 use std::thread;
+use message::{KernelMessage, RendererMessage};
 
 const IPC_ADDRESS: &str = "/tmp/moon-ipc";
 
@@ -46,7 +46,7 @@ impl IpcMain {
         });
     }
 
-    pub fn send<T: Serialize>(&self, data: T) -> Result<(), IpcError> {
+    pub fn send(&self, data: KernelMessage) -> Result<(), IpcError> {
         let index = self.active_stream_index;
         let mut streams = self
             .streams
@@ -65,7 +65,7 @@ impl IpcMain {
         Ok(())
     }
 
-    pub fn receive<T: DeserializeOwned>(&self) -> Result<T, IpcError> {
+    pub fn receive(&self) -> Result<RendererMessage, IpcError> {
         let index = self.active_stream_index;
         let mut streams = self
             .streams
@@ -97,7 +97,7 @@ impl IpcRenderer {
         }
     }
 
-    pub fn send<T: Serialize>(&self, data: T) -> Result<(), IpcError> {
+    pub fn send(&self, data: RendererMessage) -> Result<(), IpcError> {
         let mut stream = self.stream.try_clone().expect("Unable to clone stream IPC renderer");
         let encoded = bincode::serialize(&data).map_err(|_| {
             IpcError::Serialize("[Unix] Unable to encode message data".to_string())
@@ -108,7 +108,7 @@ impl IpcRenderer {
         Ok(())
     }
 
-    pub fn receive<T: DeserializeOwned>(&self) -> Result<T, IpcError> {
+    pub fn receive(&self) -> Result<KernelMessage, IpcError> {
         let mut stream = self.stream.try_clone().expect("Unable to clone stream IPC renderer");
         let mut buf = Vec::new();
         stream
