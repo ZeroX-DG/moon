@@ -10,6 +10,8 @@ use layout_engine::LayoutEngine;
 use paint::Painter;
 use parsing::{parse_css, parse_html};
 use std::io::Read;
+use ipc::IpcRenderer;
+use message::RendererMessage;
 
 pub struct Renderer {
     id: String,
@@ -17,6 +19,7 @@ pub struct Renderer {
     layout_engine: LayoutEngine,
     painter: Painter,
     viewport: Rect,
+    ipc: IpcRenderer
 }
 
 impl Renderer {
@@ -28,6 +31,7 @@ impl Renderer {
             layout_engine: LayoutEngine::new(viewport.clone()),
             painter,
             viewport,
+            ipc: IpcRenderer::new()
         }
     }
 
@@ -61,7 +65,7 @@ impl Renderer {
             painting::paint(&display_list, &mut self.painter);
 
             if let Some(data) = self.painter.paint().await {
-                
+                self.ipc.send(RendererMessage::RePaint(data));
             }
         }
     }

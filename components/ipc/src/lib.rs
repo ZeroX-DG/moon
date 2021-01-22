@@ -1,11 +1,13 @@
 mod platform;
-pub use platform::IpcMain;
+pub use platform::{IpcMain, IpcRenderer};
 
 #[derive(Debug)]
 pub enum IpcError {
     Receive(String),
+    Send(String),
     Read(String),
-    Deserialize(String)
+    Deserialize(String),
+    Serialize(String)
 }
 
 // use std::{

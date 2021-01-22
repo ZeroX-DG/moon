@@ -1911,6 +1911,7 @@ dependencies = [
  "ipc",
  "layout",
  "log",
+ "message",
  "nanoid",
  "painting",
  "shaderc",
