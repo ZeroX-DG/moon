@@ -1039,11 +1039,9 @@ dependencies = [
 name = "ipc"
 version = "0.1.0"
 dependencies = [
- "bincode",
  "flume",
  "log",
- "message",
- "nanoid",
+ "serde",
 ]
 
 [[package]]
@@ -1205,7 +1203,8 @@ dependencies = [
 name = "message"
 version = "0.1.0"
 dependencies = [
- "log",
+ "bincode",
+ "ipc",
  "serde",
 ]
 
@@ -1294,7 +1293,6 @@ dependencies = [
  "flume",
  "ipc",
  "log",
- "message",
  "pixels",
  "simple-logging",
  "winit",

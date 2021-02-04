@@ -11,7 +11,7 @@ use paint::Painter;
 use parsing::{parse_css, parse_html};
 use std::io::Read;
 use ipc::IpcRenderer;
-use message::RendererMessage;
+use message::{BrowserMessage, MessageToKernel};
 
 pub struct Renderer {
     id: String,
@@ -19,7 +19,7 @@ pub struct Renderer {
     layout_engine: LayoutEngine,
     painter: Painter,
     viewport: Rect,
-    ipc: IpcRenderer
+    ipc: IpcRenderer<BrowserMessage>
 }
 
 impl Renderer {
@@ -31,7 +31,7 @@ impl Renderer {
             layout_engine: LayoutEngine::new(viewport.clone()),
             painter,
             viewport,
-            ipc: IpcRenderer::new()
+            ipc: IpcRenderer::new(4444)
         }
     }
 
@@ -65,7 +65,7 @@ impl Renderer {
             painting::paint(&display_list, &mut self.painter);
 
             if let Some(data) = self.painter.paint().await {
-                self.ipc.send(RendererMessage::RePaint(data));
+                self.ipc.sender.send(BrowserMessage::ToKernel(MessageToKernel::RePaint(data))).unwrap();
             }
         }
     }

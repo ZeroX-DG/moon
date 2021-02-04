@@ -7,8 +7,6 @@
 // use kernel::Kernel;
 // use logging::init_logging;
 // use message::KernelMessage;
-use ipc::IpcMain;
-use message::KernelMessage;
 
 // fn init_cli<'a>() -> ArgMatches<'a> {
 //     App::new("Moon")

@@ -17,14 +17,13 @@ members = [
   "components/test_utils",
   "components/painting",
   "components/ipc",
-  "components/message",
   "components/tree",
+  "components/message",
   "rendering"
 ]
 
 [dependencies]
 ipc = { version = "*", path = "./components/ipc" }
-message = { version = "*", path = "./components/message" }
 pixels = "0.2"
 winit = "0.24.0"
 simple-logging = "*"
