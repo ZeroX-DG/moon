@@ -1,17 +1,19 @@
+mod cli;
 mod layout_engine;
 mod paint;
 mod parsing;
 
-use clap::{App, Arg, ArgMatches};
+use cli::*;
 use dom::dom_ref::NodeRef;
 use futures::executor::block_on;
+use image::{ImageBuffer, Rgba};
+use ipc::IpcRenderer;
 use layout::box_model::Rect;
 use layout_engine::LayoutEngine;
+use message::{BrowserMessage, MessageToKernel};
 use paint::Painter;
 use parsing::{parse_css, parse_html};
 use std::io::Read;
-use ipc::IpcRenderer;
-use message::{BrowserMessage, MessageToKernel};
 
 pub struct Renderer {
     id: u8,
@@ -19,7 +21,6 @@ pub struct Renderer {
     layout_engine: LayoutEngine,
     painter: Painter,
     viewport: Rect,
-    ipc: IpcRenderer<BrowserMessage>
 }
 
 impl Renderer {
@@ -31,7 +32,6 @@ impl Renderer {
             layout_engine: LayoutEngine::new(viewport.clone()),
             painter,
             viewport,
-            ipc: IpcRenderer::new(4444)
         }
     }
 
@@ -59,14 +59,14 @@ impl Renderer {
         self.layout_engine.append_stylesheet(style);
     }
 
-    pub async fn repaint(&mut self) {
+    pub async fn repaint(&mut self) -> Option<Vec<u8>> {
         if let Some(layout_tree) = self.layout_engine.layout_tree() {
             let display_list = painting::build_display_list(layout_tree);
             painting::paint(&display_list, &mut self.painter);
 
-            if let Some(data) = self.painter.paint().await {
-                self.ipc.sender.send(BrowserMessage::ToKernel(MessageToKernel::RePaint(data))).unwrap();
-            }
+            self.painter.paint().await
+        } else {
+            None
         }
     }
 }
@@ -80,28 +80,15 @@ fn init_logging(_id: &str) {
     simple_logging::log_to_file(log_dir, log::LevelFilter::Debug).expect("Can not open log file");
 }
 
-fn accept_cli<'a>() -> ArgMatches<'a> {
-    App::new("Moon Renderer")
-        .version("1.0")
-        .author("Viet-Hung Nguyen <viethungax@gmail.com>")
-        .about("Renderer for moon browser")
-        .arg(
-            Arg::with_name("html")
-                .required(false)
-                .long("html")
-                .takes_value(true),
-        )
-        .arg(
-            Arg::with_name("css")
-                .required(false)
-                .long("css")
-                .takes_value(true),
-        )
-        .get_matches()
-}
-
 async fn run() {
-    let matches = accept_cli();
+    let ops = accept_cli();
+
+    if ops.is_none() {
+        return;
+    }
+
+    let ops = ops.unwrap();
+
     let viewport = Rect {
         x: 0.,
         y: 0.,
@@ -109,21 +96,41 @@ async fn run() {
         height: 300.,
     };
 
-    let mut renderer = Renderer::new(0, viewport).await;
+    let mut renderer = Renderer::new(0, viewport.clone()).await;
 
-    //init_logging(renderer.id());
+    match ops.action {
+        Action::SimpleTest {
+            html_path,
+            css_path,
+        } => {
+            let mut html_file = std::fs::File::open(html_path).expect("Unable to open HTML file");
+            let mut css_file = std::fs::File::open(css_path).expect("Unable to open CSS file");
 
-    if let Some(html_path) = matches.value_of("html") {
-        let mut html_file = std::fs::File::open(html_path).expect("Unable to open HTML file");
-        renderer.load_html(&mut html_file);
+            renderer.load_html(&mut html_file);
+            renderer.load_css(&mut css_file);
+        }
     }
 
-    if let Some(css_path) = matches.value_of("css") {
-        let mut css_file = std::fs::File::open(css_path).expect("Unable to open CSS file");
-        renderer.load_css(&mut css_file);
-    }
+    if let Some(frame) = renderer.repaint().await {
+        match ops.output {
+            Output::File(file_path) => {
+                let buffer = ImageBuffer::<Rgba<u8>, _>::from_raw(
+                    viewport.width as u32,
+                    viewport.height as u32,
+                    frame,
+                )
+                .unwrap();
 
-    renderer.repaint().await;
+                buffer.save(file_path).unwrap();
+            }
+            Output::Kernel => {
+                let ipc = IpcRenderer::<BrowserMessage>::new(4444);
+                ipc.sender
+                    .send(BrowserMessage::ToKernel(MessageToKernel::RePaint(frame)))
+                    .unwrap();
+            }
+        }
+    }
 }
 
 fn main() {
