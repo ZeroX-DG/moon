@@ -1,60 +1,68 @@
-// mod kernel;
+mod kernel;
 // mod logging;
-// mod renderer_handler;
-// mod window;
+mod renderer;
+mod window;
 
-// use clap::{App, Arg, ArgMatches};
-// use kernel::Kernel;
+use clap::{App, Arg, ArgMatches};
+use kernel::Kernel;
 // use logging::init_logging;
-// use message::KernelMessage;
+use message::{BrowserMessage, MessageToRenderer};
+use std::sync::{Arc, Mutex};
 
-// fn init_cli<'a>() -> ArgMatches<'a> {
-//     App::new("Moon")
-//         .version("1.0")
-//         .author("Viet-Hung Nguyen <viethungax@gmail.com>")
-//         .about("A rusty web browser")
-//         .arg(
-//             Arg::with_name("html")
-//                 .required(true)
-//                 .long("html")
-//                 .takes_value(true),
-//         )
-//         .arg(
-//             Arg::with_name("css")
-//                 .required(true)
-//                 .long("css")
-//                 .takes_value(true),
-//         )
-//         .get_matches()
-// }
+fn init_cli<'a>() -> ArgMatches<'a> {
+    App::new("Moon")
+        .version("1.0")
+        .author("Viet-Hung Nguyen <viethungax@gmail.com>")
+        .about("A rusty web browser")
+        .arg(
+            Arg::with_name("html")
+                .required(true)
+                .long("html")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("css")
+                .required(true)
+                .long("css")
+                .takes_value(true),
+        )
+        .get_matches()
+}
 
 fn main() {
     // init_logging();
-    // let matches = init_cli();
+    let matches = init_cli();
 
-    // let mut kernel = Kernel::new();
+    let kernel = Arc::new(Mutex::new(Kernel::new()));
 
-    // let renderer = kernel.renderer_handlers().new_renderer();
+    let kernel_clone = kernel.clone();
 
-    // if let Some(html_path) = matches.value_of("html") {
-    //     renderer
-    //         .send(KernelMessage::LoadHTMLLocal(html_path.to_string()))
-    //         .expect("Unable to send HTML path to renderer");
-    // }
+    // Initialize a channel to pass the bitmap data
+    // back to the UI loop for rendering.
+    let (tx, rx) = flume::bounded::<Vec<u8>>(1);
 
-    // if let Some(css_path) = matches.value_of("css") {
-    //     renderer
-    //         .send(KernelMessage::LoadCSSLocal(css_path.to_string()))
-    //         .expect("Unable to send CSS path to renderer");
-    // }
+    std::thread::spawn(move || {
+        kernel_clone.lock().unwrap().run(tx);
+    });
 
-    // // Initialize a channel to pass the bitmap data
-    // // back to the UI loop for rendering.
-    // let (tx, rx) = flume::bounded::<Vec<u8>>(1);
+    window::run_ui_loop(rx);
 
-    // std::thread::spawn(move || {
-    //     kernel.main_loop(tx);
-    // });
+    let mut kernel = kernel.lock().unwrap();
+    let renderer_id = kernel.spawn_new_renderer();
 
-    // window::run_ui_loop(rx);
+    if let Some(html_path) = matches.value_of("html") {
+        kernel.ipc.send(
+            renderer_id,
+            BrowserMessage::ToRenderer(MessageToRenderer::LoadHTMLLocal(html_path.to_string())),
+        );
+    }
+
+    if let Some(css_path) = matches.value_of("css") {
+        kernel.ipc.send(
+            renderer_id,
+            BrowserMessage::ToRenderer(MessageToRenderer::LoadCSSLocal(css_path.to_string())),
+        );
+    }
+
+    
 }

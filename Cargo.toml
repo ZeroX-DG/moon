@@ -24,6 +24,7 @@ members = [
 
 [dependencies]
 ipc = { version = "*", path = "./components/ipc" }
+message = { version = "*", path = "./components/message" }
 pixels = "0.2"
 winit = "0.24.0"
 simple-logging = "*"

@@ -14,7 +14,7 @@ use ipc::IpcRenderer;
 use message::{BrowserMessage, MessageToKernel};
 
 pub struct Renderer {
-    id: String,
+    id: u8,
     document: Option<NodeRef>,
     layout_engine: LayoutEngine,
     painter: Painter,
@@ -23,10 +23,10 @@ pub struct Renderer {
 }
 
 impl Renderer {
-    pub async fn new(viewport: Rect) -> Self {
+    pub async fn new(id: u8, viewport: Rect) -> Self {
         let painter = Painter::new(viewport.width as u32, viewport.height as u32).await;
         Self {
-            id: nanoid::simple(),
+            id,
             document: None,
             layout_engine: LayoutEngine::new(viewport.clone()),
             painter,
@@ -35,7 +35,7 @@ impl Renderer {
         }
     }
 
-    pub fn id(&self) -> &str {
+    pub fn id(&self) -> &u8 {
         &self.id
     }
 
@@ -87,13 +87,13 @@ fn accept_cli<'a>() -> ArgMatches<'a> {
         .about("Renderer for moon browser")
         .arg(
             Arg::with_name("html")
-                .required(true)
+                .required(false)
                 .long("html")
                 .takes_value(true),
         )
         .arg(
             Arg::with_name("css")
-                .required(true)
+                .required(false)
                 .long("css")
                 .takes_value(true),
         )
@@ -108,9 +108,10 @@ async fn run() {
         width: 500.,
         height: 300.,
     };
-    let mut renderer = Renderer::new(viewport).await;
 
-    init_logging(renderer.id());
+    let mut renderer = Renderer::new(0, viewport).await;
+
+    //init_logging(renderer.id());
 
     if let Some(html_path) = matches.value_of("html") {
         let mut html_file = std::fs::File::open(html_path).expect("Unable to open HTML file");

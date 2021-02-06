@@ -1,6 +1,6 @@
 mod client;
 use client::Client;
-use std::{net::{TcpListener, TcpStream, SocketAddr}, thread};
+use std::{io::Read, net::{TcpListener, TcpStream, SocketAddr}, thread};
 use std::sync::{Arc, Mutex};
 use std::ops::Deref;
 use flume::Selector;
@@ -49,6 +49,12 @@ impl<M: Message> IpcMain<M> {
         }
 
         selector.wait().unwrap()
+    }
+
+    pub fn send(&self, index: usize, msg: M) {
+        let clients = &*self.clients.lock().unwrap();
+        let client = &clients[index];
+        client.sender.send(msg).unwrap();
     }
 }
 
