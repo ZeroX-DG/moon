@@ -1,11 +1,11 @@
 use std::process::{Child, Command};
+use ipc::IpcConnection;
 use message::BrowserMessage;
-
-use super::kernel::Kernel;
 
 pub struct RendererHandler {
     process: Child,
-    id: usize
+    id: usize,
+    connection: Option<IpcConnection<BrowserMessage>>
 }
 
 impl RendererHandler {
@@ -16,11 +16,18 @@ impl RendererHandler {
         
         Self {
             process,
-            id
+            id,
+            connection: None
         }
     }
 
-    pub fn id(&self) -> &usize {
-        &self.id
+    pub fn set_connection(&mut self, conn: IpcConnection<BrowserMessage>) {
+        self.connection = Some(conn);
+    }
+
+    pub fn send(&self, msg: BrowserMessage) {
+        if let Some(conn) = &self.connection {
+            conn.sender.send(msg).unwrap();
+        }
     }
 }

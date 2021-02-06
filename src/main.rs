@@ -50,19 +50,17 @@ fn main() {
     let mut kernel = kernel.lock().unwrap();
     let renderer_id = kernel.spawn_new_renderer();
 
+    let renderer = kernel.get_renderer(renderer_id);
+
     if let Some(html_path) = matches.value_of("html") {
-        kernel.ipc.send(
-            renderer_id,
-            BrowserMessage::ToRenderer(MessageToRenderer::LoadHTMLLocal(html_path.to_string())),
-        );
+        renderer.send(BrowserMessage::ToRenderer(
+            MessageToRenderer::LoadHTMLLocal(html_path.to_string()),
+        ));
     }
 
     if let Some(css_path) = matches.value_of("css") {
-        kernel.ipc.send(
-            renderer_id,
-            BrowserMessage::ToRenderer(MessageToRenderer::LoadCSSLocal(css_path.to_string())),
-        );
+        renderer.send(BrowserMessage::ToRenderer(MessageToRenderer::LoadCSSLocal(
+            css_path.to_string(),
+        )));
     }
-
-    
 }

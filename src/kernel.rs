@@ -35,10 +35,16 @@ impl Kernel {
 
     pub fn spawn_new_renderer(&mut self) -> usize {
         let index = self.renderers.len();
-        let handler = RendererHandler::new(index);
+        let mut handler = RendererHandler::new(index);
+        handler.set_connection(self.ipc.get_connection(index));
+        
         self.renderers.push(handler);
 
         index
+    }
+
+    pub fn get_renderer(&self, index: usize) -> &RendererHandler {
+        &self.renderers[index]
     }
 
     pub fn run(&mut self, ui_sender: Sender<Vec<u8>>) {

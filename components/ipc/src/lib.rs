@@ -1,9 +1,9 @@
 mod client;
 use client::Client;
-use std::{io::Read, net::{TcpListener, TcpStream, SocketAddr}, thread};
+use std::{net::{TcpListener, TcpStream, SocketAddr}, thread};
 use std::sync::{Arc, Mutex};
 use std::ops::Deref;
-use flume::Selector;
+use flume::{Receiver, Selector, Sender};
 
 pub use client::{Message, IpcTransportError};
 
@@ -13,6 +13,11 @@ pub struct IpcMain<M: Message> {
 
 pub struct IpcRenderer<M: Message> {
     client: Client<M>
+}
+
+pub struct IpcConnection<M> {
+    pub sender: Sender<M>,
+    pub receiver: Receiver<M>
 }
 
 impl<M: Message> IpcMain<M> {
@@ -51,10 +56,14 @@ impl<M: Message> IpcMain<M> {
         selector.wait().unwrap()
     }
 
-    pub fn send(&self, index: usize, msg: M) {
-        let clients = &*self.clients.lock().unwrap();
+    pub fn get_connection(&self, index: usize) -> IpcConnection<M> {
+        let clients = self.clients.lock().unwrap();
         let client = &clients[index];
-        client.sender.send(msg).unwrap();
+
+        IpcConnection {
+            sender: client.sender.clone(),
+            receiver: client.receiver.clone()
+        }
     }
 }
 
