@@ -3,8 +3,8 @@ use ipc::IpcConnection;
 use message::BrowserMessage;
 
 pub struct RendererHandler {
-    process: Child,
     id: usize,
+    process: Child,
     connection: Option<IpcConnection<BrowserMessage>>
 }
 

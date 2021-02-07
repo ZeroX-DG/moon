@@ -130,6 +130,10 @@ impl<M: Message> Client<M> {
         &self.receiver
     }
 
+    pub fn sender(&self) -> &Sender<M> {
+        &self.sender
+    }
+
     pub fn close(self) -> Result<(), String> {
         self.threads.join()
     }

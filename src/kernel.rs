@@ -1,57 +1,40 @@
 use super::renderer::RendererHandler;
 use flume::Sender;
 use ipc::IpcMain;
-use message::{BrowserMessage, MessageToKernel};
+use message::{BrowserMessage, MessageToKernel, MessageToRenderer};
 
 pub struct Kernel {
-    renderers: Vec<RendererHandler>,
-    pub ipc: IpcMain<BrowserMessage>
-}
-
-impl Kernel {
-    fn handle_renderer_msg(
-        &mut self,
-        msg: BrowserMessage,
-        ui_sender: &Sender<Vec<u8>>,
-    ) {
-        match msg {
-            BrowserMessage::ToKernel(msg) => match msg {
-                MessageToKernel::RePaint(data) => ui_sender.send(data).unwrap(),
-                MessageToKernel::ResourceNotFound(path) => panic!("Resource not found: {:#?}", path),
-                _ => {}
-            }
-            _ => {}
-        }
-    }
+    renderers: Vec<RendererHandler>
 }
 
 impl Kernel {
     pub fn new() -> Self {
         Self {
-            renderers: Vec::new(),
-            ipc: IpcMain::new()
+            renderers: Vec::new()
         }
     }
 
-    pub fn spawn_new_renderer(&mut self) -> usize {
-        let index = self.renderers.len();
-        let mut handler = RendererHandler::new(index);
-        handler.set_connection(self.ipc.get_connection(index));
-        
-        self.renderers.push(handler);
-
-        index
-    }
-
-    pub fn get_renderer(&self, index: usize) -> &RendererHandler {
-        &self.renderers[index]
-    }
-
-    pub fn run(&mut self, ui_sender: Sender<Vec<u8>>) {
-        self.ipc.run(4444);
-        loop {
-            let msg = self.ipc.receive();
-            self.handle_renderer_msg(msg, &ui_sender);
+    pub fn handle_msg(
+        &mut self,
+        reply: Sender<BrowserMessage>,
+        msg: MessageToKernel,
+        ipc: &IpcMain<BrowserMessage>
+    ) {
+        match msg {
+            MessageToKernel::RePaint(data) => {
+                println!("{:#?}", data);
+                //ui_sender.send(data).unwrap();
+            },
+            MessageToKernel::ResourceNotFound(path) => panic!("Resource not found: {:#?}", path),
+            MessageToKernel::Syn(id) => {
+                reply.send(BrowserMessage::ToRenderer(MessageToRenderer::SynAck(id)))
+                    .expect("Unable to reply Syn");
+            }
+            MessageToKernel::Ack(id) => {
+                let renderer = &mut self.renderers[id as usize];
+                renderer.set_connection(ipc.get_connection(id as usize));
+            }
+            _ => {}
         }
     }
 }

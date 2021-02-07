@@ -1,66 +1,65 @@
 mod kernel;
-// mod logging;
+mod cli;
 mod renderer;
 mod window;
 
-use clap::{App, Arg, ArgMatches};
 use kernel::Kernel;
 // use logging::init_logging;
-use message::{BrowserMessage, MessageToRenderer};
-use std::sync::{Arc, Mutex};
+use message::{BrowserMessage};
+use std::thread;
+use ipc::IpcMain;
 
-fn init_cli<'a>() -> ArgMatches<'a> {
-    App::new("Moon")
-        .version("1.0")
-        .author("Viet-Hung Nguyen <viethungax@gmail.com>")
-        .about("A rusty web browser")
-        .arg(
-            Arg::with_name("html")
-                .required(true)
-                .long("html")
-                .takes_value(true),
-        )
-        .arg(
-            Arg::with_name("css")
-                .required(true)
-                .long("css")
-                .takes_value(true),
-        )
-        .get_matches()
+const IPC_PORT: u16 = 4444;
+
+/// IPC thread
+/// This thread handles these tasks:
+/// - Start IPC main
+/// - Constantly receive message from renderers
+/// - Constantly execute command according to message
+fn run_ipc_thread() {
+    thread::spawn(|| {
+        let mut kernel = Kernel::new();
+
+        // Start IPC main
+        let mut ipc = IpcMain::<BrowserMessage>::new();
+        ipc.run(IPC_PORT);
+
+        loop {
+            match ipc.receive() {
+                Ok((reply, msg)) => match msg {
+                    BrowserMessage::ToKernel(msg) => kernel.handle_msg(reply, msg, &ipc),
+                    _ => unreachable!("Unknown msg: {:#?}", msg)
+                }
+
+                // we have no client/tab yet, sleep between loop so we dont
+                // make the CPU scream
+                Err(ipc::IpcMainReceiveError::NoConnections) => {
+                    thread::sleep(std::time::Duration::from_millis(10));
+                }
+
+                Err(ipc::IpcMainReceiveError::Other(e)) => {
+                    eprintln!("Error while receiving msg: {:#?}", e);
+                }
+            }
+        }
+    });
+}
+
+/// UI Thread (Main thread)
+/// This thread handles these tasks:
+/// - Run main UI loop
+/// - Receive pixel buffer & render to screen
+fn run_ui_thread() {
+    // window::run_ui_loop();
 }
 
 fn main() {
     // init_logging();
-    let matches = init_cli();
+    let matches = cli::accept_cli();
 
-    let kernel = Arc::new(Mutex::new(Kernel::new()));
+    // Communication channel between IPC & UI thread
+    // let (tx_buffer, rx_buffer) = flume::bounded(1);
 
-    let kernel_clone = kernel.clone();
-
-    // Initialize a channel to pass the bitmap data
-    // back to the UI loop for rendering.
-    let (tx, rx) = flume::bounded::<Vec<u8>>(1);
-
-    std::thread::spawn(move || {
-        kernel_clone.lock().unwrap().run(tx);
-    });
-
-    window::run_ui_loop(rx);
-
-    let mut kernel = kernel.lock().unwrap();
-    let renderer_id = kernel.spawn_new_renderer();
-
-    let renderer = kernel.get_renderer(renderer_id);
-
-    if let Some(html_path) = matches.value_of("html") {
-        renderer.send(BrowserMessage::ToRenderer(
-            MessageToRenderer::LoadHTMLLocal(html_path.to_string()),
-        ));
-    }
-
-    if let Some(css_path) = matches.value_of("css") {
-        renderer.send(BrowserMessage::ToRenderer(MessageToRenderer::LoadCSSLocal(
-            css_path.to_string(),
-        )));
-    }
+    run_ipc_thread();
+    run_ui_thread();
 }

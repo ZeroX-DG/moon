@@ -6,6 +6,7 @@ use std::io::prelude::*;
 pub enum MessageToRenderer {
     LoadHTMLLocal(String),
     LoadCSSLocal(String),
+    SynAck(u16),
     Exit,
 }
 
@@ -13,6 +14,8 @@ pub enum MessageToRenderer {
 pub enum MessageToKernel {
     RePaint(Vec<u8>),
     ResourceNotFound(String),
+    Syn(u16),
+    Ack(u16),
     Exit,
 }
 

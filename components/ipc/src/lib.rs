@@ -3,9 +3,14 @@ use client::Client;
 use std::{net::{TcpListener, TcpStream, SocketAddr}, thread};
 use std::sync::{Arc, Mutex};
 use std::ops::Deref;
-use flume::{Receiver, Selector, Sender};
+use flume::{Receiver, RecvError, Selector, Sender};
 
 pub use client::{Message, IpcTransportError};
+
+pub enum IpcMainReceiveError {
+    NoConnections,
+    Other(RecvError)
+}
 
 pub struct IpcMain<M: Message> {
     clients: Arc<Mutex<Vec<Client<M>>>>
@@ -45,15 +50,24 @@ impl<M: Message> IpcMain<M> {
         });
     }
 
-    pub fn receive(&mut self) -> M {
+    pub fn receive(&self) -> Result<(Sender<M>, M), IpcMainReceiveError> {
         let clients = &*self.clients.lock().unwrap();
-        let mut selector = Selector::new();
 
-        for renderer in clients {
-            selector = selector.recv(renderer.receiver(), |msg| msg);
+        if clients.len() == 0 {
+            return Err(IpcMainReceiveError::NoConnections);
         }
 
-        selector.wait().unwrap()
+        let mut selector = Selector::new();
+
+        for (index, renderer) in clients.iter().enumerate() {
+            let index = index.clone();
+            selector = selector.recv(renderer.receiver(), move |msg| (index, msg));
+        }
+
+        let (index, msg) = selector.wait();
+        let msg = msg.map_err(|e| IpcMainReceiveError::Other(e))?;
+
+        Ok((clients[index].sender().clone(), msg))
     }
 
     pub fn get_connection(&self, index: usize) -> IpcConnection<M> {
@@ -69,10 +83,13 @@ impl<M: Message> IpcMain<M> {
 
 impl<M: Message> IpcRenderer<M> {
     pub fn new(port: u16) -> Self {
-        let stream_read = TcpStream::connect(SocketAddr::from(([127, 0, 0, 1], port)))
-            .expect("Unable to obtain read stream");
-        let stream_write = stream_read.try_clone()
-            .expect("Unable to obtain write stream");
+        let (stream_read, stream_write) = loop {
+            if let Ok(stream_read) = TcpStream::connect(SocketAddr::from(([127, 0, 0, 1], port))) {
+                let stream_write = stream_read.try_clone()
+                    .expect("Unable to obtain write stream");
+                break (stream_read, stream_write)
+            }
+        };
 
         Self {
             client: Client::new(|| stream_read, || stream_write)

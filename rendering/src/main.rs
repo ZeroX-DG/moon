@@ -16,7 +16,7 @@ use parsing::{parse_css, parse_html};
 use std::io::Read;
 
 pub struct Renderer {
-    id: u8,
+    id: u16,
     document: Option<NodeRef>,
     layout_engine: LayoutEngine,
     painter: Painter,
@@ -24,7 +24,7 @@ pub struct Renderer {
 }
 
 impl Renderer {
-    pub async fn new(id: u8, viewport: Rect) -> Self {
+    pub async fn new(id: u16, viewport: Rect) -> Self {
         let painter = Painter::new(viewport.width as u32, viewport.height as u32).await;
         Self {
             id,
@@ -35,7 +35,7 @@ impl Renderer {
         }
     }
 
-    pub fn id(&self) -> &u8 {
+    pub fn id(&self) -> &u16 {
         &self.id
     }
 
@@ -80,14 +80,37 @@ fn init_logging(_id: &str) {
     simple_logging::log_to_file(log_dir, log::LevelFilter::Debug).expect("Can not open log file");
 }
 
-async fn run() {
-    let ops = accept_cli();
+fn save_frame_to_file(frame: &[u8], file: &str, viewport: &Rect) {
+    let buffer = ImageBuffer::<Rgba<u8>, _>::from_raw(
+        viewport.width as u32,
+        viewport.height as u32,
+        frame,
+    )
+    .unwrap();
 
-    if ops.is_none() {
-        return;
+    buffer.save(file).unwrap();
+}
+
+fn perform_handshake(ipc: &IpcRenderer<BrowserMessage>, id: u16) -> Result<(), String> {
+    ipc.sender.send(BrowserMessage::ToKernel(MessageToKernel::Syn(id)))
+        .map_err(|e| e.to_string())?;
+
+    loop {
+        match ipc.receiver.recv().map_err(|e| e.to_string())? {
+            BrowserMessage::ToRenderer(message::MessageToRenderer::SynAck(id)) => {
+                ipc.sender.send(BrowserMessage::ToKernel(MessageToKernel::Ack(id)))
+                    .map_err(|e| e.to_string())?;
+                break;
+            },
+            _ => {}
+        }
     }
 
-    let ops = ops.unwrap();
+    Ok(())
+}
+
+async fn run() {
+    let ops = accept_cli();
 
     let viewport = Rect {
         x: 0.,
@@ -98,33 +121,24 @@ async fn run() {
 
     let mut renderer = Renderer::new(0, viewport.clone()).await;
 
-    match ops.action {
-        Action::SimpleTest {
-            html_path,
-            css_path,
-        } => {
+    match ops {
+        Ops::LocalTest { html_path, css_path, output_path } => {
             let mut html_file = std::fs::File::open(html_path).expect("Unable to open HTML file");
             let mut css_file = std::fs::File::open(css_path).expect("Unable to open CSS file");
 
             renderer.load_html(&mut html_file);
             renderer.load_css(&mut css_file);
-        }
-    }
-
-    if let Some(frame) = renderer.repaint().await {
-        match ops.output {
-            Output::File(file_path) => {
-                let buffer = ImageBuffer::<Rgba<u8>, _>::from_raw(
-                    viewport.width as u32,
-                    viewport.height as u32,
-                    frame,
-                )
-                .unwrap();
-
-                buffer.save(file_path).unwrap();
+            
+            if let Some(frame) = renderer.repaint().await {
+                save_frame_to_file(&frame, &output_path, &viewport);
             }
-            Output::Kernel => {
-                let ipc = IpcRenderer::<BrowserMessage>::new(4444);
+        }
+        Ops::KernelConnect => {
+            let ipc = IpcRenderer::<BrowserMessage>::new(4444);
+
+            perform_handshake(&ipc, *renderer.id()).expect("Unable to perform handshake with server");
+
+            if let Some(frame) = renderer.repaint().await {
                 ipc.sender
                     .send(BrowserMessage::ToKernel(MessageToKernel::RePaint(frame)))
                     .unwrap();
