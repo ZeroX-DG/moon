@@ -37,4 +37,11 @@ impl Kernel {
             _ => {}
         }
     }
+
+    pub fn new_tab(&mut self) {
+        let id = self.renderers.len();
+        let renderer = RendererHandler::new(id);
+
+        self.renderers.push(renderer);
+    }
 }
