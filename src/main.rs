@@ -2,10 +2,11 @@ mod cli;
 mod kernel;
 mod renderer;
 mod window;
+mod logging;
 
 use flume::{Receiver, Sender};
 use kernel::Kernel;
-// use logging::init_logging;
+use logging::init_logging;
 use ipc::IpcMain;
 use message::BrowserMessage;
 use std::{
@@ -82,7 +83,7 @@ fn run_ui_thread(tx_kernel: Sender<KernelAction>, rx_ui: Receiver<UIAction>) {
 }
 
 fn main() {
-    // init_logging();
+    init_logging();
     let matches = cli::accept_cli();
 
     // Communication channel between Kernel & UI thread

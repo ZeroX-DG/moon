@@ -71,7 +71,7 @@ impl Renderer {
     }
 }
 
-fn init_logging(_id: &str) {
+fn init_logging() {
     let mut log_dir = dirs::home_dir().expect("Home directory not found");
     log_dir.push("/tmp/moon");
     std::fs::create_dir_all(&log_dir).expect("Cannot create log directory");
@@ -91,9 +91,10 @@ fn save_frame_to_file(frame: &[u8], file: &str, viewport: &Rect) {
     buffer.save(file).unwrap();
 }
 
-fn perform_handshake(ipc: &IpcRenderer<BrowserMessage>, id: u16) -> Result<(), String> {
+fn perform_handshake(ipc: &IpcRenderer<BrowserMessage>, id: u16) -> Result<(), String> {  
     ipc.sender.send(BrowserMessage::ToKernel(MessageToKernel::Syn(id)))
         .map_err(|e| e.to_string())?;
+    log::debug!("here");
 
     loop {
         match ipc.receiver.recv().map_err(|e| e.to_string())? {
@@ -111,6 +112,8 @@ fn perform_handshake(ipc: &IpcRenderer<BrowserMessage>, id: u16) -> Result<(), S
 
 async fn run() {
     let ops = accept_cli();
+
+    init_logging();
 
     let viewport = Rect {
         x: 0.,
