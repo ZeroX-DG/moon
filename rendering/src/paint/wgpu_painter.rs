@@ -177,6 +177,8 @@ impl WgpuPainter {
                     row_pointer += bytes_per_row as usize;
                 }
 
+                self.output_buffer.unmap();
+
                 Some(output)
             },
             Err(e) => {

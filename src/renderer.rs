@@ -25,6 +25,10 @@ impl RendererHandler {
         self.connection = Some(conn);
     }
 
+    pub fn is_ready(&self) -> bool {
+        self.connection.is_some()
+    }
+
     pub fn send(&self, msg: BrowserMessage) {
         if let Some(conn) = &self.connection {
             conn.sender.send(msg).unwrap();

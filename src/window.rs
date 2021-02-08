@@ -7,7 +7,9 @@ use pixels::{SurfaceTexture, Pixels};
 use flume::Receiver;
 use std::sync::{Arc, Mutex};
 
-pub fn run_ui_loop() {
+use crate::UIAction;
+
+pub fn run_ui_loop(rx_ui: Receiver<UIAction>) {
     let event_loop = EventLoop::new();
     let window = WindowBuilder::new().build(&event_loop).unwrap();
 
@@ -19,14 +21,14 @@ pub fn run_ui_loop() {
 
     let pixels_clone = pixels.clone();
 
-    // std::thread::spawn(move || loop {
-    //     match pixels_receiver.recv() {
-    //         Ok(frame) => {
-    //             pixels_clone.lock().unwrap().get_frame().copy_from_slice(&frame);
-    //         }
-    //         _ => {}
-    //     }
-    // });
+    std::thread::spawn(move || loop {
+        match rx_ui.recv() {
+            Ok(UIAction::RePaint(data)) => {
+                pixels_clone.lock().unwrap().get_frame().copy_from_slice(&data);
+            }
+            _ => {}
+        }
+    });
 
     event_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Wait;

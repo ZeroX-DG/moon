@@ -10,7 +10,8 @@ use image::{ImageBuffer, Rgba};
 use ipc::IpcRenderer;
 use layout::box_model::Rect;
 use layout_engine::LayoutEngine;
-use message::{BrowserMessage, MessageToKernel};
+use log::debug;
+use message::{BrowserMessage, MessageToKernel, MessageToRenderer};
 use paint::Painter;
 use parsing::{parse_css, parse_html};
 use std::io::Read;
@@ -35,8 +36,8 @@ impl Renderer {
         }
     }
 
-    pub fn id(&self) -> &u16 {
-        &self.id
+    pub fn id(&self) -> u16 {
+        self.id
     }
 
     pub fn load_html(&mut self, input: &mut dyn Read) {
@@ -94,13 +95,15 @@ fn save_frame_to_file(frame: &[u8], file: &str, viewport: &Rect) {
 fn perform_handshake(ipc: &IpcRenderer<BrowserMessage>, id: u16) -> Result<(), String> {  
     ipc.sender.send(BrowserMessage::ToKernel(MessageToKernel::Syn(id)))
         .map_err(|e| e.to_string())?;
-    log::debug!("here");
+    debug!("SYN sent!");
 
     loop {
         match ipc.receiver.recv().map_err(|e| e.to_string())? {
             BrowserMessage::ToRenderer(message::MessageToRenderer::SynAck(id)) => {
+                debug!("SYN-ACK received!");
                 ipc.sender.send(BrowserMessage::ToKernel(MessageToKernel::Ack(id)))
                     .map_err(|e| e.to_string())?;
+                debug!("ACK sent!");
                 break;
             },
             _ => {}
@@ -111,9 +114,8 @@ fn perform_handshake(ipc: &IpcRenderer<BrowserMessage>, id: u16) -> Result<(), S
 }
 
 async fn run() {
-    let ops = accept_cli();
-
     init_logging();
+    let ops = accept_cli();
 
     let viewport = Rect {
         x: 0.,
@@ -139,12 +141,26 @@ async fn run() {
         Ops::KernelConnect => {
             let ipc = IpcRenderer::<BrowserMessage>::new(4444);
 
-            perform_handshake(&ipc, *renderer.id()).expect("Unable to perform handshake with server");
+            perform_handshake(&ipc, renderer.id()).expect("Unable to perform handshake with server");
 
-            if let Some(frame) = renderer.repaint().await {
-                ipc.sender
-                    .send(BrowserMessage::ToKernel(MessageToKernel::RePaint(frame)))
-                    .unwrap();
+            loop {
+                match ipc.receiver.recv().unwrap() {
+                    BrowserMessage::ToRenderer(MessageToRenderer::LoadHTMLLocal(path)) => {
+                        let mut html_file = std::fs::File::open(path).expect("Unable to open HTML file");
+                        renderer.load_html(&mut html_file);
+                    },
+                    BrowserMessage::ToRenderer(MessageToRenderer::LoadCSSLocal(path)) => {
+                        let mut css_file = std::fs::File::open(path).expect("Unable to open HTML file");
+                        renderer.load_css(&mut css_file);
+                    },
+                    _ => {}
+                }
+
+                if let Some(frame) = renderer.repaint().await {
+                    ipc.sender
+                        .send(BrowserMessage::ToKernel(MessageToKernel::RePaint(frame)))
+                        .unwrap();
+                }
             }
         }
     }
