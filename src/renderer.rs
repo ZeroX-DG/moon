@@ -36,3 +36,9 @@ impl RendererHandler {
         }
     }
 }
+
+impl Drop for RendererHandler {
+    fn drop(&mut self) {
+        self.process.kill().unwrap();
+    }
+}

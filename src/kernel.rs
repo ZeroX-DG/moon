@@ -53,4 +53,8 @@ impl Kernel {
     pub fn get_renderer(&self, id: usize) -> &RendererHandler {
         self.renderers.get(id).unwrap()
     }
+
+    pub fn clean_up(&mut self) {
+        self.renderers.clear();
+    }
 }

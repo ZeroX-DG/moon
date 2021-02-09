@@ -25,6 +25,7 @@ pub enum KernelAction {
         html_file: String,
         css_file: String
     },
+    CleanUp
 }
 
 /// Kernel thread
@@ -61,6 +62,9 @@ fn run_kernel_thread(tx_ui: Sender<UIAction>, rx_kernel: Receiver<KernelAction>)
                     tab.send(BrowserMessage::ToRenderer(MessageToRenderer::LoadHTMLLocal(html_file)));
                     tab.send(BrowserMessage::ToRenderer(MessageToRenderer::LoadCSSLocal(css_file)));
                 }
+                KernelAction::CleanUp => {
+                    kernel_clone.lock().unwrap().clean_up();
+                }
             },
             _ => {}
         }
@@ -93,7 +97,7 @@ fn run_kernel_thread(tx_ui: Sender<UIAction>, rx_kernel: Receiver<KernelAction>)
 /// - Run main UI loop
 /// - Receive pixel buffer & render to screen
 fn run_ui_thread(tx_kernel: Sender<KernelAction>, rx_ui: Receiver<UIAction>) {
-    window::run_ui_loop(rx_ui);
+    window::run_ui_loop(tx_kernel, rx_ui);
 }
 
 fn main() {
