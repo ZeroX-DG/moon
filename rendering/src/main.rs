@@ -1,112 +1,20 @@
+mod cli;
 mod layout_engine;
+mod paint;
 mod parsing;
+mod renderer;
 
-use dom::dom_ref::NodeRef;
+use cli::*;
+
+use futures::executor::block_on;
+use image::{ImageBuffer, Rgba};
+use ipc::IpcRenderer;
 use layout::box_model::Rect;
-use layout::layout_printer::{layout_to_string, DumpSpecificity};
-use layout_engine::LayoutEngine;
+use message::{BrowserMessage, MessageToKernel};
 
-use ipc::{Client, Sender};
-use message::{KernelMessage, RendererMessage};
-use std::fs;
-use std::io::{self, Stdin, StdinLock, Stdout, StdoutLock};
+use renderer::Renderer;
 
-use lazy_static::lazy_static;
-
-lazy_static! {
-    static ref STDIN: Stdin = io::stdin();
-    static ref STDOUT: Stdout = io::stdout();
-}
-
-pub fn stdinlock() -> StdinLock<'static> {
-    STDIN.lock()
-}
-
-pub fn stdoutlock() -> StdoutLock<'static> {
-    STDOUT.lock()
-}
-
-pub struct Renderer<'a> {
-    id: String,
-    sender: &'a mut Sender<RendererMessage>,
-    document: Option<NodeRef>,
-    layout_engine: LayoutEngine,
-}
-
-impl<'a> Renderer<'a> {
-    pub fn new(sender: &'a mut Sender<RendererMessage>) -> Self {
-        Self {
-            id: nanoid::simple(),
-            sender,
-            document: None,
-            layout_engine: LayoutEngine::new(Rect {
-                x: 0.,
-                y: 0.,
-                width: 500.,
-                height: 300.,
-            }),
-        }
-    }
-
-    pub fn id(&self) -> &str {
-        &self.id
-    }
-
-    pub fn handle_kernel_msg(&mut self, msg: KernelMessage) {
-        match msg {
-            KernelMessage::LoadHTMLLocal(path) => {
-                self.load_html_local(path);
-                self.repaint();
-            }
-            KernelMessage::LoadCSSLocal(path) => {
-                self.load_css_local(path);
-                self.repaint();
-            }
-            _ => {
-                log::debug!("Unknown kernel message: {:?}", msg);
-            }
-        }
-    }
-
-    fn repaint(&mut self) {
-        if let Some(layout_tree) = self.layout_engine.layout_tree() {
-            log::debug!(
-                "Generated layout box tree:\n {}",
-                layout_to_string(layout_tree, 0, &DumpSpecificity::StructureAndDimensions)
-            );
-            let display_list = painting::build_display_list(layout_tree);
-
-            self.sender
-                .send(RendererMessage::RePaint(display_list))
-                .expect("Can't send display list");
-        }
-    }
-
-    fn load_html_local(&mut self, path: String) {
-        if let Ok(html) = fs::read_to_string(&path) {
-            let dom = parsing::parse_html(html);
-            self.layout_engine.load_dom_tree(&dom);
-            self.document = Some(dom);
-        } else {
-            self.sender
-                .send(RendererMessage::ResourceNotFound(path))
-                .expect("Can't send response");
-        }
-    }
-
-    fn load_css_local(&mut self, path: String) {
-        if let Ok(css) = fs::read_to_string(&path) {
-            let stylesheet = parsing::parse_css(css);
-            self.layout_engine.append_stylesheet(stylesheet);
-        } else {
-            self.sender
-                .send(RendererMessage::ResourceNotFound(path))
-                .expect("Can't send response");
-        }
-    }
-}
-
-fn init_logging(id: &str) {
+fn init_logging() {
     let mut log_dir = dirs::home_dir().expect("Home directory not found");
     log_dir.push("/tmp/moon");
     std::fs::create_dir_all(&log_dir).expect("Cannot create log directory");
@@ -115,22 +23,103 @@ fn init_logging(id: &str) {
     simple_logging::log_to_file(log_dir, log::LevelFilter::Debug).expect("Can not open log file");
 }
 
-fn main() {
-    let mut ipc = Client::<KernelMessage, RendererMessage>::new(stdinlock, stdoutlock);
-    let mut renderer = Renderer::new(&mut ipc.sender);
+fn save_frame_to_file(frame: &[u8], file: &str, viewport: &Rect) {
+    let buffer =
+        ImageBuffer::<Rgba<u8>, _>::from_raw(viewport.width as u32, viewport.height as u32, frame)
+            .unwrap();
 
-    init_logging(renderer.id());
+    buffer.save(file).unwrap();
+}
+
+fn perform_handshake(ipc: &IpcRenderer<BrowserMessage>, id: u16) -> Result<(), String> {
+    ipc.sender
+        .send(BrowserMessage::ToKernel(MessageToKernel::Syn(id)))
+        .map_err(|e| e.to_string())?;
+    log::info!("SYN sent!");
+
+    loop {
+        match ipc.receiver.recv().map_err(|e| e.to_string())? {
+            BrowserMessage::ToRenderer(message::MessageToRenderer::SynAck(id)) => {
+                log::info!("SYN-ACK received!");
+                ipc.sender
+                    .send(BrowserMessage::ToKernel(MessageToKernel::Ack(id)))
+                    .map_err(|e| e.to_string())?;
+                log::info!("ACK sent!");
+                break;
+            }
+            _ => {}
+        }
+    }
+
+    Ok(())
+}
+
+async fn run_headless_mode(
+    mut renderer: Renderer,
+    html_path: String,
+    css_path: String,
+    output_path: String,
+) {
+    let mut html_file = std::fs::File::open(html_path).expect("Unable to open HTML file");
+    let mut css_file = std::fs::File::open(css_path).expect("Unable to open CSS file");
+
+    renderer.load_html(&mut html_file);
+    renderer.load_css(&mut css_file);
+
+    if let Some(frame) = renderer.repaint().await {
+        save_frame_to_file(&frame, &output_path, renderer.viewport());
+    }
+}
+
+async fn run_nonheadless_mode(mut renderer: Renderer) {
+    let ipc = IpcRenderer::<BrowserMessage>::new(4444);
+
+    perform_handshake(&ipc, renderer.id()).expect("Unable to perform handshake with server");
 
     loop {
         match ipc.receiver.recv() {
-            Ok(msg) => {
-                if let KernelMessage::Exit = msg {
-                    log::info!("Received exit. Goodbye!");
-                    break;
-                }
-                renderer.handle_kernel_msg(msg);
+            Ok(BrowserMessage::ToRenderer(msg)) => renderer.handle_msg(msg),
+            Ok(msg) => unreachable!("Unrecognized message: {:#?}", msg),
+            Err(e) => {
+                log::error!("Error while receiving msg: {:#?}", e);
             }
-            Err(_) => break,
+        }
+
+        if let Some(frame) = renderer.repaint().await {
+            ipc.sender
+                .send(BrowserMessage::ToKernel(MessageToKernel::RePaint(frame)))
+                .unwrap();
         }
     }
+}
+
+async fn run() {
+    init_logging();
+    let ops = accept_cli();
+
+    let viewport = Rect {
+        x: 0.,
+        y: 0.,
+        width: 500.,
+        height: 300.,
+    };
+
+    match ops {
+        Ops::Headless {
+            html_path,
+            css_path,
+            output_path,
+        } => {
+            let renderer = Renderer::new(0, viewport).await;
+            run_headless_mode(renderer, html_path, css_path, output_path).await
+        }
+        Ops::NonHeadless { id } => {
+            let renderer = Renderer::new(id, viewport).await;
+            run_nonheadless_mode(renderer).await;
+        }
+    };
+}
+
+fn main() {
+    block_on(run());
 }

@@ -9,6 +9,4 @@ edition = "2018"
 [dependencies]
 ipc = { version = "*", path = "../ipc" }
 serde = { version = "*", features = ["derive"] }
-rmpv = { git = "https://github.com/3Hren/msgpack-rust", version = "*", features = ["with-serde"] }
-log = "*"
-painting = { version = "*", path = "../painting" }
+bincode = "1.3.1"

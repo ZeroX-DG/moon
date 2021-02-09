@@ -1,50 +1,34 @@
-// TODO:
-// - Support border radius box
-mod components;
+mod color;
+mod command;
+mod paint_functions;
+mod painter;
+mod rect;
 mod render;
 
-pub use components::*;
-
+use command::DisplayCommand;
 use layout::layout_box::LayoutBox;
-use render::render_layout_box;
-use serde::{Deserialize, Serialize};
+use render::PaintChainBuilder;
 
-#[derive(Debug, Serialize, Deserialize)]
-pub enum DisplayCommand {
-    DrawRect(Rect, Paint),
-}
+pub use color::*;
+pub use painter::Painter;
+pub use rect::*;
+pub use render::DisplayList;
 
-pub type DisplayList = Vec<DisplayCommand>;
+use paint_functions::background::paint_background;
 
-pub trait Painter<Canvas> {
-    fn clear(&mut self, canvas: &mut Canvas);
-    fn paint_rect(&mut self, rect: &Rect, paint: &Paint, canvas: &mut Canvas);
-}
-
-pub fn paint<P, C>(display_list: &DisplayList, painter: &mut P, canvas: &mut C)
-where
-    P: Painter<C>,
-{
-    painter.clear(canvas);
-
+pub fn paint(display_list: &DisplayList, painter: &mut dyn Painter) {
     for command in display_list {
-        execute_display_command(command, painter, canvas);
+        match command {
+            DisplayCommand::FillRect(rect, color) => painter.fill_rect(&rect, &color),
+            _ => {}
+        }
     }
 }
 
-pub fn build_display_list(root: &LayoutBox) -> DisplayList {
-    let mut display_list = Vec::new();
+pub fn build_display_list(layout_box: &LayoutBox) -> DisplayList {
+    let chain = PaintChainBuilder::new_chain()
+        .then(&paint_background)
+        .build();
 
-    render_layout_box(root, &mut display_list);
-
-    display_list
-}
-
-fn execute_display_command<P, C>(command: &DisplayCommand, painter: &mut P, canvas: &mut C)
-where
-    P: Painter<C>,
-{
-    match command {
-        DisplayCommand::DrawRect(rect, paint) => painter.paint_rect(rect, paint, canvas),
-    }
+    chain.paint(layout_box)
 }

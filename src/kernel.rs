@@ -1,62 +1,61 @@
-use super::renderer_handler::{RendererHandler, RendererHandlers};
+use crate::UIAction;
+
+use super::renderer::RendererHandler;
 use flume::Sender;
-use ipc::Selector;
-use message::RendererMessage;
+use ipc::IpcMain;
+use message::{BrowserMessage, MessageToKernel, MessageToRenderer};
 
 pub struct Kernel {
-    renderer_handlers: RendererHandlers,
-}
-
-pub fn select(renderers: &[RendererHandler]) -> (usize, RendererMessage) {
-    let mut selector = Selector::new();
-    for (index, renderer) in renderers.iter().enumerate() {
-        selector = selector.recv(renderer.receiver(), move |msg| {
-            let msg = msg.expect("Error while selecting message");
-            (index, msg)
-        });
-    }
-    selector.wait()
-}
-
-impl Kernel {
-    fn handle_renderer_msg(
-        &mut self,
-        index: usize,
-        msg: RendererMessage,
-        ui_sender: &Sender<painting::DisplayList>,
-    ) {
-        let handler = &self.renderer_handlers[index];
-        match msg {
-            RendererMessage::RePaint(display_list) => {
-                ui_sender.send(display_list).unwrap();
-            }
-            RendererMessage::ResourceNotFound(path) => {
-                panic!("Resource not found: {:#?}", path);
-            }
-            _ => {}
-        }
-    }
+    renderers: Vec<RendererHandler>,
 }
 
 impl Kernel {
     pub fn new() -> Self {
         Self {
-            renderer_handlers: RendererHandlers::new(),
+            renderers: Vec::new(),
         }
     }
 
-    pub fn renderer_handlers(&mut self) -> &mut RendererHandlers {
-        &mut self.renderer_handlers
-    }
-
-    pub fn main_loop(&mut self, ui_sender: Sender<painting::DisplayList>) {
-        loop {
-            if self.renderer_handlers.is_empty() {
-                std::thread::sleep(std::time::Duration::from_millis(10));
-                continue;
+    pub fn handle_msg(
+        &mut self,
+        reply: Sender<BrowserMessage>,
+        msg: MessageToKernel,
+        ipc: &IpcMain<BrowserMessage>,
+        tx_ui: Sender<UIAction>,
+    ) {
+        match msg {
+            MessageToKernel::RePaint(data) => tx_ui.send(UIAction::RePaint(data)).unwrap(),
+            MessageToKernel::ResourceNotFound(path) => panic!("Resource not found: {:#?}", path),
+            MessageToKernel::Syn(id) => {
+                log::info!("SYN received");
+                reply
+                    .send(BrowserMessage::ToRenderer(MessageToRenderer::SynAck(id)))
+                    .expect("Unable to reply Syn");
+                log::info!("SYN-ACK sent");
             }
-            let (index, msg) = select(self.renderer_handlers.inner());
-            self.handle_renderer_msg(index, msg, &ui_sender);
+            MessageToKernel::Ack(id) => {
+                log::info!("ACK received");
+                let renderer = &mut self.renderers[id as usize];
+                renderer.set_connection(ipc.get_connection(id as usize));
+            }
+            _ => {}
         }
+    }
+
+    pub fn new_tab(&mut self) -> usize {
+        let id = self.renderers.len();
+        let renderer = RendererHandler::new(id as u16);
+
+        self.renderers.push(renderer);
+
+        id
+    }
+
+    pub fn get_renderer(&self, id: usize) -> &RendererHandler {
+        self.renderers.get(id).unwrap()
+    }
+
+    pub fn clean_up(&mut self) {
+        self.renderers.clear();
     }
 }
