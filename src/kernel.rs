@@ -43,7 +43,7 @@ impl Kernel {
 
     pub fn new_tab(&mut self) -> usize {
         let id = self.renderers.len();
-        let renderer = RendererHandler::new(id);
+        let renderer = RendererHandler::new(id as u16);
 
         self.renderers.push(renderer);
 

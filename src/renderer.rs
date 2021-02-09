@@ -3,13 +3,12 @@ use ipc::IpcConnection;
 use message::BrowserMessage;
 
 pub struct RendererHandler {
-    id: usize,
     process: Child,
     connection: Option<IpcConnection<BrowserMessage>>
 }
 
 impl RendererHandler {
-    pub fn new(id: usize) -> Self {
+    pub fn new(id: u16) -> Self {
         let process = Command::new("target/debug/rendering")
             .args(&["--id", &id.to_string()])
             .spawn()
@@ -17,7 +16,6 @@ impl RendererHandler {
         
         Self {
             process,
-            id,
             connection: None
         }
     }
