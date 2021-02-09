@@ -82,7 +82,7 @@ fn run_kernel_thread(tx_ui: Sender<UIAction>, rx_kernel: Receiver<KernelAction>)
             }
 
             Err(ipc::IpcMainReceiveError::Other(e)) => {
-                eprintln!("Error while receiving msg: {:#?}", e);
+                log::error!("Error while receiving msg: {:#?}", e);
             }
         }
     });
@@ -93,21 +93,27 @@ fn run_kernel_thread(tx_ui: Sender<UIAction>, rx_kernel: Receiver<KernelAction>)
 /// - Run main UI loop
 /// - Receive pixel buffer & render to screen
 fn run_ui_thread(tx_kernel: Sender<KernelAction>, rx_ui: Receiver<UIAction>) {
-    tx_kernel.send(KernelAction::NewTabTest {
-        html_file: "fixtures/test.html".to_string(),
-        css_file: "fixtures/test.css".to_string()
-    }).unwrap();
     window::run_ui_loop(rx_ui);
 }
 
 fn main() {
     init_logging();
-    let matches = cli::accept_cli();
+    let ops = cli::accept_cli();
 
     // Communication channel between Kernel & UI thread
     let (tx_kernel, rx_kernel) = flume::bounded(1);
     let (tx_ui, rx_ui) = flume::bounded(1);
 
     run_kernel_thread(tx_ui, rx_kernel);
+
+    match ops {
+        cli::Ops::LocalTest { html_path, css_path } => {
+            tx_kernel.send(KernelAction::NewTabTest {
+                html_file: html_path,
+                css_file: css_path
+            }).unwrap();
+        }
+    }
+
     run_ui_thread(tx_kernel, rx_ui);
 }

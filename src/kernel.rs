@@ -24,19 +24,16 @@ impl Kernel {
         tx_ui: Sender<UIAction>,
     ) {
         match msg {
-            MessageToKernel::RePaint(data) => {
-                // println!("{:#?}", data);
-                tx_ui.send(UIAction::RePaint(data)).unwrap();
-            },
+            MessageToKernel::RePaint(data) => tx_ui.send(UIAction::RePaint(data)).unwrap(),
             MessageToKernel::ResourceNotFound(path) => panic!("Resource not found: {:#?}", path),
             MessageToKernel::Syn(id) => {
-                println!("SYN received");
+                log::info!("SYN received");
                 reply.send(BrowserMessage::ToRenderer(MessageToRenderer::SynAck(id)))
                     .expect("Unable to reply Syn");
-                println!("SYN-ACK sent");
+                log::info!("SYN-ACK sent");
             }
             MessageToKernel::Ack(id) => {
-                println!("ACK received");
+                log::info!("ACK received");
                 let renderer = &mut self.renderers[id as usize];
                 renderer.set_connection(ipc.get_connection(id as usize));
             }

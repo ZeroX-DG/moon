@@ -11,6 +11,7 @@ pub struct RendererHandler {
 impl RendererHandler {
     pub fn new(id: usize) -> Self {
         let process = Command::new("target/debug/rendering")
+            .args(&["--id", &id.to_string()])
             .spawn()
             .expect("Unable to start renderer");
         
