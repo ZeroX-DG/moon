@@ -1,10 +1,10 @@
-use std::process::{Child, Command};
 use ipc::IpcConnection;
 use message::BrowserMessage;
+use std::process::{Child, Command};
 
 pub struct RendererHandler {
     process: Child,
-    connection: Option<IpcConnection<BrowserMessage>>
+    connection: Option<IpcConnection<BrowserMessage>>,
 }
 
 impl RendererHandler {
@@ -13,10 +13,10 @@ impl RendererHandler {
             .args(&["--id", &id.to_string()])
             .spawn()
             .expect("Unable to start renderer");
-        
+
         Self {
             process,
-            connection: None
+            connection: None,
         }
     }
 

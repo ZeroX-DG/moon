@@ -1,7 +1,7 @@
-use crate::LayoutBox;
+use crate::color::style_color_to_paint_color;
 use crate::command::DisplayCommand;
 use crate::rect::Rect;
-use crate::color::style_color_to_paint_color;
+use crate::LayoutBox;
 use style::value_processing::Property;
 
 pub fn paint_background(layout_box: &LayoutBox) -> Option<DisplayCommand> {

@@ -1,9 +1,9 @@
-mod wgpu_painter;
 mod rect;
+mod wgpu_painter;
 
-use wgpu_painter::WgpuPainter;
-use painting::{Rect, Color};
+use painting::{Color, Rect};
 use rect::RectPainter;
+use wgpu_painter::WgpuPainter;
 
 pub type OutputBitmap = Vec<u8>;
 
@@ -20,29 +20,23 @@ impl Painter {
 
         Self {
             backend,
-            rect_painter 
+            rect_painter,
         }
     }
 
     pub async fn paint(&mut self) -> Option<OutputBitmap> {
         let device = self.backend.device();
-        let data = [
-            self.rect_painter.get_paint_data(device)
-        ];
+        let data = [self.rect_painter.get_paint_data(device)];
 
         self.backend.paint(&data).await;
         self.backend.output().await
     }
 }
 
-
-
 impl painting::Painter for Painter {
     fn fill_rect(&mut self, rect: &Rect, color: &Color) {
         self.rect_painter.draw_solid_rect(rect, color);
     }
 
-    fn stroke_rect(&mut self, rect: &Rect, color: &Color) {
-        
-    }
+    fn stroke_rect(&mut self, rect: &Rect, color: &Color) {}
 }

@@ -1,10 +1,7 @@
 use clap::{App, Arg};
 
 pub enum Ops {
-    LocalTest {
-        html_path: String,
-        css_path: String
-    }
+    LocalTest { html_path: String, css_path: String },
 }
 
 pub fn accept_cli() -> Ops {
@@ -28,6 +25,6 @@ pub fn accept_cli() -> Ops {
 
     Ops::LocalTest {
         html_path: m.value_of("html").unwrap().to_string(),
-        css_path: m.value_of("css").unwrap().to_string()
+        css_path: m.value_of("css").unwrap().to_string(),
     }
 }

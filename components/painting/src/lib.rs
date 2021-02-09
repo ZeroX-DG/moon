@@ -1,21 +1,20 @@
-mod rect;
-mod render;
-mod painter;
 mod color;
 mod command;
 mod paint_functions;
+mod painter;
+mod rect;
+mod render;
 
+use command::DisplayCommand;
 use layout::layout_box::LayoutBox;
 use render::PaintChainBuilder;
-use command::DisplayCommand;
 
-pub use render::DisplayList;
-pub use painter::Painter;
 pub use color::*;
+pub use painter::Painter;
 pub use rect::*;
+pub use render::DisplayList;
 
 use paint_functions::background::paint_background;
-
 
 pub fn paint(display_list: &DisplayList, painter: &mut dyn Painter) {
     for command in display_list {

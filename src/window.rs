@@ -1,11 +1,11 @@
+use flume::{Receiver, Sender};
+use pixels::{Pixels, SurfaceTexture};
+use std::sync::{Arc, Mutex};
 use winit::{
     event::{Event, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
     window::WindowBuilder,
 };
-use pixels::{SurfaceTexture, Pixels};
-use flume::{Receiver, Sender};
-use std::sync::{Arc, Mutex};
 
 use crate::{KernelAction, UIAction};
 
@@ -25,7 +25,11 @@ pub fn run_ui_loop(tx_kernel: Sender<KernelAction>, rx_ui: Receiver<UIAction>) {
     std::thread::spawn(move || loop {
         match rx_ui.recv() {
             Ok(UIAction::RePaint(data)) => {
-                pixels_clone.lock().unwrap().get_frame().copy_from_slice(&data);
+                pixels_clone
+                    .lock()
+                    .unwrap()
+                    .get_frame()
+                    .copy_from_slice(&data);
                 window_clone.request_redraw();
             }
             _ => {}
@@ -44,7 +48,7 @@ pub fn run_ui_loop(tx_kernel: Sender<KernelAction>, rx_ui: Receiver<UIAction>) {
                 tx_kernel.send(KernelAction::CleanUp).unwrap();
 
                 *control_flow = ControlFlow::Exit;
-            },
+            }
             Event::RedrawRequested(_) => {
                 if pixels.lock().unwrap().render().is_err() {
                     *control_flow = ControlFlow::Exit;

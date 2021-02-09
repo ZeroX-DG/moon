@@ -1,4 +1,4 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use style::value_processing::Value;
 
 #[derive(Debug, Serialize, Deserialize)]

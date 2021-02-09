@@ -6,13 +6,13 @@ use ipc::IpcMain;
 use message::{BrowserMessage, MessageToKernel, MessageToRenderer};
 
 pub struct Kernel {
-    renderers: Vec<RendererHandler>
+    renderers: Vec<RendererHandler>,
 }
 
 impl Kernel {
     pub fn new() -> Self {
         Self {
-            renderers: Vec::new()
+            renderers: Vec::new(),
         }
     }
 
@@ -28,7 +28,8 @@ impl Kernel {
             MessageToKernel::ResourceNotFound(path) => panic!("Resource not found: {:#?}", path),
             MessageToKernel::Syn(id) => {
                 log::info!("SYN received");
-                reply.send(BrowserMessage::ToRenderer(MessageToRenderer::SynAck(id)))
+                reply
+                    .send(BrowserMessage::ToRenderer(MessageToRenderer::SynAck(id)))
                     .expect("Unable to reply Syn");
                 log::info!("SYN-ACK sent");
             }

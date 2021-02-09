@@ -1,5 +1,5 @@
-use layout::layout_box::LayoutBox;
 use crate::command::DisplayCommand;
+use layout::layout_box::LayoutBox;
 
 pub type PaintFn = dyn Fn(&LayoutBox) -> Option<DisplayCommand>;
 pub type DisplayList = Vec<DisplayCommand>;
@@ -7,7 +7,7 @@ pub type DisplayList = Vec<DisplayCommand>;
 pub struct PaintChain<'a>(Vec<&'a PaintFn>);
 
 pub struct PaintChainBuilder<'a> {
-    paint_fns: Vec<&'a PaintFn>
+    paint_fns: Vec<&'a PaintFn>,
 }
 
 impl<'a> PaintChain<'a> {
@@ -31,7 +31,7 @@ impl<'a> PaintChain<'a> {
 impl<'a> PaintChainBuilder<'a> {
     pub fn new_chain() -> Self {
         Self {
-            paint_fns: Vec::new()
+            paint_fns: Vec::new(),
         }
     }
 

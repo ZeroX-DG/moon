@@ -1,5 +1,5 @@
+use ipc::{IpcTransportError, Message};
 use serde::{Deserialize, Serialize};
-use ipc::{Message, IpcTransportError};
 use std::io::prelude::*;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -22,15 +22,14 @@ pub enum MessageToKernel {
 #[derive(Debug, Serialize, Deserialize)]
 pub enum BrowserMessage {
     ToRenderer(MessageToRenderer),
-    ToKernel(MessageToKernel)
+    ToKernel(MessageToKernel),
 }
 
 impl Message for BrowserMessage {
     fn read(r: &mut impl BufRead) -> Result<Option<Self>, IpcTransportError> {
-        let buf = match read_msg_bytes(r)
-            .map_err(|e| IpcTransportError::Read(e))? {
+        let buf = match read_msg_bytes(r).map_err(|e| IpcTransportError::Read(e))? {
             Some(b) => b,
-            None => return Ok(None)
+            None => return Ok(None),
         };
 
         let msg = bincode::deserialize(&buf)
@@ -40,8 +39,8 @@ impl Message for BrowserMessage {
     }
 
     fn write(self, w: &mut impl Write) -> Result<(), IpcTransportError> {
-        let serialized = bincode::serialize(&self)
-            .map_err(|e| IpcTransportError::Serialize(e.to_string()))?;
+        let serialized =
+            bincode::serialize(&self).map_err(|e| IpcTransportError::Serialize(e.to_string()))?;
 
         write!(w, "{}\r\n\r\n", serialized.len())
             .map_err(|e| IpcTransportError::Write(e.to_string()))?;
@@ -54,17 +53,17 @@ impl Message for BrowserMessage {
 
         Ok(())
     }
-    
+
     fn is_exit(&self) -> bool {
         match self {
             BrowserMessage::ToKernel(msg) => match msg {
                 MessageToKernel::Exit => true,
-                _ => false
+                _ => false,
             },
             BrowserMessage::ToRenderer(msg) => match msg {
                 MessageToRenderer::Exit => true,
-                _ => false
-            }
+                _ => false,
+            },
         }
     }
 }
@@ -75,9 +74,7 @@ fn read_msg_bytes(r: &mut impl BufRead) -> Result<Option<Vec<u8>>, String> {
 
     loop {
         buf.clear();
-        let read_count = r
-            .read_line(&mut buf)
-            .map_err(|e| e.to_string())?;
+        let read_count = r.read_line(&mut buf).map_err(|e| e.to_string())?;
 
         if read_count == 0 {
             return Ok(None);
@@ -93,8 +90,7 @@ fn read_msg_bytes(r: &mut impl BufRead) -> Result<Option<Vec<u8>>, String> {
         }
 
         size = Some(
-            buf
-                .parse::<usize>()
+            buf.parse::<usize>()
                 .map_err(|_| "Failed to parse header size".to_owned())?,
         );
     }
@@ -102,7 +98,6 @@ fn read_msg_bytes(r: &mut impl BufRead) -> Result<Option<Vec<u8>>, String> {
     let size = size.ok_or("no Content-Length")?;
     let mut buf = buf.into_bytes();
     buf.resize(size, 0);
-    r.read_exact(&mut buf)
-        .map_err(|e| e.to_string())?;
+    r.read_exact(&mut buf).map_err(|e| e.to_string())?;
     Ok(Some(buf))
 }

@@ -1,13 +1,13 @@
 mod cli;
 mod kernel;
+mod logging;
 mod renderer;
 mod window;
-mod logging;
 
 use flume::{Receiver, Sender};
+use ipc::IpcMain;
 use kernel::Kernel;
 use logging::init_logging;
-use ipc::IpcMain;
 use message::{BrowserMessage, MessageToRenderer};
 use std::{
     sync::{Arc, Mutex},
@@ -21,11 +21,8 @@ pub enum UIAction {
 }
 
 pub enum KernelAction {
-    NewTabTest {
-        html_file: String,
-        css_file: String
-    },
-    CleanUp
+    NewTabTest { html_file: String, css_file: String },
+    CleanUp,
 }
 
 /// Kernel thread
@@ -44,7 +41,10 @@ fn run_kernel_thread(tx_ui: Sender<UIAction>, rx_kernel: Receiver<KernelAction>)
     thread::spawn(move || loop {
         match rx_kernel.recv() {
             Ok(action) => match action {
-                KernelAction::NewTabTest { html_file, css_file } => {
+                KernelAction::NewTabTest {
+                    html_file,
+                    css_file,
+                } => {
                     let id = {
                         let mut kernel = kernel_clone.lock().unwrap();
                         let id = kernel.new_tab();
@@ -59,8 +59,12 @@ fn run_kernel_thread(tx_ui: Sender<UIAction>, rx_kernel: Receiver<KernelAction>)
                     let kernel = kernel_clone.lock().unwrap();
                     let tab = kernel.get_renderer(id);
 
-                    tab.send(BrowserMessage::ToRenderer(MessageToRenderer::LoadHTMLLocal(html_file)));
-                    tab.send(BrowserMessage::ToRenderer(MessageToRenderer::LoadCSSLocal(css_file)));
+                    tab.send(BrowserMessage::ToRenderer(
+                        MessageToRenderer::LoadHTMLLocal(html_file),
+                    ));
+                    tab.send(BrowserMessage::ToRenderer(MessageToRenderer::LoadCSSLocal(
+                        css_file,
+                    )));
                 }
                 KernelAction::CleanUp => {
                     kernel_clone.lock().unwrap().clean_up();
@@ -74,7 +78,10 @@ fn run_kernel_thread(tx_ui: Sender<UIAction>, rx_kernel: Receiver<KernelAction>)
         match ipc.receive() {
             Ok((reply, msg)) => match msg {
                 BrowserMessage::ToKernel(msg) => {
-                    kernel.lock().unwrap().handle_msg(reply, msg, &ipc, tx_ui.clone())
+                    kernel
+                        .lock()
+                        .unwrap()
+                        .handle_msg(reply, msg, &ipc, tx_ui.clone())
                 }
                 _ => unreachable!("Unknown msg: {:#?}", msg),
             },
@@ -111,11 +118,16 @@ fn main() {
     run_kernel_thread(tx_ui, rx_kernel);
 
     match ops {
-        cli::Ops::LocalTest { html_path, css_path } => {
-            tx_kernel.send(KernelAction::NewTabTest {
-                html_file: html_path,
-                css_file: css_path
-            }).unwrap();
+        cli::Ops::LocalTest {
+            html_path,
+            css_path,
+        } => {
+            tx_kernel
+                .send(KernelAction::NewTabTest {
+                    html_file: html_path,
+                    css_file: css_path,
+                })
+                .unwrap();
         }
     }
 

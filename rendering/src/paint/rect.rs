@@ -8,7 +8,7 @@ pub struct RectPainter {
     vertices: Vec<Vertex>,
     indexes: Vec<u16>,
     pipeline: wgpu::RenderPipeline,
-    uniform_bind_group: wgpu::BindGroup
+    uniform_bind_group: wgpu::BindGroup,
 }
 
 #[repr(C)]
@@ -21,7 +21,7 @@ struct Vertex {
 #[repr(C)]
 #[derive(Clone, Copy, Pod, Zeroable)]
 struct Uniforms {
-    _screen_size: [f32; 2]
+    _screen_size: [f32; 2],
 }
 
 fn vertex(x: f32, y: f32, color: &Color) -> Vertex {
@@ -150,7 +150,7 @@ fn create_uniform_bind_group(
         });
 
     let uniforms = Uniforms {
-        _screen_size: [width as f32, height as f32]
+        _screen_size: [width as f32, height as f32],
     };
 
     let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -186,7 +186,7 @@ impl RectPainter {
                 &fs_module,
                 &uniform_binding_group_layout,
             ),
-            uniform_bind_group
+            uniform_bind_group,
         }
     }
 

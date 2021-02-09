@@ -14,7 +14,7 @@ impl Rect {
             x,
             y,
             width: w,
-            height: h
+            height: h,
         }
     }
 }
@@ -25,7 +25,7 @@ impl From<layout::box_model::Rect> for Rect {
             x: rect.x,
             y: rect.y,
             width: rect.width,
-            height: rect.height
+            height: rect.height,
         }
     }
 }

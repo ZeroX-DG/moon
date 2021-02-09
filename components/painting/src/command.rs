@@ -1,6 +1,6 @@
-use serde::{Deserialize, Serialize};
-use super::rect::Rect;
 use super::color::Color;
+use super::rect::Rect;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum DisplayCommand {
