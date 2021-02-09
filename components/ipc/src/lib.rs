@@ -40,7 +40,7 @@ impl<M: Message> IpcMain<M> {
 
         thread::spawn(move || {
             let listener = Listener::bind()
-                .expect("Unable to bind port");
+                .expect("Unable to bind listener");
 
             for stream in listener.incoming() {
                 let stream_read = stream.expect("Unable to obtain read stream");
