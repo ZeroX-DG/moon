@@ -1,12 +1,12 @@
 mod client;
+mod net;
+
 use client::Client;
 use flume::{Receiver, RecvError, Selector, Sender};
+use net::{Listener, Stream};
 use std::ops::Deref;
 use std::sync::{Arc, Mutex};
-use std::{
-    net::{SocketAddr, TcpListener, TcpStream},
-    thread,
-};
+use std::thread;
 
 pub use client::{IpcTransportError, Message};
 
@@ -35,12 +35,11 @@ impl<M: Message> IpcMain<M> {
         }
     }
 
-    pub fn run(&mut self, port: u16) {
+    pub fn run(&mut self) {
         let clients = self.clients.clone();
 
         thread::spawn(move || {
-            let listener = TcpListener::bind(SocketAddr::from(([127, 0, 0, 1], port)))
-                .expect("Unable to bind port");
+            let listener = Listener::bind().expect("Unable to bind listener");
 
             for stream in listener.incoming() {
                 let stream_read = stream.expect("Unable to obtain read stream");
@@ -86,9 +85,9 @@ impl<M: Message> IpcMain<M> {
 }
 
 impl<M: Message> IpcRenderer<M> {
-    pub fn new(port: u16) -> Self {
+    pub fn new() -> Self {
         let (stream_read, stream_write) = loop {
-            if let Ok(stream_read) = TcpStream::connect(SocketAddr::from(([127, 0, 0, 1], port))) {
+            if let Ok(stream_read) = Stream::connect() {
                 let stream_write = stream_read
                     .try_clone()
                     .expect("Unable to obtain write stream");

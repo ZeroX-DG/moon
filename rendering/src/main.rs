@@ -72,7 +72,7 @@ async fn run_headless_mode(
 }
 
 async fn run_nonheadless_mode(mut renderer: Renderer) {
-    let ipc = IpcRenderer::<BrowserMessage>::new(4444);
+    let ipc = IpcRenderer::<BrowserMessage>::new();
 
     perform_handshake(&ipc, renderer.id()).expect("Unable to perform handshake with server");
 

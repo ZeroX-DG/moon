@@ -14,8 +14,6 @@ use std::{
     thread,
 };
 
-const IPC_PORT: u16 = 4444;
-
 pub enum UIAction {
     RePaint(Vec<u8>),
 }
@@ -36,7 +34,7 @@ fn run_kernel_thread(tx_ui: Sender<UIAction>, rx_kernel: Receiver<KernelAction>)
 
     // Start IPC main
     let mut ipc = IpcMain::<BrowserMessage>::new();
-    ipc.run(IPC_PORT);
+    ipc.run();
 
     thread::spawn(move || loop {
         match rx_kernel.recv() {
