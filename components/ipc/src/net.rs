@@ -1,7 +1,7 @@
 #[cfg(unix)]
 mod unix {
-    use std::os::unix::net::{UnixListener, UnixStream};
     use std::ops::Deref;
+    use std::os::unix::net::{UnixListener, UnixStream};
 
     pub struct Listener(UnixListener);
     pub struct Stream;
@@ -41,7 +41,7 @@ mod other {
     // 3. Spawn renderer passing the port we found
     // 4. Connect IPC renderer to IPC main
     pub const PORT: u16 = 4444;
-    use std::net::{TcpListener, TcpStream, SocketAddr};
+    use std::net::{SocketAddr, TcpListener, TcpStream};
     use std::ops::Deref;
 
     pub struct Listener(TcpListener);

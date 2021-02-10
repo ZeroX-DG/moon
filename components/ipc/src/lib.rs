@@ -3,10 +3,10 @@ mod net;
 
 use client::Client;
 use flume::{Receiver, RecvError, Selector, Sender};
+use net::{Listener, Stream};
 use std::ops::Deref;
 use std::sync::{Arc, Mutex};
 use std::thread;
-use net::{Listener, Stream};
 
 pub use client::{IpcTransportError, Message};
 
@@ -39,8 +39,7 @@ impl<M: Message> IpcMain<M> {
         let clients = self.clients.clone();
 
         thread::spawn(move || {
-            let listener = Listener::bind()
-                .expect("Unable to bind listener");
+            let listener = Listener::bind().expect("Unable to bind listener");
 
             for stream in listener.incoming() {
                 let stream_read = stream.expect("Unable to obtain read stream");
