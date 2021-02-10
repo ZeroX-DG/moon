@@ -1,8 +1,7 @@
 [tasks.renderer]
 workspace = false
 script = '''
-cd ./rendering &&
-cargo build
+cd ./rendering && cargo build
 '''
 
 [tasks.kernel]
