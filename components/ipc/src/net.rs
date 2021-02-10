@@ -3,22 +3,25 @@ mod unix {
     use std::ops::Deref;
     use std::os::unix::net::{UnixListener, UnixStream};
 
+    const SOCKET_PATH: &str = "/tmp/moon/ipc.sock";
+
     pub struct Listener(UnixListener);
     pub struct Stream;
 
     impl Listener {
         pub fn bind() -> std::io::Result<Self> {
-            // unbind old socket
-            std::fs::remove_file("/tmp/moon/socket")?;
-
-            let listener = UnixListener::bind("/tmp/moon/socket")?;
+            if std::fs::metadata(SOCKET_PATH).is_ok() {
+                // unbind old socket
+                std::fs::remove_file(SOCKET_PATH)?;
+            }
+            let listener = UnixListener::bind(SOCKET_PATH)?;
             Ok(Self(listener))
         }
     }
 
     impl Stream {
         pub fn connect() -> std::io::Result<UnixStream> {
-            let stream = UnixStream::connect("/tmp/moon/socket")?;
+            let stream = UnixStream::connect(SOCKET_PATH)?;
             Ok(stream)
         }
     }
