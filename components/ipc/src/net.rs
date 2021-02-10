@@ -1,4 +1,4 @@
-#[cfg(target_family = "unix")]
+#[cfg(unix)]
 mod unix {
     use std::os::unix::net::{UnixListener, UnixStream};
     use std::ops::Deref;
@@ -8,6 +8,9 @@ mod unix {
 
     impl Listener {
         pub fn bind() -> std::io::Result<Self> {
+            // unbind old socket
+            std::fs::remove_file("/tmp/moon/socket")?;
+
             let listener = UnixListener::bind("/tmp/moon/socket")?;
             Ok(Self(listener))
         }
@@ -29,7 +32,7 @@ mod unix {
     }
 }
 
-#[cfg(not(target_family = "unix"))]
+#[cfg(not(unix))]
 mod other {
     pub const PORT: u16 = 4444;
     use std::net::{TcpListener, TcpStream, SocketAddr};
@@ -61,8 +64,8 @@ mod other {
     }
 }
 
-#[cfg(target_family = "unix")]
+#[cfg(unix)]
 pub use unix::*;
 
-#[cfg(not(target_family = "unix"))]
+#[cfg(not(unix))]
 pub use other::*;
