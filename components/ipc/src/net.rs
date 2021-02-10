@@ -34,6 +34,12 @@ mod unix {
 
 #[cfg(not(unix))]
 mod other {
+    // TODO: Some how pass a port to the IPC
+    // An untested solution:
+    // 1. Find an unused port (from kernel)
+    // 2. Bind the IPC at that port
+    // 3. Spawn renderer passing the port we found
+    // 4. Connect IPC renderer to IPC main
     pub const PORT: u16 = 4444;
     use std::net::{TcpListener, TcpStream, SocketAddr};
     use std::ops::Deref;
@@ -43,14 +49,14 @@ mod other {
 
     impl Listener {
         pub fn bind() -> std::io::Result<Self> {
-            let listener = TcpListener::bind(SocketAddr::from(([127, 0, 0, 1], port)))?;
+            let listener = TcpListener::bind(SocketAddr::from(([127, 0, 0, 1], PORT)))?;
             Ok(Self(listener))
         }
     }
 
     impl Stream {
         pub fn connect() -> std::io::Result<TcpStream> {
-            let stream = TcpStream::connect(SocketAddr::from(([127, 0, 0, 1], port)))?;
+            let stream = TcpStream::connect(SocketAddr::from(([127, 0, 0, 1], PORT)))?;
             Ok(stream)
         }
     }
