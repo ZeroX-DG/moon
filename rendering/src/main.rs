@@ -60,8 +60,38 @@ async fn run_headless_mode(
     css_path: String,
     output_path: String,
 ) {
-    let mut html_file = std::fs::File::open(html_path).expect("Unable to open HTML file");
-    let mut css_file = std::fs::File::open(css_path).expect("Unable to open CSS file");
+    let mut html_file = match std::fs::File::open(&html_path) {
+        Ok(f) => f,
+        Err(e) => {
+            log::error!(
+                "Unable to open HTML file({:?}): {:?}",
+                html_path,
+                e.to_string()
+            );
+            eprintln!(
+                "Unable to open HTML file({:?}): {:?}",
+                html_path,
+                e.to_string()
+            );
+            return;
+        }
+    };
+    let mut css_file = match std::fs::File::open(&css_path) {
+        Ok(f) => f,
+        Err(e) => {
+            log::error!(
+                "Unable to open CSS file({:?}): {:?}",
+                css_path,
+                e.to_string()
+            );
+            eprintln!(
+                "Unable to open CSS file({:?}): {:?}",
+                css_path,
+                e.to_string()
+            );
+            return;
+        }
+    };
 
     renderer.load_html(&mut html_file);
     renderer.load_css(&mut css_file);

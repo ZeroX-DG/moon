@@ -32,3 +32,9 @@ workspace = false
 dependencies = ["renderer"]
 command = "cargo"
 args = ["run", "--", "--html", "fixtures/${@}.html", "--css", "fixtures/${@}.css"]
+
+[tasks.output]
+workspace = false
+script = '''
+cd ./rendering && cargo run -- --html ../fixtures/${@}.html --css ../fixtures/${@}.css --output image.png --mode headless
+'''
