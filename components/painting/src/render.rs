@@ -35,7 +35,7 @@ impl<'a> PaintChainBuilder<'a> {
         }
     }
 
-    pub fn then(mut self, paint_fn: &'a PaintFn) -> Self {
+    pub fn with_function(mut self, paint_fn: &'a PaintFn) -> Self {
         self.paint_fns.push(paint_fn);
         self
     }

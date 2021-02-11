@@ -27,7 +27,7 @@ pub fn paint(display_list: &DisplayList, painter: &mut dyn Painter) {
 
 pub fn build_display_list(layout_box: &LayoutBox) -> DisplayList {
     let chain = PaintChainBuilder::new_chain()
-        .then(&paint_background)
+        .with_function(&paint_background)
         .build();
 
     chain.paint(layout_box)
