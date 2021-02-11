@@ -24,7 +24,12 @@ pub fn run_ui_loop(tx_kernel: Sender<KernelAction>, rx_ui: Receiver<UIAction>) {
         let surface_texture = SurfaceTexture::new(window_size.width, window_size.height, &*window);
         let window_size_logical = LogicalSize::from_physical(window_size, window.scale_factor());
         Arc::new(Mutex::new(
-            Pixels::new(window_size_logical.width, window_size_logical.height, surface_texture).unwrap(),
+            Pixels::new(
+                window_size_logical.width,
+                window_size_logical.height,
+                surface_texture,
+            )
+            .unwrap(),
         ))
     };
 
