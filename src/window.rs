@@ -14,7 +14,7 @@ pub fn run_ui_loop(tx_kernel: Sender<KernelAction>, rx_ui: Receiver<UIAction>) {
     let event_loop = EventLoop::new();
     let window = WindowBuilder::new()
         .with_title("Moon")
-        .with_inner_size(LogicalSize::new(500.0, 300.0))
+        .with_inner_size(LogicalSize::new(500, 300))
         .build(&event_loop)
         .unwrap();
     let window = Arc::new(window);
@@ -22,8 +22,14 @@ pub fn run_ui_loop(tx_kernel: Sender<KernelAction>, rx_ui: Receiver<UIAction>) {
     let pixels = {
         let window_size = window.inner_size();
         let surface_texture = SurfaceTexture::new(window_size.width, window_size.height, &*window);
+        let window_size_logical = LogicalSize::from_physical(window_size, window.scale_factor());
         Arc::new(Mutex::new(
-            Pixels::new(window_size.width, window_size.height, surface_texture).unwrap(),
+            Pixels::new(
+                window_size_logical.width,
+                window_size_logical.height,
+                surface_texture,
+            )
+            .unwrap(),
         ))
     };
 

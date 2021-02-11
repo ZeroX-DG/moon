@@ -9,6 +9,12 @@ pub struct Kernel {
     renderers: Vec<RendererHandler>,
 }
 
+#[derive(Debug)]
+pub enum KernelError {
+    SendError(String),
+    Other(String),
+}
+
 impl Kernel {
     pub fn new() -> Self {
         Self {
@@ -22,17 +28,25 @@ impl Kernel {
         msg: MessageToKernel,
         ipc: &IpcMain<BrowserMessage>,
         tx_ui: Sender<UIAction>,
-    ) {
+    ) -> Result<(), KernelError> {
         match msg {
-            MessageToKernel::RePaint(data) => tx_ui.send(UIAction::RePaint(data)).unwrap(),
-            MessageToKernel::ResourceNotFound(path) => panic!("Resource not found: {:#?}", path),
+            MessageToKernel::RePaint(data) => tx_ui
+                .send(UIAction::RePaint(data))
+                .map_err(|e| KernelError::SendError(e.to_string()))?,
+
+            MessageToKernel::ResourceNotFound(path) => Err(KernelError::Other(format!(
+                "Resource not found: {:#?}",
+                path
+            )))?,
+
             MessageToKernel::Syn(id) => {
                 log::info!("SYN received");
                 reply
                     .send(BrowserMessage::ToRenderer(MessageToRenderer::SynAck(id)))
-                    .expect("Unable to reply Syn");
+                    .map_err(|e| KernelError::SendError(e.to_string()))?;
                 log::info!("SYN-ACK sent");
             }
+
             MessageToKernel::Ack(id) => {
                 log::info!("ACK received");
                 let renderer = &mut self.renderers[id as usize];
@@ -40,6 +54,8 @@ impl Kernel {
             }
             _ => {}
         }
+
+        Ok(())
     }
 
     pub fn new_tab(&mut self) -> usize {
