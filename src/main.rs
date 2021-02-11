@@ -75,12 +75,15 @@ fn run_kernel_thread(tx_ui: Sender<UIAction>, rx_kernel: Receiver<KernelAction>)
     thread::spawn(move || loop {
         match ipc.receive() {
             Ok((reply, msg)) => match msg {
-                BrowserMessage::ToKernel(msg) => {
-                    kernel
-                        .lock()
-                        .unwrap()
-                        .handle_msg(reply, msg, &ipc, tx_ui.clone())
-                }
+                BrowserMessage::ToKernel(msg) => match kernel.lock() {
+                    Ok(mut kernel) => {
+                        if let Err(e) = kernel.handle_msg(reply, msg, &ipc, tx_ui.clone()) {
+                            log::error!("Error while handling kernel message: {:#?}", e);
+                            eprintln!("Error while handling kernel message: {:#?}", e);
+                        }
+                    }
+                    Err(e) => panic!("Error while accquiring kernel: {:#?}", e.to_string()),
+                },
                 _ => unreachable!("Unknown msg: {:#?}", msg),
             },
 
