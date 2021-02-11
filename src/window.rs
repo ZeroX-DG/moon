@@ -2,6 +2,7 @@ use flume::{Receiver, Sender};
 use pixels::{Pixels, SurfaceTexture};
 use std::sync::{Arc, Mutex};
 use winit::{
+    dpi::LogicalSize,
     event::{Event, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
     window::WindowBuilder,
@@ -11,12 +12,19 @@ use crate::{KernelAction, UIAction};
 
 pub fn run_ui_loop(tx_kernel: Sender<KernelAction>, rx_ui: Receiver<UIAction>) {
     let event_loop = EventLoop::new();
-    let window = Arc::new(WindowBuilder::new().build(&event_loop).unwrap());
+    let window = WindowBuilder::new()
+        .with_title("Moon")
+        .with_inner_size(LogicalSize::new(500.0, 300.0))
+        .build(&event_loop)
+        .unwrap();
+    let window = Arc::new(window);
 
     let pixels = {
         let window_size = window.inner_size();
         let surface_texture = SurfaceTexture::new(window_size.width, window_size.height, &*window);
-        Arc::new(Mutex::new(Pixels::new(500, 300, surface_texture).unwrap()))
+        Arc::new(Mutex::new(
+            Pixels::new(window_size.width, window_size.height, surface_texture).unwrap(),
+        ))
     };
 
     let pixels_clone = pixels.clone();
