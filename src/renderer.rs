@@ -10,11 +10,13 @@ pub struct RendererHandler {
 
 impl RendererHandler {
     pub fn new(id: u16) -> Self {
-        let mut dir = env::current_exe().expect("Unable to obtain current path");
-        dir.pop();
-        dir.push("rendering");
+        let mut current_dir = env::current_exe().expect("Unable to obtain current path");
+        current_dir.pop();
 
-        let process = Command::new(dir)
+        let mut renderer_path = current_dir;
+        renderer_path.push("rendering");
+
+        let process = Command::new(renderer_path)
             .args(&["--id", &id.to_string()])
             .spawn()
             .expect("Unable to start renderer");
