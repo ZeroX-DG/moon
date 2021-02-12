@@ -108,12 +108,12 @@ fn create_pipeline(
             color_blend: wgpu::BlendDescriptor {
                 src_factor: wgpu::BlendFactor::SrcAlpha,
                 dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
-                operation: wgpu::BlendOperation::Add,                 
+                operation: wgpu::BlendOperation::Add,
             },
             alpha_blend: wgpu::BlendDescriptor {
                 src_factor: wgpu::BlendFactor::One,
                 dst_factor: wgpu::BlendFactor::One,
-                operation: wgpu::BlendOperation::Add,                 
+                operation: wgpu::BlendOperation::Add,
             },
             write_mask: wgpu::ColorWrite::ALL,
         }],
