@@ -1,7 +1,7 @@
 use ipc::IpcConnection;
 use message::BrowserMessage;
-use std::process::{Child, Command};
 use std::env;
+use std::process::{Child, Command};
 
 pub struct RendererHandler {
     process: Child,
