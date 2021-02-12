@@ -1,6 +1,7 @@
 use ipc::IpcConnection;
 use message::BrowserMessage;
 use std::process::{Child, Command};
+use std::env;
 
 pub struct RendererHandler {
     process: Child,
@@ -9,7 +10,11 @@ pub struct RendererHandler {
 
 impl RendererHandler {
     pub fn new(id: u16) -> Self {
-        let process = Command::new("target/debug/rendering")
+        let mut dir = env::current_exe().expect("Unable to obtain current path");
+        dir.pop();
+        dir.push("rendering");
+
+        let process = Command::new(dir)
             .args(&["--id", &id.to_string()])
             .spawn()
             .expect("Unable to start renderer");
