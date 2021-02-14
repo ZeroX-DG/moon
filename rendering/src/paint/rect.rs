@@ -1,6 +1,6 @@
 use super::wgpu_painter::{WgpuPaintData, TEXTURE_FORMAT};
 use bytemuck::{Pod, Zeroable};
-use painting::{Color, Rect};
+use painting::{Color, Rect, RRect};
 use std::borrow::Cow;
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
 
@@ -224,6 +224,134 @@ impl RectPainter {
             indexes[0], indexes[1], indexes[2],
             // second triangle (top_right, bottom_right, bottom_left)
             indexes[1], indexes[3], indexes[2],
+        ]);
+    }
+
+    pub fn draw_solid_rrect(&mut self, rect: &RRect, color: &Color) {
+        // We gonna use 9-slice scaling
+        // See: https://en.wikipedia.org/wiki/9-slice_scaling
+        // 
+        // So our rrect will be structured into 9 parts:
+        // 1 | 2 | 3
+        // 4 | 5 | 6
+        // 7 | 8 | 9
+        //
+        // With 1 3 7 9 is round corner and the rest are rects
+
+        // rects
+        // part 2
+        // top left = (rect.x + rect.radius.top_left, rect.y)
+        // top right = (rect.x + rect.width - rect.radius.top_right, rect.y)
+        // bottom left = (rect.x + rect.radius.top_left, rect.y + rect.radius.top_left)
+        // bottom right = (rect.x + rect.width - rect.radius.top_right, rect.y + rect.radius.top_right)
+        let rect_2_indexes = self.create_vertices(&[
+            // top_left
+            (rect.x + rect.radius.top_left, rect.y, color),
+            // top_right
+            (rect.x + (rect.width - rect.radius.top_right), rect.y, color),
+            // bottom_left
+            (rect.x + rect.radius.top_left, rect.y + rect.radius.top_left, color),
+            // bottom_right
+            (rect.x + (rect.width - rect.radius.top_right), rect.y + rect.radius.top_right, color),
+        ]);
+
+        self.indexes.extend_from_slice(&[
+            // first triangle (top_left, top_right, bottom_left)
+            rect_2_indexes[0], rect_2_indexes[1], rect_2_indexes[2],
+            // second triangle (top_right, bottom_right, bottom_left)
+            rect_2_indexes[1], rect_2_indexes[3], rect_2_indexes[2],
+        ]);
+
+        // part 8
+        // top left = (rect.x + rect.radius.bottom_left, rect.y - rect.radius.bottom_left)
+        // top right = (rect.x + rect.width - rect.radius.bottom_right, rect.y - rect.radius.bottom_right)
+        // bottom left = (rect.x + rect.radius.bottom_left, rect.y + rect.height)
+        // bottom right = (rect.x + rect.width - rect.radius.bottom_right, rect.y + rect.height)
+        let rect_8_indexes = self.create_vertices(&[
+            // top_left
+            (rect.x + rect.radius.bottom_left, rect.y + (rect.height - rect.radius.bottom_left), color),
+            // top_right
+            (rect.x + (rect.width - rect.radius.bottom_right), rect.y + (rect.height - rect.radius.bottom_right), color),
+            // bottom_left
+            (rect.x + rect.radius.top_left, rect.y + rect.height, color),
+            // bottom_right
+            (rect.x + (rect.width - rect.radius.bottom_right), rect.y + rect.height, color),
+        ]);
+
+        self.indexes.extend_from_slice(&[
+            // first triangle (top_left, top_right, bottom_left)
+            rect_8_indexes[0], rect_8_indexes[1], rect_8_indexes[2],
+            // second triangle (top_right, bottom_right, bottom_left)
+            rect_8_indexes[1], rect_8_indexes[3], rect_8_indexes[2],
+        ]);
+
+        // part 4
+        // top left = (rect.x, rect.y + rect.radius.top_left)
+        // top right = (rect.x + rect.radius.top_left, rect.y + rect.radius.top_left)
+        // bottom left = (rect.x, rect.y + rect.height - rect.radius.bottom_left)
+        // bottom right = (rect.x + rect.radius.bottom_left, rect.y + rect.height - rect.radius.bottom_left)
+        let rect_4_indexes = self.create_vertices(&[
+            // top_left
+            (rect.x, rect.y + rect.radius.top_left, color),
+            // top_right
+            (rect.x + rect.radius.top_left, rect.y + rect.radius.top_left, color),
+            // bottom_left
+            (rect.x, rect.y + rect.height - rect.radius.bottom_left, color),
+            // bottom_right
+            (rect.x + rect.radius.bottom_left, rect.y + rect.height - rect.radius.bottom_left, color),
+        ]);
+
+        self.indexes.extend_from_slice(&[
+            // first triangle (top_left, top_right, bottom_left)
+            rect_4_indexes[0], rect_4_indexes[1], rect_4_indexes[2],
+            // second triangle (top_right, bottom_right, bottom_left)
+            rect_4_indexes[1], rect_4_indexes[3], rect_4_indexes[2],
+        ]);
+
+        // part 6
+        // top left = (rect.x + rect.width - rect.radius_top_right, rect.y + rect.radius.top_right)
+        // top right = (rect.x + rect.width, rect.y + rect.radius.top_right)
+        // bottom left = (rect.x + rect.width - rect.radius_bottom_right, rect.y + rect.height - rect.radius.bottom_right)
+        // bottom right = (rect.x + rect.width, rect.y + rect.height - rect.radius.bottom_right)
+        let rect_6_indexes = self.create_vertices(&[
+            // top_left
+            (rect.x + rect.width - rect.radius.top_right, rect.y + rect.radius.top_right, color),
+            // top_right
+            (rect.x + rect.width, rect.y + rect.radius.top_right, color),
+            // bottom_left
+            (rect.x + rect.width - rect.radius.bottom_right, rect.y + rect.height - rect.radius.bottom_right, color),
+            // bottom_right
+            (rect.x + rect.width, rect.y + rect.height - rect.radius.bottom_right, color),
+        ]);
+
+        self.indexes.extend_from_slice(&[
+            // first triangle (top_left, top_right, bottom_left)
+            rect_6_indexes[0], rect_6_indexes[1], rect_6_indexes[2],
+            // second triangle (top_right, bottom_right, bottom_left)
+            rect_6_indexes[1], rect_6_indexes[3], rect_6_indexes[2],
+        ]);
+
+        // part 5
+        // top left = (rect.x + rect.radius.top_left, rect.y + rect.radius.top_left)
+        // top right = (rect.x + rect.width - rect.radius.top_right, rect.y + rect.radius.top_right)
+        // bottom left = (rect.x + rect.radius_bottom_left, rect.y + rect.height - rect.radius.bottom_left)
+        // bottom right = (rect.x + rect.width - rect.radius_bottom_right, rect.y + rect.height - rect.radius.bottom_right)
+        let rect_5_indexes = self.create_vertices(&[
+            // top_left
+            (rect.x + rect.radius.top_left, rect.y + rect.radius.top_left, color),
+            // top_right
+            (rect.x + rect.width - rect.radius.top_right, rect.y + rect.radius.top_right, color),
+            // bottom_left
+            (rect.x + rect.radius.bottom_left, rect.y + rect.height - rect.radius.bottom_left, color),
+            // bottom_right
+            (rect.x + rect.width - rect.radius.bottom_right, rect.y + rect.height - rect.radius.bottom_right, color),
+        ]);
+
+        self.indexes.extend_from_slice(&[
+            // first triangle (top_left, top_right, bottom_left)
+            rect_5_indexes[0], rect_5_indexes[1], rect_5_indexes[2],
+            // second triangle (top_right, bottom_right, bottom_left)
+            rect_5_indexes[1], rect_5_indexes[3], rect_5_indexes[2],
         ]);
     }
 

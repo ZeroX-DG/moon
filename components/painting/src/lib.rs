@@ -2,7 +2,7 @@ mod color;
 mod command;
 mod paint_functions;
 mod painter;
-mod rect;
+mod primitive;
 mod render;
 
 use command::DisplayCommand;
@@ -11,7 +11,7 @@ use render::PaintChainBuilder;
 
 pub use color::*;
 pub use painter::Painter;
-pub use rect::*;
+pub use primitive::*;
 pub use render::DisplayList;
 
 use paint_functions::background::paint_background;
@@ -20,6 +20,7 @@ pub fn paint(display_list: &DisplayList, painter: &mut dyn Painter) {
     for command in display_list {
         match command {
             DisplayCommand::FillRect(rect, color) => painter.fill_rect(&rect, &color),
+            DisplayCommand::FillRRect(rect, color) => painter.fill_rrect(&rect, color),
             _ => {}
         }
     }
