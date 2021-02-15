@@ -353,6 +353,71 @@ impl RectPainter {
             // second triangle (top_right, bottom_right, bottom_left)
             rect_5_indexes[1], rect_5_indexes[3], rect_5_indexes[2],
         ]);
+
+        // corner
+        // part 1
+        let mut points = Vec::new();
+        for angle in (0..=90).step_by(1) {
+            let radian = angle as f32 * std::f32::consts::PI / 180.0;
+            let x = -radian.cos() * rect.radius.top_left;
+            let y = -radian.sin() * rect.radius.top_left;
+
+            points.push((rect.x + rect.radius.top_left + x, rect.y + rect.radius.top_left + y, color));
+        }
+        let indexes = self.create_vertices(&points);
+        for i in 0..indexes.len() - 1 {
+            self.indexes.extend_from_slice(&[
+                indexes[i], indexes[i + 1], rect_5_indexes[0]
+            ]);
+        }
+
+        // part 3
+        let mut points = Vec::new();
+        for angle in (0..=90).step_by(1) {
+            let radian = angle as f32 * std::f32::consts::PI / 180.0;
+            let x = radian.cos() * rect.radius.top_right;
+            let y = -radian.sin() * rect.radius.top_right;
+
+            points.push((rect.x + rect.width - rect.radius.top_right + x, rect.y + rect.radius.top_right + y, color));
+        }
+        let indexes = self.create_vertices(&points);
+        for i in 0..indexes.len() - 1 {
+            self.indexes.extend_from_slice(&[
+                indexes[i], indexes[i + 1], rect_5_indexes[1]
+            ]);
+        }
+
+        // part 7
+        let mut points = Vec::new();
+        for angle in (0..=90).step_by(1) {
+            let radian = angle as f32 * std::f32::consts::PI / 180.0;
+            let x = -radian.cos() * rect.radius.bottom_left;
+            let y = radian.sin() * rect.radius.bottom_left;
+
+            points.push((rect.x + rect.radius.top_left + x, rect.y + rect.height - rect.radius.top_right + y, color));
+        }
+        let indexes = self.create_vertices(&points);
+        for i in 0..indexes.len() - 1 {
+            self.indexes.extend_from_slice(&[
+                indexes[i], indexes[i + 1], rect_5_indexes[2]
+            ]);
+        }
+
+        // part 9
+        let mut points = Vec::new();
+        for angle in (0..=90).step_by(1) {
+            let radian = angle as f32 * std::f32::consts::PI / 180.0;
+            let x = radian.cos() * rect.radius.bottom_right;
+            let y = radian.sin() * rect.radius.bottom_right;
+
+            points.push((rect.x + rect.width - rect.radius.top_right + x, rect.y + rect.height - rect.radius.top_right + y, color));
+        }
+        let indexes = self.create_vertices(&points);
+        for i in 0..indexes.len() - 1 {
+            self.indexes.extend_from_slice(&[
+                indexes[i], indexes[i + 1], rect_5_indexes[3]
+            ]);
+        }
     }
 
     pub fn get_paint_data(&self, device: &wgpu::Device) -> WgpuPaintData {
