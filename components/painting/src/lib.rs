@@ -19,8 +19,8 @@ use paint_functions::background::paint_background;
 pub fn paint(display_list: &DisplayList, painter: &mut dyn Painter) {
     for command in display_list {
         match command {
-            DisplayCommand::FillRect(rect, color) => painter.fill_rect(&rect, &color),
-            DisplayCommand::FillRRect(rect, color) => painter.fill_rrect(&rect, color),
+            DisplayCommand::FillRect(rect, color) => painter.fill_rect(rect, color),
+            DisplayCommand::FillRRect(rect, color) => painter.fill_rrect(rect, color),
             _ => {}
         }
     }

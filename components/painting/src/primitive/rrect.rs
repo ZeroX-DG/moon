@@ -6,31 +6,34 @@ pub struct RRect {
     pub y: f32,
     pub width: f32,
     pub height: f32,
-    pub radius: Radius
+    pub corners: Corners
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct Radius {
-    pub top_left: f32,
-    pub top_right: f32,
-    pub bottom_left: f32,
-    pub bottom_right: f32
+pub struct Corners {
+    pub top_left: Radii,
+    pub top_right: Radii,
+    pub bottom_left: Radii,
+    pub bottom_right: Radii
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Radii(f32, f32);
+
 impl RRect {
-    pub fn new(x: f32, y: f32, w: f32, h: f32, r: Radius) -> Self {
+    pub fn new(x: f32, y: f32, w: f32, h: f32, corners: Corners) -> Self {
         Self {
             x,
             y,
             width: w,
             height: h,
-            radius: r
+            corners
         }
     }
 }
 
-impl Radius {
-    pub fn new(tl: f32, tr: f32, bl: f32, br: f32) -> Self {
+impl Corners {
+    pub fn new(tl: Radii, tr: Radii, bl: Radii, br: Radii) -> Self {
         Self {
             top_left: tl,
             top_right: tr,

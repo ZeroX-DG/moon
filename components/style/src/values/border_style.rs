@@ -1,6 +1,8 @@
 use css::parser::structs::ComponentValue;
 use css::tokenizer::token::Token;
 
+use crate::value_processing::Parse;
+
 #[derive(Debug, Clone, PartialEq, Hash, Eq)]
 pub enum BorderStyle {
     Hidden,
@@ -15,8 +17,8 @@ pub enum BorderStyle {
     None,
 }
 
-impl BorderStyle {
-    pub fn parse(values: &[ComponentValue]) -> Option<Self> {
+impl Parse for BorderStyle {
+    fn parse(values: &[ComponentValue]) -> Option<Self> {
         match values.iter().next() {
             Some(ComponentValue::PerservedToken(Token::Ident(value))) => match value {
                 v if v.eq_ignore_ascii_case("hidden") => Some(BorderStyle::Hidden),

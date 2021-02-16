@@ -1,6 +1,6 @@
 use crate::color::style_color_to_paint_color;
 use crate::command::DisplayCommand;
-use crate::primitive::{Rect, RRect, Radius};
+use crate::primitive::{Rect, RRect, Corners, Radii};
 use crate::LayoutBox;
 use style::value_processing::{Property, Value};
 
@@ -48,12 +48,13 @@ pub fn paint_background(layout_box: &LayoutBox) -> Option<DisplayCommand> {
     
             return Some(DisplayCommand::FillRect(rect, color));
         } else {
+            let border_box = layout_box.dimensions.border_box();
             let rect = RRect {
                 x,
                 y,
                 width,
                 height,
-                radius: Radius::new(tl, tr, bl, br)
+                radius: Corners::new(tl, tr, bl, br)
             };
     
             return Some(DisplayCommand::FillRRect(rect, color));
