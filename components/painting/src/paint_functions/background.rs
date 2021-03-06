@@ -59,8 +59,6 @@ pub fn paint_background(layout_box: &LayoutBox) -> Option<DisplayCommand> {
 fn to_radii(value: &Value, width: f32) -> Radii {
     match value {
         Value::BorderRadius(BorderRadius(hr, vr)) => Radii::new(hr.to_px(width), vr.to_px(width)),
-        Value::Length(l) => Radii::new(l.to_px(), l.to_px()),
-        Value::Percentage(p) => Radii::new(p.to_px(width), p.to_px(width)),
         _ => Radii::new(0.0, 0.0),
     }
 }

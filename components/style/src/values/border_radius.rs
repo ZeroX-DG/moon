@@ -10,7 +10,8 @@ impl BorderRadius {
         let mut data = Vec::new();
         for value in values {
             match value {
-                ComponentValue::PerservedToken(Token::Dimension { .. }) => data.push(value),
+                ComponentValue::PerservedToken(Token::Dimension { .. })
+                | ComponentValue::PerservedToken(Token::Percentage(..)) => data.push(value),
                 _ => {}
             }
         }
@@ -18,9 +19,11 @@ impl BorderRadius {
         let values_count = data.len();
 
         if values_count == 1 {
-            if let Some(p) = LengthPercentage::parse(values) {
-                return Some(Self(p.clone(), p.clone()));
-            }
+            let p = match LengthPercentage::parse(values) {
+                Some(p) => p,
+                _ => return None,
+            };
+            return Some(Self(p.clone(), p.clone()));
         }
 
         if values_count == 2 {

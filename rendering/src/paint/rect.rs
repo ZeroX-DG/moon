@@ -449,7 +449,7 @@ impl RectPainter {
         // corner
         // part 1
         let mut points = Vec::new();
-        for angle in (0..=90).step_by(1) {
+        for angle in 0..=90 {
             let radian = angle as f32 * std::f32::consts::PI / 180.0;
             let x = -radian.cos() * rect.corners.top_left.horizontal_r();
             let y = -radian.sin() * rect.corners.top_left.vertical_r();
@@ -468,7 +468,7 @@ impl RectPainter {
 
         // part 3
         let mut points = Vec::new();
-        for angle in (0..=90).step_by(1) {
+        for angle in 0..=90 {
             let radian = angle as f32 * std::f32::consts::PI / 180.0;
             let x = radian.cos() * rect.corners.top_right.horizontal_r();
             let y = -radian.sin() * rect.corners.top_right.vertical_r();
@@ -487,7 +487,7 @@ impl RectPainter {
 
         // part 7
         let mut points = Vec::new();
-        for angle in (0..=90).step_by(1) {
+        for angle in 0..=90 {
             let radian = angle as f32 * std::f32::consts::PI / 180.0;
             let x = -radian.cos() * rect.corners.bottom_left.horizontal_r();
             let y = radian.sin() * rect.corners.bottom_left.vertical_r();
@@ -506,7 +506,7 @@ impl RectPainter {
 
         // part 9
         let mut points = Vec::new();
-        for angle in (0..=90).step_by(1) {
+        for angle in 0..=90 {
             let radian = angle as f32 * std::f32::consts::PI / 180.0;
             let x = radian.cos() * rect.corners.bottom_right.horizontal_r();
             let y = radian.sin() * rect.corners.bottom_right.vertical_r();
