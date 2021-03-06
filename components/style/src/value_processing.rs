@@ -6,7 +6,7 @@ use css::parser::structs::Declaration;
 use css::selector::structs::Specificity;
 use css::tokenizer::token::Token;
 use dom::dom_ref::NodeRef;
-use std::{borrow::Borrow, marker::PhantomData};
+use std::borrow::Borrow;
 use std::cmp::{Ord, Ordering};
 use std::collections::{HashMap, HashSet};
 use std::ops::Deref;
@@ -76,7 +76,7 @@ pub enum Value {
     Float(Float),
     Position(Position),
     Direction(Direction),
-    Pair(Vec<Value>),
+    BorderRadius(BorderRadius),
     Auto,
     Inherit,
     Initial,
@@ -176,18 +176,6 @@ impl Deref for ValueRef {
     }
 }
 
-pub trait Parse: Sized {
-    fn parse(values: &[ComponentValue]) -> Option<Self>;
-}
-
-struct PairParser<T: Parse>(PhantomData<T>);
-
-impl<T: Parse> PairParser<T> {
-    pub fn parse(tokens: &[ComponentValue]) -> Option<Value> {
-        Some(Value::Pair(Vec::new()))
-    }
-}
-
 fn parse_keyword(tokens: &[ComponentValue], keyword: &str) -> bool {
     match tokens.iter().next() {
         Some(ComponentValue::PerservedToken(Token::Ident(word))) => {
@@ -232,14 +220,6 @@ macro_rules! parse_value {
         } else {
             None
         }
-    }};
-    (Pair<$v_type:ty> | $($remain:ident)|+; $tokens:ident) => {{
-        let result = PairParser::<$v_type>::parse($tokens);
-
-        if (result.is_some()) {
-            return result;
-        }
-        parse_value!($($remain)|+; $tokens)
     }};
     ($value:ident | $($remain:ident)|+; $tokens:ident) => {{
         let value = parse_value!($value; $tokens);
@@ -382,19 +362,19 @@ impl Value {
                 tokens
             ),
             Property::BorderTopLeftRadius => parse_value!(
-                Pair<Length> | Length | Percentage | Inherit | Initial | Unset;
+                BorderRadius | Inherit | Initial | Unset;
                 tokens
             ),
             Property::BorderTopRightRadius => parse_value!(
-                Length | Percentage | Inherit | Initial | Unset;
+                BorderRadius | Inherit | Initial | Unset;
                 tokens
             ),
             Property::BorderBottomLeftRadius => parse_value!(
-                Length | Percentage | Inherit | Initial | Unset;
+                BorderRadius | Inherit | Initial | Unset;
                 tokens
             ),
             Property::BorderBottomRightRadius => parse_value!(
-                Length | Percentage | Inherit | Initial | Unset;
+                BorderRadius | Inherit | Initial | Unset;
                 tokens
             ),
         }
@@ -434,10 +414,10 @@ impl Value {
             Property::Bottom => Value::Auto,
             Property::Top => Value::Auto,
             Property::Direction => Value::Direction(Direction::Ltr),
-            Property::BorderTopLeftRadius => Value::Length(Length::zero()),
-            Property::BorderTopRightRadius => Value::Length(Length::zero()),
-            Property::BorderBottomLeftRadius => Value::Length(Length::zero()),
-            Property::BorderBottomRightRadius => Value::Length(Length::zero()),
+            Property::BorderTopLeftRadius => Value::BorderRadius(BorderRadius::zero()),
+            Property::BorderTopRightRadius => Value::BorderRadius(BorderRadius::zero()),
+            Property::BorderBottomLeftRadius => Value::BorderRadius(BorderRadius::zero()),
+            Property::BorderBottomRightRadius => Value::BorderRadius(BorderRadius::zero()),
         }
     }
 }

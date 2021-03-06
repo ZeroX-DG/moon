@@ -1,5 +1,3 @@
-use crate::value_processing::Parse;
-
 use super::number::Number;
 use css::parser::structs::ComponentValue;
 use css::tokenizer::token::Token;
@@ -67,8 +65,8 @@ impl Length {
     }
 }
 
-impl Parse for Length {
-    fn parse(values: &[ComponentValue]) -> Option<Self> {
+impl Length {
+    pub fn parse(values: &[ComponentValue]) -> Option<Self> {
         match values.first() {
             Some(ComponentValue::PerservedToken(Token::Dimension { value, unit, .. })) => {
                 if let Some(unit) = LengthUnit::from_str(&unit) {

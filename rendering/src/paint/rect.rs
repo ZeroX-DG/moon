@@ -246,13 +246,13 @@ impl RectPainter {
         // bottom right = (rect.x + rect.width - rect.radius.top_right, rect.y + rect.radius.top_right)
         let rect_2_indexes = self.create_vertices(&[
             // top_left
-            (rect.x + rect.radius.top_left, rect.y, color),
+            (rect.x + rect.corners.top_left.horizontal_r(), rect.y, color),
             // top_right
-            (rect.x + (rect.width - rect.radius.top_right), rect.y, color),
+            (rect.x + (rect.width - rect.corners.top_right.horizontal_r()), rect.y, color),
             // bottom_left
-            (rect.x + rect.radius.top_left, rect.y + rect.radius.top_left, color),
+            (rect.x + rect.corners.top_left.horizontal_r(), rect.y + rect.corners.top_left.vertical_r(), color),
             // bottom_right
-            (rect.x + (rect.width - rect.radius.top_right), rect.y + rect.radius.top_right, color),
+            (rect.x + (rect.width - rect.corners.top_right.horizontal_r()), rect.y + rect.corners.top_right.vertical_r(), color),
         ]);
 
         self.indexes.extend_from_slice(&[
@@ -269,13 +269,13 @@ impl RectPainter {
         // bottom right = (rect.x + rect.width - rect.radius.bottom_right, rect.y + rect.height)
         let rect_8_indexes = self.create_vertices(&[
             // top_left
-            (rect.x + rect.radius.bottom_left, rect.y + (rect.height - rect.radius.bottom_left), color),
+            (rect.x + rect.corners.bottom_left.horizontal_r(), rect.y + (rect.height - rect.corners.bottom_left.vertical_r()), color),
             // top_right
-            (rect.x + (rect.width - rect.radius.bottom_right), rect.y + (rect.height - rect.radius.bottom_right), color),
+            (rect.x + (rect.width - rect.corners.bottom_right.horizontal_r()), rect.y + (rect.height - rect.corners.bottom_right.vertical_r()), color),
             // bottom_left
-            (rect.x + rect.radius.top_left, rect.y + rect.height, color),
+            (rect.x + rect.corners.bottom_left.horizontal_r(), rect.y + rect.height, color),
             // bottom_right
-            (rect.x + (rect.width - rect.radius.bottom_right), rect.y + rect.height, color),
+            (rect.x + (rect.width - rect.corners.bottom_right.horizontal_r()), rect.y + rect.height, color),
         ]);
 
         self.indexes.extend_from_slice(&[
@@ -292,13 +292,13 @@ impl RectPainter {
         // bottom right = (rect.x + rect.radius.bottom_left, rect.y + rect.height - rect.radius.bottom_left)
         let rect_4_indexes = self.create_vertices(&[
             // top_left
-            (rect.x, rect.y + rect.radius.top_left, color),
+            (rect.x, rect.y + rect.corners.top_left.vertical_r(), color),
             // top_right
-            (rect.x + rect.radius.top_left, rect.y + rect.radius.top_left, color),
+            (rect.x + rect.corners.top_left.horizontal_r(), rect.y + rect.corners.top_left.vertical_r(), color),
             // bottom_left
-            (rect.x, rect.y + rect.height - rect.radius.bottom_left, color),
+            (rect.x, rect.y + rect.height - rect.corners.bottom_left.vertical_r(), color),
             // bottom_right
-            (rect.x + rect.radius.bottom_left, rect.y + rect.height - rect.radius.bottom_left, color),
+            (rect.x + rect.corners.bottom_left.horizontal_r(), rect.y + rect.height - rect.corners.bottom_left.vertical_r(), color),
         ]);
 
         self.indexes.extend_from_slice(&[
@@ -315,13 +315,13 @@ impl RectPainter {
         // bottom right = (rect.x + rect.width, rect.y + rect.height - rect.radius.bottom_right)
         let rect_6_indexes = self.create_vertices(&[
             // top_left
-            (rect.x + rect.width - rect.radius.top_right, rect.y + rect.radius.top_right, color),
+            (rect.x + rect.width - rect.corners.top_right.horizontal_r(), rect.y + rect.corners.top_right.vertical_r(), color),
             // top_right
-            (rect.x + rect.width, rect.y + rect.radius.top_right, color),
+            (rect.x + rect.width, rect.y + rect.corners.top_right.vertical_r(), color),
             // bottom_left
-            (rect.x + rect.width - rect.radius.bottom_right, rect.y + rect.height - rect.radius.bottom_right, color),
+            (rect.x + rect.width - rect.corners.bottom_right.horizontal_r(), rect.y + rect.height - rect.corners.bottom_right.vertical_r(), color),
             // bottom_right
-            (rect.x + rect.width, rect.y + rect.height - rect.radius.bottom_right, color),
+            (rect.x + rect.width, rect.y + rect.height - rect.corners.bottom_right.vertical_r(), color),
         ]);
 
         self.indexes.extend_from_slice(&[
@@ -338,13 +338,13 @@ impl RectPainter {
         // bottom right = (rect.x + rect.width - rect.radius_bottom_right, rect.y + rect.height - rect.radius.bottom_right)
         let rect_5_indexes = self.create_vertices(&[
             // top_left
-            (rect.x + rect.radius.top_left, rect.y + rect.radius.top_left, color),
+            (rect.x + rect.corners.top_left.horizontal_r(), rect.y + rect.corners.top_left.vertical_r(), color),
             // top_right
-            (rect.x + rect.width - rect.radius.top_right, rect.y + rect.radius.top_right, color),
+            (rect.x + rect.width - rect.corners.top_right.horizontal_r(), rect.y + rect.corners.top_right.vertical_r(), color),
             // bottom_left
-            (rect.x + rect.radius.bottom_left, rect.y + rect.height - rect.radius.bottom_left, color),
+            (rect.x + rect.corners.bottom_left.horizontal_r(), rect.y + rect.height - rect.corners.bottom_left.vertical_r(), color),
             // bottom_right
-            (rect.x + rect.width - rect.radius.bottom_right, rect.y + rect.height - rect.radius.bottom_right, color),
+            (rect.x + rect.width - rect.corners.bottom_right.horizontal_r(), rect.y + rect.height - rect.corners.bottom_right.vertical_r(), color),
         ]);
 
         self.indexes.extend_from_slice(&[
@@ -359,10 +359,10 @@ impl RectPainter {
         let mut points = Vec::new();
         for angle in (0..=90).step_by(1) {
             let radian = angle as f32 * std::f32::consts::PI / 180.0;
-            let x = -radian.cos() * rect.radius.top_left;
-            let y = -radian.sin() * rect.radius.top_left;
+            let x = -radian.cos() * rect.corners.top_left.horizontal_r();
+            let y = -radian.sin() * rect.corners.top_left.vertical_r();
 
-            points.push((rect.x + rect.radius.top_left + x, rect.y + rect.radius.top_left + y, color));
+            points.push((rect.x + rect.corners.top_left.horizontal_r() + x, rect.y + rect.corners.top_left.vertical_r() + y, color));
         }
         let indexes = self.create_vertices(&points);
         for i in 0..indexes.len() - 1 {
@@ -375,10 +375,10 @@ impl RectPainter {
         let mut points = Vec::new();
         for angle in (0..=90).step_by(1) {
             let radian = angle as f32 * std::f32::consts::PI / 180.0;
-            let x = radian.cos() * rect.radius.top_right;
-            let y = -radian.sin() * rect.radius.top_right;
+            let x = radian.cos() * rect.corners.top_right.horizontal_r();
+            let y = -radian.sin() * rect.corners.top_right.vertical_r();
 
-            points.push((rect.x + rect.width - rect.radius.top_right + x, rect.y + rect.radius.top_right + y, color));
+            points.push((rect.x + rect.width - rect.corners.top_right.horizontal_r() + x, rect.y + rect.corners.top_right.vertical_r() + y, color));
         }
         let indexes = self.create_vertices(&points);
         for i in 0..indexes.len() - 1 {
@@ -391,10 +391,10 @@ impl RectPainter {
         let mut points = Vec::new();
         for angle in (0..=90).step_by(1) {
             let radian = angle as f32 * std::f32::consts::PI / 180.0;
-            let x = -radian.cos() * rect.radius.bottom_left;
-            let y = radian.sin() * rect.radius.bottom_left;
+            let x = -radian.cos() * rect.corners.bottom_left.horizontal_r();
+            let y = radian.sin() * rect.corners.bottom_left.vertical_r();
 
-            points.push((rect.x + rect.radius.top_left + x, rect.y + rect.height - rect.radius.top_right + y, color));
+            points.push((rect.x + rect.corners.bottom_left.horizontal_r() + x, rect.y + rect.height - rect.corners.bottom_left.vertical_r() + y, color));
         }
         let indexes = self.create_vertices(&points);
         for i in 0..indexes.len() - 1 {
@@ -407,10 +407,10 @@ impl RectPainter {
         let mut points = Vec::new();
         for angle in (0..=90).step_by(1) {
             let radian = angle as f32 * std::f32::consts::PI / 180.0;
-            let x = radian.cos() * rect.radius.bottom_right;
-            let y = radian.sin() * rect.radius.bottom_right;
+            let x = radian.cos() * rect.corners.bottom_right.horizontal_r();
+            let y = radian.sin() * rect.corners.bottom_right.vertical_r();
 
-            points.push((rect.x + rect.width - rect.radius.top_right + x, rect.y + rect.height - rect.radius.top_right + y, color));
+            points.push((rect.x + rect.width - rect.corners.bottom_right.horizontal_r() + x, rect.y + rect.height - rect.corners.bottom_right.vertical_r() + y, color));
         }
         let indexes = self.create_vertices(&points);
         for i in 0..indexes.len() - 1 {

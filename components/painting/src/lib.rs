@@ -4,6 +4,7 @@ mod paint_functions;
 mod painter;
 mod primitive;
 mod render;
+mod utils;
 
 use command::DisplayCommand;
 use layout::layout_box::LayoutBox;

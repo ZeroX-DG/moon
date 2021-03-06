@@ -42,3 +42,17 @@ impl Corners {
         }
     }
 }
+
+impl Radii {
+    pub fn new(h: f32, v: f32) -> Self {
+        Self(h, v)
+    }
+
+    pub fn vertical_r(&self) -> f32 {
+        self.1
+    }
+
+    pub fn horizontal_r(&self) -> f32 {
+        self.0
+    }
+}
