@@ -76,6 +76,7 @@ pub enum Value {
     Float(Float),
     Position(Position),
     Direction(Direction),
+    BorderRadius(BorderRadius),
     Auto,
     Inherit,
     Initial,
@@ -361,19 +362,19 @@ impl Value {
                 tokens
             ),
             Property::BorderTopLeftRadius => parse_value!(
-                Length | Percentage | Inherit | Initial | Unset;
+                BorderRadius | Inherit | Initial | Unset;
                 tokens
             ),
             Property::BorderTopRightRadius => parse_value!(
-                Length | Percentage | Inherit | Initial | Unset;
+                BorderRadius | Inherit | Initial | Unset;
                 tokens
             ),
             Property::BorderBottomLeftRadius => parse_value!(
-                Length | Percentage | Inherit | Initial | Unset;
+                BorderRadius | Inherit | Initial | Unset;
                 tokens
             ),
             Property::BorderBottomRightRadius => parse_value!(
-                Length | Percentage | Inherit | Initial | Unset;
+                BorderRadius | Inherit | Initial | Unset;
                 tokens
             ),
         }
@@ -413,10 +414,10 @@ impl Value {
             Property::Bottom => Value::Auto,
             Property::Top => Value::Auto,
             Property::Direction => Value::Direction(Direction::Ltr),
-            Property::BorderTopLeftRadius => Value::Length(Length::zero()),
-            Property::BorderTopRightRadius => Value::Length(Length::zero()),
-            Property::BorderBottomLeftRadius => Value::Length(Length::zero()),
-            Property::BorderBottomRightRadius => Value::Length(Length::zero()),
+            Property::BorderTopLeftRadius => Value::BorderRadius(BorderRadius::zero()),
+            Property::BorderTopRightRadius => Value::BorderRadius(BorderRadius::zero()),
+            Property::BorderBottomLeftRadius => Value::BorderRadius(BorderRadius::zero()),
+            Property::BorderBottomRightRadius => Value::BorderRadius(BorderRadius::zero()),
         }
     }
 }

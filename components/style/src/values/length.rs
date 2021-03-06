@@ -39,27 +39,6 @@ impl LengthUnit {
 }
 
 impl Length {
-    pub fn parse(values: &[ComponentValue]) -> Option<Self> {
-        match values.first() {
-            Some(ComponentValue::PerservedToken(Token::Dimension { value, unit, .. })) => {
-                if let Some(unit) = LengthUnit::from_str(&unit) {
-                    return Some(Length {
-                        value: (*value).into(),
-                        unit,
-                    });
-                }
-                None
-            }
-            Some(ComponentValue::PerservedToken(Token::Number { value, .. })) => {
-                if *value == 0.0 {
-                    return Some(Length::zero());
-                }
-                None
-            }
-            _ => None,
-        }
-    }
-
     pub fn new(value: f32, unit: LengthUnit) -> Self {
         Self {
             value: value.into(),
@@ -82,6 +61,29 @@ impl Length {
         match self.unit {
             LengthUnit::Px => *self.value,
             _ => 0.0,
+        }
+    }
+}
+
+impl Length {
+    pub fn parse(values: &[ComponentValue]) -> Option<Self> {
+        match values.first() {
+            Some(ComponentValue::PerservedToken(Token::Dimension { value, unit, .. })) => {
+                if let Some(unit) = LengthUnit::from_str(&unit) {
+                    return Some(Length {
+                        value: (*value).into(),
+                        unit,
+                    });
+                }
+                None
+            }
+            Some(ComponentValue::PerservedToken(Token::Number { value, .. })) => {
+                if *value == 0.0 {
+                    return Some(Length::zero());
+                }
+                None
+            }
+            _ => None,
         }
     }
 }
