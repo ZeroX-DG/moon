@@ -19,19 +19,19 @@ impl BorderRadius {
 
         if values_count == 1 {
             if let Some(p) = LengthPercentage::parse(values) {
-                return Some(Self(p.clone(), p.clone()))
+                return Some(Self(p.clone(), p.clone()));
             }
         }
 
         if values_count == 2 {
             let horizontal_r = match LengthPercentage::parse(&[data[0].clone()]) {
                 Some(p) => p,
-                _ => return None
+                _ => return None,
             };
 
             let vertical_r = match LengthPercentage::parse(&[data[1].clone()]) {
                 Some(p) => p,
-                _ => return None
+                _ => return None,
             };
 
             return Some(Self(horizontal_r, vertical_r));

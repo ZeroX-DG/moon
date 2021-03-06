@@ -6,7 +6,7 @@ pub struct RRect {
     pub y: f32,
     pub width: f32,
     pub height: f32,
-    pub corners: Corners
+    pub corners: Corners,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -14,7 +14,7 @@ pub struct Corners {
     pub top_left: Radii,
     pub top_right: Radii,
     pub bottom_left: Radii,
-    pub bottom_right: Radii
+    pub bottom_right: Radii,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -27,7 +27,7 @@ impl RRect {
             y,
             width: w,
             height: h,
-            corners
+            corners,
         }
     }
 }
@@ -38,7 +38,7 @@ impl Corners {
             top_left: tl,
             top_right: tr,
             bottom_left: bl,
-            bottom_right: br
+            bottom_right: br,
         }
     }
 }

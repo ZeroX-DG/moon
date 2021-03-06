@@ -26,9 +26,7 @@ impl Painter {
 
     pub async fn paint(&mut self) -> Option<OutputBitmap> {
         let device = self.backend.device();
-        let data = [
-            self.rect_painter.get_paint_data(device),
-        ];
+        let data = [self.rect_painter.get_paint_data(device)];
 
         self.backend.paint(&data).await;
         self.backend.output().await

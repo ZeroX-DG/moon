@@ -1,5 +1,5 @@
 use super::color::Color;
-use super::primitive::{Rect, RRect};
+use super::primitive::{RRect, Rect};
 
 pub trait Painter {
     fn fill_rect(&mut self, rect: &Rect, color: &Color);
