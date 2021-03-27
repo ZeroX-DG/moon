@@ -8,7 +8,7 @@ use super::elements::HTMLScriptElement;
 use super::tokenizer::state::State;
 use super::tokenizer::token::Attribute;
 use super::tokenizer::token::Token;
-use super::tokenizer::Tokenizer;
+use crate::tokenizer::Tokenizing;
 use dom::comment::Comment;
 use dom::document::{Document, DocumentType, QuirksMode};
 use dom::dom_ref::NodeRef;
@@ -70,9 +70,9 @@ macro_rules! get_element {
 }
 
 /// The DOM tree builder
-pub struct TreeBuilder {
+pub struct TreeBuilder<T: Tokenizing> {
     /// The tokenizer controlled by TreeBuilder
-    tokenizer: Tokenizer,
+    tokenizer: T,
 
     /// Stack of open elements as mentioned in specs
     open_elements: StackOfOpenElements,
@@ -252,8 +252,8 @@ fn adjust_foreign_attributes(token: &mut Token) {
     }
 }
 
-impl TreeBuilder {
-    pub fn new(tokenizer: Tokenizer) -> Self {
+impl<T: Tokenizing> TreeBuilder<T> {
+    pub fn new(tokenizer: T) -> Self {
         Self {
             tokenizer,
             open_elements: StackOfOpenElements::new(),
@@ -938,7 +938,7 @@ impl TreeBuilder {
     }
 }
 
-impl TreeBuilder {
+impl<T: Tokenizing> TreeBuilder<T> {
     fn handle_initial(&mut self, token: Token) {
         if let Token::Character(c) = token {
             if is_whitespace(c) {
@@ -997,7 +997,7 @@ impl TreeBuilder {
     }
 
     fn handle_before_html(&mut self, token: Token) {
-        fn anything_else(this: &mut TreeBuilder, token: Token) {
+        fn anything_else<T: Tokenizing>(this: &mut TreeBuilder<T>, token: Token) {
             let element = this.create_element_from_tag_name("html");
             Node::append_child(this.document.clone(), element.clone());
             this.open_elements.push(element.clone());
@@ -1041,7 +1041,7 @@ impl TreeBuilder {
     }
 
     fn handle_before_head(&mut self, token: Token) {
-        fn anything_else(this: &mut TreeBuilder, token: Token) {
+        fn anything_else<T: Tokenizing>(this: &mut TreeBuilder<T>, token: Token) {
             let head_element = this.insert_html_element(Token::Tag {
                 tag_name: "head".to_owned(),
                 attributes: Vec::new(),
@@ -1238,7 +1238,7 @@ impl TreeBuilder {
     }
 
     fn handle_in_head_no_script(&mut self, token: Token) {
-        fn anything_else(this: &mut TreeBuilder, token: Token) {
+        fn anything_else<T: Tokenizing>(this: &mut TreeBuilder<T>, token: Token) {
             this.unexpected(&token);
             this.open_elements.pop();
             this.switch_to(InsertMode::InHead);
@@ -1302,7 +1302,7 @@ impl TreeBuilder {
     }
 
     fn handle_after_head(&mut self, token: Token) {
-        fn anything_else(this: &mut TreeBuilder, token: Token) {
+        fn anything_else<T: Tokenizing>(this: &mut TreeBuilder<T>, token: Token) {
             this.insert_html_element(Token::Tag {
                 is_end_tag: false,
                 tag_name: "body".to_owned(),
@@ -1394,7 +1394,7 @@ impl TreeBuilder {
     }
 
     fn handle_in_body(&mut self, mut token: Token) {
-        fn any_other_end_tags(this: &mut TreeBuilder, token: Token) {
+        fn any_other_end_tags<T: Tokenizing>(this: &mut TreeBuilder<T>, token: Token) {
             let mut index: Option<usize> = None;
             for (idx, node) in this.open_elements.0.iter().enumerate().rev() {
                 let current_tag_name = get_element!(node).tag_name();
@@ -3261,8 +3261,8 @@ mod test {
 
     #[test]
     fn handle_initial_correctly() {
-        let html = "<!-- this is a test -->".to_owned();
-        let tokenizer = Tokenizer::new(html);
+        let html = "<!-- this is a test -->";
+        let tokenizer = Tokenizer::new(html.chars());
         let tree_builder = TreeBuilder::new(tokenizer);
 
         assert_eq!(
@@ -3283,8 +3283,8 @@ mod test {
 
     #[test]
     fn handle_parsing_children_correctly() {
-        let html = "<div><div></div><div></div><div></div></div>".to_owned();
-        let tokenizer = Tokenizer::new(html);
+        let html = "<div><div></div><div></div><div></div></div>";
+        let tokenizer = Tokenizer::new(html.chars());
         let tree_builder = TreeBuilder::new(tokenizer);
         let document = tree_builder.run();
 
@@ -3297,8 +3297,8 @@ mod test {
 
     #[test]
     fn handle_parsing_a_tag() {
-        let html = "<div><a href=\"http://google.com\">This is a link</a></div>".to_owned();
-        let tokenizer = Tokenizer::new(html);
+        let html = "<div><a href=\"http://google.com\">This is a link</a></div>";
+        let tokenizer = Tokenizer::new(html.chars());
         let tree_builder = TreeBuilder::new(tokenizer);
         let document = tree_builder.run();
 

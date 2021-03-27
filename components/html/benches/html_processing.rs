@@ -6,7 +6,7 @@ fn html_parsing_benchmark(c: &mut Criterion) {
     let html = include_str!("./purecss_gaze.html");
     c.bench_function("parse_purecss_gaze", |b| {
         b.iter(|| {
-            let tokenizer = Tokenizer::new(black_box(html.to_string()));
+            let tokenizer = Tokenizer::new(black_box(html.chars()));
             let tree_builder = TreeBuilder::new(tokenizer);
             tree_builder.run();
         })

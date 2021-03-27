@@ -2,7 +2,7 @@ pub mod state;
 pub mod token;
 
 use super::entities::ENTITIES;
-use io::input_stream::InputStream;
+use io::input_stream::CharInputStream;
 use state::State;
 use std::collections::{HashSet, VecDeque};
 use std::env;
@@ -121,9 +121,12 @@ pub enum Char {
     whitespace,
 }
 
-pub struct Tokenizer {
+pub struct Tokenizer<T>
+where
+    T: Iterator<Item = char>
+{
     // chars input stream for tokenizer
-    input: InputStream,
+    input: CharInputStream<T>,
 
     // A list of tokenized tokens
     output: VecDeque<Token>,
@@ -153,23 +156,16 @@ pub struct Tokenizer {
     character_reference_code: u32,
 }
 
-impl Tokenizer {
-    pub fn new(input: String) -> Self {
-        Self {
-            input: InputStream::new(input),
-            output: VecDeque::new(),
-            current_character: '\0',
-            state: State::Data,
-            return_state: None,
-            current_token: None,
-            reconsume_char: false,
-            temp_buffer: String::new(),
-            last_emitted_start_tag: None,
-            character_reference_code: 0,
-        }
-    }
+pub trait Tokenizing {
+    fn next_token(&mut self) -> Token;
+    fn switch_to(&mut self, state: State);
+}
 
-    pub fn next_token(&mut self) -> Token {
+impl<T> Tokenizing for Tokenizer<T>
+where
+    T: Iterator<Item = char>
+{
+    fn next_token(&mut self) -> Token {
         if !self.output.is_empty() {
             return self.output.pop_front().unwrap();
         }
@@ -2147,7 +2143,7 @@ impl Tokenizer {
                     }
                 }
                 State::NamedCharacterReference => {
-                    let current_str = format!("{}{}", self.current_character, self.input.as_str());
+                    let current_str = format!("{}{}", self.current_character, self.input.peek_max().iter().collect::<String>());
                     let mut match_result: Option<(&str, u32, u32)> = None;
                     let mut max_len: usize = 0;
 
@@ -2340,6 +2336,35 @@ impl Tokenizer {
         }
     }
 
+    fn switch_to(&mut self, state: State) {
+        if is_trace() {
+            println!("Switch to: {:#?}", state);
+        }
+        self.state = state;
+    }
+
+}
+
+impl<T> Tokenizer<T>
+where
+    T: Iterator<Item = char>
+{
+    pub fn new(input: T) -> Self {
+        Self {
+            input: CharInputStream::new(input),
+            output: VecDeque::new(),
+            current_character: '\0',
+            state: State::Data,
+            return_state: None,
+            current_token: None,
+            reconsume_char: false,
+            temp_buffer: String::new(),
+            last_emitted_start_tag: None,
+            character_reference_code: 0,
+        }
+    }
+
+    
     fn reconsume_in_return_state(&mut self) {
         self.reconsume_in(self.return_state.clone().unwrap());
     }
@@ -2540,15 +2565,8 @@ impl Tokenizer {
         self.switch_to(state);
     }
 
-    pub fn switch_to(&mut self, state: State) {
-        if is_trace() {
-            println!("Switch to: {:#?}", state);
-        }
-        self.state = state;
-    }
-
     fn consume_if_match(&mut self, pattern: &str, case_insensitive: bool) -> bool {
-        let mut current_str = self.input.as_str().to_owned();
+        let mut current_str = self.input.peek_max().iter().collect::<String>();
         let mut pattern = pattern.to_owned();
         if case_insensitive {
             current_str = current_str.to_ascii_lowercase();
@@ -2564,7 +2582,7 @@ impl Tokenizer {
     }
 
     fn consume_from_current_if_match(&mut self, pattern: &str, case_insensitive: bool) -> bool {
-        let mut current_str = format!("{}{}", self.current_character, self.input.as_str());
+        let mut current_str = format!("{}{}", self.current_character, self.input.peek_max().iter().collect::<String>());
         let mut pattern = pattern.to_owned();
         if case_insensitive {
             current_str = current_str.to_ascii_lowercase();
@@ -2609,8 +2627,8 @@ mod tests {
 
     #[test]
     fn parse_comment() {
-        let html = "<!--xin chao-->".to_owned();
-        let mut tokenizer = Tokenizer::new(html);
+        let html = "<!--xin chao-->";
+        let mut tokenizer = Tokenizer::new(html.chars());
         assert_eq!(
             Token::Comment("xin chao".to_owned()),
             tokenizer.next_token()
@@ -2619,8 +2637,8 @@ mod tests {
 
     #[test]
     fn parse_tag() {
-        let html = "<html>".to_owned();
-        let mut tokenizer = Tokenizer::new(html);
+        let html = "<html>";
+        let mut tokenizer = Tokenizer::new(html.chars());
         assert_eq!(
             Token::Tag {
                 tag_name: "html".to_owned(),
@@ -2635,8 +2653,8 @@ mod tests {
 
     #[test]
     fn parse_tag_self_closing() {
-        let html = "<div />".to_owned();
-        let mut tokenizer = Tokenizer::new(html);
+        let html = "<div />";
+        let mut tokenizer = Tokenizer::new(html.chars());
         assert_eq!(
             Token::Tag {
                 tag_name: "div".to_owned(),
@@ -2651,8 +2669,8 @@ mod tests {
 
     #[test]
     fn parse_tag_attribute_double_quote() {
-        let html = "<div name=\"hello\" />".to_owned();
-        let mut tokenizer = Tokenizer::new(html);
+        let html = "<div name=\"hello\" />";
+        let mut tokenizer = Tokenizer::new(html.chars());
         assert_eq!(
             Token::Tag {
                 tag_name: "div".to_owned(),
@@ -2672,8 +2690,8 @@ mod tests {
 
     #[test]
     fn parse_tag_attribute_single_quote() {
-        let html = "<div name='hello' />".to_owned();
-        let mut tokenizer = Tokenizer::new(html);
+        let html = "<div name='hello' />";
+        let mut tokenizer = Tokenizer::new(html.chars());
         assert_eq!(
             Token::Tag {
                 tag_name: "div".to_owned(),
@@ -2693,8 +2711,8 @@ mod tests {
 
     #[test]
     fn parse_tag_attribute_unquote() {
-        let html = "<div name=hello world />".to_owned();
-        let mut tokenizer = Tokenizer::new(html);
+        let html = "<div name=hello world />";
+        let mut tokenizer = Tokenizer::new(html.chars());
         assert_eq!(
             Token::Tag {
                 tag_name: "div".to_owned(),
@@ -2722,8 +2740,8 @@ mod tests {
 
     #[test]
     fn parse_doctype() {
-        let html = "<!DOCTYPE html>".to_owned();
-        let mut tokenizer = Tokenizer::new(html);
+        let html = "<!DOCTYPE html>";
+        let mut tokenizer = Tokenizer::new(html.chars());
         assert_eq!(
             Token::DOCTYPE {
                 name: Some("html".to_owned()),
@@ -2737,8 +2755,8 @@ mod tests {
 
     #[test]
     fn parse_doctype_with_identifiers() {
-        let html = r#"<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">"#.to_owned();
-        let mut tokenizer = Tokenizer::new(html);
+        let html = r#"<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">"#;
+        let mut tokenizer = Tokenizer::new(html.chars());
         assert_eq!(
             Token::DOCTYPE {
                 name: Some("html".to_owned()),
@@ -2752,36 +2770,36 @@ mod tests {
 
     #[test]
     fn parse_decimal_character_reference() {
-        let html = "&#94;".to_owned();
-        let mut tokenizer = Tokenizer::new(html);
+        let html = "&#94;";
+        let mut tokenizer = Tokenizer::new(html.chars());
         assert_eq!(Token::Character('^'), tokenizer.next_token());
     }
 
     #[test]
     fn parse_hex_character_reference() {
-        let html = "&#x00040;".to_owned();
-        let mut tokenizer = Tokenizer::new(html);
+        let html = "&#x00040;";
+        let mut tokenizer = Tokenizer::new(html.chars());
         assert_eq!(Token::Character('@'), tokenizer.next_token());
     }
 
     #[test]
     fn parse_named_character_reference() {
-        let html = "&AElig;".to_owned();
-        let mut tokenizer = Tokenizer::new(html);
+        let html = "&AElig;";
+        let mut tokenizer = Tokenizer::new(html.chars());
         assert_eq!(Token::Character('Æ'), tokenizer.next_token());
     }
 
     #[test]
     fn parse_invalid_named_character_reference() {
-        let html = "&g;".to_owned();
-        let mut tokenizer = Tokenizer::new(html);
+        let html = "&g;";
+        let mut tokenizer = Tokenizer::new(html.chars());
         assert_eq!(Token::Character('&'), tokenizer.next_token());
     }
 
     #[test]
     fn parse_named_character_reference_in_string() {
-        let html = "I'm &notit;".to_owned();
-        let mut tokenizer = Tokenizer::new(html);
+        let html = "I'm &notit;";
+        let mut tokenizer = Tokenizer::new(html.chars());
         assert_eq!(Token::Character('I'), tokenizer.next_token());
         assert_eq!(Token::Character('\''), tokenizer.next_token());
         assert_eq!(Token::Character('m'), tokenizer.next_token());
@@ -2794,8 +2812,8 @@ mod tests {
 
     #[test]
     fn parse_named_character_reference_in_attribute_name() {
-        let html = "<br &block;=\"name\" />".to_owned();
-        let mut tokenizer = Tokenizer::new(html);
+        let html = "<br &block;=\"name\" />";
+        let mut tokenizer = Tokenizer::new(html.chars());
         assert_eq!(
             Token::Tag {
                 tag_name: "br".to_owned(),
@@ -2815,8 +2833,8 @@ mod tests {
 
     #[test]
     fn parse_named_character_reference_in_attribute_value() {
-        let html = "<br name=\"&block;\" />".to_owned();
-        let mut tokenizer = Tokenizer::new(html);
+        let html = "<br name=\"&block;\" />";
+        let mut tokenizer = Tokenizer::new(html.chars());
         assert_eq!(
             Token::Tag {
                 tag_name: "br".to_owned(),
@@ -2836,8 +2854,8 @@ mod tests {
 
     #[test]
     fn parse_duplicate_attribute() {
-        let html = "<div attr attr />".to_owned();
-        let mut tokenizer = Tokenizer::new(html);
+        let html = "<div attr attr />";
+        let mut tokenizer = Tokenizer::new(html.chars());
         assert_eq!(
             Token::Tag {
                 tag_name: "div".to_owned(),
@@ -2857,8 +2875,8 @@ mod tests {
 
     #[test]
     fn tokenize_mutliple() {
-        let html = "<div><div></div><div></div></div>".to_owned();
-        let mut tokenizer = Tokenizer::new(html);
+        let html = "<div><div></div><div></div></div>";
+        let mut tokenizer = Tokenizer::new(html.chars());
         assert_eq!(
             Token::Tag {
                 tag_name: "div".to_owned(),
