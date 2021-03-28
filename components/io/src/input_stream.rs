@@ -29,7 +29,6 @@ where
 
     fn consume_source_to_buffer(&mut self) {
         let consumed = self.source.next();
-        self.last_consumed = consumed.clone();
 
         if let Some(item) = consumed {
             self.buffer.push_back(item);
@@ -46,7 +45,9 @@ where
 
         self.consume_source_to_buffer();
 
-        self.buffer.pop_front()
+        let consumed = self.buffer.pop_front();
+        self.last_consumed = consumed.clone();
+        consumed
     }
 
     pub fn peek(&mut self) -> Option<I> {
@@ -66,14 +67,18 @@ where
             return None;
         }
 
+        let n = if self.is_reconsume { n - 1 } else { n };
+
         let mut result = self.buffer
             .iter()
             .take(n)
             .map(|i| i.clone())
             .collect::<VecDeque<I>>();
 
-        if let Some(current) = &self.last_consumed {
-            result.push_front(current.clone());
+        if self.is_reconsume {
+            if let Some(current) = &self.last_consumed {
+                result.push_front(current.clone());
+            }
         }
 
         Some(result.iter().map(|i| i.clone()).collect())
@@ -86,14 +91,18 @@ where
             return None;
         }
 
+        let n = if self.is_reconsume { n - 1 } else { n };
+
         let mut result = self.buffer
             .iter()
             .take(n)
             .map(|i| i.clone())
             .collect::<VecDeque<I>>();
 
-        if let Some(current) = &self.last_consumed {
-            result.push_front(current.clone());
+        if self.is_reconsume {
+            if let Some(current) = &self.last_consumed {
+                result.push_front(current.clone());
+            }
         }
 
         Some(result.iter().map(|i| i.clone()).collect())
@@ -103,10 +112,17 @@ where
         while let Some(item) = self.source.next() {
             self.buffer.push_back(item);
         }
-        self.buffer
+        let mut result = self.buffer
             .iter()
             .map(|i| i.clone())
-            .collect()
+            .collect::<VecDeque<I>>();
+
+        if self.is_reconsume {
+            if let Some(current) = &self.last_consumed {
+                result.push_front(current.clone());
+            }
+        }
+        result.iter().map(|i| i.clone()).collect()
     }
 
     pub fn reconsume(&mut self) {

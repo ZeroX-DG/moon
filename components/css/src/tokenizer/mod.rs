@@ -1,7 +1,6 @@
 pub mod token;
 
 use io::{data_stream::DataStream, input_stream::CharInputStream};
-use io::input_stream::InputStream;
 use regex::Regex;
 use std::env;
 use std::str::FromStr;
@@ -301,8 +300,8 @@ where
             Char::ch(':') => Token::Colon,
             Char::ch(';') => Token::Semicolon,
             Char::ch('<') => {
-                if let Some(maybeComment) = self.input.peek_next_as::<String>(3) {
-                    if maybeComment == "!--" {
+                if let Some(maybe_comment) = self.input.peek_next_as::<String>(3) {
+                    if maybe_comment == "!--" {
                         self.consume_next();
                         self.consume_next();
                         self.consume_next();
