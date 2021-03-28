@@ -1,7 +1,6 @@
 pub mod token;
 
-use io::data_stream::DataStream;
-use io::input_stream::InputStream;
+use io::{data_stream::DataStream, input_stream::CharInputStream};
 use regex::Regex;
 use std::env;
 use std::str::FromStr;
@@ -152,9 +151,12 @@ fn is_start_number(value: &str) -> bool {
 }
 
 /// Tokenizer for the CSS stylesheet
-pub struct Tokenizer {
+pub struct Tokenizer<T>
+where
+    T: Iterator<Item = char>,
+{
     /// chars input stream for tokenizer
-    input: InputStream,
+    input: CharInputStream<T>,
 
     /// current processing character
     current_character: char,
@@ -163,10 +165,13 @@ pub struct Tokenizer {
     output: Vec<Token>,
 }
 
-impl Tokenizer {
-    pub fn new(input: String) -> Self {
+impl<T> Tokenizer<T>
+where
+    T: Iterator<Item = char>,
+{
+    pub fn new(input: T) -> Self {
         Self {
-            input: InputStream::new(input),
+            input: CharInputStream::new(input),
             current_character: '\0',
             output: Vec::new(),
         }
@@ -198,7 +203,7 @@ impl Tokenizer {
     }
 
     fn consume_while<F: Fn(char) -> bool>(&mut self, test: F) {
-        while let Some(ch) = self.input.peek_next_char() {
+        while let Some(ch) = self.input.peek() {
             if !test(ch) {
                 return;
             }
@@ -211,7 +216,10 @@ impl Tokenizer {
     }
 }
 
-impl Tokenizer {
+impl<T> Tokenizer<T>
+where
+    T: Iterator<Item = char>,
+{
     /// Consume and return the next token
     /// Should only be use for testing, use `run()` when you want to run tokenizer
     pub fn consume_token(&mut self) -> Token {
@@ -224,23 +232,23 @@ impl Tokenizer {
             }
             Char::ch('"') => self.consume_string(None),
             Char::ch('#') => {
-                let is_hash = if let Some(ch) = self.input.peek_next_char() {
+                let is_hash = if let Some(ch) = self.input.peek() {
                     if is_named(ch) {
                         true
                     } else {
                         false
                     }
                 } else {
-                    if let Some(next_2_chars) = self.input.peek_next(2) {
-                        is_valid_escape(next_2_chars)
+                    if let Some(next_2_chars) = self.input.peek_next_as::<String>(2) {
+                        is_valid_escape(&next_2_chars)
                     } else {
                         false
                     }
                 };
                 if is_hash {
                     let mut token = Token::new_hash();
-                    if let Some(next_3_chars) = self.input.peek_next(3) {
-                        if is_start_identifier(next_3_chars) {
+                    if let Some(next_3_chars) = self.input.peek_next_as::<String>(3) {
+                        if is_start_identifier(&next_3_chars) {
                             token.set_hash_type(HashType::Id);
                         }
                     }
@@ -253,7 +261,7 @@ impl Tokenizer {
             Char::ch('(') => Token::ParentheseOpen,
             Char::ch(')') => Token::ParentheseClose,
             Char::ch('+') => {
-                if let Some(next_2_chars) = self.input.peek_next(2) {
+                if let Some(next_2_chars) = self.input.peek_next_as::<String>(2) {
                     if is_start_number(&format!("+{}", next_2_chars)) {
                         self.reconsume();
                         return self.consume_numeric();
@@ -263,7 +271,7 @@ impl Tokenizer {
             }
             Char::ch(',') => Token::Comma,
             Char::ch('-') => {
-                if let Some(next_2_chars) = self.input.peek_next(2) {
+                if let Some(next_2_chars) = self.input.peek_next_as::<String>(2) {
                     if is_start_number(&format!("-{}", next_2_chars)) {
                         self.reconsume();
                         return self.consume_numeric();
@@ -281,7 +289,7 @@ impl Tokenizer {
                 return Token::Delim(self.current_character);
             }
             Char::ch('.') => {
-                if let Some(next_2_chars) = self.input.peek_next(2) {
+                if let Some(next_2_chars) = self.input.peek_next_as::<String>(2) {
                     if is_start_number(&format!(".{}", next_2_chars)) {
                         self.reconsume();
                         return self.consume_numeric();
@@ -292,17 +300,19 @@ impl Tokenizer {
             Char::ch(':') => Token::Colon,
             Char::ch(';') => Token::Semicolon,
             Char::ch('<') => {
-                if let Some("!--") = self.input.peek_next(3) {
-                    self.consume_next();
-                    self.consume_next();
-                    self.consume_next();
-                    return Token::CDO;
+                if let Some(maybe_comment) = self.input.peek_next_as::<String>(3) {
+                    if maybe_comment == "!--" {
+                        self.consume_next();
+                        self.consume_next();
+                        self.consume_next();
+                        return Token::CDO;
+                    }
                 }
                 return Token::Delim(self.current_character);
             }
             Char::ch('@') => {
-                if let Some(next_3_chars) = self.input.peek_next(3) {
-                    if is_start_identifier(next_3_chars) {
+                if let Some(next_3_chars) = self.input.peek_next_as::<String>(3) {
+                    if is_start_identifier(&next_3_chars) {
                         return Token::AtKeyword(self.consume_name());
                     }
                 }
@@ -310,7 +320,7 @@ impl Tokenizer {
             }
             Char::ch('[') => Token::BracketOpen,
             Char::ch('\\') => {
-                if let Some(ch) = self.input.peek_next_char() {
+                if let Some(ch) = self.input.peek() {
                     if is_valid_escape(&format!("\\{}", ch)) {
                         self.reconsume();
                         return self.consume_ident_like();
@@ -337,14 +347,14 @@ impl Tokenizer {
 
     fn consume_comments(&mut self) {
         'outer: loop {
-            if let Some(next_2_chars) = self.input.peek_next(2) {
+            if let Some(next_2_chars) = self.input.peek_next_as::<String>(2) {
                 if next_2_chars != "/*" {
                     break;
                 }
                 self.consume_next(); // /
                 self.consume_next(); // *
                 loop {
-                    if let Some(end_comment) = self.input.peek_next(2) {
+                    if let Some(end_comment) = self.input.peek_next_as::<String>(2) {
                         if end_comment == "*/" {
                             self.consume_next();
                             self.consume_next();
@@ -371,7 +381,7 @@ impl Tokenizer {
                     result.push(c);
                     continue;
                 }
-                let next_ch = self.input.peek_next_char();
+                let next_ch = self.input.peek();
                 if let Some(next_c) = next_ch {
                     if is_valid_escape(&format!("{}{}", c, next_c)) {
                         result.push(self.consume_escaped());
@@ -389,8 +399,8 @@ impl Tokenizer {
 
     fn consume_numeric(&mut self) -> Token {
         let (number, type_) = self.consume_number();
-        if let Some(next_3_chars) = self.input.peek_next(3) {
-            if is_start_identifier(next_3_chars) {
+        if let Some(next_3_chars) = self.input.peek_next_as::<String>(3) {
+            if is_start_identifier(&next_3_chars) {
                 return Token::Dimension {
                     value: number,
                     type_,
@@ -398,7 +408,7 @@ impl Tokenizer {
                 };
             }
         }
-        if let Some('%') = self.input.peek_next_char() {
+        if let Some('%') = self.input.peek() {
             self.consume_next();
             return Token::Percentage(number);
         }
@@ -409,9 +419,12 @@ impl Tokenizer {
     }
 
     fn consume_number(&mut self) -> (f32, NumberType) {
-        fn consume_while_number_and_append_to_repr(this: &mut Tokenizer, repr: &mut String) {
+        fn consume_while_number_and_append_to_repr<T: Iterator<Item = char>>(
+            this: &mut Tokenizer<T>,
+            repr: &mut String,
+        ) {
             loop {
-                if let Some(c) = this.input.peek_next_char() {
+                if let Some(c) = this.input.peek() {
                     if c.is_ascii_digit() {
                         this.consume_next();
                         repr.push(c);
@@ -423,14 +436,14 @@ impl Tokenizer {
         }
         let mut type_ = NumberType::Integer;
         let mut repr = String::new();
-        if let Some(c) = self.input.peek_next_char() {
+        if let Some(c) = self.input.peek() {
             if c == '+' || c == '-' {
                 self.consume_next();
                 repr.push(c);
             }
         }
         consume_while_number_and_append_to_repr(self, &mut repr);
-        if let Some(next_2_chars) = self.input.peek_next(2) {
+        if let Some(next_2_chars) = self.input.peek_next_as::<String>(2) {
             let mut chars = next_2_chars.chars();
             let first = chars.next().unwrap();
             let last = chars.next().unwrap();
@@ -444,9 +457,9 @@ impl Tokenizer {
                 consume_while_number_and_append_to_repr(self, &mut repr);
             }
         }
-        if let Some(next_3_chars) = self.input.peek_next(3) {
+        if let Some(next_3_chars) = self.input.peek_next_as::<String>(3) {
             let re = Regex::new(r"^(e|E)(\+|-)?\d$").unwrap();
-            if let Some(match_len) = re.shortest_match(next_3_chars) {
+            if let Some(match_len) = re.shortest_match(&next_3_chars) {
                 for _ in 0..match_len {
                     if let Char::ch(c) = self.consume_next() {
                         repr.push(c);
@@ -463,10 +476,10 @@ impl Tokenizer {
     fn consume_ident_like(&mut self) -> Token {
         let string = self.consume_name();
         if string.eq_ignore_ascii_case("url") {
-            if let Some('(') = self.input.peek_next_char() {
+            if let Some('(') = self.input.peek() {
                 self.consume_next();
                 loop {
-                    if let Some(next_2_chars) = self.input.peek_next(2) {
+                    if let Some(next_2_chars) = self.input.peek_next_as::<String>(2) {
                         let mut chars = next_2_chars.chars();
                         let first = chars.next().unwrap();
                         let second = chars.next().unwrap();
@@ -477,16 +490,16 @@ impl Tokenizer {
                         }
                     }
                 }
-                if let Some(next_2_chars) = self.input.peek_next(2) {
+                if let Some(next_2_chars) = self.input.peek_next_as::<String>(2) {
                     let re = Regex::new("^ ?('|\")$").unwrap();
-                    if re.is_match(next_2_chars) {
+                    if re.is_match(&next_2_chars) {
                         return Token::Function(string);
                     }
                     return self.consume_url();
                 }
             }
         }
-        if let Some('(') = self.input.peek_next_char() {
+        if let Some('(') = self.input.peek() {
             return Token::Function(string);
         }
         return Token::Ident(string);
@@ -515,7 +528,7 @@ impl Tokenizer {
                     return Token::BadStr;
                 }
                 Char::ch('\\') => {
-                    let next_char = self.input.peek_next_char();
+                    let next_char = self.input.peek();
                     if next_char.is_none() {
                         continue;
                     }
@@ -544,7 +557,7 @@ impl Tokenizer {
                 }
                 Char::ch(c) if is_whitespace(c) => {
                     self.consume_while(is_whitespace);
-                    if let Some(c) = self.input.peek_next_char() {
+                    if let Some(c) = self.input.peek() {
                         if c == ')' {
                             return token;
                         }
@@ -566,7 +579,7 @@ impl Tokenizer {
                     return Token::BadUrl;
                 }
                 Char::ch('\\') => {
-                    if let Some(c) = self.input.peek_next_char() {
+                    if let Some(c) = self.input.peek() {
                         if is_valid_escape(&format!("\\{}", c)) {
                             token.append_to_url_token(self.consume_escaped());
                         } else {
@@ -589,7 +602,7 @@ impl Tokenizer {
                 Char::ch(')') | Char::eof => return,
                 _ => {}
             }
-            if let Some(ch) = self.input.peek_next_char() {
+            if let Some(ch) = self.input.peek() {
                 if is_valid_escape(&format!("{}{}", self.current_character, ch)) {
                     self.consume_escaped();
                 }
@@ -623,7 +636,7 @@ impl Tokenizer {
                         }
                     }
                 }
-                if let Some(c) = self.input.peek_next_char() {
+                if let Some(c) = self.input.peek() {
                     if is_whitespace(c) {
                         self.consume_next();
                     }
@@ -654,7 +667,7 @@ mod tests {
             color: red;
             background: url(https://example.com/image.jpg);
         }"
-        .to_string();
+        .chars();
         let mut tokenizer = Tokenizer::new(css);
         assert_eq!(
             tokenizer.consume_token(),
@@ -704,7 +717,7 @@ mod tests {
         let css = r"#id_selector .class_selector {
             color: rgba(0, 0, 0, 0);
         }"
-        .to_string();
+        .chars();
         let mut tokenizer = Tokenizer::new(css);
         assert_eq!(
             tokenizer.consume_token(),

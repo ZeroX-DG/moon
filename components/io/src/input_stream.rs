@@ -1,78 +1,134 @@
-/// The char input stream
-#[derive(Debug)]
-pub struct InputStream {
-    input: String,
-    index: usize,
-    consumed_index: usize,
-    reconsume: bool,
-    consumed: Option<char>,
-    is_last_ch: bool,
+use std::{collections::VecDeque, iter::FromIterator};
+
+pub struct InputStream<T, I>
+where
+    T: Iterator<Item = I>,
+    I: Clone,
+{
+    source: T,
+    is_reconsume: bool,
+    last_consumed: Option<I>,
+    buffer: VecDeque<I>,
 }
 
-impl InputStream {
-    pub fn new(input: String) -> Self {
+pub type CharInputStream<T> = InputStream<T, char>;
+
+impl<T, I> InputStream<T, I>
+where
+    T: Iterator<Item = I>,
+    I: Clone,
+{
+    pub fn new(source: T) -> Self {
         Self {
-            input,
-            index: 0,
-            consumed_index: 0,
-            reconsume: false,
-            consumed: None,
-            is_last_ch: false,
+            source,
+            is_reconsume: false,
+            last_consumed: None,
+            buffer: VecDeque::new(),
         }
     }
 
-    /// Consume the current character and return it
-    pub fn next(&mut self) -> Option<char> {
-        if self.reconsume {
-            self.reconsume = false;
-            return self.consumed;
+    fn consume_source_to_buffer(&mut self) {
+        let consumed = self.source.next();
+
+        if let Some(item) = consumed {
+            self.buffer.push_back(item);
         }
-        if self.is_last_ch {
+    }
+
+    pub fn next(&mut self) -> Option<I> {
+        let is_reconsume = self.is_reconsume;
+        self.is_reconsume = false;
+
+        if is_reconsume {
+            return self.last_consumed.clone();
+        }
+
+        self.consume_source_to_buffer();
+
+        let consumed = self.buffer.pop_front();
+        self.last_consumed = consumed.clone();
+        consumed
+    }
+
+    pub fn peek(&mut self) -> Option<I> {
+        if self.is_reconsume {
+            return self.last_consumed.clone();
+        }
+
+        self.consume_source_to_buffer();
+
+        self.buffer.front().map(|i| i.clone())
+    }
+
+    pub fn peek_next(&mut self, n: usize) -> Option<Vec<I>> {
+        self.consume_source_to_buffer();
+
+        if self.buffer.len() < n {
             return None;
         }
-        let mut indexes = self.input[self.index..].char_indices();
-        if let Some((_, consumed_char)) = indexes.next() {
-            self.consumed = Some(consumed_char);
-            self.consumed_index = self.index;
-            if let Some((offset, _)) = indexes.next() {
-                self.index += offset;
-            } else {
-                self.is_last_ch = true;
+
+        let n = if self.is_reconsume { n - 1 } else { n };
+
+        let mut result = self
+            .buffer
+            .iter()
+            .take(n)
+            .map(|i| i.clone())
+            .collect::<VecDeque<I>>();
+
+        if self.is_reconsume {
+            if let Some(current) = &self.last_consumed {
+                result.push_front(current.clone());
             }
-            return self.consumed;
         }
-        return None;
+
+        Some(result.iter().map(|i| i.clone()).collect())
     }
 
-    /// Peek the next `n` characters as `&str` to avoid allocation
-    pub fn peek_next(&mut self, len: usize) -> Option<&str> {
-        let value = self.as_str();
-        if let Some((index, _)) = value.char_indices().skip(len).next() {
-            return Some(&value[..index]);
+    pub fn peek_next_as<S: FromIterator<I>>(&mut self, n: usize) -> Option<S> {
+        self.consume_source_to_buffer();
+
+        if self.buffer.len() < n {
+            return None;
         }
-        None
+
+        let n = if self.is_reconsume { n - 1 } else { n };
+
+        let mut result = self
+            .buffer
+            .iter()
+            .take(n)
+            .map(|i| i.clone())
+            .collect::<VecDeque<I>>();
+
+        if self.is_reconsume {
+            if let Some(current) = &self.last_consumed {
+                result.push_front(current.clone());
+            }
+        }
+
+        Some(result.iter().map(|i| i.clone()).collect())
+    }
+
+    pub fn peek_max(&mut self) -> Vec<I> {
+        while let Some(item) = self.source.next() {
+            self.buffer.push_back(item);
+        }
+        let mut result = self
+            .buffer
+            .iter()
+            .map(|i| i.clone())
+            .collect::<VecDeque<I>>();
+
+        if self.is_reconsume {
+            if let Some(current) = &self.last_consumed {
+                result.push_front(current.clone());
+            }
+        }
+        result.iter().map(|i| i.clone()).collect()
     }
 
     pub fn reconsume(&mut self) {
-        self.reconsume = true;
-    }
-
-    /// Peek the next character
-    pub fn peek_next_char(&mut self) -> Option<char> {
-        if self.is_last_ch {
-            return None;
-        }
-        self.as_str().chars().next()
-    }
-
-    /// Convert current input from the current index to `&str`
-    pub fn as_str(&self) -> &str {
-        if self.reconsume {
-            return &self.input[self.consumed_index..];
-        }
-        if self.is_last_ch {
-            return "";
-        }
-        &self.input[self.index..]
+        self.is_reconsume = true;
     }
 }

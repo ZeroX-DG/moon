@@ -688,7 +688,7 @@ mod tests {
     #[test]
     fn parse_a_stylesheet() {
         let css = "div { color: black; }";
-        let tokenizer = Tokenizer::new(css.to_string());
+        let tokenizer = Tokenizer::new(css.chars());
         let tokens = tokenizer.run();
         let mut parser = Parser::<Token>::new(tokens);
         let rules = parser.parse_a_stylesheet();
@@ -720,7 +720,7 @@ mod tests {
     #[test]
     fn parse_component_values() {
         let css = "p";
-        let tokenizer = Tokenizer::new(css.to_string());
+        let tokenizer = Tokenizer::new(css.chars());
         let tokens = tokenizer.run();
         let mut parser = Parser::<Token>::new(tokens);
         let component_values = parser.parse_a_list_of_component_values();
@@ -733,7 +733,7 @@ mod tests {
     #[test]
     fn parse_a_class() {
         let css = ".className { color: black; }";
-        let tokenizer = Tokenizer::new(css.to_string());
+        let tokenizer = Tokenizer::new(css.chars());
         let tokens = tokenizer.run();
         let mut parser = Parser::<Token>::new(tokens);
         let rules = parser.parse_a_stylesheet();
@@ -766,7 +766,7 @@ mod tests {
     #[test]
     fn parse_an_id() {
         let css = "#elementId { color: black; }";
-        let tokenizer = Tokenizer::new(css.to_string());
+        let tokenizer = Tokenizer::new(css.chars());
         let tokens = tokenizer.run();
         let mut parser = Parser::<Token>::new(tokens);
         let rules = parser.parse_a_stylesheet();
@@ -801,7 +801,7 @@ mod tests {
     #[test]
     fn parse_css_stylesheet() {
         let css = "#elementId { color: black !important; }";
-        let tokenizer = Tokenizer::new(css.to_string());
+        let tokenizer = Tokenizer::new(css.chars());
         let tokens = tokenizer.run();
         let mut parser = Parser::<Token>::new(tokens);
         let stylesheet = parser.parse_a_css_stylesheet();
@@ -829,7 +829,7 @@ mod tests {
     #[test]
     fn parse_function() {
         let css = "#elementId { color: rgba(0 0 0 0); }";
-        let tokenizer = Tokenizer::new(css.to_string());
+        let tokenizer = Tokenizer::new(css.chars());
         let tokens = tokenizer.run();
         let mut parser = Parser::<Token>::new(tokens);
         let stylesheet = parser.parse_a_css_stylesheet();

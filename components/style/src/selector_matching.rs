@@ -128,7 +128,7 @@ mod tests {
         let element = NodeRef::new(Element::new("h1".to_string()));
         let css = "h1 { color: red; }";
 
-        let tokenizer = Tokenizer::new(css.to_string());
+        let tokenizer = Tokenizer::new(css.chars());
         let tokens = tokenizer.run();
         let mut parser = Parser::<Token>::new(tokens);
         let stylesheet = parser.parse_a_css_stylesheet();
@@ -150,7 +150,7 @@ mod tests {
         let element = NodeRef::new(element);
         let css = "h1#button { color: red; }";
 
-        let tokenizer = Tokenizer::new(css.to_string());
+        let tokenizer = Tokenizer::new(css.chars());
         let tokens = tokenizer.run();
         let mut parser = Parser::<Token>::new(tokens);
         let stylesheet = parser.parse_a_css_stylesheet();
@@ -173,7 +173,7 @@ mod tests {
 
         let css = "h1 button { color: red; }";
 
-        let tokenizer = Tokenizer::new(css.to_string());
+        let tokenizer = Tokenizer::new(css.chars());
         let tokens = tokenizer.run();
         let mut parser = Parser::<Token>::new(tokens);
         let stylesheet = parser.parse_a_css_stylesheet();
@@ -196,7 +196,7 @@ mod tests {
 
         let css = "h1 > button { color: red; }";
 
-        let tokenizer = Tokenizer::new(css.to_string());
+        let tokenizer = Tokenizer::new(css.chars());
         let tokens = tokenizer.run();
         let mut parser = Parser::<Token>::new(tokens);
         let stylesheet = parser.parse_a_css_stylesheet();
@@ -219,7 +219,7 @@ mod tests {
 
         let css = "button > h1 { color: red; }";
 
-        let tokenizer = Tokenizer::new(css.to_string());
+        let tokenizer = Tokenizer::new(css.chars());
         let tokens = tokenizer.run();
         let mut parser = Parser::<Token>::new(tokens);
         let stylesheet = parser.parse_a_css_stylesheet();
@@ -242,7 +242,7 @@ mod tests {
 
         let css = "h1#name > button { color: red; }";
 
-        let tokenizer = Tokenizer::new(css.to_string());
+        let tokenizer = Tokenizer::new(css.chars());
         let tokens = tokenizer.run();
         let mut parser = Parser::<Token>::new(tokens);
         let stylesheet = parser.parse_a_css_stylesheet();
@@ -265,7 +265,7 @@ mod tests {
 
         let css = "h1, button { color: red; }";
 
-        let tokenizer = Tokenizer::new(css.to_string());
+        let tokenizer = Tokenizer::new(css.chars());
         let tokens = tokenizer.run();
         let mut parser = Parser::<Token>::new(tokens);
         let stylesheet = parser.parse_a_css_stylesheet();
