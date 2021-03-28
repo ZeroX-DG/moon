@@ -3,12 +3,12 @@ use std::{collections::VecDeque, iter::FromIterator};
 pub struct InputStream<T, I>
 where
     T: Iterator<Item = I>,
-    I: Clone
+    I: Clone,
 {
     source: T,
     is_reconsume: bool,
     last_consumed: Option<I>,
-    buffer: VecDeque<I>
+    buffer: VecDeque<I>,
 }
 
 pub type CharInputStream<T> = InputStream<T, char>;
@@ -16,14 +16,14 @@ pub type CharInputStream<T> = InputStream<T, char>;
 impl<T, I> InputStream<T, I>
 where
     T: Iterator<Item = I>,
-    I: Clone
+    I: Clone,
 {
     pub fn new(source: T) -> Self {
         Self {
             source,
             is_reconsume: false,
             last_consumed: None,
-            buffer: VecDeque::new()
+            buffer: VecDeque::new(),
         }
     }
 
@@ -52,7 +52,7 @@ where
 
     pub fn peek(&mut self) -> Option<I> {
         if self.is_reconsume {
-            return self.last_consumed.clone()
+            return self.last_consumed.clone();
         }
 
         self.consume_source_to_buffer();
@@ -69,7 +69,8 @@ where
 
         let n = if self.is_reconsume { n - 1 } else { n };
 
-        let mut result = self.buffer
+        let mut result = self
+            .buffer
             .iter()
             .take(n)
             .map(|i| i.clone())
@@ -93,7 +94,8 @@ where
 
         let n = if self.is_reconsume { n - 1 } else { n };
 
-        let mut result = self.buffer
+        let mut result = self
+            .buffer
             .iter()
             .take(n)
             .map(|i| i.clone())
@@ -112,7 +114,8 @@ where
         while let Some(item) = self.source.next() {
             self.buffer.push_back(item);
         }
-        let mut result = self.buffer
+        let mut result = self
+            .buffer
             .iter()
             .map(|i| i.clone())
             .collect::<VecDeque<I>>();

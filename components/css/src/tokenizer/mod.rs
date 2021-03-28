@@ -153,7 +153,7 @@ fn is_start_number(value: &str) -> bool {
 /// Tokenizer for the CSS stylesheet
 pub struct Tokenizer<T>
 where
-    T: Iterator<Item = char>
+    T: Iterator<Item = char>,
 {
     /// chars input stream for tokenizer
     input: CharInputStream<T>,
@@ -167,7 +167,7 @@ where
 
 impl<T> Tokenizer<T>
 where
-    T: Iterator<Item = char>
+    T: Iterator<Item = char>,
 {
     pub fn new(input: T) -> Self {
         Self {
@@ -218,7 +218,7 @@ where
 
 impl<T> Tokenizer<T>
 where
-    T: Iterator<Item = char>
+    T: Iterator<Item = char>,
 {
     /// Consume and return the next token
     /// Should only be use for testing, use `run()` when you want to run tokenizer
@@ -419,7 +419,10 @@ where
     }
 
     fn consume_number(&mut self) -> (f32, NumberType) {
-        fn consume_while_number_and_append_to_repr<T: Iterator<Item=char>>(this: &mut Tokenizer<T>, repr: &mut String) {
+        fn consume_while_number_and_append_to_repr<T: Iterator<Item = char>>(
+            this: &mut Tokenizer<T>,
+            repr: &mut String,
+        ) {
             loop {
                 if let Some(c) = this.input.peek() {
                     if c.is_ascii_digit() {

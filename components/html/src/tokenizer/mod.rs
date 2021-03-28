@@ -123,7 +123,7 @@ pub enum Char {
 
 pub struct Tokenizer<T>
 where
-    T: Iterator<Item = char>
+    T: Iterator<Item = char>,
 {
     // chars input stream for tokenizer
     input: CharInputStream<T>,
@@ -163,7 +163,7 @@ pub trait Tokenizing {
 
 impl<T> Tokenizing for Tokenizer<T>
 where
-    T: Iterator<Item = char>
+    T: Iterator<Item = char>,
 {
     fn next_token(&mut self) -> Token {
         if !self.output.is_empty() {
@@ -2143,7 +2143,11 @@ where
                     }
                 }
                 State::NamedCharacterReference => {
-                    let current_str = format!("{}{}", self.current_character, self.input.peek_max().iter().collect::<String>());
+                    let current_str = format!(
+                        "{}{}",
+                        self.current_character,
+                        self.input.peek_max().iter().collect::<String>()
+                    );
                     let mut match_result: Option<(&str, u32, u32)> = None;
                     let mut max_len: usize = 0;
 
@@ -2342,12 +2346,11 @@ where
         }
         self.state = state;
     }
-
 }
 
 impl<T> Tokenizer<T>
 where
-    T: Iterator<Item = char>
+    T: Iterator<Item = char>,
 {
     pub fn new(input: T) -> Self {
         Self {
@@ -2364,7 +2367,6 @@ where
         }
     }
 
-    
     fn reconsume_in_return_state(&mut self) {
         self.reconsume_in(self.return_state.clone().unwrap());
     }
@@ -2582,7 +2584,11 @@ where
     }
 
     fn consume_from_current_if_match(&mut self, pattern: &str, case_insensitive: bool) -> bool {
-        let mut current_str = format!("{}{}", self.current_character, self.input.peek_max().iter().collect::<String>());
+        let mut current_str = format!(
+            "{}{}",
+            self.current_character,
+            self.input.peek_max().iter().collect::<String>()
+        );
         let mut pattern = pattern.to_owned();
         if case_insensitive {
             current_str = current_str.to_ascii_lowercase();
