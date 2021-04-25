@@ -15,7 +15,10 @@ pub struct BaseFormattingContext {
 }
 
 pub trait FormattingContext {
-    fn layout(&mut self, boxes: Vec<&mut LayoutBox>, containing_block: &Rect) {
+    fn layout(&mut self, boxes: Vec<&mut LayoutBox>) {
+        let containing_block =
+            &self.get_containing_block().dimensions.content.clone();
+
         for layout_box in boxes {
             self.calculate_width(layout_box);
             calculate_position(self.base(), layout_box, containing_block);
@@ -24,6 +27,8 @@ pub trait FormattingContext {
             self.update_new_data(layout_box);
         }
     }
+
+    fn get_containing_block(&mut self) -> &mut LayoutBox;
 
     fn calculate_width(&mut self, layout_box: &mut LayoutBox);
 
@@ -34,42 +39,44 @@ pub trait FormattingContext {
 
 fn layout_children(layout_box: &mut LayoutBox) {
     let mut context = get_formatting_context(layout_box);
-    let containing_block = &layout_box.dimensions.content;
 
-    context.layout(layout_box.children.iter_mut().collect(), containing_block);
+    context.layout(layout_box.children.iter_mut().collect());
 
     if layout_box.is_height_auto() {
         layout_box.dimensions.set_height(context.base().height);
     }
 }
 
-fn get_formatting_context(layout_box: &LayoutBox) -> Box<dyn FormattingContext> {
-    if let Some(node) = &layout_box.render_node {
-        let node = node.borrow();
-        let display = node.get_style(&Property::Display);
-        let inner_display = match display.inner() {
-            Value::Display(Display::Full(_, inner)) => inner,
-            _ => unreachable!(),
-        };
-
-        match inner_display {
-            InnerDisplayType::Flow => {
-                if layout_box.children_are_inline() {
-                    Box::new(InlineFormattingContext::new(&layout_box.dimensions.content))
-                } else {
-                    Box::new(BlockFormattingContext::new(&layout_box.dimensions.content))
-                }
-            }
-            InnerDisplayType::FlowRoot => {
-                Box::new(BlockFormattingContext::new(&layout_box.dimensions.content))
-            }
-            _ => unimplemented!("Unsupported display type: {:#?}", display),
-        }
-    } else {
+fn get_formatting_context(layout_box: &mut LayoutBox) -> Box<dyn FormattingContext> {
+    if layout_box.render_node.is_none() {
         if layout_box.children_are_inline() {
-            return Box::new(InlineFormattingContext::new(&layout_box.dimensions.content));
+            return Box::new(InlineFormattingContext::new(layout_box));
         }
-        return Box::new(BlockFormattingContext::new(&layout_box.dimensions.content));
+        return Box::new(BlockFormattingContext::new(layout_box));
+    }
+
+    let node = layout_box.render_node.clone().unwrap();
+    let node = node.borrow();
+
+    let display = node.get_style(&Property::Display);
+    let inner_display = match display.inner() {
+        Value::Display(Display::Full(_, inner)) => inner,
+        _ => unreachable!(),
+    };
+
+
+    match inner_display {
+        InnerDisplayType::Flow => {
+            if layout_box.children_are_inline() {
+                Box::new(InlineFormattingContext::new(layout_box))
+            } else {
+                Box::new(BlockFormattingContext::new(layout_box))
+            }
+        }
+        InnerDisplayType::FlowRoot => {
+            Box::new(BlockFormattingContext::new(layout_box))
+        }
+        _ => unimplemented!("Unsupported display type: {:#?}", display),
     }
 }
 

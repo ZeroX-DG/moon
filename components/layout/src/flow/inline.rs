@@ -1,15 +1,17 @@
-use crate::box_model::{BoxComponent, Edge, Rect};
+use crate::box_model::{BoxComponent, Edge};
 use crate::formatting_context::{BaseFormattingContext, FormattingContext};
 use crate::layout_box::LayoutBox;
 use style::value_processing::Property;
 
 pub struct InlineFormattingContext {
     base: BaseFormattingContext,
-    containing_block: Rect,
+    containing_block: *mut LayoutBox,
 }
 
 impl InlineFormattingContext {
-    pub fn new(rect: &Rect) -> Self {
+    pub fn new(layout_box: &mut LayoutBox) -> Self {
+        let rect = &layout_box.dimensions.content;
+
         Self {
             base: BaseFormattingContext {
                 offset_x: rect.x,
@@ -17,7 +19,7 @@ impl InlineFormattingContext {
                 width: 0.,
                 height: 0.,
             },
-            containing_block: rect.clone(),
+            containing_block: layout_box,
         }
     }
 }
@@ -33,11 +35,13 @@ impl FormattingContext for InlineFormattingContext {
             None => return,
         };
 
+        let containing_block = &self.get_containing_block().dimensions.content;
+
         let render_node = render_node.borrow();
         let computed_width = render_node.get_style(&Property::Width);
         let computed_margin_left = render_node.get_style(&Property::MarginLeft);
         let computed_margin_right = render_node.get_style(&Property::MarginRight);
-        let containing_width = self.containing_block.width;
+        let containing_width = containing_block.width;
 
         let mut used_width = computed_width.to_px(containing_width);
         let mut used_margin_left = computed_margin_left.to_px(containing_width);
@@ -76,5 +80,9 @@ impl FormattingContext for InlineFormattingContext {
         if self.base.height < rect.height {
             self.base.height = rect.height;
         }
+    }
+
+    fn get_containing_block(&mut self) -> &mut LayoutBox {
+        unsafe {self.containing_block.as_mut().unwrap()}
     }
 }

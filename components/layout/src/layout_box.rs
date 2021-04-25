@@ -2,6 +2,7 @@
 /// the layout box, which is the component
 /// that made up the layout tree.
 use super::box_model::Dimensions;
+use super::line_box::LineBox;
 use style::render_tree::RenderNodeRef;
 use style::value_processing::{Property, Value};
 use style::values::display::{Display, InnerDisplayType};
@@ -25,6 +26,9 @@ pub struct LayoutBox {
 
     /// The children of this box
     pub children: Vec<LayoutBox>,
+
+    /// The line boxes of this layout box
+    pub line_boxes: Vec<LineBox>,
 }
 
 /// Different box types for each layout box
@@ -45,6 +49,7 @@ impl LayoutBox {
             dimensions: Dimensions::default(),
             children_are_inline: false,
             children: Vec::new(),
+            line_boxes: Vec::new(),
         }
     }
 
@@ -55,6 +60,7 @@ impl LayoutBox {
             dimensions: Dimensions::default(),
             children_are_inline: false,
             children: Vec::new(),
+            line_boxes: Vec::new(),
         }
     }
 

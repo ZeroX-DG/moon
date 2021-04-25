@@ -1,15 +1,17 @@
-use crate::box_model::{BoxComponent, Edge, Rect};
+use crate::box_model::{BoxComponent, Edge};
 use crate::formatting_context::{BaseFormattingContext, FormattingContext};
 use crate::layout_box::LayoutBox;
 use style::value_processing::Property;
 
 pub struct BlockFormattingContext {
     base: BaseFormattingContext,
-    containing_block: Rect,
+    containing_block: *mut LayoutBox,
 }
 
 impl BlockFormattingContext {
-    pub fn new(rect: &Rect) -> Self {
+    pub fn new(layout_box: &mut LayoutBox) -> Self {
+        let rect = &layout_box.dimensions.content;
+
         Self {
             base: BaseFormattingContext {
                 offset_x: rect.x,
@@ -17,7 +19,7 @@ impl BlockFormattingContext {
                 width: 0.,
                 height: 0.,
             },
-            containing_block: rect.clone(),
+            containing_block: layout_box
         }
     }
 }
@@ -33,6 +35,8 @@ impl FormattingContext for BlockFormattingContext {
             None => return,
         };
 
+        let containing_block = &self.get_containing_block().dimensions.content;
+
         let render_node = render_node.borrow();
         let computed_width = render_node.get_style(&Property::Width);
         let computed_margin_left = render_node.get_style(&Property::MarginLeft);
@@ -41,7 +45,7 @@ impl FormattingContext for BlockFormattingContext {
         let computed_border_right = render_node.get_style(&Property::BorderRightWidth);
         let computed_padding_left = render_node.get_style(&Property::PaddingLeft);
         let computed_padding_right = render_node.get_style(&Property::PaddingRight);
-        let containing_width = self.containing_block.width;
+        let containing_width = containing_block.width;
 
         let box_width = computed_margin_left.to_px(containing_width)
             + computed_border_left.to_px(containing_width)
@@ -158,13 +162,17 @@ impl FormattingContext for BlockFormattingContext {
             self.base.width = rect.width;
         }
     }
+
+    fn get_containing_block(&mut self) -> &mut LayoutBox {
+        unsafe {self.containing_block.as_mut().unwrap()}
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::box_model::Rect;
     use crate::tree_builder::*;
+    use crate::layout_box::BoxType;
     use css::cssom::css_rule::CSSRule;
     use style::build_render_tree;
     use style::value_processing::{CSSLocation, CascadeOrigin, ContextualRule};
@@ -212,22 +220,11 @@ mod tests {
 
         let mut layout_box = layout_box.unwrap();
 
-        let mut formatting_context = BlockFormattingContext::new(&Rect {
-            x: 0.,
-            y: 0.,
-            width: 1600.,
-            height: 900.,
-        });
+        let mut screen = LayoutBox::new_anonymous(BoxType::Block);
 
-        formatting_context.layout(
-            vec![&mut layout_box],
-            &Rect {
-                x: 0.,
-                y: 0.,
-                width: 1600.,
-                height: 900.,
-            },
-        );
+        let mut formatting_context = BlockFormattingContext::new(&mut screen);
+
+        formatting_context.layout(vec![&mut layout_box]);
 
         //println!("{}", layout_box.dump(&LayoutDumpSpecificity::StructureAndDimensions));
 
