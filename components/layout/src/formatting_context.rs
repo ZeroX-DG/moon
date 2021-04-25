@@ -1,4 +1,4 @@
-use super::box_model::{BoxComponent, Edge, Rect};
+use super::box_model::Rect;
 use super::layout_box::LayoutBox;
 use style::value_processing::{Property, Value};
 use style::values::display::{Display, InnerDisplayType};
@@ -6,44 +6,21 @@ use style::values::display::{Display, InnerDisplayType};
 use super::flow::block::BlockFormattingContext;
 use super::flow::inline::InlineFormattingContext;
 
-#[derive(Debug)]
-pub struct BaseFormattingContext {
-    pub offset_x: f32,
-    pub offset_y: f32,
-    pub width: f32,
-    pub height: f32,
-}
-
 pub trait FormattingContext {
-    fn layout(&mut self, boxes: Vec<&mut LayoutBox>) {
-        let containing_block =
-            &self.get_containing_block().dimensions.content.clone();
-
-        for layout_box in boxes {
-            self.calculate_width(layout_box);
-            calculate_position(self.base(), layout_box, containing_block);
-            layout_children(layout_box);
-            apply_explicit_sizes(layout_box, containing_block);
-            self.update_new_data(layout_box);
-        }
-    }
+    fn layout(&mut self, boxes: Vec<&mut LayoutBox>);
 
     fn get_containing_block(&mut self) -> &mut LayoutBox;
 
-    fn calculate_width(&mut self, layout_box: &mut LayoutBox);
-
-    fn base(&self) -> &BaseFormattingContext;
-
-    fn update_new_data(&mut self, layout_box: &LayoutBox);
+    fn height(&self) -> f32;
 }
 
-fn layout_children(layout_box: &mut LayoutBox) {
+pub fn layout_children(layout_box: &mut LayoutBox) {
     let mut context = get_formatting_context(layout_box);
 
     context.layout(layout_box.children.iter_mut().collect());
 
     if layout_box.is_height_auto() {
-        layout_box.dimensions.set_height(context.base().height);
+        layout_box.dimensions.set_height(context.height());
     }
 }
 
@@ -80,60 +57,7 @@ fn get_formatting_context(layout_box: &mut LayoutBox) -> Box<dyn FormattingConte
     }
 }
 
-fn calculate_position(
-    base: &BaseFormattingContext,
-    layout_box: &mut LayoutBox,
-    containing_block: &Rect,
-) {
-    let render_node = layout_box.render_node.clone();
-    let box_model = layout_box.box_model();
-
-    if let Some(render_node) = render_node {
-        let render_node = render_node.borrow();
-
-        let margin_top = render_node
-            .get_style(&Property::MarginTop)
-            .to_px(containing_block.width);
-        let margin_bottom = render_node
-            .get_style(&Property::MarginBottom)
-            .to_px(containing_block.width);
-
-        let border_top = render_node
-            .get_style(&Property::BorderTopWidth)
-            .to_px(containing_block.width);
-        let border_bottom = render_node
-            .get_style(&Property::BorderBottomWidth)
-            .to_px(containing_block.width);
-
-        let padding_top = render_node
-            .get_style(&Property::PaddingTop)
-            .to_px(containing_block.width);
-        let padding_bottom = render_node
-            .get_style(&Property::PaddingBottom)
-            .to_px(containing_block.width);
-
-        box_model.set(BoxComponent::Margin, Edge::Top, margin_top);
-        box_model.set(BoxComponent::Margin, Edge::Bottom, margin_bottom);
-
-        box_model.set(BoxComponent::Padding, Edge::Top, padding_top);
-        box_model.set(BoxComponent::Padding, Edge::Bottom, padding_bottom);
-
-        box_model.set(BoxComponent::Border, Edge::Top, border_top);
-        box_model.set(BoxComponent::Border, Edge::Bottom, border_bottom);
-    }
-
-    let content_area_x =
-        base.offset_x + box_model.margin.left + box_model.border.left + box_model.padding.left;
-
-    let content_area_y =
-        base.offset_y + box_model.margin.top + box_model.border.top + box_model.padding.top;
-
-    layout_box
-        .box_model()
-        .set_position(content_area_x, content_area_y);
-}
-
-fn apply_explicit_sizes(layout_box: &mut LayoutBox, containing_block: &Rect) {
+pub fn apply_explicit_sizes(layout_box: &mut LayoutBox, containing_block: &Rect) {
     if layout_box.is_inline() && !layout_box.is_inline_block() {
         return;
     }
