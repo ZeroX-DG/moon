@@ -1,8 +1,8 @@
+use crate::color::style_color_to_paint_color;
 use crate::command::{DisplayCommand, DrawCommand};
 use crate::primitive::Rect;
-use layout::box_model::Edge;
 use crate::LayoutBox;
-use crate::color::style_color_to_paint_color;
+use layout::box_model::Edge;
 use style::value_processing::Property;
 
 pub fn paint_border(layout_box: &LayoutBox) -> Option<DisplayCommand> {
@@ -66,7 +66,7 @@ fn create_border_rect(layout_box: &LayoutBox, edge: Edge) -> Rect {
             border_box.x,
             border_box.y,
             border_box.width,
-            layout_box.dimensions.border.top
+            layout_box.dimensions.border.top,
         ),
         Edge::Left => Rect::new(
             border_box.x,
@@ -84,7 +84,7 @@ fn create_border_rect(layout_box: &LayoutBox, edge: Edge) -> Rect {
             border_box.x,
             border_box.y + border_box.height - layout_box.dimensions.border.bottom,
             border_box.width,
-            layout_box.dimensions.border.bottom
-        )
+            layout_box.dimensions.border.bottom,
+        ),
     }
 }

@@ -42,4 +42,3 @@ impl painting::Painter for Painter {
         self.rect_painter.draw_solid_rrect(rect, color);
     }
 }
-

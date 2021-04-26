@@ -164,7 +164,7 @@ impl ValueRef {
 
     pub fn map<T, F>(&self, map_fn: F) -> T
     where
-        F: FnOnce(&Value) -> T
+        F: FnOnce(&Value) -> T,
     {
         map_fn(self.inner())
     }

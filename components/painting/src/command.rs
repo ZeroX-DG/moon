@@ -11,5 +11,5 @@ pub enum DrawCommand {
 #[derive(Debug, Serialize, Deserialize)]
 pub enum DisplayCommand {
     Draw(DrawCommand),
-    GroupDraw(Vec<DrawCommand>)
+    GroupDraw(Vec<DrawCommand>),
 }
