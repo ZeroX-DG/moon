@@ -1,39 +1,49 @@
 use super::layout_box::LayoutBox;
-use super::box_model::Rect;
 
 #[derive(Debug, Clone)]
 pub struct LineBox {
-    children: Vec<*mut LayoutBox>,
-    x: f32,
-    y: f32,
+    fragments: Vec<*mut LayoutBox>,
     width: f32,
     height: f32,
-    offset_x: f32,
 }
 
 impl LineBox {
-    pub fn new(x: f32, y: f32) -> Self {
+    pub fn new() -> Self {
         Self {
-            children: Vec::new(),
-            x,
-            y,
+            fragments: Vec::new(),
             width: 0.,
             height: 0.,
-            offset_x: 0.,
+        }
+    }
+
+    pub fn fragments(&self) -> Vec<&mut LayoutBox> {
+        unsafe {
+            self.fragments
+                .iter()
+                .map(|layout_box| layout_box.as_mut().unwrap())
+                .collect()
         }
     }
 
     pub fn push(&mut self, layout_box: &mut LayoutBox) {
-        self.children.push(layout_box);
+        let fragment_height = layout_box.dimensions.margin_box().height;
+        let fragment_width = layout_box.dimensions.margin_box().width;
+
+        if fragment_height > self.height {
+            self.height = fragment_height;
+        }
+
+        self.width += fragment_width;
+
+        self.fragments.push(layout_box);
     }
 
-    pub fn get_rect(&self) -> Rect {
-        return Rect {
-            x: self.x,
-            y: self.y,
-            width: self.width,
-            height: self.height
-        }
+    pub fn width(&self) -> f32 {
+        self.width
+    }
+    
+    pub fn height(&self) -> f32 {
+        self.height
     }
 }
 

@@ -1,38 +1,20 @@
 use crate::box_model::{BoxComponent, Edge};
 use crate::formatting_context::{FormattingContext, apply_explicit_sizes, layout_children};
 use crate::layout_box::LayoutBox;
+use crate::line_box::LineBox;
 use style::value_processing::Property;
 
-#[derive(Debug)]
-struct BaseFormattingContext {
-    pub offset_x: f32,
-    pub width: f32,
-    pub height: f32,
-}
-
 pub struct InlineFormattingContext {
-    base: BaseFormattingContext,
+    line_boxes: Vec<LineBox>,
     containing_block: *mut LayoutBox,
 }
 
 impl InlineFormattingContext {
     pub fn new(layout_box: &mut LayoutBox) -> Self {
-        let rect = &layout_box.dimensions.content;
-
         Self {
-            base: BaseFormattingContext {
-                offset_x: rect.x,
-                width: 0.,
-                height: 0.,
-            },
+            line_boxes: Vec::new(),
             containing_block: layout_box,
         }
-    }
-
-    fn update_new_data(&mut self, layout_box: &LayoutBox) {
-        let rect = layout_box.dimensions.margin_box();
-        self.base.width += rect.width;
-        self.base.offset_x += rect.width;
     }
 
     fn calculate_width(&mut self, layout_box: &mut LayoutBox) {
@@ -78,10 +60,9 @@ impl InlineFormattingContext {
         box_model.set(BoxComponent::Margin, Edge::Right, used_margin_right);
     }
 
-    fn calculate_position(&mut self, layout_box: &mut LayoutBox) {
+    fn apply_vertical_spacing(&mut self, layout_box: &mut LayoutBox) {
         let containing_block = self.get_containing_block();
         let containing_block = &containing_block.dimensions.content.clone();
-
         let render_node = layout_box.render_node.clone();
         let box_model = layout_box.box_model();
 
@@ -118,16 +99,12 @@ impl InlineFormattingContext {
             box_model.set(BoxComponent::Border, Edge::Top, border_top);
             box_model.set(BoxComponent::Border, Edge::Bottom, border_bottom);
         }
+    }
 
-        let content_area_x =
-            self.base.offset_x + box_model.margin.left + box_model.border.left + box_model.padding.left;
-
-        let content_area_y =
-            containing_block.y + box_model.margin.top + box_model.border.top + box_model.padding.top;
-
-        layout_box
-            .box_model()
-            .set_position(content_area_x, content_area_y);
+    fn ensure_last_line_box(&mut self) {
+        if self.line_boxes.is_empty() {
+            self.line_boxes.push(LineBox::new());
+        } 
     }
 }
 
@@ -136,15 +113,47 @@ impl FormattingContext for InlineFormattingContext {
         let containing_block = self.get_containing_block();
         let containing_block = &containing_block.dimensions.content.clone();
 
+        self.ensure_last_line_box();
+
         for layout_box in boxes {
             self.calculate_width(layout_box);
-            self.calculate_position(layout_box);
             layout_children(layout_box);
+            self.apply_vertical_spacing(layout_box);
             apply_explicit_sizes(layout_box, containing_block);
-            self.update_new_data(layout_box);
+
+            let new_width =
+                self.line_boxes.last().unwrap().width() + layout_box.dimensions.content.width;
+
+            if new_width > containing_block.width {
+                self.line_boxes.push(LineBox::new());
+            }
+
+            let line_box = self.line_boxes.last_mut().unwrap();
+            line_box.push(layout_box);
         }
 
-        self.base.height
+        let mut offset_y = 0.;
+
+        for line in &self.line_boxes {
+            let mut offset_x = 0.;
+
+            for fragment in line.fragments() {
+                let x = containing_block.x
+                    + offset_x
+                    + fragment.dimensions.margin.left;
+
+                let y = containing_block.y
+                    + offset_y
+                    + fragment.dimensions.margin.top;
+
+                fragment.box_model().set_position(x, y);
+                offset_x += fragment.dimensions.margin_box().width;
+            }
+
+            offset_y += line.height();
+        }
+
+        offset_y
     }
 
     fn get_containing_block(&mut self) -> &mut LayoutBox {

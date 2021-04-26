@@ -5,7 +5,6 @@ pub mod layout_box;
 pub mod layout_printer;
 pub mod tree_builder;
 pub mod line_box;
-pub mod line_fragmenter;
 
 use box_model::Rect;
 use flow::block::BlockFormattingContext;
