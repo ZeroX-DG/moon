@@ -13,7 +13,7 @@ impl LineFragmenter {
         }
 
         if let Some(line_box) = containing_block.line_boxes.last() {
-            let box_width = layout_box.dimensions.margin_box_width();
+            let box_width = layout_box.dimensions.margin_box().width;
             let containing_width = containing_box.width;
 
             let line_box_rect = line_box.get_rect();

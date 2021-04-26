@@ -17,8 +17,7 @@ pub fn paint_background(layout_box: &LayoutBox) -> Option<DisplayCommand> {
 
         let color = style_color_to_paint_color(background.inner()).unwrap_or_default();
 
-        let (x, y) = layout_box.dimensions.padding_box_position();
-        let (width, height) = layout_box.dimensions.padding_box_size();
+        let (x, y, width, height) = layout_box.dimensions.padding_box().into();
 
         let has_no_border_radius = is_zero(border_top_left_radius.inner())
             && is_zero(border_bottom_left_radius.inner())

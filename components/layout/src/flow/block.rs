@@ -226,7 +226,6 @@ impl FormattingContext for BlockFormattingContext {
             self.calculate_position(layout_box);
             layout_children(layout_box);
             apply_explicit_sizes(layout_box, containing_block);
-
             self.update_new_data(layout_box);
         }
     }
