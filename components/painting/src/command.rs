@@ -3,8 +3,13 @@ use super::primitive::{RRect, Rect};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
-pub enum DisplayCommand {
+pub enum DrawCommand {
     FillRect(Rect, Color),
     FillRRect(RRect, Color),
-    StrokeRect(Rect, Color),
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub enum DisplayCommand {
+    Draw(DrawCommand),
+    GroupDraw(Vec<DrawCommand>)
 }

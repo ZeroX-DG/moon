@@ -1,4 +1,4 @@
-use crate::command::DisplayCommand;
+use crate::command::{DisplayCommand, DrawCommand};
 use crate::primitive::{Corners, RRect, Radii, Rect};
 use crate::LayoutBox;
 use crate::{color::style_color_to_paint_color, utils::is_zero};
@@ -33,7 +33,7 @@ pub fn paint_background(layout_box: &LayoutBox) -> Option<DisplayCommand> {
                 height,
             };
 
-            return Some(DisplayCommand::FillRect(rect, color));
+            return Some(DisplayCommand::Draw(DrawCommand::FillRect(rect, color)));
         } else {
             let border_box = layout_box.dimensions.border_box();
 
@@ -50,7 +50,7 @@ pub fn paint_background(layout_box: &LayoutBox) -> Option<DisplayCommand> {
                 corners: Corners::new(tl, tr, bl, br),
             };
 
-            return Some(DisplayCommand::FillRRect(rect, color));
+            return Some(DisplayCommand::Draw(DrawCommand::FillRRect(rect, color)));
         }
     }
     None
