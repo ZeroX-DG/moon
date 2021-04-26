@@ -217,7 +217,7 @@ impl BlockFormattingContext {
 }
 
 impl FormattingContext for BlockFormattingContext {
-    fn layout(&mut self, boxes: Vec<&mut LayoutBox>) {
+    fn layout(&mut self, boxes: Vec<&mut LayoutBox>) -> f32 {
         let containing_block = self.get_containing_block();
         let containing_block = &containing_block.dimensions.content.clone();
 
@@ -228,9 +228,7 @@ impl FormattingContext for BlockFormattingContext {
             apply_explicit_sizes(layout_box, containing_block);
             self.update_new_data(layout_box);
         }
-    }
 
-    fn height(&self) -> f32 {
         self.base.height
     }
 

@@ -33,10 +33,6 @@ impl InlineFormattingContext {
         let rect = layout_box.dimensions.margin_box();
         self.base.width += rect.width;
         self.base.offset_x += rect.width;
-
-        if self.base.height < rect.height {
-            self.base.height = rect.height;
-        }
     }
 
     fn calculate_width(&mut self, layout_box: &mut LayoutBox) {
@@ -136,7 +132,7 @@ impl InlineFormattingContext {
 }
 
 impl FormattingContext for InlineFormattingContext {
-    fn layout(&mut self, boxes: Vec<&mut LayoutBox>) {
+    fn layout(&mut self, boxes: Vec<&mut LayoutBox>) -> f32 {
         let containing_block = self.get_containing_block();
         let containing_block = &containing_block.dimensions.content.clone();
 
@@ -147,9 +143,7 @@ impl FormattingContext for InlineFormattingContext {
             apply_explicit_sizes(layout_box, containing_block);
             self.update_new_data(layout_box);
         }
-    }
 
-    fn height(&self) -> f32 {
         self.base.height
     }
 

@@ -7,20 +7,18 @@ use super::flow::block::BlockFormattingContext;
 use super::flow::inline::InlineFormattingContext;
 
 pub trait FormattingContext {
-    fn layout(&mut self, boxes: Vec<&mut LayoutBox>);
+    fn layout(&mut self, boxes: Vec<&mut LayoutBox>) -> f32;
 
     fn get_containing_block(&mut self) -> &mut LayoutBox;
-
-    fn height(&self) -> f32;
 }
 
 pub fn layout_children(layout_box: &mut LayoutBox) {
     let mut context = get_formatting_context(layout_box);
 
-    context.layout(layout_box.children.iter_mut().collect());
+    let height = context.layout(layout_box.children.iter_mut().collect());
 
     if layout_box.is_height_auto() {
-        layout_box.dimensions.set_height(context.height());
+        layout_box.dimensions.set_height(height);
     }
 }
 
