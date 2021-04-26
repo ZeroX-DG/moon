@@ -41,6 +41,4 @@ impl painting::Painter for Painter {
     fn fill_rrect(&mut self, rect: &RRect, color: &Color) {
         self.rect_painter.draw_solid_rrect(rect, color);
     }
-
-    fn stroke_rect(&mut self, rect: &Rect, color: &Color) {}
 }
