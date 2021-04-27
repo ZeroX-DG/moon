@@ -1,5 +1,5 @@
 use crate::box_model::{BoxComponent, Edge};
-use crate::formatting_context::{FormattingContext, apply_explicit_sizes, layout_children};
+use crate::formatting_context::{apply_explicit_sizes, layout_children, FormattingContext};
 use crate::layout_box::LayoutBox;
 use style::value_processing::Property;
 
@@ -23,7 +23,7 @@ impl BlockFormattingContext {
                 offset_y: rect.y,
                 height: 0.,
             },
-            containing_block: layout_box
+            containing_block: layout_box,
         }
     }
 
@@ -198,14 +198,12 @@ impl BlockFormattingContext {
             box_model.set(BoxComponent::Border, Edge::Bottom, border_bottom);
         }
 
-        let content_area_x =
-            containing_block.x
+        let content_area_x = containing_block.x
             + box_model.margin.left
             + box_model.border.left
             + box_model.padding.left;
 
-        let content_area_y =
-            self.base.offset_y
+        let content_area_y = self.base.offset_y
             + box_model.margin.top
             + box_model.border.top
             + box_model.padding.top;
@@ -233,15 +231,15 @@ impl FormattingContext for BlockFormattingContext {
     }
 
     fn get_containing_block(&mut self) -> &mut LayoutBox {
-        unsafe {self.containing_block.as_mut().unwrap()}
+        unsafe { self.containing_block.as_mut().unwrap() }
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::tree_builder::*;
     use crate::layout_box::BoxType;
+    use crate::tree_builder::*;
     use css::cssom::css_rule::CSSRule;
     use style::build_render_tree;
     use style::value_processing::{CSSLocation, CascadeOrigin, ContextualRule};

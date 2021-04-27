@@ -39,7 +39,6 @@ fn get_formatting_context(layout_box: &mut LayoutBox) -> Box<dyn FormattingConte
         _ => unreachable!(),
     };
 
-
     match inner_display {
         InnerDisplayType::Flow => {
             if layout_box.children_are_inline() {
@@ -48,9 +47,7 @@ fn get_formatting_context(layout_box: &mut LayoutBox) -> Box<dyn FormattingConte
                 Box::new(BlockFormattingContext::new(layout_box))
             }
         }
-        InnerDisplayType::FlowRoot => {
-            Box::new(BlockFormattingContext::new(layout_box))
-        }
+        InnerDisplayType::FlowRoot => Box::new(BlockFormattingContext::new(layout_box)),
         _ => unimplemented!("Unsupported display type: {:#?}", display),
     }
 }

@@ -89,8 +89,7 @@ impl Dimensions {
     }
 
     pub fn padding_box(&self) -> Rect {
-        self.content
-            .add_outer_edges(&self.padding)
+        self.content.add_outer_edges(&self.padding)
     }
 
     pub fn border_box(&self) -> Rect {
@@ -110,7 +109,7 @@ impl Rect {
             x: self.x - edges.left,
             y: self.y - edges.top,
             width: self.width + edges.left + edges.right,
-            height: self.height + edges.top + edges.bottom
+            height: self.height + edges.top + edges.bottom,
         }
     }
 }
@@ -147,4 +146,3 @@ impl Default for EdgeSizes {
         }
     }
 }
-

@@ -41,9 +41,8 @@ impl LineBox {
     pub fn width(&self) -> f32 {
         self.width
     }
-    
+
     pub fn height(&self) -> f32 {
         self.height
     }
 }
-

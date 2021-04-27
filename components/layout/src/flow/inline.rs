@@ -1,5 +1,5 @@
 use crate::box_model::{BoxComponent, Edge};
-use crate::formatting_context::{FormattingContext, apply_explicit_sizes, layout_children};
+use crate::formatting_context::{apply_explicit_sizes, layout_children, FormattingContext};
 use crate::layout_box::LayoutBox;
 use crate::line_box::LineBox;
 use style::value_processing::Property;
@@ -104,7 +104,7 @@ impl InlineFormattingContext {
     fn ensure_last_line_box(&mut self) {
         if self.line_boxes.is_empty() {
             self.line_boxes.push(LineBox::new());
-        } 
+        }
     }
 }
 
@@ -138,13 +138,9 @@ impl FormattingContext for InlineFormattingContext {
             let mut offset_x = 0.;
 
             for fragment in line.fragments() {
-                let x = containing_block.x
-                    + offset_x
-                    + fragment.dimensions.margin.left;
+                let x = containing_block.x + offset_x + fragment.dimensions.margin.left;
 
-                let y = containing_block.y
-                    + offset_y
-                    + fragment.dimensions.margin.top;
+                let y = containing_block.y + offset_y + fragment.dimensions.margin.top;
 
                 fragment.box_model().set_position(x, y);
                 offset_x += fragment.dimensions.margin_box().width;
@@ -157,6 +153,6 @@ impl FormattingContext for InlineFormattingContext {
     }
 
     fn get_containing_block(&mut self) -> &mut LayoutBox {
-        unsafe {self.containing_block.as_mut().unwrap()}
+        unsafe { self.containing_block.as_mut().unwrap() }
     }
 }
