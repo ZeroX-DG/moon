@@ -1,0 +1,63 @@
+html, body {
+  display: block;
+}
+
+div {
+    display: block;
+}
+
+.parent {
+  width: 300px;
+}
+
+#random {
+  height: 20px;
+  background-color: yellow;
+  margin-top: 20px;
+  margin-bottom: 30px;
+  margin-left: 30px;
+}
+
+#parent2 {
+  margin-left: 10px;
+}
+
+.box {
+    display: inline-block;
+    height: 30px;
+}
+
+.blue {
+    background-color: rgb(0, 0, 255);
+    width: 50px;
+}
+
+.red {
+    background-color: rgb(255, 0, 0);
+    width: 80px;
+}
+
+.yellow {
+    background-color: rgb(255, 255, 0);
+    width: 100px;
+}
+
+.orange {
+    background-color: rgb(255, 165, 0);
+    width: 60px;
+}
+
+.purple {
+    background-color: rgb(75, 0, 130);
+    width: 70px;
+}
+
+.pink {
+    background-color: rgb(238, 130, 238);
+    width: 60px;
+}
+
+.green {
+    background-color: rgb(0, 128, 0);
+    width: 50px;
+}

@@ -81,113 +81,42 @@ impl Dimensions {
 
     // we might need to review this for collapse margin
     // https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Box_Model/Mastering_margin_collapsing
-    pub fn margin_box_height(&self) -> f32 {
-        self.content.height
-            + self.padding.top
-            + self.padding.bottom
-            + self.border.top
-            + self.border.bottom
-            + self.margin.top
-            + self.margin.bottom
+    pub fn margin_box(&self) -> Rect {
+        self.content
+            .add_outer_edges(&self.padding)
+            .add_outer_edges(&self.border)
+            .add_outer_edges(&self.margin)
     }
 
-    pub fn margin_box_width(&self) -> f32 {
-        self.content.width
-            + self.padding.left
-            + self.padding.right
-            + self.border.left
-            + self.border.right
-            + self.margin.left
-            + self.margin.right
+    pub fn padding_box(&self) -> Rect {
+        self.content.add_outer_edges(&self.padding)
     }
 
-    pub fn margin_box_position(&self) -> (f32, f32) {
-        let x = self.content.x - self.padding.left - self.border.left - self.margin.left;
-        let y = self.content.y - self.padding.top - self.border.top - self.margin.top;
-        (x, y)
-    }
-
-    pub fn padding_box_height(&self) -> f32 {
-        self.content.height + self.padding.top + self.padding.bottom
-    }
-
-    pub fn padding_box_width(&self) -> f32 {
-        self.content.width + self.padding.left + self.padding.right
-    }
-
-    pub fn padding_box_position(&self) -> (f32, f32) {
-        (
-            self.content.x - self.padding.left,
-            self.content.y - self.padding.top,
-        )
-    }
-
-    pub fn padding_box_size(&self) -> (f32, f32) {
-        (self.padding_box_width(), self.padding_box_height())
-    }
-
-    pub fn border_box_height(&self) -> f32 {
-        self.content.height
-            + self.padding.top
-            + self.padding.bottom
-            + self.border.top
-            + self.border.bottom
-    }
-
-    pub fn border_box_width(&self) -> f32 {
-        self.content.width
-            + self.padding.left
-            + self.padding.right
-            + self.border.left
-            + self.border.right
-    }
-
-    pub fn border_box_position(&self) -> (f32, f32) {
-        (
-            self.content.x - self.padding.left - self.border.left,
-            self.content.y - self.padding.top - self.border.top,
-        )
-    }
-
-    pub fn border_box_size(&self) -> (f32, f32) {
-        (self.border_box_width(), self.border_box_height())
+    pub fn border_box(&self) -> Rect {
+        self.content
+            .add_outer_edges(&self.padding)
+            .add_outer_edges(&self.border)
     }
 
     pub fn content_box(&self) -> Rect {
         self.content.clone()
     }
+}
 
-    pub fn padding_box(&self) -> Rect {
-        let (x, y) = self.padding_box_position();
-        let (width, height) = self.padding_box_size();
-        Rect {
-            x,
-            y,
-            width,
-            height,
+impl Rect {
+    pub fn add_outer_edges(&self, edges: &EdgeSizes) -> Self {
+        Self {
+            x: self.x - edges.left,
+            y: self.y - edges.top,
+            width: self.width + edges.left + edges.right,
+            height: self.height + edges.top + edges.bottom,
         }
     }
+}
 
-    pub fn margin_box(&self) -> Rect {
-        let (x, y) = self.margin_box_position();
-        let (width, height) = (self.margin_box_width(), self.margin_box_height());
-        Rect {
-            x,
-            y,
-            width,
-            height,
-        }
-    }
-
-    pub fn border_box(&self) -> Rect {
-        let (x, y) = self.border_box_position();
-        let (width, height) = (self.border_box_width(), self.border_box_height());
-        Rect {
-            x,
-            y,
-            width,
-            height,
-        }
+impl Into<(f32, f32, f32, f32)> for Rect {
+    fn into(self) -> (f32, f32, f32, f32) {
+        (self.x, self.y, self.width, self.height)
     }
 }
 

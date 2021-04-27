@@ -1,30 +1,30 @@
-use crate::box_model::{BoxComponent, Edge, Rect};
-use crate::formatting_context::{BaseFormattingContext, FormattingContext};
+use crate::box_model::{BoxComponent, Edge};
+use crate::formatting_context::{apply_explicit_sizes, layout_children, FormattingContext};
 use crate::layout_box::LayoutBox;
 use style::value_processing::Property;
 
+#[derive(Debug)]
+struct BaseFormattingContext {
+    pub offset_y: f32,
+    pub height: f32,
+}
+
 pub struct BlockFormattingContext {
     base: BaseFormattingContext,
-    containing_block: Rect,
+    containing_block: *mut LayoutBox,
 }
 
 impl BlockFormattingContext {
-    pub fn new(rect: &Rect) -> Self {
+    pub fn new(layout_box: &mut LayoutBox) -> Self {
+        let rect = &layout_box.dimensions.content;
+
         Self {
             base: BaseFormattingContext {
-                offset_x: rect.x,
                 offset_y: rect.y,
-                width: 0.,
                 height: 0.,
             },
-            containing_block: rect.clone(),
+            containing_block: layout_box,
         }
-    }
-}
-
-impl FormattingContext for BlockFormattingContext {
-    fn base(&self) -> &BaseFormattingContext {
-        &self.base
     }
 
     fn calculate_width(&mut self, layout_box: &mut LayoutBox) {
@@ -32,6 +32,8 @@ impl FormattingContext for BlockFormattingContext {
             Some(node) => node.clone(),
             None => return,
         };
+
+        let containing_block = &self.get_containing_block().dimensions.content;
 
         let render_node = render_node.borrow();
         let computed_width = render_node.get_style(&Property::Width);
@@ -41,7 +43,7 @@ impl FormattingContext for BlockFormattingContext {
         let computed_border_right = render_node.get_style(&Property::BorderRightWidth);
         let computed_padding_left = render_node.get_style(&Property::PaddingLeft);
         let computed_padding_right = render_node.get_style(&Property::PaddingRight);
-        let containing_width = self.containing_block.width;
+        let containing_width = containing_block.width;
 
         let box_width = computed_margin_left.to_px(containing_width)
             + computed_border_left.to_px(containing_width)
@@ -153,17 +155,90 @@ impl FormattingContext for BlockFormattingContext {
         let rect = layout_box.dimensions.margin_box();
         self.base.height += rect.height;
         self.base.offset_y += rect.height;
+    }
 
-        if self.base.width < rect.width {
-            self.base.width = rect.width;
+    fn calculate_position(&mut self, layout_box: &mut LayoutBox) {
+        let containing_block = self.get_containing_block();
+        let containing_block = &containing_block.dimensions.content.clone();
+
+        let render_node = layout_box.render_node.clone();
+        let box_model = layout_box.box_model();
+
+        if let Some(render_node) = render_node {
+            let render_node = render_node.borrow();
+
+            let margin_top = render_node
+                .get_style(&Property::MarginTop)
+                .to_px(containing_block.width);
+            let margin_bottom = render_node
+                .get_style(&Property::MarginBottom)
+                .to_px(containing_block.width);
+
+            let border_top = render_node
+                .get_style(&Property::BorderTopWidth)
+                .to_px(containing_block.width);
+            let border_bottom = render_node
+                .get_style(&Property::BorderBottomWidth)
+                .to_px(containing_block.width);
+
+            let padding_top = render_node
+                .get_style(&Property::PaddingTop)
+                .to_px(containing_block.width);
+            let padding_bottom = render_node
+                .get_style(&Property::PaddingBottom)
+                .to_px(containing_block.width);
+
+            box_model.set(BoxComponent::Margin, Edge::Top, margin_top);
+            box_model.set(BoxComponent::Margin, Edge::Bottom, margin_bottom);
+
+            box_model.set(BoxComponent::Padding, Edge::Top, padding_top);
+            box_model.set(BoxComponent::Padding, Edge::Bottom, padding_bottom);
+
+            box_model.set(BoxComponent::Border, Edge::Top, border_top);
+            box_model.set(BoxComponent::Border, Edge::Bottom, border_bottom);
         }
+
+        let content_area_x = containing_block.x
+            + box_model.margin.left
+            + box_model.border.left
+            + box_model.padding.left;
+
+        let content_area_y = self.base.offset_y
+            + box_model.margin.top
+            + box_model.border.top
+            + box_model.padding.top;
+
+        layout_box
+            .box_model()
+            .set_position(content_area_x, content_area_y);
+    }
+}
+
+impl FormattingContext for BlockFormattingContext {
+    fn layout(&mut self, boxes: Vec<&mut LayoutBox>) -> f32 {
+        let containing_block = self.get_containing_block();
+        let containing_block = &containing_block.dimensions.content.clone();
+
+        for layout_box in boxes {
+            self.calculate_width(layout_box);
+            self.calculate_position(layout_box);
+            layout_children(layout_box);
+            apply_explicit_sizes(layout_box, containing_block);
+            self.update_new_data(layout_box);
+        }
+
+        self.base.height
+    }
+
+    fn get_containing_block(&mut self) -> &mut LayoutBox {
+        unsafe { self.containing_block.as_mut().unwrap() }
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::box_model::Rect;
+    use crate::layout_box::BoxType;
     use crate::tree_builder::*;
     use css::cssom::css_rule::CSSRule;
     use style::build_render_tree;
@@ -212,28 +287,15 @@ mod tests {
 
         let mut layout_box = layout_box.unwrap();
 
-        let mut formatting_context = BlockFormattingContext::new(&Rect {
-            x: 0.,
-            y: 0.,
-            width: 1600.,
-            height: 900.,
-        });
+        let mut screen = LayoutBox::new_anonymous(BoxType::Block);
 
-        formatting_context.layout(
-            vec![&mut layout_box],
-            &Rect {
-                x: 0.,
-                y: 0.,
-                width: 1600.,
-                height: 900.,
-            },
-        );
+        let mut formatting_context = BlockFormattingContext::new(&mut screen);
+
+        formatting_context.layout(vec![&mut layout_box]);
 
         //println!("{}", layout_box.dump(&LayoutDumpSpecificity::StructureAndDimensions));
 
-        assert_eq!(formatting_context.base().height, 40.);
-        assert_eq!(formatting_context.base().width, 1600.);
-        assert_eq!(formatting_context.base().offset_y, 40.);
-        assert_eq!(formatting_context.base().offset_x, 0.);
+        assert_eq!(formatting_context.base.height, 40.);
+        assert_eq!(formatting_context.base.offset_y, 40.);
     }
 }

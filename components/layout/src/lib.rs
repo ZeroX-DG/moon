@@ -3,6 +3,7 @@ pub mod flow;
 pub mod formatting_context;
 pub mod layout_box;
 pub mod layout_printer;
+pub mod line_box;
 pub mod tree_builder;
 
 use box_model::Rect;
@@ -13,8 +14,11 @@ use style::render_tree::RenderTree;
 use tree_builder::TreeBuilder;
 
 pub fn compute_layout(root: &mut LayoutBox, viewport: &Rect) {
-    let mut context = BlockFormattingContext::new(viewport);
-    context.layout(vec![root], viewport);
+    let mut viewport_box = LayoutBox::new_anonymous(layout_box::BoxType::Block);
+    viewport_box.box_model().set_width(viewport.width);
+    viewport_box.box_model().set_height(viewport.height);
+    let mut context = BlockFormattingContext::new(&mut viewport_box);
+    context.layout(vec![root]);
 }
 
 pub fn build_layout_tree(tree: &RenderTree) -> Option<LayoutBox> {
