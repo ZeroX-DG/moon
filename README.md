@@ -55,7 +55,7 @@ Bold text is what I'm working on
 - [x] :flower_playing_cards: Layout process
   - [x] Box model
   - [x] Box tree generation
-  - [ ] **Line fragmentation**
+  - [x] Line fragmentation
   - [x] Layouts
     - [x] Flow (Block and inline)
     - [ ] Flex
