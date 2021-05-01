@@ -7,8 +7,6 @@ use wgpu::util::{BufferInitDescriptor, DeviceExt};
 pub struct RectPainter {
     vertices: Vec<Vertex>,
     indexes: Vec<u16>,
-    pipeline: wgpu::RenderPipeline,
-    uniform_bind_group: wgpu::BindGroup,
 }
 
 #[repr(C)]
@@ -180,21 +178,10 @@ fn create_uniform_bind_group(
 }
 
 impl RectPainter {
-    pub fn new(device: &wgpu::Device, viewport: (u32, u32)) -> Self {
-        let (uniform_bind_group, uniform_binding_group_layout) =
-            create_uniform_bind_group(device, viewport);
-        let (vs_module, fs_module) = create_shaders(device);
-
+    pub fn new() -> Self {
         Self {
             vertices: Vec::new(),
             indexes: Vec::new(),
-            pipeline: create_pipeline(
-                device,
-                &vs_module,
-                &fs_module,
-                &uniform_binding_group_layout,
-            ),
-            uniform_bind_group,
         }
     }
 
@@ -524,7 +511,7 @@ impl RectPainter {
         }
     }
 
-    pub fn get_paint_data(&self, device: &wgpu::Device) -> WgpuPaintData {
+    pub fn get_paint_data(&self, device: &wgpu::Device, viewport: (u32, u32)) -> WgpuPaintData {
         let vertex_buffer = device.create_buffer_init(&BufferInitDescriptor {
             label: Some("Rect vertext buffer"),
             contents: bytemuck::cast_slice(&self.vertices),
@@ -537,11 +524,22 @@ impl RectPainter {
             usage: wgpu::BufferUsage::INDEX,
         });
 
+        let (uniform_bind_group, uniform_binding_group_layout) =
+            create_uniform_bind_group(device, viewport);
+        let (vs_module, fs_module) = create_shaders(device);
+
+        let pipeline = create_pipeline(
+            device,
+            &vs_module,
+            &fs_module,
+            &uniform_binding_group_layout,
+        );
+
         WgpuPaintData {
             vertex_buffer,
             index_buffer,
-            pipeline: &self.pipeline,
-            bind_group: &self.uniform_bind_group,
+            pipeline,
+            bind_group: uniform_bind_group,
             nums_indexes: self.indexes.len() as u32,
         }
     }

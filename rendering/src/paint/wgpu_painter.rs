@@ -3,24 +3,20 @@ use super::OutputBitmap;
 pub struct WgpuPainter {
     device: wgpu::Device,
     queue: wgpu::Queue,
-    viewport: (u32, u32),
-    texture: wgpu::Texture,
-    texture_view: wgpu::TextureView,
-    output_buffer: wgpu::Buffer,
 }
 
-pub struct WgpuPaintData<'a> {
+pub struct WgpuPaintData {
     pub vertex_buffer: wgpu::Buffer,
     pub index_buffer: wgpu::Buffer,
-    pub pipeline: &'a wgpu::RenderPipeline,
-    pub bind_group: &'a wgpu::BindGroup,
+    pub pipeline: wgpu::RenderPipeline,
+    pub bind_group: wgpu::BindGroup,
     pub nums_indexes: u32,
 }
 
 pub const TEXTURE_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Rgba8Unorm;
 
 impl WgpuPainter {
-    pub async fn new(width: u32, height: u32) -> Self {
+    pub async fn new() -> Self {
         let instance = wgpu::Instance::new(wgpu::BackendBit::PRIMARY);
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions {
@@ -35,7 +31,19 @@ impl WgpuPainter {
             .await
             .unwrap();
 
-        let texture = device.create_texture(&wgpu::TextureDescriptor {
+        Self {
+            device,
+            queue,
+        }
+    }
+
+    pub fn device(&self) -> &wgpu::Device {
+        &self.device
+    }
+
+    pub async fn paint(&mut self, size: (u32, u32), data: &[WgpuPaintData]) -> wgpu::Buffer {
+        let (width, height) = size;
+        let texture = self.device.create_texture(&wgpu::TextureDescriptor {
             label: None,
             size: wgpu::Extent3d {
                 width,
@@ -48,7 +56,6 @@ impl WgpuPainter {
             format: TEXTURE_FORMAT,
             usage: wgpu::TextureUsage::COPY_SRC | wgpu::TextureUsage::OUTPUT_ATTACHMENT,
         });
-
         let texture_view = texture.create_view(&Default::default());
 
         let alignment = wgpu::COPY_BYTES_PER_ROW_ALIGNMENT;
@@ -64,23 +71,7 @@ impl WgpuPainter {
             label: None,
             mapped_at_creation: false,
         };
-        let output_buffer = device.create_buffer(&output_buffer_desc);
-
-        Self {
-            device,
-            queue,
-            viewport: (width, height),
-            texture,
-            texture_view,
-            output_buffer,
-        }
-    }
-
-    pub fn device(&self) -> &wgpu::Device {
-        &self.device
-    }
-
-    pub async fn paint<'a>(&mut self, data: &[WgpuPaintData<'a>]) {
+        let output_buffer = self.device.create_buffer(&output_buffer_desc);
         let mut encoder = self
             .device
             .create_command_encoder(&wgpu::CommandEncoderDescriptor {
@@ -90,7 +81,7 @@ impl WgpuPainter {
         {
             let render_pass_desc = wgpu::RenderPassDescriptor {
                 color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
-                    attachment: &self.texture_view,
+                    attachment: &texture_view,
                     resolve_target: None,
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(wgpu::Color {
@@ -107,7 +98,7 @@ impl WgpuPainter {
             let mut render_pass = encoder.begin_render_pass(&render_pass_desc);
 
             for paint_data in data {
-                render_pass.set_bind_group(0, paint_data.bind_group, &[]);
+                render_pass.set_bind_group(0, &paint_data.bind_group, &[]);
                 render_pass.set_pipeline(&paint_data.pipeline);
                 render_pass.set_index_buffer(paint_data.index_buffer.slice(..));
                 render_pass.set_vertex_buffer(0, paint_data.vertex_buffer.slice(..));
@@ -115,21 +106,14 @@ impl WgpuPainter {
             }
         }
 
-        let (width, height) = self.viewport;
-
-        let alignment = wgpu::COPY_BYTES_PER_ROW_ALIGNMENT;
-        let unpadded_bytes_per_row = 4 * width;
-        let padding = alignment - unpadded_bytes_per_row % alignment;
-        let bytes_per_row = padding + unpadded_bytes_per_row;
-
         encoder.copy_texture_to_buffer(
             wgpu::TextureCopyView {
-                texture: &self.texture,
+                texture: &texture,
                 mip_level: 0,
                 origin: wgpu::Origin3d::ZERO,
             },
             wgpu::BufferCopyView {
-                buffer: &self.output_buffer,
+                buffer: &output_buffer,
                 layout: wgpu::TextureDataLayout {
                     offset: 0,
                     bytes_per_row,
@@ -144,12 +128,14 @@ impl WgpuPainter {
         );
 
         self.queue.submit(std::iter::once(encoder.finish()));
+
+        output_buffer
     }
 
-    pub async fn output(&mut self) -> Option<OutputBitmap> {
+    pub async fn output(&mut self, size: (u32, u32), output_buffer: wgpu::Buffer) -> Option<OutputBitmap> {
         // NOTE: We have to create the mapping THEN device.poll(). If we don't
         // the application will freeze.
-        let mapping = self.output_buffer.slice(..).map_async(wgpu::MapMode::Read);
+        let mapping = output_buffer.slice(..).map_async(wgpu::MapMode::Read);
         self.device.poll(wgpu::Maintain::Wait);
 
         match mapping.await {
@@ -159,9 +145,9 @@ impl WgpuPainter {
                 //
                 // TODO: Remove this step when we don't have to align the data anymore.
                 // See: https://github.com/gfx-rs/wgpu/issues/988
-                let aligned_output = self.output_buffer.slice(..).get_mapped_range().to_vec();
+                let aligned_output = output_buffer.slice(..).get_mapped_range().to_vec();
 
-                let (width, height) = self.viewport;
+                let (width, height) = size;
                 let alignment = wgpu::COPY_BYTES_PER_ROW_ALIGNMENT;
                 let unpadded_bytes_per_row = 4 * width;
                 let padding = alignment - unpadded_bytes_per_row % alignment;
@@ -178,7 +164,7 @@ impl WgpuPainter {
                     row_pointer += bytes_per_row as usize;
                 }
 
-                self.output_buffer.unmap();
+                output_buffer.unmap();
 
                 Some(output)
             }

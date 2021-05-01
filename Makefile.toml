@@ -1,36 +1,25 @@
-[tasks.renderer]
-workspace = false
-script = '''
-cd ./rendering && cargo build
-'''
-
-[tasks.kernel]
+[tasks.build]
 workspace = false
 command = "cargo"
 args = ["build"]
 
-[tasks.build]
-run_task = [
-	{ name = "renderer" },
-	{ name = "kernel" },
-]
-
 [tasks.example]
 workspace = false
-dependencies = ["renderer", "kernel"]
+dependencies = ["build"]
 script = '''
-cd target/debug && ./moon --html ../../fixtures/test.html --css ../../fixtures/test.css
+cd target/debug && ./moon --html=../../fixtures/test.html --css=../../fixtures/test.css
 '''
 
 [tasks.try]
 workspace = false
-dependencies = ["renderer", "kernel"]
+dependencies = ["build"]
 script = '''
-cd target/debug && ./moon --html ../../fixtures/${@}.html --css ../../fixtures/${@}.css
+cd target/debug && ./moon --html=../../fixtures/${@}.html --css=../../fixtures/${@}.css
 '''
 
 [tasks.output]
 workspace = false
+dependencies = ["build"]
 script = '''
-cd ./rendering && cargo run -- --html ../fixtures/${@}.html --css ../fixtures/${@}.css --output image.png --mode headless
+cd target/debug && ./moon render-testing --html=../../fixtures/${@}.html --css=../../fixtures/${@}.css --size=500x300 --output=../../image.png
 '''

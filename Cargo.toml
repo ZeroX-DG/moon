@@ -19,10 +19,13 @@ members = [
   "components/ipc",
   "components/tree",
   "components/message",
-  "rendering"
+  "rendering",
+  "kernel"
 ]
 
 [dependencies]
+rendering = { version = "*", path = "./rendering" }
+kernel = { version = "*", path = "./kernel" }
 ipc = { version = "*", path = "./components/ipc" }
 message = { version = "*", path = "./components/message" }
 pixels = "0.2"
@@ -32,3 +35,5 @@ dirs = "2.0.2"
 log = "*"
 flume = "*"
 clap = "*"
+futures = "*"
+image = "*"
