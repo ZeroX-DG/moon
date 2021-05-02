@@ -3,9 +3,19 @@ mod cli;
 use std::io::Read;
 use futures::executor::block_on;
 use image::{ImageBuffer, Rgba};
+use ipc::IpcRenderer;
 
 fn main() {
     block_on(async_main());
+}
+
+fn read_file(path: String) -> String {
+    let mut file = std::fs::File::open(path).expect("Unable to open file");
+    let mut result = String::new();
+
+    file.read_to_string(&mut result).expect("Unable to read file!");
+
+    return result;
 }
 
 async fn async_main() {
@@ -13,14 +23,8 @@ async fn async_main() {
 
     match action {
         cli::Action::RenderTesting(params) => {
-            let mut html_file = std::fs::File::open(&params.html).unwrap();
-            let mut css_file = std::fs::File::open(&params.css).unwrap();
-
-            let mut html_code = String::new();
-            let mut css_code = String::new();
-
-            html_file.read_to_string(&mut html_code).expect("Unable to read HTML file");
-            css_file.read_to_string(&mut css_code).expect("Unable to read CSS file");
+            let html_code = read_file(params.html);
+            let css_code = read_file(params.css);
 
             if let Some(bitmap) = rendering::render_once(html_code, css_code, params.size).await {
                 let buffer =
@@ -29,7 +33,11 @@ async fn async_main() {
                 buffer.save(params.output).unwrap();
             }
         }
-        _ => {}
+        cli::Action::KernelTesting(params) => {
+            unimplemented!()
+        }
+        cli::Action::Rendering => {
+        }
     }
 }
 

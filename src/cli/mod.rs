@@ -27,7 +27,7 @@ pub fn accept_cli<'a>() -> ArgMatches<'a> {
         .takes_value(true);
 
     let render_testing_subcommand = App::new("render-testing")
-        .about("Start a rendering process of Moon")
+        .about("Start a rendering process of Moon and render once")
         .version(rendering::version())
         .author(AUTHOR)
         .arg(html_file_arg.clone().required(true))
@@ -35,11 +35,26 @@ pub fn accept_cli<'a>() -> ArgMatches<'a> {
         .arg(size_arg.clone())
         .arg(ouput_arg.clone());
 
+    let kernel_testing_subcommand = App::new("kernel-testing")
+        .about("Start a kernel process of Moon and render once")
+        .version(kernel::version())
+        .author(AUTHOR)
+        .arg(html_file_arg.clone().required(true))
+        .arg(css_file_arg.clone().required(true))
+        .arg(size_arg.clone());
+
+    let rendering_subcommand = App::new("render")
+        .about("Start a rendering process of Moon and connect to main process")
+        .version(rendering::version())
+        .author(AUTHOR);
+
     App::new("Moon Renderer")
         .version("1.0")
         .author(AUTHOR)
         .about("Moon web browser!")
         .subcommand(render_testing_subcommand)
+        .subcommand(kernel_testing_subcommand)
+        .subcommand(rendering_subcommand)
         .get_matches()
 }
 

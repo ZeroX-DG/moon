@@ -3,7 +3,6 @@ mod frame;
 mod paint;
 mod loader;
 
-use std::env;
 use page::Page;
 use paint::OutputBitmap;
 
