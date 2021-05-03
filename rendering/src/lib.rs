@@ -2,6 +2,7 @@ mod page;
 mod frame;
 mod paint;
 mod loader;
+mod renderer;
 
 use page::Page;
 use paint::OutputBitmap;

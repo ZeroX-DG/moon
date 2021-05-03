@@ -3,7 +3,6 @@ mod cli;
 use std::io::Read;
 use futures::executor::block_on;
 use image::{ImageBuffer, Rgba};
-use ipc::IpcRenderer;
 
 fn main() {
     block_on(async_main());
@@ -33,7 +32,7 @@ async fn async_main() {
                 buffer.save(params.output).unwrap();
             }
         }
-        cli::Action::KernelTesting(params) => {
+        cli::Action::KernelTesting(_) => {
             unimplemented!()
         }
         cli::Action::Rendering => {

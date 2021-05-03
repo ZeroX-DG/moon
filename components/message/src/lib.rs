@@ -1,28 +1,40 @@
+mod request;
+mod notification;
+
 use ipc::{IpcTransportError, Message};
 use serde::{Deserialize, Serialize};
+use notification::{Notification, Exit};
 use std::io::prelude::*;
 
 #[derive(Debug, Serialize, Deserialize)]
-pub enum MessageToRenderer {
-    LoadHTMLLocal(String),
-    LoadCSSLocal(String),
-    SynAck(u16),
-    Exit,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub enum MessageToKernel {
-    RePaint(Vec<u8>),
-    ResourceNotFound(String),
-    Syn(u16),
-    Ack(u16),
-    Exit,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
 pub enum BrowserMessage {
-    ToRenderer(MessageToRenderer),
-    ToKernel(MessageToKernel),
+    Request(RawRequest),
+    Response(RawResponse),
+    Notification(RawNotification),
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct RawRequest {
+    pub id: u64,
+    pub method: String,
+
+    // Bytes after serialized by bincode
+    pub params: Vec<u8>
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct RawResponse {
+    pub request_id: u64,
+
+    // Bytes to be deserialize by bincode
+    pub result: Option<Vec<u8>>,
+    pub error: Option<Vec<u8>>
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct RawNotification {
+    pub method: String,
+    pub params: Vec<u8>
 }
 
 impl Message for BrowserMessage {
@@ -56,15 +68,18 @@ impl Message for BrowserMessage {
 
     fn is_exit(&self) -> bool {
         match self {
-            BrowserMessage::ToKernel(msg) => match msg {
-                MessageToKernel::Exit => true,
-                _ => false,
-            },
-            BrowserMessage::ToRenderer(msg) => match msg {
-                MessageToRenderer::Exit => true,
-                _ => false,
-            },
+            BrowserMessage::Notification(n) => n.is::<Exit>(),
+            _ => false
         }
+    }
+}
+
+impl RawNotification {
+    pub fn is<N>(&self) -> bool
+    where
+        N: Notification
+    {
+        self.method == N::METHOD
     }
 }
 
