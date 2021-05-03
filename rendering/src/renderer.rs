@@ -1,26 +1,19 @@
 use super::page::Page;
 use super::paint::Painter;
-use ipc::IpcRenderer;
-use message::{BrowserMessage, RawResponse};
+use super::messenger::Messenger;
+use message::*;
 
 #[derive(Debug)]
 pub enum RendererError {
-    ReceiveMessageError(String)
-}
-
-pub type RawCallback =
-    Box<dyn FnOnce(&mut Renderer, RawResponse) -> Result<(), RendererError>>;
-
-pub struct Callback {
-    pub id: u64,
-    pub func: RawCallback,
+    ReceiveMessageError(String),
+    CastingResponseError(String),
+    KernelDisconnected
 }
 
 pub struct Renderer {
     page: Page,
     painter: Painter,
-    ipc: IpcRenderer<BrowserMessage>,
-    callbacks: Vec<Callback>
+    messenger: Messenger,
 }
 
 impl Renderer {
@@ -28,38 +21,41 @@ impl Renderer {
         Self {
             page: Page::new(),
             painter: Painter::new().await,
-            ipc: IpcRenderer::new(),
-            callbacks: Vec::new()
-        }
-    }
-
-    fn get_callback(&mut self, id: u64) -> Option<Callback> {
-        let cb_index = self.callbacks
-            .iter()
-            .position(|cb| cb.id == id);
-
-        if let Some(index) = cb_index {
-            let callback = self.callbacks.swap_remove(index);
-            Some(callback)
-        } else {
-            None
+            messenger: Messenger::new()
         }
     }
 
     fn handle_response(&mut self, raw_response: RawResponse) -> Result<(), RendererError> {
-        if let Some(callback) = self.get_callback(raw_response.request_id) {
+        if let Some(callback) = self.messenger.get_callback(raw_response.request_id) {
             return (callback.func)(self, raw_response);
         }
         Ok(())
     }
 
+    fn handle_notification(&mut self, raw_notification: RawNotification) -> Result<(), RendererError> {
+        Ok(())
+    }
+
+    fn handle_request(&mut self, raw_request: RawRequest) -> Result<(), RendererError> {
+        match raw_request.method.as_str() {
+            GetRenderedBitmap::METHOD => {
+                let (id, _) = raw_request.cast::<GetRenderedBitmap>().unwrap();
+                
+                self.messenger.send_response_ok::<GetRenderedBitmap>(id, &RenderedBitmap {
+                    data: self.page.last_output_bitmap().unwrap_or(Vec::new())
+                })
+            }
+            _ => Ok(())
+        }
+    }
+
     pub fn run_event_loop(&mut self) {
         loop {
-            let result = match self.ipc.receiver().recv() {
-                Ok(BrowserMessage::Request(request)) => Ok(()),
+            let result = match self.messenger.receive() {
+                Ok(BrowserMessage::Request(raw_request)) => self.handle_request(raw_request),
                 Ok(BrowserMessage::Response(raw_response)) => self.handle_response(raw_response),
-                Ok(BrowserMessage::Notification(raw_notification)) => Ok(()),
-                Err(e) => Err(RendererError::ReceiveMessageError(e.to_string()))
+                Ok(BrowserMessage::Notification(raw_notification)) => self.handle_notification(raw_notification),
+                Err(e) => Err(e)
             };
 
             if let Err(e) = result {

@@ -11,3 +11,4 @@ impl Notification for Exit {
     type Params = ();
     const METHOD: &'static str = "exit";
 }
+

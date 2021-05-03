@@ -1864,6 +1864,7 @@ dependencies = [
  "log",
  "message",
  "painting",
+ "serde",
  "shaderc",
  "style",
  "wgpu",

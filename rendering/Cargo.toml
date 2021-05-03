@@ -20,3 +20,4 @@ dirs = "2.0.2"
 log = "*"
 shaderc = "0.7"
 bytemuck = { version = "1.5.0", features = ["derive"] }
+serde = { version = "*", features = ["derive"] }

@@ -1,10 +1,14 @@
 mod request;
 mod notification;
+mod general;
 
 use ipc::{IpcTransportError, Message};
 use serde::{Deserialize, Serialize};
 use notification::{Notification, Exit};
 use std::io::prelude::*;
+
+pub use request::*;
+pub use general::*;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum BrowserMessage {
@@ -80,6 +84,56 @@ impl RawNotification {
         N: Notification
     {
         self.method == N::METHOD
+    }
+}
+
+impl RawRequest {
+    pub fn new<R: Request>(id: u64, params: &R::Params) -> Self {
+        Self {
+            id,
+            method: R::METHOD.to_string(),
+            params: bincode::serialize(params).unwrap()
+        }
+    }
+
+    pub fn cast<R>(self) -> Result<(u64, R::Params), RawRequest>
+    where
+        R: Request,
+        R::Params: serde::de::DeserializeOwned,
+    {
+        if self.method != R::METHOD {
+            return Err(self);
+        }
+        let id = self.id;
+        let params: R::Params = bincode::deserialize(&self.params).unwrap();
+        Ok((id, params))
+    }
+}
+
+impl RawResponse {
+    pub fn ok<R>(request_id: u64, result: &R::Result) -> RawResponse
+    where
+        R: Request,
+        R::Result: serde::Serialize,
+    {
+        RawResponse {
+            request_id,
+            result: Some(bincode::serialize(&result).unwrap()),
+            error: None,
+        }
+    }
+
+    pub fn cast<R>(self) -> Result<R::Result, RawResponse>
+    where
+        R: Request,
+        R::Result: serde::de::DeserializeOwned,
+    {
+        if let Some(result) = self.result {
+            let result: R::Result = bincode::deserialize(&result).unwrap();
+            return Ok(result);
+        }
+
+        Err(self)
     }
 }
 

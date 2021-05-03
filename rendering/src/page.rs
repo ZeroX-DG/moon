@@ -3,12 +3,14 @@ use super::paint::{Painter, OutputBitmap};
 
 pub struct Page {
     main_frame: Frame,
+    last_output_bitmap: Option<OutputBitmap>
 }
 
 impl Page {
     pub fn new() -> Self {
         Self {
-            main_frame: Frame::new()
+            main_frame: Frame::new(),
+            last_output_bitmap: None
         }
     }
 
@@ -24,8 +26,14 @@ impl Page {
         self.main_frame.load_css(css);
     }
 
-    pub async fn paint(&self, painter: &mut Painter) -> Option<OutputBitmap> {
-        self.main_frame.paint(painter).await
+    pub fn last_output_bitmap(&self) -> Option<OutputBitmap> {
+        self.last_output_bitmap.clone()
+    }
+
+    pub async fn paint(&mut self, painter: &mut Painter) -> Option<OutputBitmap> {
+        let bitmap = self.main_frame.paint(painter).await;
+        self.last_output_bitmap = bitmap.clone();
+        bitmap
     }
 }
 
