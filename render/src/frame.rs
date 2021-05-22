@@ -3,17 +3,18 @@ use css::cssom::stylesheet::StyleSheet;
 use css::cssom::css_rule::CSSRule;
 use super::loader::frame::FrameLoader;
 use super::loader::css::CSSLoader;
-use super::paint::{Painter, OutputBitmap};
 
 use layout::{build_layout_tree, layout_box::LayoutBox, box_model::Rect};
 use style::render_tree::{build_render_tree, RenderTree};
 use style::value_processing::{ContextualRule, CSSLocation, CascadeOrigin};
 
+pub type FrameSize = (u32, u32);
+
 pub struct Frame {
     document: Option<NodeRef>,
     stylesheets: Vec<StyleSheet>,
     layout: FrameLayout,
-    size: (u32, u32),
+    size: FrameSize
 }
 
 pub struct FrameLayout {
@@ -36,9 +37,13 @@ impl Frame {
         }
     }
 
-    pub fn set_size(&mut self, width: u32, height: u32) {
-        self.size = (width, height);
+    pub fn resize(&mut self, new_size: FrameSize) {
+        self.size = new_size;
         self.layout.reflow(self.size, ReflowType::LayoutOnly);
+    }
+
+    pub fn size(&self) -> FrameSize {
+        self.size.clone()
     }
 
     pub fn append_stylesheet(&mut self, stylesheet: StyleSheet) {
@@ -62,15 +67,8 @@ impl Frame {
         self.append_stylesheet(CSSLoader::load_from_text(css));
     }
 
-    pub async fn paint(&self, painter: &mut Painter) -> Option<OutputBitmap> {
-        if let Some(layout_tree) = &self.layout.layout_tree {
-            let display_list = painting::build_display_list(layout_tree);
-            painting::paint(&display_list, painter);
-
-            return painter.paint(self.size).await;
-        }
-
-        None
+    pub fn layout(&self) -> &FrameLayout {
+        &self.layout
     }
 }
 
@@ -80,6 +78,10 @@ impl FrameLayout {
             layout_tree: None,
             render_tree: None,
         }
+    }
+
+    pub fn root(&self) -> &Option<LayoutBox> {
+        &self.layout_tree
     }
 
     pub fn recalculate_styles(&mut self, document: NodeRef, stylesheets: &[StyleSheet]) {
@@ -100,7 +102,7 @@ impl FrameLayout {
         self.render_tree = Some(build_render_tree(document, &contextual_rules));
     }
 
-    pub fn recalculate_layout(&mut self, size: (u32, u32)) {
+    pub fn recalculate_layout(&mut self, size: FrameSize) {
         if let Some(render_tree) = &self.render_tree {
             self.layout_tree = build_layout_tree(render_tree);
 
@@ -117,7 +119,7 @@ impl FrameLayout {
         }
     }
 
-    pub fn reflow(&mut self, size: (u32, u32), type_: ReflowType) {
+    pub fn reflow(&mut self, size: FrameSize, type_: ReflowType) {
         match type_ {
             ReflowType::LayoutOnly => {
                 if self.render_tree.is_none() {

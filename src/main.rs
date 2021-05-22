@@ -21,22 +21,26 @@ async fn async_main() {
     let action = cli::get_action(cli::accept_cli());
 
     match action {
-        cli::Action::RenderTesting(params) => {
-            let html_code = read_file(params.html);
-            let css_code = read_file(params.css);
+        cli::Action::RenderOnce(params) => {
+            let html_code = read_file(params.html_path);
+            let css_code = read_file(params.css_path);
+            let viewport = params.viewport_size;
+            let output_path = params.output_path;
 
-            if let Some(bitmap) = rendering::render_once(html_code, css_code, params.size).await {
+            let render_output = render::render_once(
+                html_code,
+                css_code,
+                viewport
+            ).await;
+
+            let (width, height) = viewport;
+
+            if let Some(bitmap) = render_output {
                 let buffer =
-                    ImageBuffer::<Rgba<u8>, _>::from_raw(params.size.0, params.size.1, bitmap)
+                    ImageBuffer::<Rgba<u8>, _>::from_raw(width, height, bitmap)
                         .unwrap();
-                buffer.save(params.output).unwrap();
+                buffer.save(output_path).unwrap();
             }
-        }
-        cli::Action::KernelTesting(params) => {
-            kernel::run_test(params.html, params.css, params.size);
-        }
-        cli::Action::Rendering(params) => {
-            rendering::run_event_loop(params.id).await.unwrap();
         }
     }
 }

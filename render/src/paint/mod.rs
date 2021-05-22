@@ -4,8 +4,9 @@ mod wgpu_painter;
 use painting::{Color, RRect, Rect};
 use rect::RectPainter;
 use wgpu_painter::WgpuPainter;
+use futures::executor::block_on;
 
-pub type OutputBitmap = Vec<u8>;
+pub type Bitmap = Vec<u8>;
 
 pub struct Painter {
     backend: WgpuPainter,
@@ -24,7 +25,7 @@ impl Painter {
         }
     }
 
-    pub async fn paint(&mut self, size: (u32, u32)) -> Option<OutputBitmap> {
+    pub async fn paint(&mut self, size: (u32, u32)) -> Option<Bitmap> {
         let device = self.backend.device();
         let data = [self.rect_painter.get_paint_data(device, size)];
 

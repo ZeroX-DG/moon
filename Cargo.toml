@@ -20,18 +20,13 @@ members = [
   "components/tree",
   "components/message",
   "render",
-  "browser"
 ]
 
 [dependencies]
-rendering = { version = "*", path = "./rendering" }
-kernel = { version = "*", path = "./kernel" }
+render = { version = "*", path = "./render" }
 ipc = { version = "*", path = "./components/ipc" }
 message = { version = "*", path = "./components/message" }
-pixels = "0.2"
-winit = "0.24.0"
 simple-logging = "*"
-dirs = "2.0.2"
 log = "*"
 flume = "*"
 clap = "*"
