@@ -1,5 +1,5 @@
 use super::client::{Client, Message};
-use flume::{Sender, Receiver};
+use flume::{Receiver, Sender};
 use std::hash::{Hash, Hasher};
 
 #[derive(Debug, Clone)]
@@ -14,7 +14,7 @@ impl<M: Message> From<&Client<M>> for IpcConnection<M> {
         Self {
             id: client.id().to_string(),
             sender: client.sender().clone(),
-            receiver: client.receiver().clone()
+            receiver: client.receiver().clone(),
         }
     }
 }
@@ -32,4 +32,3 @@ impl<M: Message> PartialEq for IpcConnection<M> {
 }
 
 impl<M: Message> Eq for IpcConnection<M> {}
-

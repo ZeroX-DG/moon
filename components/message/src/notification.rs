@@ -1,5 +1,5 @@
-use serde::{de::DeserializeOwned, Serialize};
 use super::*;
+use serde::{de::DeserializeOwned, Serialize};
 
 pub trait Notification {
     type Params: DeserializeOwned + Serialize;
@@ -40,4 +40,3 @@ impl Notification for LoadFile {
     type Params = LoadFileContentParams;
     const METHOD: &'static str = "load-html";
 }
-

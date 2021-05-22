@@ -31,10 +31,7 @@ impl WgpuPainter {
             .await
             .unwrap();
 
-        Self {
-            device,
-            queue,
-        }
+        Self { device, queue }
     }
 
     pub fn device(&self) -> &wgpu::Device {
@@ -132,7 +129,11 @@ impl WgpuPainter {
         output_buffer
     }
 
-    pub async fn output(&mut self, size: (u32, u32), output_buffer: wgpu::Buffer) -> Option<Bitmap> {
+    pub async fn output(
+        &mut self,
+        size: (u32, u32),
+        output_buffer: wgpu::Buffer,
+    ) -> Option<Bitmap> {
         // NOTE: We have to create the mapping THEN device.poll(). If we don't
         // the application will freeze.
         let mapping = output_buffer.slice(..).map_async(wgpu::MapMode::Read);

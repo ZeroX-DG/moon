@@ -1,15 +1,15 @@
-use super::paint::{Painter, Bitmap};
-use super::page::Page;
 use super::frame::FrameSize;
+use super::page::Page;
+use super::paint::{Bitmap, Painter};
 
 pub struct Renderer {
     painter: Painter,
     page: Page,
-    output: Option<Bitmap>
+    output: Option<Bitmap>,
 }
 
 pub struct RendererInitializeParams {
-    pub viewport: FrameSize
+    pub viewport: FrameSize,
 }
 
 impl Renderer {
@@ -17,7 +17,7 @@ impl Renderer {
         Self {
             painter: Painter::new().await,
             page: Page::new(),
-            output: None
+            output: None,
         }
     }
 
@@ -49,4 +49,3 @@ impl Renderer {
         &self.output
     }
 }
-

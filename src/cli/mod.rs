@@ -1,7 +1,7 @@
 mod action;
 
-use clap::{App, Arg, ArgMatches};
 pub use action::*;
+use clap::{App, Arg, ArgMatches};
 
 const AUTHOR: &'static str = "Viet-Hung Nguyen <viethungax@gmail.com>";
 
@@ -21,8 +21,7 @@ pub fn accept_cli<'a>() -> ArgMatches<'a> {
         .required(true)
         .takes_value(true);
 
-    let once_flag = Arg::with_name("once")
-        .long("once");
+    let once_flag = Arg::with_name("once").long("once");
 
     let ouput_arg = Arg::with_name("output")
         .long("output")
@@ -46,4 +45,3 @@ pub fn accept_cli<'a>() -> ArgMatches<'a> {
         .subcommand(render_once_subcommand)
         .get_matches()
 }
-

@@ -27,4 +27,3 @@ impl Page {
         self.main_frame.load_css(css);
     }
 }
-

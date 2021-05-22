@@ -1,14 +1,14 @@
-mod request;
-mod notification;
 mod general;
+mod notification;
+mod request;
 
 use ipc::{IpcTransportError, Message};
 use serde::{Deserialize, Serialize};
 use std::io::prelude::*;
 
-pub use request::*;
-pub use notification::*;
 pub use general::*;
+pub use notification::*;
+pub use request::*;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum BrowserMessage {
@@ -23,7 +23,7 @@ pub struct RawRequest {
     pub method: String,
 
     // Bytes after serialized by bincode
-    pub params: Vec<u8>
+    pub params: Vec<u8>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -32,13 +32,13 @@ pub struct RawResponse {
 
     // Bytes to be deserialize by bincode
     pub result: Option<Vec<u8>>,
-    pub error: Option<Vec<u8>>
+    pub error: Option<Vec<u8>>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct RawNotification {
     pub method: String,
-    pub params: Vec<u8>
+    pub params: Vec<u8>,
 }
 
 impl Message for BrowserMessage {
@@ -73,7 +73,7 @@ impl Message for BrowserMessage {
     fn is_exit(&self) -> bool {
         match self {
             BrowserMessage::Notification(n) => n.is::<Exit>(),
-            _ => false
+            _ => false,
         }
     }
 }
@@ -82,13 +82,13 @@ impl RawNotification {
     pub fn new<N: Notification>(params: &N::Params) -> Self {
         Self {
             params: bincode::serialize(params).unwrap(),
-            method: N::METHOD.to_string()
+            method: N::METHOD.to_string(),
         }
     }
 
     pub fn is<N>(&self) -> bool
     where
-        N: Notification
+        N: Notification,
     {
         self.method == N::METHOD
     }
@@ -107,7 +107,7 @@ impl RawRequest {
         Self {
             id,
             method: R::METHOD.to_string(),
-            params: bincode::serialize(params).unwrap()
+            params: bincode::serialize(params).unwrap(),
         }
     }
 

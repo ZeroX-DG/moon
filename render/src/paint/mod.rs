@@ -1,10 +1,10 @@
 mod rect;
 mod wgpu_painter;
 
+use futures::executor::block_on;
 use painting::{Color, RRect, Rect};
 use rect::RectPainter;
 use wgpu_painter::WgpuPainter;
-use futures::executor::block_on;
 
 pub type Bitmap = Vec<u8>;
 

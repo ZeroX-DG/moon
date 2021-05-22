@@ -1,5 +1,5 @@
-use serde::{de::DeserializeOwned, Serialize};
 use super::*;
+use serde::{de::DeserializeOwned, Serialize};
 
 pub trait Request {
     type Params: DeserializeOwned + Serialize;
@@ -14,4 +14,3 @@ impl Request for GetRenderedBitmap {
     type Result = RenderedBitmap;
     const METHOD: &'static str = "getRenderedBitmap";
 }
-

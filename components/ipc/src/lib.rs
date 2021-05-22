@@ -1,11 +1,11 @@
 mod client;
-mod net;
+mod ipc_connection;
 mod ipc_main;
 mod ipc_renderer;
-mod ipc_connection;
+mod net;
 
+pub use client::{IpcTransportError, Message};
+pub use flume;
+pub use ipc_connection::*;
 pub use ipc_main::*;
 pub use ipc_renderer::*;
-pub use ipc_connection::*;
-pub use client::{Message, IpcTransportError};
-pub use flume;

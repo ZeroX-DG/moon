@@ -1,11 +1,11 @@
-mod page;
 mod frame;
-mod paint;
 mod loader;
+mod page;
+mod paint;
 mod renderer;
 
-use renderer::{Renderer, RendererInitializeParams};
 use paint::Bitmap;
+use renderer::{Renderer, RendererInitializeParams};
 
 pub fn version() -> &'static str {
     env!("CARGO_PKG_VERSION")
@@ -14,9 +14,7 @@ pub fn version() -> &'static str {
 pub async fn render_once(html: String, css: String, size: (u32, u32)) -> Option<Bitmap> {
     let mut renderer = Renderer::new().await;
 
-    renderer.initialize(RendererInitializeParams {
-        viewport: size
-    });
+    renderer.initialize(RendererInitializeParams { viewport: size });
 
     renderer.load_html(html);
     renderer.load_css(css);
@@ -25,4 +23,3 @@ pub async fn render_once(html: String, css: String, size: (u32, u32)) -> Option<
 
     renderer.output().clone()
 }
-

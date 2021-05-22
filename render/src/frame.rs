@@ -1,12 +1,12 @@
-use dom::dom_ref::NodeRef;
-use css::cssom::stylesheet::StyleSheet;
-use css::cssom::css_rule::CSSRule;
-use super::loader::frame::FrameLoader;
 use super::loader::css::CSSLoader;
+use super::loader::frame::FrameLoader;
+use css::cssom::css_rule::CSSRule;
+use css::cssom::stylesheet::StyleSheet;
+use dom::dom_ref::NodeRef;
 
-use layout::{build_layout_tree, layout_box::LayoutBox, box_model::Rect};
+use layout::{box_model::Rect, build_layout_tree, layout_box::LayoutBox};
 use style::render_tree::{build_render_tree, RenderTree};
-use style::value_processing::{ContextualRule, CSSLocation, CascadeOrigin};
+use style::value_processing::{CSSLocation, CascadeOrigin, ContextualRule};
 
 pub type FrameSize = (u32, u32);
 
@@ -14,7 +14,7 @@ pub struct Frame {
     document: Option<NodeRef>,
     stylesheets: Vec<StyleSheet>,
     layout: FrameLayout,
-    size: FrameSize
+    size: FrameSize,
 }
 
 pub struct FrameLayout {
@@ -24,7 +24,7 @@ pub struct FrameLayout {
 
 pub enum ReflowType<'a> {
     All(NodeRef, &'a [StyleSheet]),
-    LayoutOnly
+    LayoutOnly,
 }
 
 impl Frame {
@@ -48,15 +48,19 @@ impl Frame {
 
     pub fn append_stylesheet(&mut self, stylesheet: StyleSheet) {
         self.stylesheets.push(stylesheet);
-        
+
         if let Some(document) = &self.document {
-            self.layout.reflow(self.size, ReflowType::All(document.clone(), &self.stylesheets));
+            self.layout.reflow(
+                self.size,
+                ReflowType::All(document.clone(), &self.stylesheets),
+            );
         }
     }
 
     pub fn set_document(&mut self, document: NodeRef) {
         self.document = Some(document.clone());
-        self.layout.reflow(self.size, ReflowType::All(document, &self.stylesheets));
+        self.layout
+            .reflow(self.size, ReflowType::All(document, &self.stylesheets));
     }
 
     pub fn load_html(&mut self, html: String) {
@@ -94,7 +98,7 @@ impl FrameLayout {
                         inner: style,
                         location: CSSLocation::Embedded,
                         origin: CascadeOrigin::User,
-                    }
+                    },
                 })
             })
             .collect();
@@ -109,12 +113,15 @@ impl FrameLayout {
             if let Some(layout_tree) = &mut self.layout_tree {
                 let (width, height) = size;
 
-                layout::compute_layout(layout_tree, &Rect {
-                    x: 0.,
-                    y: 0.,
-                    width: width as f32,
-                    height: height as f32
-                });
+                layout::compute_layout(
+                    layout_tree,
+                    &Rect {
+                        x: 0.,
+                        y: 0.,
+                        width: width as f32,
+                        height: height as f32,
+                    },
+                );
             }
         }
     }

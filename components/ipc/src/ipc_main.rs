@@ -1,7 +1,7 @@
-use flume::{RecvError, Selector};
 use super::client::{Client, Message};
 use super::net::Listener;
 use super::IpcConnection;
+use flume::{RecvError, Selector};
 use std::sync::{Arc, Mutex};
 use std::thread;
 
@@ -14,7 +14,7 @@ pub enum IpcMainReceiveError {
 #[derive(Debug)]
 pub enum IpcMainSendError {
     UnknownConnection,
-    Other(String)
+    Other(String),
 }
 
 pub struct IpcMain<M: Message> {
@@ -66,4 +66,3 @@ impl<M: Message> IpcMain<M> {
         Ok((IpcConnection::from(&clients[index]), msg))
     }
 }
-

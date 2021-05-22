@@ -1,8 +1,8 @@
 mod cli;
 
-use std::io::Read;
 use futures::executor::block_on;
 use image::{ImageBuffer, Rgba};
+use std::io::Read;
 
 fn main() {
     block_on(async_main());
@@ -12,7 +12,8 @@ fn read_file(path: String) -> String {
     let mut file = std::fs::File::open(path).expect("Unable to open file");
     let mut result = String::new();
 
-    file.read_to_string(&mut result).expect("Unable to read file!");
+    file.read_to_string(&mut result)
+        .expect("Unable to read file!");
 
     return result;
 }
@@ -27,21 +28,14 @@ async fn async_main() {
             let viewport = params.viewport_size;
             let output_path = params.output_path;
 
-            let render_output = render::render_once(
-                html_code,
-                css_code,
-                viewport
-            ).await;
+            let render_output = render::render_once(html_code, css_code, viewport).await;
 
             let (width, height) = viewport;
 
             if let Some(bitmap) = render_output {
-                let buffer =
-                    ImageBuffer::<Rgba<u8>, _>::from_raw(width, height, bitmap)
-                        .unwrap();
+                let buffer = ImageBuffer::<Rgba<u8>, _>::from_raw(width, height, bitmap).unwrap();
                 buffer.save(output_path).unwrap();
             }
         }
     }
 }
-
