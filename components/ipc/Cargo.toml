@@ -10,3 +10,4 @@ edition = "2018"
 serde = { version = "*", features = ["derive"] }
 flume = "0.9.1"
 log = "*"
+nanoid = "*"

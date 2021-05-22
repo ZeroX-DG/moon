@@ -1,11 +1,12 @@
 mod rect;
 mod wgpu_painter;
 
+use futures::executor::block_on;
 use painting::{Color, RRect, Rect};
 use rect::RectPainter;
 use wgpu_painter::WgpuPainter;
 
-pub type OutputBitmap = Vec<u8>;
+pub type Bitmap = Vec<u8>;
 
 pub struct Painter {
     backend: WgpuPainter,
@@ -13,10 +14,10 @@ pub struct Painter {
 }
 
 impl Painter {
-    pub async fn new(width: u32, height: u32) -> Self {
-        let backend = WgpuPainter::new(width, height).await;
+    pub async fn new() -> Self {
+        let backend = WgpuPainter::new().await;
 
-        let rect_painter = RectPainter::new(backend.device(), (width, height));
+        let rect_painter = RectPainter::new();
 
         Self {
             backend,
@@ -24,12 +25,12 @@ impl Painter {
         }
     }
 
-    pub async fn paint(&mut self) -> Option<OutputBitmap> {
+    pub async fn paint(&mut self, size: (u32, u32)) -> Option<Bitmap> {
         let device = self.backend.device();
-        let data = [self.rect_painter.get_paint_data(device)];
+        let data = [self.rect_painter.get_paint_data(device, size)];
 
-        self.backend.paint(&data).await;
-        self.backend.output().await
+        let buffer = self.backend.paint(size, &data).await;
+        self.backend.output(size, buffer).await
     }
 }
 

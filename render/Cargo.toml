@@ -1,5 +1,5 @@
 [package]
-name = "rendering"
+name = "render"
 version = "0.1.0"
 authors = ["ZeroX-DG <viethungax@gmail.com>"]
 edition = "2018"
@@ -16,11 +16,9 @@ painting = { version="*", path="../components/painting" }
 ipc = { version="*", path="../components/ipc" }
 message = { version="*", path="../components/message" }
 wgpu = "0.6"
-simple-logging = "*"
 dirs = "2.0.2"
 log = "*"
-clap = "*"
-futures = "*"
 shaderc = "0.7"
-image = "*"
 bytemuck = { version = "1.5.0", features = ["derive"] }
+serde = { version = "*", features = ["derive"] }
+futures = "*"

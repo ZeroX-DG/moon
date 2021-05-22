@@ -28,6 +28,7 @@ Here are the steps to try it out if you are interested:
 
 1. Clone the repository.
 2. Run `cargo make example` and wait for the code to compile & execute.
+3. Open `image.png` to see the output.
 
 Refer to the [Makefile.toml](Makefile.toml) file for more info.
 
