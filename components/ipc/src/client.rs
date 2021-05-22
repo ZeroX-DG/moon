@@ -67,6 +67,7 @@ impl Threads {
 
 #[derive(Debug)]
 pub struct Client<M: Message> {
+    pub id: String,
     pub sender: Sender<M>,
     pub receiver: Receiver<M>,
     threads: Threads,
@@ -120,6 +121,7 @@ impl<M: Message> Client<M> {
         let threads = Threads { reader, writer };
 
         Client {
+            id: nanoid::nanoid!(),
             sender: writer_sender,
             receiver: reader_receiver,
             threads,
@@ -132,6 +134,10 @@ impl<M: Message> Client<M> {
 
     pub fn sender(&self) -> &Sender<M> {
         &self.sender
+    }
+
+    pub fn id(&self) -> &str {
+        &self.id
     }
 
     pub fn close(self) -> Result<(), String> {

@@ -26,6 +26,11 @@ pub fn accept_cli<'a>() -> ArgMatches<'a> {
         .required(true)
         .takes_value(true);
 
+    let id_arg = Arg::with_name("id")
+        .long("id")
+        .required(true)
+        .takes_value(true);
+
     let render_testing_subcommand = App::new("render-testing")
         .about("Start a rendering process of Moon and render once")
         .version(rendering::version())
@@ -46,6 +51,7 @@ pub fn accept_cli<'a>() -> ArgMatches<'a> {
     let rendering_subcommand = App::new("render")
         .about("Start a rendering process of Moon and connect to main process")
         .version(rendering::version())
+        .arg(id_arg.clone())
         .author(AUTHOR);
 
     App::new("Moon Renderer")

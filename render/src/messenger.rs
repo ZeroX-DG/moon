@@ -1,5 +1,5 @@
 use ipc::IpcRenderer;
-use message::{BrowserMessage, RawResponse, Request, RawRequest};
+use message::{BrowserMessage, RawResponse, Request, RawRequest, Notification, RawNotification};
 use super::renderer::{Renderer, RendererError};
 use serde::{Serialize, de::DeserializeOwned};
 use std::fmt::Debug;
@@ -84,6 +84,14 @@ impl Messenger {
     ) -> Result<(), RendererError> {
         let raw_response = RawResponse::ok::<R>(request_id, result);
         self.send_message(BrowserMessage::Response(raw_response))
+    }
+
+    pub fn send_notification<N: Notification>(
+        &mut self,
+        params: &N::Params
+    ) -> Result<(), RendererError> {
+        let raw_notification = RawNotification::new::<N>(params);
+        self.send_message(BrowserMessage::Notification(raw_notification))
     }
 
     pub fn receive(&mut self) -> Result<BrowserMessage, RendererError> {

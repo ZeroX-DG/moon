@@ -19,8 +19,8 @@ members = [
   "components/ipc",
   "components/tree",
   "components/message",
-  "rendering",
-  "kernel"
+  "render",
+  "browser"
 ]
 
 [dependencies]

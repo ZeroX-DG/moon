@@ -1,5 +1,5 @@
 [package]
-name = "rendering"
+name = "render"
 version = "0.1.0"
 authors = ["ZeroX-DG <viethungax@gmail.com>"]
 edition = "2018"
@@ -21,3 +21,4 @@ log = "*"
 shaderc = "0.7"
 bytemuck = { version = "1.5.0", features = ["derive"] }
 serde = { version = "*", features = ["derive"] }
+futures = "*"

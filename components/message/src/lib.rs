@@ -4,10 +4,10 @@ mod general;
 
 use ipc::{IpcTransportError, Message};
 use serde::{Deserialize, Serialize};
-use notification::{Notification, Exit};
 use std::io::prelude::*;
 
 pub use request::*;
+pub use notification::*;
 pub use general::*;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -79,11 +79,26 @@ impl Message for BrowserMessage {
 }
 
 impl RawNotification {
+    pub fn new<N: Notification>(params: &N::Params) -> Self {
+        Self {
+            params: bincode::serialize(params).unwrap(),
+            method: N::METHOD.to_string()
+        }
+    }
+
     pub fn is<N>(&self) -> bool
     where
         N: Notification
     {
         self.method == N::METHOD
+    }
+
+    pub fn cast<N: Notification>(self) -> Result<N::Params, RawNotification> {
+        if self.method != N::METHOD {
+            return Err(self);
+        }
+        let params: N::Params = bincode::deserialize(&self.params).unwrap();
+        Ok(params)
     }
 }
 

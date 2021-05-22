@@ -32,10 +32,11 @@ async fn async_main() {
                 buffer.save(params.output).unwrap();
             }
         }
-        cli::Action::KernelTesting(_) => {
-            unimplemented!()
+        cli::Action::KernelTesting(params) => {
+            kernel::run_test(params.html, params.css, params.size);
         }
-        cli::Action::Rendering => {
+        cli::Action::Rendering(params) => {
+            rendering::run_event_loop(params.id).await.unwrap();
         }
     }
 }

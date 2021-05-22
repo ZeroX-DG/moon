@@ -25,8 +25,11 @@ pub async fn render_once(html: String, css: String, size: (u32, u32)) -> Option<
     page.paint(&mut painter).await
 }
 
-pub async fn run_event_loop() {
-    let mut renderer = Renderer::new().await;
-    renderer.run_event_loop();
+pub async fn run_event_loop(id: String) -> Result<(), String> {
+    let mut renderer = Renderer::new(id).await;
+    renderer.initialize()
+        .map_err(|e| format!("Unexpected error while initialize renderer: {:?}", e))?;
+    renderer.run_event_loop().await;
+    Ok(())
 }
 

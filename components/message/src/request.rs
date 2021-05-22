@@ -14,3 +14,4 @@ impl Request for GetRenderedBitmap {
     type Result = RenderedBitmap;
     const METHOD: &'static str = "getRenderedBitmap";
 }
+

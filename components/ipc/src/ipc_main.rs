@@ -1,12 +1,20 @@
-use flume::{RecvError, Selector, Sender};
+use flume::{RecvError, Selector};
 use super::client::{Client, Message};
 use super::net::Listener;
+use super::IpcConnection;
 use std::sync::{Arc, Mutex};
 use std::thread;
 
+#[derive(Debug)]
 pub enum IpcMainReceiveError {
     NoConnections,
     Other(RecvError),
+}
+
+#[derive(Debug)]
+pub enum IpcMainSendError {
+    UnknownConnection,
+    Other(String)
 }
 
 pub struct IpcMain<M: Message> {
@@ -38,7 +46,7 @@ impl<M: Message> IpcMain<M> {
         });
     }
 
-    pub fn receive(&self) -> Result<(Sender<M>, M), IpcMainReceiveError> {
+    pub fn receive(&self) -> Result<(IpcConnection<M>, M), IpcMainReceiveError> {
         let clients = &*self.clients.lock().unwrap();
 
         if clients.len() == 0 {
@@ -55,6 +63,7 @@ impl<M: Message> IpcMain<M> {
         let (index, msg) = selector.wait();
         let msg = msg.map_err(|e| IpcMainReceiveError::Other(e))?;
 
-        Ok((clients[index].sender().clone(), msg))
+        Ok((IpcConnection::from(&clients[index]), msg))
     }
 }
+

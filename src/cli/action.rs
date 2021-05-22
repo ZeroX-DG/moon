@@ -4,7 +4,7 @@ use std::str::FromStr;
 pub enum Action {
     RenderTesting(RenderTestingParams),
     KernelTesting(KernelTestingParams),
-    Rendering
+    Rendering(RenderingParams)
 }
 
 pub struct RenderTestingParams {
@@ -18,6 +18,10 @@ pub struct KernelTestingParams {
     pub html: String,
     pub css: String,
     pub size: (u32, u32),
+}
+
+pub struct RenderingParams {
+    pub id: String,
 }
 
 pub fn get_action<'a>(matches: ArgMatches<'a>) -> Action {
@@ -51,7 +55,10 @@ pub fn get_action<'a>(matches: ArgMatches<'a>) -> Action {
     }
 
     if matches.subcommand_matches("render").is_some() {
-        return Action::Rendering;
+        let renderer_id: String = get_arg(&matches, "id").unwrap();
+        return Action::Rendering(RenderingParams {
+            id: renderer_id
+        });
     }
     
     unreachable!("Invalid action provided!");
