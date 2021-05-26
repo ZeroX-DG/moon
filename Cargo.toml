@@ -19,6 +19,7 @@ members = [
   "components/ipc",
   "components/tree",
   "components/message",
+  "components/url",
   "render",
 ]
 
