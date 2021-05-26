@@ -6,7 +6,7 @@ pub enum ParseUrlError {
     InvalidEndOfProtocol,
     UnexpectedEndOfString,
     InvalidCharacterInPort(char),
-    InvalidPort(String)
+    InvalidPort(String),
 }
 
 #[derive(Debug)]
@@ -17,21 +17,21 @@ pub struct Url {
     host_end: u32,
     path_start: u32,
     path_end: u32,
-    port: Option<u16>
+    port: Option<u16>,
 }
 
 enum ParseState {
     InProtocol,
     InHost,
     InPort,
-    InPath
+    InPath,
 }
 
 macro_rules! expect_or_throw {
     ($source:expr, $ch:expr, $err:expr) => {
         match $source {
             Some($ch) => {}
-            _ => return Err($err)
+            _ => return Err($err),
         }
     };
 }
@@ -51,7 +51,7 @@ impl Url {
             host_end: 0,
             path_start: 0,
             path_end: 0,
-            port: None
+            port: None,
         };
         let mut buffer = String::new();
 
@@ -66,13 +66,13 @@ impl Url {
                     ParseState::InPort => {
                         let port = match buffer.parse::<u16>() {
                             Ok(p) => p,
-                            _ => return Err(ParseUrlError::InvalidPort(buffer))
+                            _ => return Err(ParseUrlError::InvalidPort(buffer)),
                         };
                         url.port = Some(port);
                     }
                 }
 
-                break
+                break;
             }
 
             let ch = next_ch.unwrap();
@@ -84,8 +84,16 @@ impl Url {
                             url.protocol_end = index - 1;
                             state = ParseState::InHost;
 
-                            expect_or_throw!(stream.next(), '/', ParseUrlError::InvalidEndOfProtocol);
-                            expect_or_throw!(stream.next(), '/', ParseUrlError::InvalidEndOfProtocol);
+                            expect_or_throw!(
+                                stream.next(),
+                                '/',
+                                ParseUrlError::InvalidEndOfProtocol
+                            );
+                            expect_or_throw!(
+                                stream.next(),
+                                '/',
+                                ParseUrlError::InvalidEndOfProtocol
+                            );
 
                             // skip useless // at the end of protocol
                             index += 2;
@@ -95,58 +103,52 @@ impl Url {
                             index += 1;
                             continue;
                         }
-                        c => return Err(ParseUrlError::InvalidCharacterInProtocol(c))
+                        c => return Err(ParseUrlError::InvalidCharacterInProtocol(c)),
                     }
                 }
-                ParseState::InHost => {
-                    match ch {
-                        '/' => {
-                            url.host_end = index;
-                            url.path_start = index + 1;
-                            state = ParseState::InPath;
-                        }
-                        ':' => {
-                            url.host_end = index;
-                            state = ParseState::InPort;
-                        }
-                        _ => {
-                            index += 1;
-                            continue;
-                        }
+                ParseState::InHost => match ch {
+                    '/' => {
+                        url.host_end = index;
+                        url.path_start = index + 1;
+                        state = ParseState::InPath;
                     }
-                }
-                ParseState::InPort => {
-                    match ch {
-                        '/' => {
-                            let port = match buffer.parse::<u16>() {
-                                Ok(p) => p,
-                                _ => return Err(ParseUrlError::InvalidPort(buffer))
-                            };
-                            url.port = Some(port);
-                            buffer.clear();
+                    ':' => {
+                        url.host_end = index;
+                        state = ParseState::InPort;
+                    }
+                    _ => {
+                        index += 1;
+                        continue;
+                    }
+                },
+                ParseState::InPort => match ch {
+                    '/' => {
+                        let port = match buffer.parse::<u16>() {
+                            Ok(p) => p,
+                            _ => return Err(ParseUrlError::InvalidPort(buffer)),
+                        };
+                        url.port = Some(port);
+                        buffer.clear();
 
-                            url.path_start = index + 1;
-                        }
-                        c if c.is_numeric() => {
-                            buffer.push(c);
-                            index += 1;
-                            continue;
-                        }
-                        c => return Err(ParseUrlError::InvalidCharacterInPort(c))
+                        url.path_start = index + 1;
                     }
-                }
-                ParseState::InPath => {
-                    match ch {
-                        '?' => {
-                            url.path_end = index;
-                            break
-                        }
-                        _ => {
-                            index += 1;
-                            continue;
-                        }
+                    c if c.is_numeric() => {
+                        buffer.push(c);
+                        index += 1;
+                        continue;
                     }
-                }
+                    c => return Err(ParseUrlError::InvalidCharacterInPort(c)),
+                },
+                ParseState::InPath => match ch {
+                    '?' => {
+                        url.path_end = index;
+                        break;
+                    }
+                    _ => {
+                        index += 1;
+                        continue;
+                    }
+                },
             }
         }
 
@@ -200,7 +202,7 @@ mod tests {
         assert_eq!(url.port(), None);
         assert_eq!(url.path(), "");
     }
-    
+
     #[test]
     fn with_port() {
         let input_url = "https://google.com:443";
@@ -219,7 +221,10 @@ mod tests {
 
         let url = Url::parse(input_url);
 
-        assert_eq!(url.err().unwrap(), ParseUrlError::InvalidCharacterInProtocol('1'));
+        assert_eq!(
+            url.err().unwrap(),
+            ParseUrlError::InvalidCharacterInProtocol('1')
+        );
     }
 
     #[test]
@@ -228,7 +233,9 @@ mod tests {
 
         let url = Url::parse(input_url);
 
-        assert_eq!(url.err().unwrap(), ParseUrlError::InvalidCharacterInPort('a'));
+        assert_eq!(
+            url.err().unwrap(),
+            ParseUrlError::InvalidCharacterInPort('a')
+        );
     }
 }
-
