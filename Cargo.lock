@@ -451,6 +451,7 @@ name = "dom"
 version = "0.1.0"
 dependencies = [
  "enum_dispatch",
+ "url",
 ]
 
 [[package]]
