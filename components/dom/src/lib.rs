@@ -11,3 +11,7 @@ pub mod node;
 pub mod text;
 
 pub mod conversion;
+
+mod element_factory;
+
+pub use element_factory::create_element;

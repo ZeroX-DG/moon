@@ -167,7 +167,7 @@ fn all_inline_children(node: &RenderNodeRef) -> bool {
 
 fn build_box_by_display(node: &RenderNodeRef) -> Option<LayoutBox> {
     // TODO: support text
-    if node.borrow().node.is::<dom::text::Text>() {
+    if node.borrow().node.is_text() {
         return None;
     }
 

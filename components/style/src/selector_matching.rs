@@ -3,7 +3,7 @@ use dom::dom_ref::NodeRef;
 use dom::element::Element;
 
 fn get_parent(el: &NodeRef) -> Option<NodeRef> {
-    let parent = el.borrow().as_node().parent();
+    let parent = el.borrow().parent();
     if let Some(p) = parent {
         if p.is_element() {
             return Some(p);
@@ -13,7 +13,7 @@ fn get_parent(el: &NodeRef) -> Option<NodeRef> {
 }
 
 fn get_prev_sibling(el: &NodeRef) -> Option<NodeRef> {
-    el.borrow().as_node().prev_sibling()
+    el.borrow().prev_sibling()
 }
 
 pub fn is_match_selectors(element: &NodeRef, selectors: &Vec<Selector>) -> bool {
@@ -82,7 +82,7 @@ pub fn is_match_selector(element: NodeRef, selector: &Selector) -> bool {
 
 fn is_match_simple_selector_seq(element: &NodeRef, sequence: &SimpleSelectorSequence) -> bool {
     let element = element.borrow();
-    let element = element.as_element().expect("Node is not an element");
+    let element = element.as_element();
     sequence
         .values()
         .iter()

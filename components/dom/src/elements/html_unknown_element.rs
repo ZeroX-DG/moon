@@ -3,22 +3,22 @@ use super::ElementMethods;
 use crate::node::NodeHooks;
 
 #[derive(Debug)]
-pub struct HTMLAnchorElement {
+pub struct HTMLUnknownElement {
 }
 
-impl HTMLAnchorElement {
+impl HTMLUnknownElement {
     pub fn empty() -> Self {
         Self {}
     }
 }
 
-impl ElementHooks for HTMLAnchorElement {
+impl ElementHooks for HTMLUnknownElement {
 }
 
-impl NodeHooks for HTMLAnchorElement {}
+impl NodeHooks for HTMLUnknownElement {}
 
-impl ElementMethods for HTMLAnchorElement {
+impl ElementMethods for HTMLUnknownElement {
     fn tag_name(&self) -> &'static str {
-        "a"
+        "unknown"
     }
 }

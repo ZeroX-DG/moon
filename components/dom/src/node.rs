@@ -2,6 +2,10 @@ use super::dom_ref::{NodeRef, WeakNodeRef};
 use super::node_list::NodeList;
 use super::text::Text;
 use super::element::Element;
+use super::document::Document;
+use super::comment::Comment;
+use enum_dispatch::enum_dispatch;
+use super::elements::ElementData;
 
 pub struct Node {
     parent_node: Option<WeakNodeRef>,
@@ -13,17 +17,28 @@ pub struct Node {
     data: Option<NodeData>
 }
 
+#[enum_dispatch(NodeHooks)]
 pub enum NodeData {
     Element(Element),
     Text(Text),
-    Comment,
-    Doctype,
-    Document
+    Document(Document),
+    Comment(Comment),
+}
+
+#[enum_dispatch]
+pub trait NodeHooks {
+    fn on_inserted(&mut self) {}
 }
 
 impl core::fmt::Debug for Node {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "Node")
+    }
+}
+
+impl NodeData {
+    pub fn handle_on_inserted(&mut self) {
+        self.on_inserted();
     }
 }
 
@@ -214,6 +229,9 @@ impl Node {
         }
 
         parent_node.last_child = Some(child.clone().downgrade());
+        if let Some(data) = &mut child_node.data {
+            data.handle_on_inserted();
+        }
     }
 
     /// Insert a child node to a parent node before a reference child node
@@ -267,6 +285,13 @@ impl Node {
         }
     }
 
+    pub fn as_text_mut_opt(&mut self) -> Option<&mut Text> {
+        match &mut self.data {
+            Some(NodeData::Text(text)) => Some(text),
+            _ => None
+        }
+    }
+
     pub fn as_element_opt(&self) -> Option<&Element> {
         match &self.data {
             Some(NodeData::Element(element)) => Some(element),
@@ -274,8 +299,52 @@ impl Node {
         }
     }
 
+    pub fn as_element_mut_opt(&mut self) -> Option<&mut Element> {
+        match &mut self.data {
+            Some(NodeData::Element(element)) => Some(element),
+            _ => None
+        }
+    }
+
     pub fn as_element(&self) -> &Element {
         self.as_element_opt().expect("Node is not an Element")
+    }
+
+    pub fn as_element_mut(&mut self) -> &mut Element {
+        self.as_element_mut_opt().expect("Node is not an Element")
+    }
+
+    pub fn as_document_opt(&self) -> Option<&Document> {
+        match &self.data {
+            Some(NodeData::Document(doc)) => Some(doc),
+            _ => None
+        }
+    }
+
+    pub fn as_document_mut_opt(&mut self) -> Option<&mut Document> {
+        match &mut self.data {
+            Some(NodeData::Document(doc)) => Some(doc),
+            _ => None
+        }
+    }
+
+    pub fn as_document(&self) -> &Document {
+        self.as_document_opt().expect("Node is not a Document")
+    }
+
+    pub fn as_comment_opt(&self) -> Option<&Comment> {
+        match &self.data {
+            Some(NodeData::Comment(com)) => Some(com),
+            _ => None
+        }
+    }
+
+    pub fn as_comment(&self) -> &Comment {
+        self.as_comment_opt().expect("Node is not a Comment")
+    }
+
+    pub fn is_element(&self) -> bool {
+        self.as_element_opt().is_some()
     }
 }
 

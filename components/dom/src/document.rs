@@ -1,3 +1,5 @@
+use super::node::NodeHooks;
+
 pub struct Document {
     doctype: Option<DocumentType>,
     mode: QuirksMode,
@@ -19,6 +21,10 @@ impl core::fmt::Debug for Document {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "Document")
     }
+}
+
+impl NodeHooks for Document {
+
 }
 
 impl Document {

@@ -1,16 +1,28 @@
-use crate::impl_html_convert;
-use crate::dom_ref::NodeRef;
+use super::ElementHooks;
+use super::ElementMethods;
+use crate::node::NodeHooks;
 
 #[derive(Debug)]
 pub struct HTMLDivElement {
-    node_ref: NodeRef,
 }
 
 impl HTMLDivElement {
-    pub fn new(node_ref: NodeRef) -> Self {
-        Self { node_ref }
+    pub fn empty() -> Self {
+        Self {}
     }
 }
 
-impl_html_convert!(HTMLDivElement);
+impl ElementHooks for HTMLDivElement {
+}
 
+impl NodeHooks for HTMLDivElement {
+    fn on_inserted(&mut self) {
+        println!("div inserted");
+    }
+}
+
+impl ElementMethods for HTMLDivElement {
+    fn tag_name(&self) -> &'static str {
+        "div"
+    }
+}

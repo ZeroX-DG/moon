@@ -38,7 +38,7 @@ impl ListOfActiveFormattingElements {
                 return None;
             }
             if let Entry::Element(el) = entry {
-                if el.borrow().as_element().unwrap().tag_name() == element {
+                if el.borrow().as_element().tag_name() == element {
                     return Some(el.clone());
                 }
             }

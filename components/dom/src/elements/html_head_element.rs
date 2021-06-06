@@ -1,16 +1,24 @@
-use crate::impl_html_convert;
-use crate::dom_ref::NodeRef;
+use super::ElementHooks;
+use super::ElementMethods;
+use crate::node::NodeHooks;
 
 #[derive(Debug)]
 pub struct HTMLHeadElement {
-    node_ref: NodeRef,
 }
 
 impl HTMLHeadElement {
-    pub fn new(node_ref: NodeRef) -> Self {
-        Self { node_ref }
+    pub fn empty() -> Self {
+        Self {}
     }
 }
 
-impl_html_convert!(HTMLHeadElement);
+impl ElementHooks for HTMLHeadElement {
+}
 
+impl NodeHooks for HTMLHeadElement {}
+
+impl ElementMethods for HTMLHeadElement {
+    fn tag_name(&self) -> &'static str {
+        "head"
+    }
+}

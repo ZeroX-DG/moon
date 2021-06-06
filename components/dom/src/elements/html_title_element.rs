@@ -1,20 +1,24 @@
-use crate::dom_ref::NodeRef;
-use crate::impl_html_convert;
+use super::ElementHooks;
+use super::ElementMethods;
+use crate::node::NodeHooks;
 
 #[derive(Debug)]
 pub struct HTMLTitleElement {
-    node_ref: NodeRef,
 }
 
 impl HTMLTitleElement {
-    pub fn new(node_ref: NodeRef) -> Self {
-        Self { node_ref }
-    }
-
-    pub fn text(&self) -> String {
-        self.node_ref.borrow().child_text_content()
+    pub fn empty() -> Self {
+        Self {}
     }
 }
 
-impl_html_convert!(HTMLTitleElement);
+impl ElementHooks for HTMLTitleElement {
+}
 
+impl NodeHooks for HTMLTitleElement {}
+
+impl ElementMethods for HTMLTitleElement {
+    fn tag_name(&self) -> &'static str {
+        "title"
+    }
+}

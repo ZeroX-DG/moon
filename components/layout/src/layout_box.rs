@@ -82,8 +82,8 @@ impl LayoutBox {
 
     pub fn is_non_replaced(&self) -> bool {
         match &self.render_node {
-            Some(node) => match node.borrow().node.borrow().as_element() {
-                Some(e) => match e.tag_name().as_str() {
+            Some(node) => match node.borrow().node.borrow().as_element_opt() {
+                Some(e) => match e.tag_name() {
                     "video" | "image" | "img" | "canvas" => false,
                     _ => true,
                 },

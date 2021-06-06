@@ -152,9 +152,9 @@ pub fn compute_styles(
 pub fn build_render_tree(node: NodeRef, rules: &[ContextualRule]) -> RenderTree {
     let mut style_cache = HashSet::new();
     let mut render_root = None;
-    if node.is::<dom::document::Document>() {
+    if node.is_document() {
         // the first child is HTML tag
-        if let Some(html) = node.borrow().as_node().first_child() {
+        if let Some(html) = node.borrow().first_child() {
             render_root = Some(html);
         }
     } else {
@@ -178,14 +178,14 @@ fn build_render_tree_from_node(
     parent: Option<RenderNodeWeak>,
     cache: &mut HashSet<ValueRef>,
 ) -> Option<RenderNodeRef> {
-    let properties = if node.is::<dom::text::Text>() {
+    let properties = if node.is_text() {
         HashMap::new()
     } else {
         apply_styles(&node, &rules)
     };
 
     // Filter head from render tree
-    if let Some(element) = node.borrow().as_element() {
+    if let Some(element) = node.borrow().as_element_opt() {
         if element.tag_name() == "head" {
             return None;
         }
@@ -209,7 +209,6 @@ fn build_render_tree_from_node(
 
     render_node.borrow_mut().children = node
         .borrow()
-        .as_node()
         .child_nodes()
         .into_iter() // this is fine because we clone the node when iterate
         .filter_map(|child| {

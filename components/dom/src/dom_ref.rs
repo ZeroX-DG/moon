@@ -65,5 +65,17 @@ impl NodeRef {
     pub fn downgrade(self) -> WeakNodeRef {
         WeakNodeRef(Rc::downgrade(&self.0))
     }
+
+    pub fn is_element(&self) -> bool {
+        self.0.borrow().is_element()
+    }
+
+    pub fn is_document(&self) -> bool {
+        self.0.borrow().as_document_opt().is_some()
+    }
+
+    pub fn is_text(&self) -> bool {
+        self.0.borrow().as_text_opt().is_some()
+    }
 }
 

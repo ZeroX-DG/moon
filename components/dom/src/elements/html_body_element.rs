@@ -1,16 +1,24 @@
-use crate::dom_ref::NodeRef;
-use crate::impl_html_convert;
+use super::ElementHooks;
+use super::ElementMethods;
+use crate::node::NodeHooks;
 
 #[derive(Debug)]
 pub struct HTMLBodyElement {
-    node_ref: NodeRef,
 }
 
 impl HTMLBodyElement {
-    pub fn new(node_ref: NodeRef) -> Self {
-        Self { node_ref }
+    pub fn empty() -> Self {
+        Self {}
     }
 }
 
-impl_html_convert!(HTMLBodyElement);
+impl ElementHooks for HTMLBodyElement {
+}
 
+impl NodeHooks for HTMLBodyElement {}
+
+impl ElementMethods for HTMLBodyElement {
+    fn tag_name(&self) -> &'static str {
+        "body"
+    }
+}
