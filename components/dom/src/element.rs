@@ -1,17 +1,15 @@
 use super::dom_token_list::DOMTokenList;
-use super::node::Node;
-use std::borrow::Cow;
+use super::elements::ElementData;
 use std::collections::HashMap;
 use std::ops::{Deref, DerefMut};
 
 pub struct AttributeMap(HashMap<String, String>);
 
 pub struct Element {
-    pub node: Node,
     attributes: AttributeMap,
     id: String,
     class_list: DOMTokenList,
-    tag_name: String,
+    data: ElementData
 }
 
 impl AttributeMap {
@@ -19,11 +17,11 @@ impl AttributeMap {
         Self(HashMap::new())
     }
 
-    pub fn get_str(&self, attr: &str) -> Cow<str> {
+    pub fn get_str(&self, attr: &str) -> String {
         if let Some(value) = self.0.get(attr) {
-            Cow::Borrowed(value)
+            value.to_string()
         } else {
-            Cow::Owned(String::new())
+            String::new()
         }
     }
 
@@ -51,18 +49,17 @@ impl DerefMut for AttributeMap {
 
 impl core::fmt::Debug for Element {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "Element({:?})", self.tag_name())
+        write!(f, "Element({:?})", self.data)
     }
 }
 
 impl Element {
-    pub fn new(tag_name: String) -> Self {
+    pub fn new(data: ElementData) -> Self {
         Self {
-            node: Node::new(),
             attributes: AttributeMap::new(),
             id: String::new(),
             class_list: DOMTokenList::new(),
-            tag_name,
+            data
         }
     }
 
@@ -84,10 +81,6 @@ impl Element {
 
     pub fn has_attribute(&self, name: &str) -> bool {
         self.attributes.contains_key(name)
-    }
-
-    pub fn tag_name(&self) -> String {
-        self.tag_name.clone()
     }
 
     pub fn class_list(&self) -> &DOMTokenList {
