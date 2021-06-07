@@ -70,7 +70,7 @@ impl Element {
         }
     }
 
-    pub fn tag_name(&self) -> &'static str {
+    pub fn tag_name(&self) -> String {
         self.data.tag_name()
     }
 

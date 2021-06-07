@@ -39,8 +39,8 @@ trait ElementHooks {
 
 #[enum_dispatch]
 pub trait ElementMethods {
-    fn tag_name(&self) -> &'static str {
-        "unknown"
+    fn tag_name(&self) -> String {
+        "unknown".to_string()
     }
 }
 

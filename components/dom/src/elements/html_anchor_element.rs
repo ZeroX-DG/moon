@@ -27,8 +27,8 @@ impl ElementHooks for HTMLAnchorElement {
 impl NodeHooks for HTMLAnchorElement {}
 
 impl ElementMethods for HTMLAnchorElement {
-    fn tag_name(&self) -> &'static str {
-        "a"
+    fn tag_name(&self) -> String {
+        "a".to_string()
     }
 }
 

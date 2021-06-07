@@ -330,7 +330,7 @@ mod tests {
 
         assert!(layout_box.box_type == BoxType::Block);
 
-        assert!(layout_box.children.len() == 3);
+        assert_eq!(layout_box.children.len(), 3);
 
         assert!(layout_box.children[0].box_type == BoxType::Block);
         assert!(layout_box.children[0].is_anonymous());

@@ -18,7 +18,7 @@ impl ElementHooks for HTMLHtmlElement {
 impl NodeHooks for HTMLHtmlElement {}
 
 impl ElementMethods for HTMLHtmlElement {
-    fn tag_name(&self) -> &'static str {
-        "html"
+    fn tag_name(&self) -> String {
+        "html".to_string()
     }
 }

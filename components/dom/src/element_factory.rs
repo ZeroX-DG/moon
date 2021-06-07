@@ -10,7 +10,7 @@ macro_rules! translate {
             $(
                 $($matcher)|* => translate!($tag_name, $dataKey, $result)
             ),*,
-            _ => Node::new(NodeData::Element(Element::new(ElementData::Unknown(HTMLUnknownElement::empty()))))
+            _ => Node::new(NodeData::Element(Element::new(ElementData::Unknown(HTMLUnknownElement::new($tag_name.to_string())))))
         }
     };
     ($tag_name:ident, $dataKey:ident, $struct:ident) => {

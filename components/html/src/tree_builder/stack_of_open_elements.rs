@@ -118,7 +118,7 @@ impl StackOfOpenElements {
                 return true;
             }
 
-            if list.contains(&element.tag_name()) {
+            if list.contains(&element.tag_name().as_str()) {
                 return false;
             }
         }
@@ -169,7 +169,7 @@ impl StackOfOpenElements {
             let node = node.borrow();
             let element = node.as_element();
 
-            if list.contains(&element.tag_name()) {
+            if list.contains(&element.tag_name().as_str()) {
                 return false;
             }
         }

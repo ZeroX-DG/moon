@@ -22,7 +22,7 @@ impl NodeHooks for HTMLDivElement {
 }
 
 impl ElementMethods for HTMLDivElement {
-    fn tag_name(&self) -> &'static str {
-        "div"
+    fn tag_name(&self) -> String {
+        "div".to_string()
     }
 }

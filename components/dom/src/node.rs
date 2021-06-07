@@ -32,13 +32,24 @@ pub trait NodeHooks {
 
 impl core::fmt::Debug for Node {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "Node")
+        write!(f, "Node({:?})", self.data)
     }
 }
 
 impl NodeData {
     pub fn handle_on_inserted(&mut self) {
         self.on_inserted();
+    }
+}
+
+impl core::fmt::Debug for NodeData {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            NodeData::Text(text) => write!(f, "Text({:?})", text.get_data()),
+            NodeData::Comment(comment) => write!(f, "Comment({:?})", comment.get_data()),
+            NodeData::Document(_) => write!(f, "Document"),
+            NodeData::Element(element) => write!(f, "Element({:?})", element.tag_name())
+        }
     }
 }
 
@@ -306,14 +317,6 @@ impl Node {
         }
     }
 
-    pub fn as_element(&self) -> &Element {
-        self.as_element_opt().expect("Node is not an Element")
-    }
-
-    pub fn as_element_mut(&mut self) -> &mut Element {
-        self.as_element_mut_opt().expect("Node is not an Element")
-    }
-
     pub fn as_document_opt(&self) -> Option<&Document> {
         match &self.data {
             Some(NodeData::Document(doc)) => Some(doc),
@@ -328,10 +331,6 @@ impl Node {
         }
     }
 
-    pub fn as_document(&self) -> &Document {
-        self.as_document_opt().expect("Node is not a Document")
-    }
-
     pub fn as_comment_opt(&self) -> Option<&Comment> {
         match &self.data {
             Some(NodeData::Comment(com)) => Some(com),
@@ -339,12 +338,35 @@ impl Node {
         }
     }
 
+    pub fn as_comment_mut_opt(&mut self) -> Option<&mut Comment> {
+        match &mut self.data {
+            Some(NodeData::Comment(com)) => Some(com),
+            _ => None
+        }
+    }
+
+    pub fn as_element(&self) -> &Element {
+        self.as_element_opt().expect("Node is not an Element")
+    }
+
+    pub fn as_element_mut(&mut self) -> &mut Element {
+        self.as_element_mut_opt().expect("Node is not an Element")
+    }
+
+    pub fn as_document(&self) -> &Document {
+        self.as_document_opt().expect("Node is not a Document")
+    }
+
+    pub fn as_document_mut(&mut self) -> &mut Document {
+        self.as_document_mut_opt().expect("Node is not a Document")
+    }
+
     pub fn as_comment(&self) -> &Comment {
         self.as_comment_opt().expect("Node is not a Comment")
     }
 
-    pub fn is_element(&self) -> bool {
-        self.as_element_opt().is_some()
+    pub fn as_comment_mut(&mut self) -> &mut Comment {
+        self.as_comment_mut_opt().expect("Node is not a Comment")
     }
 }
 

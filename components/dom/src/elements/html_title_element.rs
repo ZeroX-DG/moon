@@ -18,7 +18,7 @@ impl ElementHooks for HTMLTitleElement {
 impl NodeHooks for HTMLTitleElement {}
 
 impl ElementMethods for HTMLTitleElement {
-    fn tag_name(&self) -> &'static str {
-        "title"
+    fn tag_name(&self) -> String {
+        "title".to_string()
     }
 }

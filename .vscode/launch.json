@@ -120,7 +120,7 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug unit tests in executable 'rendering'",
+            "name": "Debug unit tests in executable 'render'",
             "cargo": {
                 "args": [
                     "test",

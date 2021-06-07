@@ -55,6 +55,10 @@ impl WeakNodeRef {
             _ => None,
         }
     }
+
+    pub fn empty() -> Self {
+        Self(Weak::new())
+    }
 }
 
 impl NodeRef {
@@ -67,7 +71,7 @@ impl NodeRef {
     }
 
     pub fn is_element(&self) -> bool {
-        self.0.borrow().is_element()
+        self.0.borrow().as_element_opt().is_some()
     }
 
     pub fn is_document(&self) -> bool {
@@ -76,6 +80,10 @@ impl NodeRef {
 
     pub fn is_text(&self) -> bool {
         self.0.borrow().as_text_opt().is_some()
+    }
+
+    pub fn is_comment(&self) -> bool {
+        self.0.borrow().as_comment_opt().is_some()
     }
 }
 

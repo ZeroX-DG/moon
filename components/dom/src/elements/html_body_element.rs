@@ -18,7 +18,7 @@ impl ElementHooks for HTMLBodyElement {
 impl NodeHooks for HTMLBodyElement {}
 
 impl ElementMethods for HTMLBodyElement {
-    fn tag_name(&self) -> &'static str {
-        "body"
+    fn tag_name(&self) -> String {
+        "body".to_string()
     }
 }

@@ -1,7 +1,7 @@
 use dom::dom_ref::NodeRef;
 
 pub fn print_dom_tree(root: NodeRef, level: usize) {
-    let child_nodes = root.borrow().as_node().child_nodes();
+    let child_nodes = root.borrow().child_nodes();
     println!(
         "{}{:#?}({} child)",
         "    ".repeat(level),
