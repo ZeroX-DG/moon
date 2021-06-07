@@ -86,4 +86,3 @@ impl NodeRef {
         self.0.borrow().as_comment_opt().is_some()
     }
 }
-

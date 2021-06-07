@@ -11,8 +11,7 @@ impl core::fmt::Debug for Text {
     }
 }
 
-impl NodeHooks for Text {
-}
+impl NodeHooks for Text {}
 
 impl Text {
     pub fn new(data: String) -> Self {

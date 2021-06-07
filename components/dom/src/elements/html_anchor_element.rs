@@ -5,14 +5,12 @@ use url::Url;
 
 #[derive(Debug)]
 pub struct HTMLAnchorElement {
-    href: Option<Url>
+    href: Option<Url>,
 }
 
 impl HTMLAnchorElement {
     pub fn empty() -> Self {
-        Self {
-            href: None
-        }
+        Self { href: None }
     }
 }
 
@@ -31,4 +29,3 @@ impl ElementMethods for HTMLAnchorElement {
         "a".to_string()
     }
 }
-

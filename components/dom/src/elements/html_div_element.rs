@@ -3,8 +3,7 @@ use super::ElementMethods;
 use crate::node::NodeHooks;
 
 #[derive(Debug)]
-pub struct HTMLDivElement {
-}
+pub struct HTMLDivElement {}
 
 impl HTMLDivElement {
     pub fn empty() -> Self {
@@ -12,8 +11,7 @@ impl HTMLDivElement {
     }
 }
 
-impl ElementHooks for HTMLDivElement {
-}
+impl ElementHooks for HTMLDivElement {}
 
 impl NodeHooks for HTMLDivElement {
     fn on_inserted(&mut self) {

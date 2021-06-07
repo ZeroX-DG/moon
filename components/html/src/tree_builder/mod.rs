@@ -8,7 +8,7 @@ use super::tokenizer::token::Attribute;
 use super::tokenizer::token::Token;
 use crate::tokenizer::Tokenizing;
 use dom::comment::Comment;
-use dom::document::{DocumentType, QuirksMode, Document};
+use dom::document::{Document, DocumentType, QuirksMode};
 use dom::dom_ref::NodeRef;
 use dom::element::Element;
 use dom::node::{Node, NodeData};
@@ -54,14 +54,10 @@ macro_rules! match_any {
 /// Cast a node_ref to an Element. Only use when it is safe
 macro_rules! get_element {
     ($target:ident) => {
-        $target
-            .borrow()
-            .as_element()
+        $target.borrow().as_element()
     };
     ($target:expr) => {
-        $target
-            .borrow()
-            .as_element()
+        $target.borrow().as_element()
     };
 }
 
@@ -452,8 +448,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
             AdjustedInsertionLocation::LastChild(parent) => {
                 let parent_node = parent.borrow();
                 if let Some(last_child) = parent_node.last_child() {
-                    if let Some(text) = last_child.borrow_mut().as_text_mut_opt()
-                    {
+                    if let Some(text) = last_child.borrow_mut().as_text_mut_opt() {
                         text.character_data.append_data(&ch.to_string());
                         return;
                     }
@@ -461,10 +456,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
             }
             AdjustedInsertionLocation::BeforeSibling(_, sibling) => {
                 if let Some(prev_sibling) = sibling.borrow().prev_sibling() {
-                    if let Some(text) = prev_sibling
-                        .borrow_mut()
-                        .as_text_mut_opt()
-                    {
+                    if let Some(text) = prev_sibling.borrow_mut().as_text_mut_opt() {
                         text.character_data.append_data(&ch.to_string());
                         return;
                     }
@@ -967,11 +959,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
 
             let doctype = DocumentType::new(name, public_identifier, system_identifier);
 
-            if let Some(doc) = self
-                .document
-                .borrow_mut()
-                .as_document_mut_opt()
-            {
+            if let Some(doc) = self.document.borrow_mut().as_document_mut_opt() {
                 doc.set_doctype(doctype);
                 doc.set_mode(self.which_quirks_mode(token));
             }
@@ -3272,7 +3260,13 @@ mod test {
         let div = body.borrow().first_child().unwrap();
         let a = div.borrow().first_child().unwrap();
 
-        assert_eq!(a.borrow().as_element().attributes().get_str("href"), "http://google.com".to_string());
-        assert_eq!(a.borrow().child_text_content(), "This is a link".to_string());
+        assert_eq!(
+            a.borrow().as_element().attributes().get_str("href"),
+            "http://google.com".to_string()
+        );
+        assert_eq!(
+            a.borrow().child_text_content(),
+            "This is a link".to_string()
+        );
     }
 }

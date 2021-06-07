@@ -121,9 +121,9 @@ mod tests {
     use css::parser::Parser;
     use css::tokenizer::token::Token;
     use css::tokenizer::Tokenizer;
-    use dom::node::Node;
     use dom::create_element;
     use dom::dom_ref::WeakNodeRef;
+    use dom::node::Node;
 
     #[test]
     fn match_simple_type() {
@@ -148,7 +148,10 @@ mod tests {
     #[test]
     fn match_simple_id() {
         let element_node = create_element(WeakNodeRef::empty(), "h1");
-        element_node.borrow_mut().as_element_mut().set_attribute("id", "button");
+        element_node
+            .borrow_mut()
+            .as_element_mut()
+            .set_attribute("id", "button");
         let css = "h1#button { color: red; }";
 
         let tokenizer = Tokenizer::new(css.chars());

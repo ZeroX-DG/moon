@@ -16,4 +16,3 @@ macro_rules! impl_html_convert {
         }
     };
 }
-

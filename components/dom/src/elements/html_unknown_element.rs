@@ -4,19 +4,16 @@ use crate::node::NodeHooks;
 
 #[derive(Debug)]
 pub struct HTMLUnknownElement {
-    tag_name: String
+    tag_name: String,
 }
 
 impl HTMLUnknownElement {
     pub fn new(tag_name: String) -> Self {
-        Self {
-            tag_name
-        }
+        Self { tag_name }
     }
 }
 
-impl ElementHooks for HTMLUnknownElement {
-}
+impl ElementHooks for HTMLUnknownElement {}
 
 impl NodeHooks for HTMLUnknownElement {}
 

@@ -1,9 +1,9 @@
 use css::selector::parse_selector_str;
 use css::selector::structs::*;
+use dom::create_element;
 use dom::dom_ref::{NodeRef, WeakNodeRef};
 use dom::node::{Node, NodeData};
 use dom::text::Text;
-use dom::create_element;
 
 pub fn element(selector: &str, children: Vec<NodeRef>) -> NodeRef {
     let selector =
@@ -30,7 +30,9 @@ pub fn element(selector: &str, children: Vec<NodeRef>) -> NodeRef {
     for part in selector_parts {
         match part.selector_type() {
             SimpleSelectorType::ID => {
-                node.borrow_mut().as_element_mut().set_attribute("id", &part.value().clone().unwrap());
+                node.borrow_mut()
+                    .as_element_mut()
+                    .set_attribute("id", &part.value().clone().unwrap());
             }
             SimpleSelectorType::Class => {
                 classes.push(part.value().clone().unwrap());
@@ -40,7 +42,9 @@ pub fn element(selector: &str, children: Vec<NodeRef>) -> NodeRef {
     }
 
     if classes.len() > 0 {
-        node.borrow_mut().as_element_mut().set_attribute("class", &classes.join(" ").to_string());
+        node.borrow_mut()
+            .as_element_mut()
+            .set_attribute("class", &classes.join(" ").to_string());
     }
 
     for child in children {
@@ -52,4 +56,3 @@ pub fn element(selector: &str, children: Vec<NodeRef>) -> NodeRef {
 pub fn text(value: &str) -> NodeRef {
     NodeRef::new(Node::new(NodeData::Text(Text::new(value.to_string()))))
 }
-

@@ -1,11 +1,11 @@
+use super::comment::Comment;
+use super::document::Document;
 use super::dom_ref::{NodeRef, WeakNodeRef};
+use super::element::Element;
+use super::elements::ElementData;
 use super::node_list::NodeList;
 use super::text::Text;
-use super::element::Element;
-use super::document::Document;
-use super::comment::Comment;
 use enum_dispatch::enum_dispatch;
-use super::elements::ElementData;
 
 pub struct Node {
     parent_node: Option<WeakNodeRef>,
@@ -14,7 +14,7 @@ pub struct Node {
     next_sibling: Option<NodeRef>,
     prev_sibling: Option<WeakNodeRef>,
     owner_document: Option<WeakNodeRef>,
-    data: Option<NodeData>
+    data: Option<NodeData>,
 }
 
 #[enum_dispatch(NodeHooks)]
@@ -48,7 +48,7 @@ impl core::fmt::Debug for NodeData {
             NodeData::Text(text) => write!(f, "Text({:?})", text.get_data()),
             NodeData::Comment(comment) => write!(f, "Comment({:?})", comment.get_data()),
             NodeData::Document(_) => write!(f, "Document"),
-            NodeData::Element(element) => write!(f, "Element({:?})", element.tag_name())
+            NodeData::Element(element) => write!(f, "Element({:?})", element.tag_name()),
         }
     }
 }
@@ -68,7 +68,7 @@ impl Node {
             next_sibling: None,
             prev_sibling: None,
             owner_document: None,
-            data: None
+            data: None,
         }
     }
 
@@ -292,56 +292,56 @@ impl Node {
     pub fn as_text_opt(&self) -> Option<&Text> {
         match &self.data {
             Some(NodeData::Text(text)) => Some(text),
-            _ => None
+            _ => None,
         }
     }
 
     pub fn as_text_mut_opt(&mut self) -> Option<&mut Text> {
         match &mut self.data {
             Some(NodeData::Text(text)) => Some(text),
-            _ => None
+            _ => None,
         }
     }
 
     pub fn as_element_opt(&self) -> Option<&Element> {
         match &self.data {
             Some(NodeData::Element(element)) => Some(element),
-            _ => None
+            _ => None,
         }
     }
 
     pub fn as_element_mut_opt(&mut self) -> Option<&mut Element> {
         match &mut self.data {
             Some(NodeData::Element(element)) => Some(element),
-            _ => None
+            _ => None,
         }
     }
 
     pub fn as_document_opt(&self) -> Option<&Document> {
         match &self.data {
             Some(NodeData::Document(doc)) => Some(doc),
-            _ => None
+            _ => None,
         }
     }
 
     pub fn as_document_mut_opt(&mut self) -> Option<&mut Document> {
         match &mut self.data {
             Some(NodeData::Document(doc)) => Some(doc),
-            _ => None
+            _ => None,
         }
     }
 
     pub fn as_comment_opt(&self) -> Option<&Comment> {
         match &self.data {
             Some(NodeData::Comment(com)) => Some(com),
-            _ => None
+            _ => None,
         }
     }
 
     pub fn as_comment_mut_opt(&mut self) -> Option<&mut Comment> {
         match &mut self.data {
             Some(NodeData::Comment(com)) => Some(com),
-            _ => None
+            _ => None,
         }
     }
 
@@ -397,19 +397,10 @@ mod test {
         Node::append_child(parent.clone(), child1.clone());
         Node::append_child(parent.clone(), child2.clone());
 
-        assert_eq!(
-            parent.borrow().first_child(),
-            Some(child1.clone())
-        );
+        assert_eq!(parent.borrow().first_child(), Some(child1.clone()));
         assert_eq!(parent.borrow().last_child(), Some(child2.clone()));
-        assert_eq!(
-            child1.borrow().next_sibling(),
-            Some(child2.clone())
-        );
-        assert_eq!(
-            child2.borrow().prev_sibling(),
-            Some(child1.clone())
-        );
+        assert_eq!(child1.borrow().next_sibling(), Some(child2.clone()));
+        assert_eq!(child2.borrow().prev_sibling(), Some(child1.clone()));
         assert_eq!(child1.borrow().prev_sibling(), None);
         assert_eq!(child2.borrow().next_sibling(), None);
 
@@ -426,19 +417,10 @@ mod test {
         Node::append_child(parent.clone(), child1.clone());
         Node::insert_before(parent.clone(), child2.clone(), Some(child1.clone()));
 
-        assert_eq!(
-            parent.borrow().first_child(),
-            Some(child2.clone())
-        );
+        assert_eq!(parent.borrow().first_child(), Some(child2.clone()));
         assert_eq!(parent.borrow().last_child(), Some(child1.clone()));
-        assert_eq!(
-            child2.borrow().next_sibling(),
-            Some(child1.clone())
-        );
-        assert_eq!(
-            child1.borrow().prev_sibling(),
-            Some(child2.clone())
-        );
+        assert_eq!(child2.borrow().next_sibling(), Some(child1.clone()));
+        assert_eq!(child1.borrow().prev_sibling(), Some(child2.clone()));
         assert_eq!(child2.borrow().prev_sibling(), None);
         assert_eq!(child1.borrow().next_sibling(), None);
 
@@ -475,11 +457,7 @@ mod test {
         Node::append_child(new_parent.clone(), child.clone());
 
         assert_eq!(parent.borrow().first_child(), None);
-        assert_eq!(
-            new_parent.borrow().first_child(),
-            Some(child.clone())
-        );
+        assert_eq!(new_parent.borrow().first_child(), Some(child.clone()));
         assert_eq!(child.borrow().parent(), Some(new_parent.clone()));
     }
 }
-

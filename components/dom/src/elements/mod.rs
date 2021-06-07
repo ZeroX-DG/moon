@@ -1,5 +1,5 @@
-use enum_dispatch::enum_dispatch;
 use super::node::NodeHooks;
+use enum_dispatch::enum_dispatch;
 
 mod html_anchor_element;
 mod html_body_element;
@@ -26,15 +26,13 @@ pub enum ElementData {
     Head(HTMLHeadElement),
     Html(HTMLHtmlElement),
     Title(HTMLTitleElement),
-    Unknown(HTMLUnknownElement)
+    Unknown(HTMLUnknownElement),
 }
 
 #[enum_dispatch]
 trait ElementHooks {
     #[allow(unused_variables)]
-    fn on_attribute_change(&mut self, attr: &str, value: &str) {
-
-    }
+    fn on_attribute_change(&mut self, attr: &str, value: &str) {}
 }
 
 #[enum_dispatch]
@@ -53,4 +51,3 @@ impl ElementData {
         self.on_inserted();
     }
 }
-

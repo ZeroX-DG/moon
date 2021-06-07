@@ -24,4 +24,3 @@ impl Comment {
         self.character_data.get_data()
     }
 }
-

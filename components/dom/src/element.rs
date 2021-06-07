@@ -10,7 +10,7 @@ pub struct Element {
     attributes: AttributeMap,
     id: String,
     class_list: DOMTokenList,
-    data: ElementData
+    data: ElementData,
 }
 
 impl AttributeMap {
@@ -66,7 +66,7 @@ impl Element {
             attributes: AttributeMap::new(),
             id: String::new(),
             class_list: DOMTokenList::new(),
-            data
+            data,
         }
     }
 
@@ -107,4 +107,3 @@ impl Element {
         self.data.handle_on_inserted();
     }
 }
-

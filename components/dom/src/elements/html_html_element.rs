@@ -3,8 +3,7 @@ use super::ElementMethods;
 use crate::node::NodeHooks;
 
 #[derive(Debug)]
-pub struct HTMLHtmlElement {
-}
+pub struct HTMLHtmlElement {}
 
 impl HTMLHtmlElement {
     pub fn empty() -> Self {
@@ -12,8 +11,7 @@ impl HTMLHtmlElement {
     }
 }
 
-impl ElementHooks for HTMLHtmlElement {
-}
+impl ElementHooks for HTMLHtmlElement {}
 
 impl NodeHooks for HTMLHtmlElement {}
 

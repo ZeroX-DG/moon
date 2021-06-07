@@ -23,9 +23,7 @@ impl core::fmt::Debug for Document {
     }
 }
 
-impl NodeHooks for Document {
-
-}
+impl NodeHooks for Document {}
 
 impl Document {
     pub fn new() -> Self {

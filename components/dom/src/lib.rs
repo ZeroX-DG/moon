@@ -1,7 +1,7 @@
 pub mod dom_ref;
 pub mod dom_token_list;
-pub mod node_list;
 pub mod elements;
+pub mod node_list;
 
 pub mod character_data;
 pub mod comment;
