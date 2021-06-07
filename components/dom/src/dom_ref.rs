@@ -1,21 +1,10 @@
-use super::element::Element;
 use super::node::Node;
-use std::any::Any;
 use std::cell::RefCell;
 use std::ops::Deref;
 use std::rc::{Rc, Weak};
 
-pub trait DOMObject: core::fmt::Debug {
-    fn as_node(&self) -> &Node;
-    fn as_node_mut(&mut self) -> &mut Node;
-    fn as_any(&self) -> &dyn Any;
-    fn as_any_mut(&mut self) -> &mut dyn Any;
-    fn as_element(&self) -> Option<&Element>;
-    fn as_element_mut(&mut self) -> Option<&mut Element>;
-}
-
-pub struct NodeRef(Rc<RefCell<dyn DOMObject>>);
-pub struct WeakNodeRef(Weak<RefCell<dyn DOMObject>>);
+pub struct NodeRef(Rc<RefCell<Node>>);
+pub struct WeakNodeRef(Weak<RefCell<Node>>);
 
 impl core::fmt::Debug for NodeRef {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
@@ -34,9 +23,9 @@ impl core::fmt::Debug for WeakNodeRef {
 }
 
 impl Deref for NodeRef {
-    type Target = RefCell<dyn DOMObject>;
+    type Target = RefCell<Node>;
 
-    fn deref(&self) -> &RefCell<dyn DOMObject> {
+    fn deref(&self) -> &RefCell<Node> {
         &*self.0
     }
 }
@@ -66,10 +55,14 @@ impl WeakNodeRef {
             _ => None,
         }
     }
+
+    pub fn empty() -> Self {
+        Self(Weak::new())
+    }
 }
 
 impl NodeRef {
-    pub fn new<D: DOMObject + 'static>(node: D) -> Self {
+    pub fn new(node: Node) -> Self {
         Self(Rc::new(RefCell::new(node)))
     }
 
@@ -77,11 +70,19 @@ impl NodeRef {
         WeakNodeRef(Rc::downgrade(&self.0))
     }
 
-    pub fn is<T: Any>(&self) -> bool {
-        self.0.borrow().as_any().is::<T>()
+    pub fn is_element(&self) -> bool {
+        self.0.borrow().as_element_opt().is_some()
     }
 
-    pub fn is_element(&self) -> bool {
-        self.0.borrow().as_element().is_some()
+    pub fn is_document(&self) -> bool {
+        self.0.borrow().as_document_opt().is_some()
+    }
+
+    pub fn is_text(&self) -> bool {
+        self.0.borrow().as_text_opt().is_some()
+    }
+
+    pub fn is_comment(&self) -> bool {
+        self.0.borrow().as_comment_opt().is_some()
     }
 }

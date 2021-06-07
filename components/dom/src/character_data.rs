@@ -1,17 +1,11 @@
-use super::node::Node;
-
 #[derive(Debug)]
 pub struct CharacterData {
-    pub node: Node,
     data: String,
 }
 
 impl CharacterData {
     pub fn new(data: String) -> Self {
-        Self {
-            node: Node::new(),
-            data,
-        }
+        Self { data }
     }
 
     pub fn get_data(&self) -> String {

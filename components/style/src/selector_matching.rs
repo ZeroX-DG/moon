@@ -3,7 +3,7 @@ use dom::dom_ref::NodeRef;
 use dom::element::Element;
 
 fn get_parent(el: &NodeRef) -> Option<NodeRef> {
-    let parent = el.borrow().as_node().parent();
+    let parent = el.borrow().parent();
     if let Some(p) = parent {
         if p.is_element() {
             return Some(p);
@@ -13,7 +13,7 @@ fn get_parent(el: &NodeRef) -> Option<NodeRef> {
 }
 
 fn get_prev_sibling(el: &NodeRef) -> Option<NodeRef> {
-    el.borrow().as_node().prev_sibling()
+    el.borrow().prev_sibling()
 }
 
 pub fn is_match_selectors(element: &NodeRef, selectors: &Vec<Selector>) -> bool {
@@ -82,7 +82,7 @@ pub fn is_match_selector(element: NodeRef, selector: &Selector) -> bool {
 
 fn is_match_simple_selector_seq(element: &NodeRef, sequence: &SimpleSelectorSequence) -> bool {
     let element = element.borrow();
-    let element = element.as_element().expect("Node is not an element");
+    let element = element.as_element();
     sequence
         .values()
         .iter()
@@ -121,11 +121,13 @@ mod tests {
     use css::parser::Parser;
     use css::tokenizer::token::Token;
     use css::tokenizer::Tokenizer;
+    use dom::create_element;
+    use dom::dom_ref::WeakNodeRef;
     use dom::node::Node;
 
     #[test]
     fn match_simple_type() {
-        let element = NodeRef::new(Element::new("h1".to_string()));
+        let element = create_element(WeakNodeRef::empty(), "h1");
         let css = "h1 { color: red; }";
 
         let tokenizer = Tokenizer::new(css.chars());
@@ -145,9 +147,11 @@ mod tests {
 
     #[test]
     fn match_simple_id() {
-        let mut element = Element::new("h1".to_string());
-        element.set_attribute("id", "button");
-        let element = NodeRef::new(element);
+        let element_node = create_element(WeakNodeRef::empty(), "h1");
+        element_node
+            .borrow_mut()
+            .as_element_mut()
+            .set_attribute("id", "button");
         let css = "h1#button { color: red; }";
 
         let tokenizer = Tokenizer::new(css.chars());
@@ -160,15 +164,15 @@ mod tests {
         match rule {
             CSSRule::Style(style) => {
                 let selectors = &style.selectors;
-                assert!(is_match_selectors(&element, selectors));
+                assert!(is_match_selectors(&element_node, selectors));
             }
         }
     }
 
     #[test]
     fn match_simple_decendant() {
-        let parent = NodeRef::new(Element::new("h1".to_string()));
-        let child = NodeRef::new(Element::new("button".to_string()));
+        let parent = create_element(WeakNodeRef::empty(), "h1");
+        let child = create_element(WeakNodeRef::empty(), "button");
         Node::append_child(parent.clone(), child.clone());
 
         let css = "h1 button { color: red; }";
@@ -190,8 +194,8 @@ mod tests {
 
     #[test]
     fn match_simple_child() {
-        let parent = NodeRef::new(Element::new("h1".to_string()));
-        let child = NodeRef::new(Element::new("button".to_string()));
+        let parent = create_element(WeakNodeRef::empty(), "h1");
+        let child = create_element(WeakNodeRef::empty(), "button");
         Node::append_child(parent.clone(), child.clone());
 
         let css = "h1 > button { color: red; }";
@@ -213,8 +217,8 @@ mod tests {
 
     #[test]
     fn match_invalid_child() {
-        let parent = NodeRef::new(Element::new("h1".to_string()));
-        let child = NodeRef::new(Element::new("button".to_string()));
+        let parent = create_element(WeakNodeRef::empty(), "h1");
+        let child = create_element(WeakNodeRef::empty(), "button");
         Node::append_child(parent.clone(), child.clone());
 
         let css = "button > h1 { color: red; }";
@@ -236,8 +240,8 @@ mod tests {
 
     #[test]
     fn match_invalid_id() {
-        let parent = NodeRef::new(Element::new("h1".to_string()));
-        let child = NodeRef::new(Element::new("button".to_string()));
+        let parent = create_element(WeakNodeRef::empty(), "h1");
+        let child = create_element(WeakNodeRef::empty(), "button");
         Node::append_child(parent.clone(), child.clone());
 
         let css = "h1#name > button { color: red; }";
@@ -259,8 +263,8 @@ mod tests {
 
     #[test]
     fn match_group_of_types() {
-        let parent = NodeRef::new(Element::new("h1".to_string()));
-        let child = NodeRef::new(Element::new("button".to_string()));
+        let parent = create_element(WeakNodeRef::empty(), "h1");
+        let child = create_element(WeakNodeRef::empty(), "button");
         Node::append_child(parent.clone(), child.clone());
 
         let css = "h1, button { color: red; }";

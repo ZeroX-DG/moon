@@ -1,17 +1,16 @@
 use super::dom_token_list::DOMTokenList;
-use super::node::Node;
-use std::borrow::Cow;
+use super::elements::{ElementData, ElementMethods};
+use super::node::NodeHooks;
 use std::collections::HashMap;
 use std::ops::{Deref, DerefMut};
 
 pub struct AttributeMap(HashMap<String, String>);
 
 pub struct Element {
-    pub node: Node,
     attributes: AttributeMap,
     id: String,
     class_list: DOMTokenList,
-    tag_name: String,
+    data: ElementData,
 }
 
 impl AttributeMap {
@@ -19,11 +18,11 @@ impl AttributeMap {
         Self(HashMap::new())
     }
 
-    pub fn get_str(&self, attr: &str) -> Cow<str> {
+    pub fn get_str(&self, attr: &str) -> String {
         if let Some(value) = self.0.get(attr) {
-            Cow::Borrowed(value)
+            value.to_string()
         } else {
-            Cow::Owned(String::new())
+            String::new()
         }
     }
 
@@ -51,19 +50,28 @@ impl DerefMut for AttributeMap {
 
 impl core::fmt::Debug for Element {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "Element({:?})", self.tag_name())
+        write!(f, "Element({:?})", self.data)
+    }
+}
+
+impl NodeHooks for Element {
+    fn on_inserted(&mut self) {
+        self.handle_on_inserted();
     }
 }
 
 impl Element {
-    pub fn new(tag_name: String) -> Self {
+    pub fn new(data: ElementData) -> Self {
         Self {
-            node: Node::new(),
             attributes: AttributeMap::new(),
             id: String::new(),
             class_list: DOMTokenList::new(),
-            tag_name,
+            data,
         }
+    }
+
+    pub fn tag_name(&self) -> String {
+        self.data.tag_name()
     }
 
     pub fn set_attribute(&mut self, name: &str, value: &str) {
@@ -76,6 +84,7 @@ impl Element {
             return;
         }
         self.attributes.insert(name.to_owned(), value.to_owned());
+        self.data.handle_attribute_change(name, value);
     }
 
     pub fn attributes(&self) -> &AttributeMap {
@@ -86,15 +95,15 @@ impl Element {
         self.attributes.contains_key(name)
     }
 
-    pub fn tag_name(&self) -> String {
-        self.tag_name.clone()
-    }
-
     pub fn class_list(&self) -> &DOMTokenList {
         &self.class_list
     }
 
     pub fn id(&self) -> &String {
         &self.id
+    }
+
+    pub fn handle_on_inserted(&mut self) {
+        self.data.handle_on_inserted();
     }
 }

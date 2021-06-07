@@ -1,4 +1,5 @@
 use super::character_data::CharacterData;
+use super::node::NodeHooks;
 
 pub struct Text {
     pub character_data: CharacterData,
@@ -9,6 +10,8 @@ impl core::fmt::Debug for Text {
         write!(f, "Text({:?})", self.get_data(),)
     }
 }
+
+impl NodeHooks for Text {}
 
 impl Text {
     pub fn new(data: String) -> Self {

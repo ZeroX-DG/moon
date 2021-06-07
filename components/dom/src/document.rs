@@ -1,13 +1,11 @@
-use super::node::Node;
+use super::node::NodeHooks;
 
 pub struct Document {
-    pub node: Node,
     doctype: Option<DocumentType>,
     mode: QuirksMode,
 }
 
 pub struct DocumentType {
-    pub node: Node,
     name: String,
     public_id: String,
     system_id: String,
@@ -25,10 +23,11 @@ impl core::fmt::Debug for Document {
     }
 }
 
+impl NodeHooks for Document {}
+
 impl Document {
     pub fn new() -> Self {
         Self {
-            node: Node::new(),
             doctype: None,
             mode: QuirksMode::NoQuirks,
         }
@@ -56,7 +55,6 @@ impl core::fmt::Debug for DocumentType {
 impl DocumentType {
     pub fn new(name: String, public_id: Option<String>, system_id: Option<String>) -> Self {
         Self {
-            node: Node::new(),
             name,
             public_id: public_id.unwrap_or_default(),
             system_id: system_id.unwrap_or_default(),

@@ -41,7 +41,7 @@ impl StackOfOpenElements {
     pub fn last_element_with_tag_name(&self, tag_name: &str) -> Option<(&NodeRef, usize)> {
         for (i, node) in self.0.iter().rev().enumerate() {
             let node_borrow = node.borrow();
-            let element = node_borrow.as_element().unwrap();
+            let element = node_borrow.as_element();
             if element.tag_name() == tag_name {
                 return Some((&node, i));
             }
@@ -52,7 +52,7 @@ impl StackOfOpenElements {
     pub fn pop_until(&mut self, tag_name: &str) {
         while let Some(node) = self.current_node() {
             let node = node.borrow();
-            let element = node.as_element().unwrap();
+            let element = node.as_element();
             if element.tag_name() == tag_name {
                 self.0.pop();
                 break;
@@ -67,7 +67,7 @@ impl StackOfOpenElements {
     {
         while let Some(node) = self.current_node() {
             let node = node.borrow();
-            let element = node.as_element().unwrap();
+            let element = node.as_element();
             if test(element) {
                 self.0.pop();
                 break;
@@ -79,7 +79,7 @@ impl StackOfOpenElements {
     pub fn clear_back_to_table_context(&mut self) {
         while let Some(node) = self.current_node() {
             let node = node.borrow();
-            let element = node.as_element().unwrap();
+            let element = node.as_element();
             let element_tag_name = element.tag_name();
             if element_tag_name == "table"
                 || element_tag_name == "template"
@@ -113,7 +113,7 @@ impl StackOfOpenElements {
     pub fn has_element_name_in_specific_scope(&self, target: &str, list: Vec<&str>) -> bool {
         for node in self.0.iter().rev() {
             let node = node.borrow();
-            let element = node.as_element().unwrap();
+            let element = node.as_element();
             if element.tag_name() == target {
                 return true;
             }
@@ -167,7 +167,7 @@ impl StackOfOpenElements {
             }
 
             let node = node.borrow();
-            let element = node.as_element().unwrap();
+            let element = node.as_element();
 
             if list.contains(&element.tag_name().as_str()) {
                 return false;
@@ -183,7 +183,7 @@ impl StackOfOpenElements {
     pub fn contains(&self, tag_name: &str) -> bool {
         self.any(|node| {
             let node = node.borrow();
-            let element = node.as_element().unwrap();
+            let element = node.as_element();
             if element.tag_name() == tag_name {
                 return true;
             }
