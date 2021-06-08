@@ -25,7 +25,8 @@ pub fn create_element(document: WeakNodeRef, tag_name: &str) -> NodeRef {
         "title" => Title > HTMLTitleElement,
         "body" => Body > HTMLBodyElement,
         "div" => Div > HTMLDivElement,
-        "a" => Anchor > HTMLAnchorElement
+        "a" => Anchor > HTMLAnchorElement,
+        "link" => Link > HTMLLinkElement
     });
 
     node.set_document(document);

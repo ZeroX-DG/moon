@@ -22,8 +22,4 @@ impl Page {
     pub fn load_html(&mut self, html: String) {
         self.main_frame.load_html(html);
     }
-
-    pub fn load_css(&mut self, css: String) {
-        self.main_frame.load_css(css);
-    }
 }

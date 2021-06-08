@@ -13,11 +13,7 @@ impl HTMLDivElement {
 
 impl ElementHooks for HTMLDivElement {}
 
-impl NodeHooks for HTMLDivElement {
-    fn on_inserted(&mut self) {
-        println!("div inserted");
-    }
-}
+impl NodeHooks for HTMLDivElement {}
 
 impl ElementMethods for HTMLDivElement {
     fn tag_name(&self) -> String {

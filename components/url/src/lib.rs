@@ -116,6 +116,12 @@ impl Url {
                         url.host_end = index;
                         state = ParseState::InPort;
                     }
+                    // TODO: This is a temporary fix for relative protocol that I made up
+                    '.' if url.protocol() == "relative" => {
+                        url.host_end = index;
+                        url.path_start = index + 1;
+                        state = ParseState::InPath;
+                    }
                     _ => {
                         index += 1;
                         continue;
@@ -172,6 +178,10 @@ impl Url {
 
     pub fn port(&self) -> Option<u16> {
         self.port
+    }
+
+    pub fn raw(&self) -> &str {
+        &self.raw_url[..]
     }
 }
 

@@ -29,10 +29,6 @@ impl Renderer {
         self.page.load_html(html);
     }
 
-    pub fn load_css(&mut self, css: String) {
-        self.page.load_css(css);
-    }
-
     pub async fn paint(&mut self) {
         let main_frame = self.page.main_frame();
         let viewport = main_frame.size();

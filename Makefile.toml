@@ -7,7 +7,7 @@ args = ["build"]
 workspace = false
 dependencies = ["build"]
 script = '''
-cd target/debug && ./moon render --once --html=../../fixtures/test.html --css=../../fixtures/test.css --size=500x300 --output=../../image.png
+cd target/debug && ./moon render --once --html=../../fixtures/test.html --size=500x300 --output=../../image.png
 
 '''
 
@@ -15,7 +15,7 @@ cd target/debug && ./moon render --once --html=../../fixtures/test.html --css=..
 workspace = false
 dependencies = ["build"]
 script = '''
-cd target/debug && ./moon render --once --html=../../fixtures/${@}.html --css=../../fixtures/${@}.css --size=500x300 --output=../../image.png
+cd target/debug && ./moon render --once --html=../../fixtures/${@}.html --size=500x300 --output=../../image.png
 
 '''
 
@@ -23,5 +23,5 @@ cd target/debug && ./moon render --once --html=../../fixtures/${@}.html --css=..
 workspace = false
 dependencies = ["build"]
 script = '''
-cd target/debug && ./moon render --once --html=../../fixtures/${@}.html --css=../../fixtures/${@}.css --size=500x300 --output=../../image.png
+cd target/debug && ./moon render --once --html=../../fixtures/${@}.html --size=500x300 --output=../../image.png
 '''

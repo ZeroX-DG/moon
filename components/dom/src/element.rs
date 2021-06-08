@@ -1,6 +1,7 @@
 use super::dom_token_list::DOMTokenList;
 use super::elements::{ElementData, ElementMethods};
 use super::node::NodeHooks;
+use super::dom_ref::NodeRef;
 use std::collections::HashMap;
 use std::ops::{Deref, DerefMut};
 
@@ -55,8 +56,8 @@ impl core::fmt::Debug for Element {
 }
 
 impl NodeHooks for Element {
-    fn on_inserted(&mut self) {
-        self.handle_on_inserted();
+    fn on_inserted(&mut self, document: NodeRef) {
+        self.handle_on_inserted(document);
     }
 }
 
@@ -103,7 +104,7 @@ impl Element {
         &self.id
     }
 
-    pub fn handle_on_inserted(&mut self) {
-        self.data.handle_on_inserted();
+    pub fn handle_on_inserted(&mut self, document: NodeRef) {
+        self.data.handle_on_inserted(document);
     }
 }
