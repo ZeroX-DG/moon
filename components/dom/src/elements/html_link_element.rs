@@ -1,8 +1,8 @@
 use super::ElementHooks;
 use super::ElementMethods;
-use crate::node::NodeHooks;
-use crate::dom_ref::NodeRef;
 use crate::document_loader::LoadRequest;
+use crate::dom_ref::NodeRef;
+use crate::node::NodeHooks;
 use url::Url;
 
 #[derive(Debug)]
@@ -30,7 +30,8 @@ impl NodeHooks for HTMLLinkElement {
             let request = LoadRequest::new(url, |bytes| String::from_utf8(bytes).unwrap())
                 .on_success(|css| {
                     let tokenizer = css::tokenizer::Tokenizer::new(css.chars());
-                    let mut parser = css::parser::Parser::<css::tokenizer::token::Token>::new(tokenizer.run());
+                    let mut parser =
+                        css::parser::Parser::<css::tokenizer::token::Token>::new(tokenizer.run());
                     let stylesheet = parser.parse_a_css_stylesheet();
 
                     document

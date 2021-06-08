@@ -1,14 +1,14 @@
-use super::node::NodeHooks;
 use super::document_loader::DocumentLoader;
+use super::node::NodeHooks;
 use css::cssom::stylesheet::StyleSheet;
-use std::rc::Rc;
 use std::cell::RefCell;
+use std::rc::Rc;
 
 pub struct Document {
     doctype: Option<DocumentType>,
     mode: QuirksMode,
     loader: Rc<RefCell<DocumentLoader>>,
-    stylesheets: Vec<StyleSheet>
+    stylesheets: Vec<StyleSheet>,
 }
 
 pub struct DocumentType {
@@ -37,7 +37,7 @@ impl Document {
             doctype: None,
             mode: QuirksMode::NoQuirks,
             loader: Rc::new(RefCell::new(DocumentLoader::new())),
-            stylesheets: Vec::new()
+            stylesheets: Vec::new(),
         }
     }
 

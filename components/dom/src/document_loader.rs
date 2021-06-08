@@ -1,14 +1,15 @@
-use url::Url;
 use relative_path::RelativePath;
+use url::Url;
 
 type Bytes = Vec<u8>;
 
 pub struct DocumentLoader {}
 
 pub struct LoadRequest<'a, T, S, E, M>
-where S: FnOnce(T),
-      E: FnOnce(String),
-      M: FnOnce(Bytes) -> T,
+where
+    S: FnOnce(T),
+    E: FnOnce(String),
+    M: FnOnce(Bytes) -> T,
 {
     url: &'a Url,
     success_callback: Option<S>,
@@ -18,14 +19,14 @@ where S: FnOnce(T),
 
 impl DocumentLoader {
     pub fn new() -> Self {
-        Self {
-        }
+        Self {}
     }
 
     pub fn load<T, S, E, M>(&mut self, request: LoadRequest<T, S, E, M>)
-    where S: FnOnce(T),
-          E: FnOnce(String),
-          M: FnOnce(Bytes) -> T,
+    where
+        S: FnOnce(T),
+        E: FnOnce(String),
+        M: FnOnce(Bytes) -> T,
     {
         match request.url.protocol() {
             "file" => match std::fs::read(request.url.path()) {
@@ -40,7 +41,7 @@ impl DocumentLoader {
                         cb(e.to_string());
                     }
                 }
-            }
+            },
             "relative" => {
                 let path = RelativePath::new(request.url.path())
                     .to_logical_path(std::env::current_dir().unwrap());
@@ -65,16 +66,17 @@ impl DocumentLoader {
 }
 
 impl<'a, T, S, E, M> LoadRequest<'a, T, S, E, M>
-where S: FnOnce(T),
-      E: FnOnce(String),
-      M: FnOnce(Bytes) -> T,
+where
+    S: FnOnce(T),
+    E: FnOnce(String),
+    M: FnOnce(Bytes) -> T,
 {
     pub fn new(url: &'a Url, map_fn: M) -> Self {
         Self {
             url,
             success_callback: None,
             error_callback: None,
-            map_fn
+            map_fn,
         }
     }
 
@@ -88,4 +90,3 @@ where S: FnOnce(T),
         self
     }
 }
-

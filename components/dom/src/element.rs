@@ -1,7 +1,7 @@
+use super::dom_ref::NodeRef;
 use super::dom_token_list::DOMTokenList;
 use super::elements::{ElementData, ElementMethods};
 use super::node::NodeHooks;
-use super::dom_ref::NodeRef;
 use std::collections::HashMap;
 use std::ops::{Deref, DerefMut};
 

@@ -28,8 +28,7 @@ pub enum NodeData {
 #[enum_dispatch]
 pub trait NodeHooks {
     #[allow(unused_variables)]
-    fn on_inserted(&mut self, document: NodeRef) {
-    }
+    fn on_inserted(&mut self, document: NodeRef) {}
 }
 
 impl core::fmt::Debug for Node {

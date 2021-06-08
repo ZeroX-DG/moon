@@ -44,8 +44,7 @@ impl Frame {
 
     pub fn set_document(&mut self, document: NodeRef) {
         self.document = Some(document.clone());
-        self.layout
-            .reflow(self.size, ReflowType::All(document));
+        self.layout.reflow(self.size, ReflowType::All(document));
     }
 
     pub fn load_html(&mut self, html: String) {

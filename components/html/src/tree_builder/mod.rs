@@ -464,14 +464,17 @@ impl<T: Tokenizing> TreeBuilder<T> {
             }
         }
         let text = NodeRef::new(Node::new(NodeData::Text(Text::new(ch.to_string()))));
-        text.borrow_mut().set_document(self.document.clone().downgrade());
+        text.borrow_mut()
+            .set_document(self.document.clone().downgrade());
         self.insert_at(insert_position, text);
     }
 
     fn insert_comment(&mut self, data: String) {
         let insert_position = self.get_appropriate_place_for_inserting_a_node(None);
         let comment = NodeRef::new(Node::new(NodeData::Comment(Comment::new(data))));
-        comment.borrow_mut().set_document(self.document.clone().downgrade());
+        comment
+            .borrow_mut()
+            .set_document(self.document.clone().downgrade());
         self.insert_at(insert_position, comment);
     }
 

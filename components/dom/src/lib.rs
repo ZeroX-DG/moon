@@ -12,7 +12,7 @@ pub mod text;
 
 pub mod conversion;
 
-mod element_factory;
 mod document_loader;
+mod element_factory;
 
 pub use element_factory::create_element;
