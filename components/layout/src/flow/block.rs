@@ -248,13 +248,15 @@ mod tests {
 
     #[test]
     fn test_block_layout_simple() {
+        let document = document();
         let dom = element(
             "div",
+            document.clone(),
             vec![
-                element("div.box", vec![]),
-                element("div.box", vec![]),
-                element("div.box", vec![]),
-                element("div.box", vec![]),
+                element("div.box", document.clone(), vec![]),
+                element("div.box", document.clone(), vec![]),
+                element("div.box", document.clone(), vec![]),
+                element("div.box", document.clone(), vec![]),
             ],
         );
 

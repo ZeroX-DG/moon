@@ -215,16 +215,19 @@ mod tests {
 
     #[test]
     fn test_build_simple() {
+        let document = document();
         let dom = element(
             "div",
+            document.clone(),
             vec![
-                element("span", vec![]),
+                element("span", document.clone(), vec![]),
                 element(
                     "p",
+                    document.clone(),
                     vec![
-                        element("span", vec![]),
-                        element("span", vec![]),
-                        element("span", vec![]),
+                        element("span", document.clone(), vec![]),
+                        element("span", document.clone(), vec![]),
+                        element("span", document.clone(), vec![]),
                     ],
                 ),
             ],
@@ -278,14 +281,16 @@ mod tests {
 
     #[test]
     fn test_block_break_inline() {
+        let document = document();
         let dom = element(
             "div",
+            document.clone(),
             vec![
-                element("span", vec![]),
-                element("p", vec![]),
-                element("a", vec![]),
-                element("a", vec![]),
-                element("a", vec![]),
+                element("span", document.clone(), vec![]),
+                element("p", document.clone(), vec![]),
+                element("a", document.clone(), vec![]),
+                element("a", document.clone(), vec![]),
+                element("a", document.clone(), vec![]),
             ],
         );
 

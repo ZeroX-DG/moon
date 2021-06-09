@@ -935,6 +935,9 @@ impl<T: Tokenizing> TreeBuilder<T> {
 
         if let Token::Comment(data) = token {
             let comment = NodeRef::new(Node::new(NodeData::Comment(Comment::new(data))));
+            comment
+                .borrow_mut()
+                .set_document(self.document.clone().downgrade());
             Node::append_child(self.document.clone(), comment);
             return;
         }

@@ -381,6 +381,11 @@ mod test {
         let parent = NodeRef::new(Node::empty());
         let child = NodeRef::new(Node::empty());
 
+        let doc = NodeRef::new(Node::new(NodeData::Document(Document::new())));
+
+        parent.borrow_mut().set_document(doc.clone().downgrade());
+        child.borrow_mut().set_document(doc.clone().downgrade());
+
         Node::append_child(parent.clone(), child.clone());
 
         assert_eq!(parent.borrow().first_child(), Some(child.clone()));
@@ -395,6 +400,12 @@ mod test {
         let parent = NodeRef::new(Node::empty());
         let child1 = NodeRef::new(Node::empty());
         let child2 = NodeRef::new(Node::empty());
+
+        let doc = NodeRef::new(Node::new(NodeData::Document(Document::new())));
+
+        parent.borrow_mut().set_document(doc.clone().downgrade());
+        child1.borrow_mut().set_document(doc.clone().downgrade());
+        child2.borrow_mut().set_document(doc.clone().downgrade());
 
         Node::append_child(parent.clone(), child1.clone());
         Node::append_child(parent.clone(), child2.clone());
@@ -416,6 +427,12 @@ mod test {
         let child1 = NodeRef::new(Node::empty());
         let child2 = NodeRef::new(Node::empty());
 
+        let doc = NodeRef::new(Node::new(NodeData::Document(Document::new())));
+
+        parent.borrow_mut().set_document(doc.clone().downgrade());
+        child1.borrow_mut().set_document(doc.clone().downgrade());
+        child2.borrow_mut().set_document(doc.clone().downgrade());
+
         Node::append_child(parent.clone(), child1.clone());
         Node::insert_before(parent.clone(), child2.clone(), Some(child1.clone()));
 
@@ -435,6 +452,11 @@ mod test {
         let parent = NodeRef::new(Node::empty());
         let child = NodeRef::new(Node::empty());
 
+        let doc = NodeRef::new(Node::new(NodeData::Document(Document::new())));
+
+        parent.borrow_mut().set_document(doc.clone().downgrade());
+        child.borrow_mut().set_document(doc.clone().downgrade());
+
         Node::insert_before(parent.clone(), child.clone(), None);
 
         assert_eq!(parent.borrow().first_child(), Some(child.clone()));
@@ -448,6 +470,11 @@ mod test {
     fn detach_before_append() {
         let parent = NodeRef::new(Node::empty());
         let child = NodeRef::new(Node::empty());
+
+        let doc = NodeRef::new(Node::new(NodeData::Document(Document::new())));
+
+        parent.borrow_mut().set_document(doc.clone().downgrade());
+        child.borrow_mut().set_document(doc.clone().downgrade());
 
         Node::append_child(parent.clone(), child.clone());
 
