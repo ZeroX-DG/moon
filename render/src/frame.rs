@@ -114,7 +114,7 @@ impl FrameLayout {
         match type_ {
             ReflowType::LayoutOnly => {
                 if self.render_tree.is_none() {
-                    log::warn!("FrameLayout: Reflowing with empty render tree!");
+                    log::info!("Reflowing with empty render tree!");
                 }
                 self.recalculate_layout(size);
             }

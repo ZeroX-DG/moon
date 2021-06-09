@@ -2,9 +2,21 @@ mod cli;
 
 use futures::executor::block_on;
 use image::{ImageBuffer, Rgba};
+use simplelog::*;
 use std::io::Read;
 
 fn main() {
+    let config = ConfigBuilder::new()
+        .add_filter_ignore_str("wgpu")
+        .add_filter_ignore_str("gfx_backend_vulkan")
+        .set_target_level(LevelFilter::Info)
+        .build();
+    TermLogger::init(
+        LevelFilter::Debug,
+        config,
+        TerminalMode::Mixed,
+        ColorChoice::Auto,
+    ).unwrap();
     block_on(async_main());
 }
 

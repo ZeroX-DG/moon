@@ -5,44 +5,78 @@ use crate::dom_ref::NodeRef;
 use crate::node::NodeHooks;
 use url::Url;
 
+use css::parser::Parser;
+use css::tokenizer::{token::Token, Tokenizer};
+
 #[derive(Debug)]
 pub struct HTMLLinkElement {
     href: Option<Url>,
+    relationship: Option<HTMLLinkRelationship>,
+}
+
+#[derive(Debug)]
+pub enum HTMLLinkRelationship {
+    Stylesheet,
 }
 
 impl HTMLLinkElement {
     pub fn empty() -> Self {
-        Self { href: None }
+        Self {
+            href: None,
+            relationship: None,
+        }
+    }
+
+    pub fn load_stylesheet(&self, url: &Url, document: NodeRef) {
+        log::info!("Loading stylesheet from: {}", url.raw());
+        let request = LoadRequest::new(url, |bytes| String::from_utf8(bytes).unwrap())
+            .on_success(|css| {
+                let tokenizer = Tokenizer::new(css.chars());
+                let mut parser = Parser::<Token>::new(tokenizer.run());
+                let stylesheet = parser.parse_a_css_stylesheet();
+
+                document
+                    .borrow_mut()
+                    .as_document_mut()
+                    .append_stylesheet(stylesheet);
+            })
+            .on_error(|e| log::info!("Unable to load CSS: {} ({})", e, url.raw()));
+
+        let loader = document.borrow().as_document().loader();
+        loader.borrow_mut().load(request);
     }
 }
 
 impl ElementHooks for HTMLLinkElement {
     fn on_attribute_change(&mut self, attr: &str, value: &str) {
-        if attr == "href" {
-            self.href = Url::parse(value).ok();
+        match attr {
+            "href" => {
+                self.href = match Url::parse(value) {
+                    Ok(url) => Some(url),
+                    Err(_) => {
+                        log::info!("Invalid href URL: {}", value);
+                        None
+                    }
+                }
+            }
+            "rel" => {
+                if value == "stylesheet" {
+                    self.relationship = Some(HTMLLinkRelationship::Stylesheet);
+                }
+            }
+            _ => {}
         }
     }
 }
 
 impl NodeHooks for HTMLLinkElement {
     fn on_inserted(&mut self, document: NodeRef) {
-        if let Some(url) = &self.href {
-            let request = LoadRequest::new(url, |bytes| String::from_utf8(bytes).unwrap())
-                .on_success(|css| {
-                    let tokenizer = css::tokenizer::Tokenizer::new(css.chars());
-                    let mut parser =
-                        css::parser::Parser::<css::tokenizer::token::Token>::new(tokenizer.run());
-                    let stylesheet = parser.parse_a_css_stylesheet();
-
-                    document
-                        .borrow_mut()
-                        .as_document_mut()
-                        .append_stylesheet(stylesheet);
-                })
-                .on_error(|e| println!("Unable to load CSS: {} ({})", e, url.raw()));
-
-            let loader = document.borrow().as_document().loader();
-            loader.borrow_mut().load(request);
+        match &self.href {
+            Some(url) => match self.relationship {
+                Some(HTMLLinkRelationship::Stylesheet) => self.load_stylesheet(url, document),
+                _ => {}
+            },
+            None => log::info!("No URL found, ignoring"),
         }
     }
 }
