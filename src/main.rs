@@ -16,7 +16,8 @@ fn main() {
         config,
         TerminalMode::Mixed,
         ColorChoice::Auto,
-    ).unwrap();
+    )
+    .unwrap();
     block_on(async_main());
 }
 
