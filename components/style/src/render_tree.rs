@@ -236,9 +236,15 @@ mod tests {
 
     #[test]
     fn build_tree_simple() {
+        let document = document();
         let dom_tree = element(
             "div#parent",
-            vec![element("div#child", vec![text("Hello")])],
+            document.clone(),
+            vec![element(
+                "div#child",
+                document.clone(),
+                vec![text("Hello", document.clone())],
+            )],
         );
 
         let css = r#"
@@ -300,7 +306,8 @@ mod tests {
 
     #[test]
     fn shorthand_property() {
-        let dom_tree = element("div#parent", vec![]);
+        let document = document();
+        let dom_tree = element("div#parent", document.clone(), vec![]);
 
         let css = r#"
         #parent {
@@ -358,7 +365,7 @@ mod tests {
 
     #[test]
     fn invalid_shorthand() {
-        let dom_tree = element("div#parent", vec![]);
+        let dom_tree = element("div#parent", document(), vec![]);
 
         let css = r#"
         #parent {
@@ -436,7 +443,7 @@ mod tests {
 
     #[test]
     fn shorthand_property_3_values() {
-        let dom_tree = element("div#parent", vec![]);
+        let dom_tree = element("div#parent", document(), vec![]);
 
         let css = r#"
         #parent {
@@ -494,7 +501,12 @@ mod tests {
 
     #[test]
     fn explicit_default() {
-        let dom_tree = element("div#parent", vec![element("div#child", vec![])]);
+        let document = document();
+        let dom_tree = element(
+            "div#parent",
+            document.clone(),
+            vec![element("div#child", document.clone(), vec![])],
+        );
 
         let css = r#"
         #parent {
@@ -544,7 +556,7 @@ mod tests {
 
     #[test]
     fn shorthand_property_special() {
-        let dom_tree = element("div#parent", vec![]);
+        let dom_tree = element("div#parent", document(), vec![]);
 
         let css = r#"
         #parent {
@@ -602,7 +614,7 @@ mod tests {
 
     #[test]
     fn shorthand_property_border() {
-        let dom_tree = element("div#parent", vec![]);
+        let dom_tree = element("div#parent", document(), vec![]);
 
         let css = r#"
         #parent {

@@ -27,9 +27,9 @@ members = [
 render = { version = "*", path = "./render" }
 ipc = { version = "*", path = "./components/ipc" }
 message = { version = "*", path = "./components/message" }
-simple-logging = "*"
 log = "*"
 flume = "*"
 clap = "*"
 futures = "*"
 image = "*"
+simplelog = "0.10.0"

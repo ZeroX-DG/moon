@@ -122,12 +122,12 @@ mod tests {
     use css::tokenizer::token::Token;
     use css::tokenizer::Tokenizer;
     use dom::create_element;
-    use dom::dom_ref::WeakNodeRef;
     use dom::node::Node;
+    use test_utils::dom_creator::document;
 
     #[test]
     fn match_simple_type() {
-        let element = create_element(WeakNodeRef::empty(), "h1");
+        let element = create_element(document().downgrade(), "h1");
         let css = "h1 { color: red; }";
 
         let tokenizer = Tokenizer::new(css.chars());
@@ -147,7 +147,7 @@ mod tests {
 
     #[test]
     fn match_simple_id() {
-        let element_node = create_element(WeakNodeRef::empty(), "h1");
+        let element_node = create_element(document().downgrade(), "h1");
         element_node
             .borrow_mut()
             .as_element_mut()
@@ -171,8 +171,9 @@ mod tests {
 
     #[test]
     fn match_simple_decendant() {
-        let parent = create_element(WeakNodeRef::empty(), "h1");
-        let child = create_element(WeakNodeRef::empty(), "button");
+        let doc = document();
+        let parent = create_element(doc.clone().downgrade(), "h1");
+        let child = create_element(doc.clone().downgrade(), "button");
         Node::append_child(parent.clone(), child.clone());
 
         let css = "h1 button { color: red; }";
@@ -194,8 +195,9 @@ mod tests {
 
     #[test]
     fn match_simple_child() {
-        let parent = create_element(WeakNodeRef::empty(), "h1");
-        let child = create_element(WeakNodeRef::empty(), "button");
+        let doc = document();
+        let parent = create_element(doc.clone().downgrade(), "h1");
+        let child = create_element(doc.clone().downgrade(), "button");
         Node::append_child(parent.clone(), child.clone());
 
         let css = "h1 > button { color: red; }";
@@ -217,8 +219,9 @@ mod tests {
 
     #[test]
     fn match_invalid_child() {
-        let parent = create_element(WeakNodeRef::empty(), "h1");
-        let child = create_element(WeakNodeRef::empty(), "button");
+        let doc = document();
+        let parent = create_element(doc.clone().downgrade(), "h1");
+        let child = create_element(doc.clone().downgrade(), "button");
         Node::append_child(parent.clone(), child.clone());
 
         let css = "button > h1 { color: red; }";
@@ -240,8 +243,9 @@ mod tests {
 
     #[test]
     fn match_invalid_id() {
-        let parent = create_element(WeakNodeRef::empty(), "h1");
-        let child = create_element(WeakNodeRef::empty(), "button");
+        let doc = document();
+        let parent = create_element(doc.clone().downgrade(), "h1");
+        let child = create_element(doc.clone().downgrade(), "button");
         Node::append_child(parent.clone(), child.clone());
 
         let css = "h1#name > button { color: red; }";
@@ -263,8 +267,9 @@ mod tests {
 
     #[test]
     fn match_group_of_types() {
-        let parent = create_element(WeakNodeRef::empty(), "h1");
-        let child = create_element(WeakNodeRef::empty(), "button");
+        let doc = document();
+        let parent = create_element(doc.clone().downgrade(), "h1");
+        let child = create_element(doc.clone().downgrade(), "button");
         Node::append_child(parent.clone(), child.clone());
 
         let css = "h1, button { color: red; }";

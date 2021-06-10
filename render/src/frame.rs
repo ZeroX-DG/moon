@@ -1,7 +1,5 @@
-use super::loader::css::CSSLoader;
 use super::loader::frame::FrameLoader;
 use css::cssom::css_rule::CSSRule;
-use css::cssom::stylesheet::StyleSheet;
 use dom::dom_ref::NodeRef;
 
 use layout::{box_model::Rect, build_layout_tree, layout_box::LayoutBox};
@@ -12,7 +10,6 @@ pub type FrameSize = (u32, u32);
 
 pub struct Frame {
     document: Option<NodeRef>,
-    stylesheets: Vec<StyleSheet>,
     layout: FrameLayout,
     size: FrameSize,
 }
@@ -22,8 +19,8 @@ pub struct FrameLayout {
     render_tree: Option<RenderTree>,
 }
 
-pub enum ReflowType<'a> {
-    All(NodeRef, &'a [StyleSheet]),
+pub enum ReflowType {
+    All(NodeRef),
     LayoutOnly,
 }
 
@@ -31,7 +28,6 @@ impl Frame {
     pub fn new() -> Self {
         Self {
             document: None,
-            stylesheets: Vec::new(),
             layout: FrameLayout::new(),
             size: (0, 0),
         }
@@ -46,29 +42,13 @@ impl Frame {
         self.size.clone()
     }
 
-    pub fn append_stylesheet(&mut self, stylesheet: StyleSheet) {
-        self.stylesheets.push(stylesheet);
-
-        if let Some(document) = &self.document {
-            self.layout.reflow(
-                self.size,
-                ReflowType::All(document.clone(), &self.stylesheets),
-            );
-        }
-    }
-
     pub fn set_document(&mut self, document: NodeRef) {
         self.document = Some(document.clone());
-        self.layout
-            .reflow(self.size, ReflowType::All(document, &self.stylesheets));
+        self.layout.reflow(self.size, ReflowType::All(document));
     }
 
     pub fn load_html(&mut self, html: String) {
         self.set_document(FrameLoader::load_html(html));
-    }
-
-    pub fn load_css(&mut self, css: String) {
-        self.append_stylesheet(CSSLoader::load_from_text(css));
     }
 
     pub fn layout(&self) -> &FrameLayout {
@@ -88,7 +68,11 @@ impl FrameLayout {
         &self.layout_tree
     }
 
-    pub fn recalculate_styles(&mut self, document: NodeRef, stylesheets: &[StyleSheet]) {
+    pub fn recalculate_styles(&mut self, document: NodeRef) {
+        let document_clone = document.clone();
+        let document_borrow = document_clone.borrow();
+        let document_borrow = document_borrow.as_document();
+        let stylesheets = document_borrow.stylesheets();
         // TODO: cache this step so we don't have to flat map on every reflow
         let contextual_rules: Vec<ContextualRule> = stylesheets
             .iter()
@@ -130,12 +114,12 @@ impl FrameLayout {
         match type_ {
             ReflowType::LayoutOnly => {
                 if self.render_tree.is_none() {
-                    log::warn!("FrameLayout: Reflowing with empty render tree!");
+                    log::info!("Reflowing with empty render tree!");
                 }
                 self.recalculate_layout(size);
             }
-            ReflowType::All(document, stylesheets) => {
-                self.recalculate_styles(document, stylesheets);
+            ReflowType::All(document) => {
+                self.recalculate_styles(document);
                 self.recalculate_layout(size);
             }
         }

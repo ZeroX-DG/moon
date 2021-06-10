@@ -7,7 +7,6 @@ pub enum Action {
 
 pub struct RenderOnceParams {
     pub html_path: String,
-    pub css_path: String,
     pub viewport_size: (u32, u32),
     pub output_path: String,
 }
@@ -15,7 +14,6 @@ pub struct RenderOnceParams {
 pub fn get_action<'a>(matches: ArgMatches<'a>) -> Action {
     if let Some(matches) = matches.subcommand_matches("render") {
         let html: String = get_arg(&matches, "html").unwrap();
-        let css: String = get_arg(&matches, "css").unwrap();
         let raw_size: String = get_arg(&matches, "size").unwrap();
         let output_path: String = get_arg(&matches, "output").unwrap();
 
@@ -26,7 +24,6 @@ pub fn get_action<'a>(matches: ArgMatches<'a>) -> Action {
         if is_render_once {
             return Action::RenderOnce(RenderOnceParams {
                 html_path: html,
-                css_path: css,
                 output_path,
                 viewport_size,
             });

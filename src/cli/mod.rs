@@ -11,11 +11,6 @@ pub fn accept_cli<'a>() -> ArgMatches<'a> {
         .required(false)
         .takes_value(true);
 
-    let css_file_arg = Arg::with_name("css")
-        .long("css")
-        .required(false)
-        .takes_value(true);
-
     let size_arg = Arg::with_name("size")
         .long("size")
         .required(true)
@@ -33,7 +28,6 @@ pub fn accept_cli<'a>() -> ArgMatches<'a> {
         .version(render::version())
         .author(AUTHOR)
         .arg(html_file_arg.clone().required(true))
-        .arg(css_file_arg.clone().required(true))
         .arg(size_arg.clone())
         .arg(once_flag.clone())
         .arg(ouput_arg.clone());

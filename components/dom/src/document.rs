@@ -1,8 +1,14 @@
+use super::document_loader::DocumentLoader;
 use super::node::NodeHooks;
+use css::cssom::stylesheet::StyleSheet;
+use std::cell::RefCell;
+use std::rc::Rc;
 
 pub struct Document {
     doctype: Option<DocumentType>,
     mode: QuirksMode,
+    loader: Rc<RefCell<DocumentLoader>>,
+    stylesheets: Vec<StyleSheet>,
 }
 
 pub struct DocumentType {
@@ -30,6 +36,8 @@ impl Document {
         Self {
             doctype: None,
             mode: QuirksMode::NoQuirks,
+            loader: Rc::new(RefCell::new(DocumentLoader::new())),
+            stylesheets: Vec::new(),
         }
     }
 
@@ -43,6 +51,18 @@ impl Document {
 
     pub fn get_mode(&self) -> &QuirksMode {
         &self.mode
+    }
+
+    pub fn loader(&self) -> Rc<RefCell<DocumentLoader>> {
+        self.loader.clone()
+    }
+
+    pub fn append_stylesheet(&mut self, stylesheet: StyleSheet) {
+        self.stylesheets.push(stylesheet);
+    }
+
+    pub fn stylesheets(&self) -> &[StyleSheet] {
+        &self.stylesheets
     }
 }
 

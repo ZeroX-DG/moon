@@ -1,3 +1,4 @@
+use super::dom_ref::NodeRef;
 use super::node::NodeHooks;
 use enum_dispatch::enum_dispatch;
 
@@ -6,6 +7,7 @@ mod html_body_element;
 mod html_div_element;
 mod html_head_element;
 mod html_html_element;
+mod html_link_element;
 mod html_title_element;
 mod html_unknown_element;
 
@@ -14,6 +16,7 @@ pub use html_body_element::*;
 pub use html_div_element::*;
 pub use html_head_element::*;
 pub use html_html_element::*;
+pub use html_link_element::*;
 pub use html_title_element::*;
 pub use html_unknown_element::*;
 
@@ -27,6 +30,7 @@ pub enum ElementData {
     Html(HTMLHtmlElement),
     Title(HTMLTitleElement),
     Unknown(HTMLUnknownElement),
+    Link(HTMLLinkElement),
 }
 
 #[enum_dispatch]
@@ -47,7 +51,7 @@ impl ElementData {
         self.on_attribute_change(attr, value);
     }
 
-    pub fn handle_on_inserted(&mut self) {
-        self.on_inserted();
+    pub fn handle_on_inserted(&mut self, document: NodeRef) {
+        self.on_inserted(document);
     }
 }
