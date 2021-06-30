@@ -20,6 +20,7 @@ members = [
   "components/tree",
   "components/message",
   "components/url",
+  "components/gfx",
   "render",
 ]
 
@@ -30,6 +31,6 @@ message = { version = "*", path = "./components/message" }
 log = "*"
 flume = "*"
 clap = "*"
-futures = "*"
+tokio = { version = "1.6.2", features = ["rt", "rt-multi-thread", "macros"] }
 image = "*"
 simplelog = "0.10.0"

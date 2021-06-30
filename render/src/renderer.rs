@@ -1,47 +1,46 @@
 use super::frame::FrameSize;
 use super::page::Page;
-use super::paint::{Bitmap, Painter};
+use gfx::{Painter, Bitmap};
 
-pub struct Renderer {
-    painter: Painter,
+pub struct Renderer<'a> {
+    painter: Painter<'a>,
     page: Page,
-    output: Option<Bitmap>,
 }
 
 pub struct RendererInitializeParams {
     pub viewport: FrameSize,
 }
 
-impl Renderer {
-    pub async fn new() -> Self {
+impl<'a> Renderer<'a> {
+    pub async fn new() -> Renderer<'a> {
         Self {
             painter: Painter::new().await,
             page: Page::new(),
-            output: None,
         }
     }
 
     pub fn initialize(&mut self, params: RendererInitializeParams) {
         self.page.resize(params.viewport);
+        self.painter.resize(params.viewport);
     }
 
     pub fn load_html(&mut self, html: String) {
         self.page.load_html(html);
     }
 
-    pub async fn paint(&mut self) {
+    pub fn paint(&mut self) {
         let main_frame = self.page.main_frame();
-        let viewport = main_frame.size();
 
         if let Some(layout_root) = main_frame.layout().root() {
             let display_list = painting::build_display_list(layout_root);
             painting::paint(&display_list, &mut self.painter);
 
-            self.output = self.painter.paint(viewport).await;
+            self.painter.paint();
         }
     }
 
-    pub fn output(&self) -> &Option<Bitmap> {
-        &self.output
+    pub async fn output(&mut self) -> Bitmap {
+        self.painter.output().await
     }
 }
+
