@@ -1,0 +1,16 @@
+[package]
+name = "gfx"
+version = "0.1.0"
+authors = ["ZeroX-DG <viethungax@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+painting = { version="*", path="../painting" }
+bytemuck = { version = "1.5.0", features = ["derive"] }
+lyon_tessellation = "0.17.7"
+wgpu = "0.8.1"
+log = "*"
+futures = "0.3.15"
+ultraviolet = { version = "0.8.1", features = [ "bytemuck", "int" ] }

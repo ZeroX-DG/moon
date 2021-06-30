@@ -19,6 +19,7 @@ pub struct FrameLayout {
     render_tree: Option<RenderTree>,
 }
 
+#[derive(Debug)]
 pub enum ReflowType {
     All(NodeRef),
     LayoutOnly,
@@ -87,12 +88,16 @@ impl FrameLayout {
             })
             .collect();
 
+        log::debug!("Building render tree");
         self.render_tree = Some(build_render_tree(document, &contextual_rules));
+        log::debug!("Finished render tree");
     }
 
     pub fn recalculate_layout(&mut self, size: FrameSize) {
         if let Some(render_tree) = &self.render_tree {
+            log::debug!("Building layout tree");
             self.layout_tree = build_layout_tree(render_tree);
+            log::debug!("Finished layout tree");
 
             if let Some(layout_tree) = &mut self.layout_tree {
                 let (width, height) = size;
@@ -111,17 +116,16 @@ impl FrameLayout {
     }
 
     pub fn reflow(&mut self, size: FrameSize, type_: ReflowType) {
-        match type_ {
+        log::debug!("Start reflowing with type: {:?}", type_);
+        match &type_ {
             ReflowType::LayoutOnly => {
-                if self.render_tree.is_none() {
-                    log::info!("Reflowing with empty render tree!");
-                }
                 self.recalculate_layout(size);
             }
             ReflowType::All(document) => {
-                self.recalculate_styles(document);
+                self.recalculate_styles(document.clone());
                 self.recalculate_layout(size);
             }
         }
+        log::debug!("Finished reflowing with type: {:?}", type_);
     }
 }

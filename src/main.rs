@@ -1,25 +1,8 @@
 mod cli;
 
-use futures::executor::block_on;
 use image::{ImageBuffer, Rgba};
 use simplelog::*;
 use std::io::Read;
-
-fn main() {
-    let config = ConfigBuilder::new()
-        .add_filter_ignore_str("wgpu")
-        .add_filter_ignore_str("gfx_backend_vulkan")
-        .set_target_level(LevelFilter::Info)
-        .build();
-    TermLogger::init(
-        LevelFilter::Debug,
-        config,
-        TerminalMode::Mixed,
-        ColorChoice::Auto,
-    )
-    .unwrap();
-    block_on(async_main());
-}
 
 fn read_file(path: String) -> String {
     let mut file = std::fs::File::open(path).expect("Unable to open file");
@@ -31,7 +14,22 @@ fn read_file(path: String) -> String {
     return result;
 }
 
-async fn async_main() {
+#[tokio::main]
+async fn main() {
+    let config = ConfigBuilder::new()
+        .add_filter_ignore_str("wgpu")
+        .add_filter_ignore_str("gfx_backend_vulkan")
+        .add_filter_ignore_str("naga")
+        .set_target_level(LevelFilter::Info)
+        .build();
+    TermLogger::init(
+        LevelFilter::Debug,
+        config,
+        TerminalMode::Mixed,
+        ColorChoice::Auto,
+    )
+    .unwrap();
+
     let action = cli::get_action(cli::accept_cli());
 
     match action {
@@ -40,14 +38,12 @@ async fn async_main() {
             let viewport = params.viewport_size;
             let output_path = params.output_path;
 
-            let render_output = render::render_once(html_code, viewport).await;
+            let bitmap = render::render_once(html_code, viewport).await;
 
             let (width, height) = viewport;
 
-            if let Some(bitmap) = render_output {
-                let buffer = ImageBuffer::<Rgba<u8>, _>::from_raw(width, height, bitmap).unwrap();
-                buffer.save(output_path).unwrap();
-            }
+            let buffer = ImageBuffer::<Rgba<u8>, _>::from_raw(width, height, bitmap).unwrap();
+            buffer.save(output_path).unwrap();
         }
     }
 }
