@@ -12,7 +12,7 @@ pub struct DrawRequest<'a> {
 impl Backend {
     pub fn new(device: &wgpu::Device, texture_format: wgpu::TextureFormat) -> Self {
         Self {
-            triangle_pipeline: triangle::Pipeline::new(device, texture_format)
+            triangle_pipeline: triangle::Pipeline::new(device, texture_format),
         }
     }
 
@@ -20,21 +20,14 @@ impl Backend {
         &mut self,
         device: &wgpu::Device,
         encoder: &mut wgpu::CommandEncoder,
-        queue: &wgpu::Queue, 
-        target: &wgpu::TextureView, 
+        queue: &wgpu::Queue,
+        target: &wgpu::TextureView,
         size: (u32, u32),
-        request: DrawRequest
+        request: DrawRequest,
     ) {
         if !request.triangles.is_empty() {
-            self.triangle_pipeline.draw(
-                device,
-                encoder,
-                queue,
-                &request.triangles,
-                target,
-                size
-            );
+            self.triangle_pipeline
+                .draw(device, encoder, queue, &request.triangles, target, size);
         }
     }
 }
-

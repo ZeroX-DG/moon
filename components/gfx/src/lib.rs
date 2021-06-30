@@ -6,4 +6,3 @@ mod triangle;
 pub type Bitmap = Vec<u8>;
 
 pub use painter::Painter;
-

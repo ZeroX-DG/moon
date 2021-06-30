@@ -95,46 +95,42 @@ impl Pipeline {
                 env!("CARGO_MANIFEST_DIR"),
                 "/shaders/triangle.wgsl"
             )))),
-            flags: wgpu::ShaderFlags::default()
+            flags: wgpu::ShaderFlags::default(),
         });
 
-        let constants_layout =
-            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                label: Some("moon::gfx::triangle uniforms layout"),
-                entries: &[wgpu::BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: wgpu::ShaderStage::VERTEX,
-                    ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Uniform,
-                        has_dynamic_offset: false,
-                        min_binding_size: None,
-                    },
-                    count: None,
-                }],
-            });
+        let constants_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: Some("moon::gfx::triangle uniforms layout"),
+            entries: &[wgpu::BindGroupLayoutEntry {
+                binding: 0,
+                visibility: wgpu::ShaderStage::VERTEX,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Uniform,
+                    has_dynamic_offset: false,
+                    min_binding_size: None,
+                },
+                count: None,
+            }],
+        });
 
         let constants_buffer = Buffer::new(
-            "moon::gfx::triangle uniforms buffer", 
+            "moon::gfx::triangle uniforms buffer",
             device,
             UNIFORM_BUFFER_SIZE,
-            wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST
+            wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST,
         );
 
-        let constant_bind_group =
-            device.create_bind_group(&wgpu::BindGroupDescriptor {
-                label: Some("iced_wgpu::triangle uniforms bind group"),
-                layout: &constants_layout,
-                entries: &[wgpu::BindGroupEntry {
-                    binding: 0,
-                    resource: wgpu::BindingResource::Buffer(
-                        wgpu::BufferBinding {
-                            buffer: &constants_buffer.raw,
-                            offset: 0,
-                            size: wgpu::BufferSize::new(std::mem::size_of::<Uniforms>() as u64),
-                        },
-                    ),
-                }],
-            });
+        let constant_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("iced_wgpu::triangle uniforms bind group"),
+            layout: &constants_layout,
+            entries: &[wgpu::BindGroupEntry {
+                binding: 0,
+                resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
+                    buffer: &constants_buffer.raw,
+                    offset: 0,
+                    size: wgpu::BufferSize::new(std::mem::size_of::<Uniforms>() as u64),
+                }),
+            }],
+        });
 
         let layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("moon::gfx::triangle pipeline layout"),
@@ -189,8 +185,8 @@ impl Pipeline {
             multisample: wgpu::MultisampleState {
                 count: 1,
                 mask: !0,
-                alpha_to_coverage_enabled: false
-            }
+                alpha_to_coverage_enabled: false,
+            },
         });
 
         Self {
@@ -219,13 +215,11 @@ impl Pipeline {
         queue: &wgpu::Queue,
         triangles: &[VertexBuffers<Vertex, Index>],
         target: &wgpu::TextureView,
-        size: (u32, u32)
+        size: (u32, u32),
     ) {
         let (total_vertices, total_indices) = triangles
             .iter()
-            .map(|buffers| {
-                (buffers.vertices.len(), buffers.indices.len())
-            })
+            .map(|buffers| (buffers.vertices.len(), buffers.indices.len()))
             .fold((0, 0), |(total_v, total_i), (v, i)| {
                 (total_v + v, total_i + i)
             });
@@ -235,11 +229,8 @@ impl Pipeline {
         self.vertex_buffer.expand(device, total_vertices);
         self.index_buffer.expand(device, total_indices);
 
-        let mut offsets: Vec<(
-            wgpu::BufferAddress,
-            wgpu::BufferAddress,
-            usize,
-        )> = Vec::with_capacity(triangles.len());
+        let mut offsets: Vec<(wgpu::BufferAddress, wgpu::BufferAddress, usize)> =
+            Vec::with_capacity(triangles.len());
 
         let mut last_vertex = 0;
         let mut last_index = 0;
@@ -250,63 +241,50 @@ impl Pipeline {
 
             match (
                 wgpu::BufferSize::new(vertices.len() as u64),
-                wgpu::BufferSize::new(indices.len() as u64)
+                wgpu::BufferSize::new(indices.len() as u64),
             ) {
                 (Some(_), Some(_)) => {
                     queue.write_buffer(
                         &self.vertex_buffer.raw,
                         (std::mem::size_of::<Vertex>() * last_vertex) as u64,
-                        vertices
+                        vertices,
                     );
                     queue.write_buffer(
                         &self.index_buffer.raw,
                         (std::mem::size_of::<Index>() * last_index) as u64,
-                        indices
+                        indices,
                     );
 
-                    offsets.push((
-                        last_vertex as u64,
-                        last_index as u64,
-                        buffers.indices.len(),
-                    ));
+                    offsets.push((last_vertex as u64, last_index as u64, buffers.indices.len()));
 
                     last_vertex += buffers.vertices.len();
                     last_index += buffers.indices.len();
                 }
-                _ => {
-                }
+                _ => {}
             }
         }
 
-        let uniforms = [
-            Uniforms {
-                screen_size: uv::Vec2::new(size.0 as f32, size.1 as f32),
-            }
-        ];
+        let uniforms = [Uniforms {
+            screen_size: uv::Vec2::new(size.0 as f32, size.1 as f32),
+        }];
 
         let uniforms = bytemuck::cast_slice(&uniforms);
 
         if wgpu::BufferSize::new(uniforms.len() as u64).is_some() {
-            queue.write_buffer(
-                &self.uniforms_buffer.raw,
-                0,
-                uniforms
-            );
+            queue.write_buffer(&self.uniforms_buffer.raw, 0, uniforms);
         }
 
         let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("moon::gfx::triangle renderpass"),
-            color_attachments: &[
-                wgpu::RenderPassColorAttachment {
-                    view: target,
-                    resolve_target: None,
-                    ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Load,
-                        store: true
-                    }
-                }
-            ],
-            depth_stencil_attachment: None
+            color_attachments: &[wgpu::RenderPassColorAttachment {
+                view: target,
+                resolve_target: None,
+                ops: wgpu::Operations {
+                    load: wgpu::LoadOp::Load,
+                    store: true,
+                },
+            }],
+            depth_stencil_attachment: None,
         });
 
         render_pass.set_pipeline(&self.pipeline);
@@ -316,15 +294,9 @@ impl Pipeline {
             let start_index = index_offset * std::mem::size_of::<Index>() as u64;
             let start_vertex = vertex_offset * std::mem::size_of::<Vertex>() as u64;
 
-            render_pass.set_index_buffer(
-                self.index_buffer.raw.slice(start_index..),
-                INDEX_FORMAT
-            );
+            render_pass.set_index_buffer(self.index_buffer.raw.slice(start_index..), INDEX_FORMAT);
 
-            render_pass.set_vertex_buffer(
-                0,
-                self.vertex_buffer.raw.slice(start_vertex..),
-            );
+            render_pass.set_vertex_buffer(0, self.vertex_buffer.raw.slice(start_vertex..));
 
             render_pass.draw_indexed(0..indices as u32, 0, 0..1);
         }
@@ -348,4 +320,3 @@ impl FillVertexConstructor<Vertex> for VertexConstructor {
         }
     }
 }
-

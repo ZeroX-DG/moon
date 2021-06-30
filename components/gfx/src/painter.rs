@@ -1,7 +1,7 @@
+use super::backend::{Backend, DrawRequest};
+use super::Bitmap;
 use crate::painters::rect::RectPainter;
 use painting::{Color, RRect, Rect};
-use super::backend::{DrawRequest, Backend};
-use super::Bitmap;
 
 pub struct Painter<'a> {
     rect_painter: RectPainter,
@@ -20,12 +20,13 @@ pub const TEXTURE_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Rgba8Unorm;
 impl<'a> Painter<'a> {
     pub async fn new() -> Painter<'a> {
         let instance = wgpu::Instance::new(wgpu::BackendBit::PRIMARY);
-        let adapter = instance.request_adapter(&wgpu::RequestAdapterOptions {
-            power_preference: wgpu::PowerPreference::default(),
-            compatible_surface: None,
-        })
-        .await
-        .unwrap();
+        let adapter = instance
+            .request_adapter(&wgpu::RequestAdapterOptions {
+                power_preference: wgpu::PowerPreference::default(),
+                compatible_surface: None,
+            })
+            .await
+            .unwrap();
 
         let (device, queue) = adapter
             .request_device(&Default::default(), None)
@@ -37,7 +38,7 @@ impl<'a> Painter<'a> {
             size: wgpu::Extent3d {
                 width: 1,
                 height: 1,
-                depth_or_array_layers: 1
+                depth_or_array_layers: 1,
             },
             mip_level_count: 1,
             sample_count: 1,
@@ -85,15 +86,13 @@ impl<'a> Painter<'a> {
     pub fn paint(&mut self) {
         let triangles = &self.rect_painter.vertex_buffers();
 
-        let request = DrawRequest {
-            triangles
-        };
+        let request = DrawRequest { triangles };
 
-        let mut encoder = self.device.create_command_encoder(
-            &wgpu::CommandEncoderDescriptor {
+        let mut encoder = self
+            .device
+            .create_command_encoder(&wgpu::CommandEncoderDescriptor {
                 label: Some("moon wgpu encoder"),
-            },
-        );
+            });
 
         // Background clear
         encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -103,12 +102,11 @@ impl<'a> Painter<'a> {
                 resolve_target: None,
                 ops: wgpu::Operations {
                     load: wgpu::LoadOp::Clear(wgpu::Color::WHITE),
-                    store: true
-                }
+                    store: true,
+                },
             }],
-            depth_stencil_attachment: None
+            depth_stencil_attachment: None,
         });
-        
 
         self.backend.draw(
             &self.device,
@@ -116,7 +114,7 @@ impl<'a> Painter<'a> {
             &self.queue,
             &self.frame.create_view(&Default::default()),
             (self.frame_desc.size.width, self.frame_desc.size.height),
-            request
+            request,
         );
 
         encoder.copy_texture_to_buffer(
@@ -166,8 +164,7 @@ impl<'a> Painter<'a> {
         let unpadded_bytes_per_row = 4 * self.frame_desc.size.width;
 
         for _ in 0..self.frame_desc.size.height {
-            let row =
-                &aligned_output[row_pointer..row_pointer + unpadded_bytes_per_row as usize];
+            let row = &aligned_output[row_pointer..row_pointer + unpadded_bytes_per_row as usize];
             output.extend_from_slice(row);
             row_pointer += self.get_bytes_per_row() as usize;
         }
@@ -187,4 +184,3 @@ impl<'a> painting::Painter for Painter<'a> {
         self.rect_painter.draw_solid_rrect(rect, color);
     }
 }
-

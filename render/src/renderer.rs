@@ -1,6 +1,6 @@
 use super::frame::FrameSize;
 use super::page::Page;
-use gfx::{Painter, Bitmap};
+use gfx::{Bitmap, Painter};
 
 pub struct Renderer<'a> {
     painter: Painter<'a>,
@@ -43,4 +43,3 @@ impl<'a> Renderer<'a> {
         self.painter.output().await
     }
 }
-

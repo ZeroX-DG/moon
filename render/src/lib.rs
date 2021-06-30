@@ -21,4 +21,3 @@ pub async fn render_once(html: String, size: (u32, u32)) -> Bitmap {
 
     renderer.output().await
 }
-

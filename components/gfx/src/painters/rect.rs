@@ -3,7 +3,7 @@ use lyon_tessellation::path::Path;
 use lyon_tessellation::{BuffersBuilder, FillOptions, FillTessellator, VertexBuffers};
 use painting::{Color, RRect, Rect};
 
-use crate::triangle::{Vertex, VertexConstructor, Index};
+use crate::triangle::{Index, Vertex, VertexConstructor};
 
 pub struct RectPainter {
     fill_tess: FillTessellator,
@@ -58,12 +58,14 @@ impl RectPainter {
     }
 
     pub fn draw_solid_rrect(&mut self, rect: &RRect, color: &Color) {
-        self.draw_solid_rect(&Rect {
-            x: rect.x,
-            y: rect.y,
-            width: rect.width,
-            height: rect.height
-        }, color);
+        self.draw_solid_rect(
+            &Rect {
+                x: rect.x,
+                y: rect.y,
+                width: rect.width,
+                height: rect.height,
+            },
+            color,
+        );
     }
 }
-

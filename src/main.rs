@@ -30,7 +30,6 @@ async fn main() {
     )
     .unwrap();
 
-
     let action = cli::get_action(cli::accept_cli());
 
     match action {
