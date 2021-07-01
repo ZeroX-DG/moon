@@ -29,7 +29,6 @@ impl RectPainter {
             color.b.into(),
             color.a.into(),
         ];
-        
 
         let mut path_builder = Path::builder_with_attributes(4);
         path_builder.begin(point(rect.x, rect.y), &color_arr);
@@ -49,66 +48,73 @@ impl RectPainter {
             color.b.into(),
             color.a.into(),
         ];
-        
+
         let corners = &rect.corners;
 
         let mut path_builder = Path::builder_with_attributes(4);
-        path_builder.begin(point(
-            rect.x + rect.corners.top_left.horizontal_r(),
-            rect.y
-        ), &color_arr);
+        path_builder.begin(
+            point(rect.x + rect.corners.top_left.horizontal_r(), rect.y),
+            &color_arr,
+        );
 
-        path_builder.line_to(point(
-            rect.x + corners.top_left.horizontal_r() + rect.width - corners.top_right.horizontal_r(),
-            rect.y
-        ), &color_arr);
+        path_builder.line_to(
+            point(
+                rect.x + corners.top_left.horizontal_r() + rect.width
+                    - corners.top_right.horizontal_r(),
+                rect.y,
+            ),
+            &color_arr,
+        );
 
         path_builder.quadratic_bezier_to(
             point(rect.x + rect.width, rect.y),
             point(rect.x + rect.width, rect.y + corners.top_right.vertical_r()),
-            &color_arr
+            &color_arr,
         );
 
-        path_builder.line_to(point(
-            rect.x + rect.width,
-            rect.y + rect.height - corners.bottom_right.vertical_r()
-        ), &color_arr);
+        path_builder.line_to(
+            point(
+                rect.x + rect.width,
+                rect.y + rect.height - corners.bottom_right.vertical_r(),
+            ),
+            &color_arr,
+        );
 
         path_builder.quadratic_bezier_to(
             point(rect.x + rect.width, rect.y + rect.height),
             point(
                 rect.x + rect.width - corners.bottom_right.horizontal_r(),
-                rect.y + rect.height
+                rect.y + rect.height,
             ),
-            &color_arr
+            &color_arr,
         );
 
-        path_builder.line_to(point(
-            rect.x + corners.bottom_left.horizontal_r(),
-            rect.y + rect.height
-        ), &color_arr);
+        path_builder.line_to(
+            point(
+                rect.x + corners.bottom_left.horizontal_r(),
+                rect.y + rect.height,
+            ),
+            &color_arr,
+        );
 
         path_builder.quadratic_bezier_to(
             point(rect.x, rect.y + rect.height),
             point(
                 rect.x,
-                rect.y + rect.height - corners.bottom_left.vertical_r()
+                rect.y + rect.height - corners.bottom_left.vertical_r(),
             ),
-            &color_arr
+            &color_arr,
         );
 
-        path_builder.line_to(point(
-            rect.x,
-            rect.y + corners.top_left.vertical_r()
-        ), &color_arr);
+        path_builder.line_to(
+            point(rect.x, rect.y + corners.top_left.vertical_r()),
+            &color_arr,
+        );
 
         path_builder.quadratic_bezier_to(
             point(rect.x, rect.y),
-            point(
-                rect.x + corners.top_left.horizontal_r(),
-                rect.y
-            ),
-            &color_arr
+            point(rect.x + corners.top_left.horizontal_r(), rect.y),
+            &color_arr,
         );
 
         path_builder.end(true);

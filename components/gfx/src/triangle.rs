@@ -244,7 +244,7 @@ impl Pipeline {
 
             let mut indices_buffer = Vec::from(buffers.indices.as_slice());
             indices_buffer.resize(indices_buffer_capacity, 0);
-            
+
             let indices = bytemuck::cast_slice(&indices_buffer);
 
             match (
