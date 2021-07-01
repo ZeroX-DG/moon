@@ -23,14 +23,13 @@ impl RectPainter {
     }
 
     pub fn draw_solid_rect(&mut self, rect: &Rect, color: &Color) {
-        let mut buffer: VertexBuffers<Vertex, Index> = VertexBuffers::new();
-
         let color_arr: [f32; 4] = [
             color.r.into(),
             color.g.into(),
             color.b.into(),
             color.a.into(),
         ];
+        
 
         let mut path_builder = Path::builder_with_attributes(4);
         path_builder.begin(point(rect.x, rect.y), &color_arr);
@@ -40,6 +39,86 @@ impl RectPainter {
         path_builder.end(true);
 
         let path = path_builder.build();
+        self.tessellate_path(path);
+    }
+
+    pub fn draw_solid_rrect(&mut self, rect: &RRect, color: &Color) {
+        let color_arr: [f32; 4] = [
+            color.r.into(),
+            color.g.into(),
+            color.b.into(),
+            color.a.into(),
+        ];
+        
+        let corners = &rect.corners;
+
+        let mut path_builder = Path::builder_with_attributes(4);
+        path_builder.begin(point(
+            rect.x + rect.corners.top_left.horizontal_r(),
+            rect.y
+        ), &color_arr);
+
+        path_builder.line_to(point(
+            rect.x + corners.top_left.horizontal_r() + rect.width - corners.top_right.horizontal_r(),
+            rect.y
+        ), &color_arr);
+
+        path_builder.quadratic_bezier_to(
+            point(rect.x + rect.width, rect.y),
+            point(rect.x + rect.width, rect.y + corners.top_right.vertical_r()),
+            &color_arr
+        );
+
+        path_builder.line_to(point(
+            rect.x + rect.width,
+            rect.y + rect.height - corners.bottom_right.vertical_r()
+        ), &color_arr);
+
+        path_builder.quadratic_bezier_to(
+            point(rect.x + rect.width, rect.y + rect.height),
+            point(
+                rect.x + rect.width - corners.bottom_right.horizontal_r(),
+                rect.y + rect.height
+            ),
+            &color_arr
+        );
+
+        path_builder.line_to(point(
+            rect.x + corners.bottom_left.horizontal_r(),
+            rect.y + rect.height
+        ), &color_arr);
+
+        path_builder.quadratic_bezier_to(
+            point(rect.x, rect.y + rect.height),
+            point(
+                rect.x,
+                rect.y + rect.height - corners.bottom_left.vertical_r()
+            ),
+            &color_arr
+        );
+
+        path_builder.line_to(point(
+            rect.x,
+            rect.y + corners.top_left.vertical_r()
+        ), &color_arr);
+
+        path_builder.quadratic_bezier_to(
+            point(rect.x, rect.y),
+            point(
+                rect.x + corners.top_left.horizontal_r(),
+                rect.y
+            ),
+            &color_arr
+        );
+
+        path_builder.end(true);
+
+        let path = path_builder.build();
+        self.tessellate_path(path);
+    }
+
+    fn tessellate_path(&mut self, path: Path) {
+        let mut buffer: VertexBuffers<Vertex, Index> = VertexBuffers::new();
 
         let result = self.fill_tess.tessellate_with_ids(
             path.id_iter(),
@@ -55,17 +134,5 @@ impl RectPainter {
         }
 
         self.vertex_buffers.push(buffer);
-    }
-
-    pub fn draw_solid_rrect(&mut self, rect: &RRect, color: &Color) {
-        self.draw_solid_rect(
-            &Rect {
-                x: rect.x,
-                y: rect.y,
-                width: rect.width,
-                height: rect.height,
-            },
-            color,
-        );
     }
 }
