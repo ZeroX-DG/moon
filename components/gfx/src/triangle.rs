@@ -237,7 +237,15 @@ impl Pipeline {
 
         for buffers in triangles {
             let vertices = bytemuck::cast_slice(&buffers.vertices);
-            let indices = bytemuck::cast_slice(&buffers.indices);
+
+            // Align indices by 4 (COPY_BUFFER_ALIGNMENT)
+            let indices_size = (buffers.indices.len() * 2) as f32;
+            let indices_buffer_capacity = (4 * (indices_size / 4.).ceil() as usize) / 2;
+
+            let mut indices_buffer = Vec::from(buffers.indices.as_slice());
+            indices_buffer.resize(indices_buffer_capacity, 0);
+
+            let indices = bytemuck::cast_slice(&indices_buffer);
 
             match (
                 wgpu::BufferSize::new(vertices.len() as u64),
