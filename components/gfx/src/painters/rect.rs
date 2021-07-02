@@ -59,8 +59,7 @@ impl RectPainter {
 
         path_builder.line_to(
             point(
-                rect.x + corners.top_left.horizontal_r() + rect.width
-                    - corners.top_right.horizontal_r(),
+                rect.x + rect.width - corners.top_right.horizontal_r(),
                 rect.y,
             ),
             &color_arr,
