@@ -33,7 +33,7 @@ impl<'a> Renderer<'a> {
 
         if let Some(layout_root) = main_frame.layout().root() {
             let display_list = painting::build_display_list(layout_root);
-            painting::paint(&display_list, &mut self.painter);
+            painting::paint(display_list, &mut self.painter);
 
             self.painter.paint();
         }

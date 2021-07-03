@@ -151,24 +151,19 @@ pub fn compute_styles(
 
 pub fn build_render_tree(node: NodeRef, rules: &[ContextualRule]) -> RenderTree {
     let mut style_cache = HashSet::new();
-    let mut render_root = None;
-    if node.is_document() {
+    let render_root = if node.is_document() {
         // the first child is HTML tag
-        if let Some(html) = node.borrow().first_child() {
-            render_root = Some(html);
-        }
+        node.borrow().first_child()
     } else {
-        render_root = Some(node);
-    }
+        Some(node)
+    };
 
-    if let Some(node) = render_root {
-        let root = build_render_tree_from_node(node, rules, None, &mut style_cache);
-        return RenderTree { root, style_cache };
-    }
-    RenderTree {
-        root: None,
-        style_cache,
-    }
+    let root = match render_root {
+        Some(node) => build_render_tree_from_node(node, rules, None, &mut style_cache),
+        None => None,
+    };
+
+    RenderTree { root, style_cache }
 }
 
 /// Build the render tree using the root node & list of stylesheets
