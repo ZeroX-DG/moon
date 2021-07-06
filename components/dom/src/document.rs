@@ -7,7 +7,7 @@ use std::rc::Rc;
 pub struct Document {
     doctype: Option<DocumentType>,
     mode: QuirksMode,
-    loader: Rc<RefCell<DocumentLoader>>,
+    loader: Option<Rc<RefCell<dyn DocumentLoader>>>,
     stylesheets: Vec<StyleSheet>,
 }
 
@@ -36,7 +36,7 @@ impl Document {
         Self {
             doctype: None,
             mode: QuirksMode::NoQuirks,
-            loader: Rc::new(RefCell::new(DocumentLoader::new())),
+            loader: None,
             stylesheets: Vec::new(),
         }
     }
@@ -53,8 +53,12 @@ impl Document {
         &self.mode
     }
 
-    pub fn loader(&self) -> Rc<RefCell<DocumentLoader>> {
+    pub fn loader(&self) -> Option<Rc<RefCell<dyn DocumentLoader>>> {
         self.loader.clone()
+    }
+
+    pub fn set_loader<L: DocumentLoader + 'static>(&mut self, loader: L) {
+        self.loader = Some(Rc::new(RefCell::new(loader)));
     }
 
     pub fn append_stylesheet(&mut self, stylesheet: StyleSheet) {

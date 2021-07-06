@@ -28,21 +28,32 @@ impl HTMLLinkElement {
     }
 
     pub fn load_stylesheet(&self, url: &Url, document: NodeRef) {
-        log::info!("Loading stylesheet from: {}", url.raw());
-        let request = LoadRequest::new(url, |bytes| String::from_utf8(bytes).unwrap())
-            .on_success(|css| {
+        let cloned_doc = document.clone();
+        let raw_url = url.raw().to_string();
+
+        log::info!("Loading stylesheet from: {}", raw_url);
+
+        let request = LoadRequest::new(url.clone())
+            .on_success(Box::new(move |bytes| {
+                let css = String::from_utf8(bytes).unwrap();
                 let tokenizer = Tokenizer::new(css.chars());
                 let mut parser = Parser::<Token>::new(tokenizer.run());
                 let stylesheet = parser.parse_a_css_stylesheet();
 
-                document
+                cloned_doc
                     .borrow_mut()
                     .as_document_mut()
                     .append_stylesheet(stylesheet);
-            })
-            .on_error(|e| log::info!("Unable to load CSS: {} ({})", e, url.raw()));
+            }))
+            .on_error(Box::new(move |e| {
+                log::info!("Unable to load CSS: {} ({})", e, raw_url)
+            }));
 
-        let loader = document.borrow().as_document().loader();
+        let loader = document
+            .borrow()
+            .as_document()
+            .loader()
+            .expect("Document loader is not set");
         loader.borrow_mut().load(request);
     }
 }
