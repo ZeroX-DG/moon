@@ -479,7 +479,6 @@ dependencies = [
  "css",
  "enum_dispatch",
  "log",
- "relative-path",
  "url",
 ]
 
@@ -1087,6 +1086,14 @@ checksum = "6f84d96438c15fcd6c3f244c8fce01d1e2b9c6b5623e9c711dc9286d8fc92d6a"
 dependencies = [
  "cfg-if 1.0.0",
  "winapi",
+]
+
+[[package]]
+name = "loaders"
+version = "0.1.0"
+dependencies = [
+ "dom",
+ "relative-path",
 ]
 
 [[package]]
@@ -1730,6 +1737,7 @@ dependencies = [
  "html",
  "ipc",
  "layout",
+ "loaders",
  "log",
  "message",
  "painting",

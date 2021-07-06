@@ -9,7 +9,7 @@ pub enum ParseUrlError {
     InvalidPort(String),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Url {
     raw_url: String,
     protocol_end: u32,

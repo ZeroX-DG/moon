@@ -21,6 +21,7 @@ members = [
   "components/message",
   "components/url",
   "components/gfx",
+  "components/loaders",
   "render",
 ]
 
