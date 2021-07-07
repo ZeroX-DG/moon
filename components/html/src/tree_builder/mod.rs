@@ -245,12 +245,12 @@ fn adjust_foreign_attributes(token: &mut Token) {
 }
 
 impl<T: Tokenizing> TreeBuilder<T> {
-    pub fn new(tokenizer: T) -> Self {
+    pub fn new(tokenizer: T, document: NodeRef) -> Self {
         Self {
             tokenizer,
             open_elements: StackOfOpenElements::new(),
             insert_mode: InsertMode::Initial,
-            document: NodeRef::new(Node::new(NodeData::Document(Document::new()))),
+            document,
             foster_parenting: false,
             head_pointer: None,
             form_pointer: None,
@@ -264,6 +264,13 @@ impl<T: Tokenizing> TreeBuilder<T> {
             is_fragment_case: false,
             context_element: None,
         }
+    }
+
+    /// Create a HTML tree builder with default document & no loader.
+    /// This should only be used for testing
+    pub fn default(tokenizer: T) -> Self {
+        let document = NodeRef::new(Node::new(NodeData::Document(Document::new())));
+        Self::new(tokenizer, document)
     }
 
     /// Start the main loop for parsing DOM tree
@@ -3227,7 +3234,7 @@ mod test {
     fn handle_initial_correctly() {
         let html = "<!-- this is a test -->";
         let tokenizer = Tokenizer::new(html.chars());
-        let tree_builder = TreeBuilder::new(tokenizer);
+        let tree_builder = TreeBuilder::default(tokenizer);
 
         assert_eq!(
             tree_builder
@@ -3246,7 +3253,7 @@ mod test {
     fn handle_parsing_children_correctly() {
         let html = "<div><div></div><div></div><div></div></div>";
         let tokenizer = Tokenizer::new(html.chars());
-        let tree_builder = TreeBuilder::new(tokenizer);
+        let tree_builder = TreeBuilder::default(tokenizer);
         let document = tree_builder.run();
 
         let html = document.borrow().first_child().unwrap();
@@ -3260,7 +3267,7 @@ mod test {
     fn handle_parsing_a_tag() {
         let html = "<div><a href=\"http://google.com\">This is a link</a></div>";
         let tokenizer = Tokenizer::new(html.chars());
-        let tree_builder = TreeBuilder::new(tokenizer);
+        let tree_builder = TreeBuilder::default(tokenizer);
         let document = tree_builder.run();
 
         let html = document.borrow().first_child().unwrap();
