@@ -166,6 +166,11 @@ fn all_inline_children(node: &RenderNodeRef) -> bool {
 }
 
 fn build_box_by_display(node: &RenderNodeRef) -> Option<LayoutBox> {
+    // TODO: support text
+    if node.borrow().node.is_text() {
+        return None;
+    }
+
     let display = node.borrow().get_style(&Property::Display);
 
     let box_type = match display.inner() {
