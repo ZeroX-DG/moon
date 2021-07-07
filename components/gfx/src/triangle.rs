@@ -212,7 +212,7 @@ impl Pipeline {
         &mut self,
         device: &wgpu::Device,
         encoder: &mut wgpu::CommandEncoder,
-        queue: &wgpu::Queue,
+        staging_belt: &mut wgpu::util::StagingBelt,
         triangles: &[VertexBuffers<Vertex, Index>],
         target: &wgpu::TextureView,
         size: (u32, u32),
@@ -251,17 +251,29 @@ impl Pipeline {
                 wgpu::BufferSize::new(vertices.len() as u64),
                 wgpu::BufferSize::new(indices.len() as u64),
             ) {
-                (Some(_), Some(_)) => {
-                    queue.write_buffer(
-                        &self.vertex_buffer.raw,
-                        (std::mem::size_of::<Vertex>() * last_vertex) as u64,
-                        vertices,
-                    );
-                    queue.write_buffer(
-                        &self.index_buffer.raw,
-                        (std::mem::size_of::<Index>() * last_index) as u64,
-                        indices,
-                    );
+                (Some(vertices_size), Some(indices_size)) => {
+                    {
+                        let mut vertex_buffer = staging_belt.write_buffer(
+                            encoder,
+                            &self.vertex_buffer.raw,
+                            (std::mem::size_of::<Vertex>() * last_vertex) as u64,
+                            vertices_size,
+                            device,
+                        );
+
+                        vertex_buffer.copy_from_slice(vertices);
+                    }
+                    {
+                        let mut index_buffer = staging_belt.write_buffer(
+                            encoder,
+                            &self.index_buffer.raw,
+                            (std::mem::size_of::<Index>() * last_index) as u64,
+                            indices_size,
+                            device,
+                        );
+
+                        index_buffer.copy_from_slice(indices);
+                    }
 
                     offsets.push((last_vertex as u64, last_index as u64, buffers.indices.len()));
 
@@ -278,8 +290,16 @@ impl Pipeline {
 
         let uniforms = bytemuck::cast_slice(&uniforms);
 
-        if wgpu::BufferSize::new(uniforms.len() as u64).is_some() {
-            queue.write_buffer(&self.uniforms_buffer.raw, 0, uniforms);
+        if let Some(uniforms_size) = wgpu::BufferSize::new(uniforms.len() as u64) {
+            let mut uniforms_buffer = staging_belt.write_buffer(
+                encoder,
+                &self.uniforms_buffer.raw,
+                0,
+                uniforms_size,
+                device,
+            );
+
+            uniforms_buffer.copy_from_slice(uniforms);
         }
 
         let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {

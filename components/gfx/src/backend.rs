@@ -20,14 +20,20 @@ impl Backend {
         &mut self,
         device: &wgpu::Device,
         encoder: &mut wgpu::CommandEncoder,
-        queue: &wgpu::Queue,
+        staging_belt: &mut wgpu::util::StagingBelt,
         target: &wgpu::TextureView,
         size: (u32, u32),
         request: DrawRequest,
     ) {
         if !request.triangles.is_empty() {
-            self.triangle_pipeline
-                .draw(device, encoder, queue, &request.triangles, target, size);
+            self.triangle_pipeline.draw(
+                device,
+                encoder,
+                staging_belt,
+                &request.triangles,
+                target,
+                size,
+            );
         }
     }
 }

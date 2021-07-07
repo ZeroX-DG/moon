@@ -1,5 +1,5 @@
-use crate::color::style_color_to_paint_color;
 use crate::command::{DisplayCommand, DrawCommand};
+use crate::primitive::style_color_to_paint_color;
 use crate::primitive::Rect;
 use crate::LayoutBox;
 use layout::box_model::Edge;

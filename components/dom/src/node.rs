@@ -370,6 +370,10 @@ impl Node {
     pub fn as_comment_mut(&mut self) -> &mut Comment {
         self.as_comment_mut_opt().expect("Node is not a Comment")
     }
+
+    pub fn as_text(&self) -> &Text {
+        self.as_text_opt().expect("Node is not a Text")
+    }
 }
 
 #[cfg(test)]

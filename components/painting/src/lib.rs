@@ -1,4 +1,3 @@
-mod color;
 mod command;
 mod paint_functions;
 mod painter;
@@ -10,15 +9,13 @@ use command::{DisplayCommand, DrawCommand};
 use layout::layout_box::LayoutBox;
 use render::PaintChainBuilder;
 
-pub use color::*;
 pub use painter::Painter;
 pub use primitive::*;
 pub use render::DisplayList;
 
-use paint_functions::background::paint_background;
-use paint_functions::border::paint_border;
+use paint_functions::*;
 
-pub fn paint(display_list: &DisplayList, painter: &mut dyn Painter) {
+pub fn paint(display_list: DisplayList, painter: &mut dyn Painter) {
     for command in display_list {
         match command {
             DisplayCommand::Draw(draw_command) => draw(draw_command, painter),
@@ -31,7 +28,7 @@ pub fn paint(display_list: &DisplayList, painter: &mut dyn Painter) {
     }
 }
 
-fn draw(draw_command: &DrawCommand, painter: &mut dyn Painter) {
+fn draw(draw_command: DrawCommand, painter: &mut dyn Painter) {
     match draw_command {
         DrawCommand::FillRect(rect, color) => painter.fill_rect(rect, color),
         DrawCommand::FillRRect(rect, color) => painter.fill_rrect(rect, color),

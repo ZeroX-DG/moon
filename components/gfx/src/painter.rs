@@ -1,6 +1,7 @@
 use super::backend::{Backend, DrawRequest};
 use super::Bitmap;
 use crate::painters::rect::RectPainter;
+use futures::task::SpawnExt;
 use painting::{Color, RRect, Rect};
 
 pub struct Painter<'a> {
@@ -8,6 +9,8 @@ pub struct Painter<'a> {
     backend: Backend,
     device: wgpu::Device,
     queue: wgpu::Queue,
+    staging_belt: wgpu::util::StagingBelt,
+    local_pool: futures::executor::LocalPool,
     frame_desc: wgpu::TextureDescriptor<'a>,
     frame: wgpu::Texture,
     frame_texture_view: wgpu::TextureView,
@@ -18,6 +21,8 @@ pub struct Painter<'a> {
 pub const TEXTURE_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Rgba8Unorm;
 
 impl<'a> Painter<'a> {
+    const CHUNK_SIZE: u64 = 10 * 1024;
+
     pub async fn new() -> Painter<'a> {
         let instance = wgpu::Instance::new(wgpu::BackendBit::PRIMARY);
         let adapter = instance
@@ -32,6 +37,9 @@ impl<'a> Painter<'a> {
             .request_device(&Default::default(), None)
             .await
             .unwrap();
+
+        let staging_belt = wgpu::util::StagingBelt::new(Self::CHUNK_SIZE);
+        let local_pool = futures::executor::LocalPool::new();
 
         let frame_desc = wgpu::TextureDescriptor {
             label: Some("moon output texture"),
@@ -63,6 +71,8 @@ impl<'a> Painter<'a> {
             rect_painter: RectPainter::new(),
             device,
             queue,
+            staging_belt,
+            local_pool,
             frame_desc,
             frame,
             frame_texture_view,
@@ -111,7 +121,7 @@ impl<'a> Painter<'a> {
         self.backend.draw(
             &self.device,
             &mut encoder,
-            &self.queue,
+            &mut self.staging_belt,
             &self.frame.create_view(&Default::default()),
             (self.frame_desc.size.width, self.frame_desc.size.height),
             request,
@@ -134,7 +144,14 @@ impl<'a> Painter<'a> {
             self.frame_desc.size,
         );
 
+        self.staging_belt.finish();
         self.queue.submit(Some(encoder.finish()));
+        self.local_pool
+            .spawner()
+            .spawn(self.staging_belt.recall())
+            .expect("Recall staging belt");
+
+        self.local_pool.run_until_stalled();
     }
 
     fn get_bytes_per_row(&self) -> u32 {
@@ -176,11 +193,11 @@ impl<'a> Painter<'a> {
 }
 
 impl<'a> painting::Painter for Painter<'a> {
-    fn fill_rect(&mut self, rect: &Rect, color: &Color) {
-        self.rect_painter.draw_solid_rect(rect, color);
+    fn fill_rect(&mut self, rect: Rect, color: Color) {
+        self.rect_painter.draw_solid_rect(&rect, &color);
     }
 
-    fn fill_rrect(&mut self, rect: &RRect, color: &Color) {
-        self.rect_painter.draw_solid_rrect(rect, color);
+    fn fill_rrect(&mut self, rect: RRect, color: Color) {
+        self.rect_painter.draw_solid_rrect(&rect, &color);
     }
 }

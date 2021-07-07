@@ -11,13 +11,14 @@ use style::values::position::Position;
 /// LayoutBox for the layout tree
 #[derive(Debug, Clone)]
 pub struct LayoutBox {
-    /// Type of this box (inline | block | anonymous)
+    /// Type of this box (inline | block)
     pub box_type: BoxType,
 
     /// Box model dimensions for this box
     pub dimensions: Dimensions,
 
-    /// The render node that generate this box
+    /// The render node that generate this box. Render node will be absent
+    /// for anonymous boxes.
     pub render_node: Option<RenderNodeRef>,
 
     /// Indicate if this box only contain inline

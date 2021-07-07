@@ -1,7 +1,7 @@
 use crate::command::{DisplayCommand, DrawCommand};
 use crate::primitive::{Corners, RRect, Radii, Rect};
 use crate::LayoutBox;
-use crate::{color::style_color_to_paint_color, utils::is_zero};
+use crate::{primitive::style_color_to_paint_color, utils::is_zero};
 use style::value_processing::{Property, Value};
 use style::values::border_radius::BorderRadius;
 
