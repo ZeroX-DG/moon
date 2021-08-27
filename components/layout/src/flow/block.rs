@@ -1,10 +1,11 @@
 use style::render_tree::RenderNodeRef;
 
-use crate::layout_box::LayoutBox;
+use crate::{box_model::Dimensions, layout_box::LayoutBox};
 
 #[derive(Debug)]
 pub struct BlockBox {
-    node: Option<RenderNodeRef>
+    node: Option<RenderNodeRef>,
+    dimensions: Dimensions,
 }
 
 impl LayoutBox for BlockBox {
@@ -23,18 +24,24 @@ impl LayoutBox for BlockBox {
     fn friendly_name(&self) -> &str {
         "BlockBox"
     }
+
+    fn dimensions(&self) -> Dimensions {
+        self.dimensions.clone()
+    }
 }
 
 impl BlockBox {
     pub fn new(node: RenderNodeRef) -> Self {
         Self {
-            node: Some(node)
+            node: Some(node),
+            dimensions: Default::default()
         }
     }
 
     pub fn new_anonymous() -> Self {
         Self {
-            node: None
+            node: None,
+            dimensions: Default::default()
         }
     }
 }

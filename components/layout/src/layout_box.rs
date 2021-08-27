@@ -7,6 +7,8 @@ use std::{
 
 use style::render_tree::RenderNodeRef;
 
+use crate::box_model::Dimensions;
+
 #[derive(Debug, Clone)]
 pub struct LayoutNodePtr(NonNull<LayoutNode>);
 
@@ -18,6 +20,7 @@ pub trait LayoutBox: Any + Debug {
         self.render_node().is_none()
     }
     fn friendly_name(&self) -> &str;
+    fn dimensions(&self) -> Dimensions;
 }
 
 #[derive(Debug)]

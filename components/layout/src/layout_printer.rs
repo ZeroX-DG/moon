@@ -21,14 +21,13 @@ pub fn layout_to_string(root: &LayoutNode, level: usize, specificity: &DumpSpeci
 
     let dimensions = match specificity {
         DumpSpecificity::Structure => String::new(),
-        DumpSpecificity::StructureAndDimensions => String::new(),
-        // DumpSpecificity::StructureAndDimensions => format!(
-        //     " (x: {} | y: {} | w: {} | h: {})",
-        //     root.dimensions.content.x,
-        //     root.dimensions.content.y,
-        //     root.dimensions.content.width,
-        //     root.dimensions.content.height
-        // ),
+        DumpSpecificity::StructureAndDimensions => format!(
+            " (x: {} | y: {} | w: {} | h: {})",
+            root.dimensions().content.x,
+            root.dimensions().content.y,
+            root.dimensions().content.width,
+            root.dimensions().content.height
+        ),
     };
 
     let node_info = match &root.render_node() {
