@@ -1,146 +1,87 @@
-/// This module contains the definition of
-/// the layout box, which is the component
-/// that made up the layout tree.
-use super::box_model::Dimensions;
+use std::{fmt::Debug, ptr::NonNull};
+use std::any::Any;
+use std::convert::{AsRef, AsMut};
+
 use style::render_tree::RenderNodeRef;
-use style::value_processing::{Property, Value};
-use style::values::display::{Display, InnerDisplayType};
-use style::values::float::Float;
-use style::values::position::Position;
 
-/// LayoutBox for the layout tree
 #[derive(Debug, Clone)]
-pub struct LayoutBox {
-    /// Type of this box (inline | block)
-    pub box_type: BoxType,
+pub struct LayoutNodePtr(NonNull<LayoutNode>);
 
-    /// Box model dimensions for this box
-    pub dimensions: Dimensions,
-
-    /// The render node that generate this box. Render node will be absent
-    /// for anonymous boxes.
-    pub render_node: Option<RenderNodeRef>,
-
-    /// Indicate if this box only contain inline
-    pub children_are_inline: bool,
-
-    /// The children of this box
-    pub children: Vec<LayoutBox>,
+pub trait LayoutBox: Any + Debug {
+    fn is_block(&self) -> bool;
+    fn is_inline(&self) -> bool;
+    fn render_node(&self) -> Option<RenderNodeRef>;
+    fn is_anonymous(&self) -> bool {
+        self.render_node().is_none()
+    }
 }
 
-/// Different box types for each layout box
-#[derive(Debug, Clone, PartialEq)]
-pub enum BoxType {
-    /// Block-level box
-    Block,
-
-    /// Inline-level box
-    Inline,
+#[derive(Debug)]
+pub struct LayoutNode {
+    inner: Box<dyn LayoutBox>,
+    parent: Option<LayoutNodePtr>,
+    children: Vec<LayoutNode>
 }
 
-impl LayoutBox {
-    pub fn new(node: RenderNodeRef, box_type: BoxType) -> Self {
+impl AsRef<LayoutNode> for LayoutNodePtr {
+    fn as_ref(&self) -> &LayoutNode {
+        unsafe { self.0.as_ref() }
+    }
+}
+
+impl AsMut<LayoutNode> for LayoutNodePtr {
+    fn as_mut(&mut self) -> &mut LayoutNode {
+        unsafe { self.0.as_mut() }
+    }
+}
+
+impl From<&mut LayoutNode> for LayoutNodePtr {
+    fn from(layout_node_ref: &mut LayoutNode) -> Self {
+        Self(NonNull::new(layout_node_ref).expect("Unable to create node pointer"))
+    }
+}
+
+impl std::ops::Deref for LayoutNode {
+    type Target = Box<dyn LayoutBox>;
+    fn deref(&self) -> &Self::Target {
+        &self.inner
+    }
+}
+
+impl LayoutNode {
+    pub fn new<B: LayoutBox>(layout_box: B) -> Self {
         Self {
-            box_type,
-            render_node: Some(node),
-            dimensions: Dimensions::default(),
-            children_are_inline: false,
-            children: Vec::new(),
+            inner: Box::new(layout_box),
+            parent: None,
+            children: Vec::new()
         }
     }
 
-    pub fn new_anonymous(box_type: BoxType) -> Self {
+    pub fn new_boxed(layout_box: Box<dyn LayoutBox>) -> Self {
         Self {
-            box_type,
-            render_node: None,
-            dimensions: Dimensions::default(),
-            children_are_inline: false,
-            children: Vec::new(),
+            inner: layout_box,
+            parent: None,
+            children: Vec::new()
         }
     }
 
-    pub fn is_anonymous(&self) -> bool {
-        self.render_node.is_none()
+    pub fn children(&self) -> &[LayoutNode] {
+        &self.children
     }
 
-    pub fn is_inline(&self) -> bool {
-        self.box_type == BoxType::Inline
-    }
-
-    pub fn is_block(&self) -> bool {
-        self.box_type == BoxType::Block
-    }
-
-    pub fn is_float(&self) -> bool {
-        match &self.render_node {
-            Some(node) => match node.borrow().get_style(&Property::Float).inner() {
-                Value::Float(Float::None) => false,
-                _ => true,
-            },
-            _ => false,
-        }
-    }
-
-    pub fn is_non_replaced(&self) -> bool {
-        match &self.render_node {
-            Some(node) => match node.borrow().node.borrow().as_element_opt() {
-                Some(e) => match e.tag_name().as_str() {
-                    "video" | "image" | "img" | "canvas" => false,
-                    _ => true,
-                },
-                _ => true,
-            },
-            _ => true,
-        }
-    }
-
-    pub fn is_inline_block(&self) -> bool {
-        match &self.render_node {
-            Some(node) => match node.borrow().get_style(&Property::Display).inner() {
-                Value::Display(Display::Full(_, InnerDisplayType::FlowRoot)) => self.is_inline(),
-                _ => false,
-            },
-            _ => false,
-        }
-    }
-
-    // TODO: change to the correct behavior to detect normal flow
-    pub fn is_in_normal_flow(&self) -> bool {
-        true
-    }
-
-    pub fn is_absolutely_positioned(&self) -> bool {
-        match &self.render_node {
-            Some(node) => match node.borrow().get_style(&Property::Position).inner() {
-                Value::Position(Position::Absolute) => true,
-                _ => false,
-            },
-            _ => false,
-        }
-    }
-
-    pub fn box_model(&mut self) -> &mut Dimensions {
-        &mut self.dimensions
-    }
-
-    pub fn add_child(&mut self, child: LayoutBox) {
-        self.children.push(child);
-    }
-
-    pub fn set_children_inline(&mut self, value: bool) {
-        self.children_are_inline = value;
+    pub fn children_mut(&mut self) -> &mut Vec<LayoutNode> {
+        &mut self.children
     }
 
     pub fn children_are_inline(&self) -> bool {
-        self.children_are_inline
+        self.children.iter().all(|child| child.as_ref().is_inline())
     }
 
-    pub fn is_height_auto(&self) -> bool {
-        if let Some(node) = &self.render_node {
-            let computed_height = node.borrow().get_style(&Property::Height);
+    pub fn set_children(&mut self, children: Vec<LayoutNode>) {
+        self.children = children;
+    }
 
-            return computed_height.is_auto();
-        }
-        return true;
+    pub fn add_child(&mut self, child: LayoutNode) {
+        self.children.push(child);
     }
 }
