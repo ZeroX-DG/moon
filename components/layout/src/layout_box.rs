@@ -1,6 +1,9 @@
-use std::{fmt::Debug, ptr::NonNull};
-use std::any::Any;
-use std::convert::{AsRef, AsMut};
+use std::{
+    any::Any,
+    convert::{AsMut, AsRef},
+    fmt::Debug,
+    ptr::NonNull,
+};
 
 use style::render_tree::RenderNodeRef;
 
@@ -14,13 +17,14 @@ pub trait LayoutBox: Any + Debug {
     fn is_anonymous(&self) -> bool {
         self.render_node().is_none()
     }
+    fn friendly_name(&self) -> &str;
 }
 
 #[derive(Debug)]
 pub struct LayoutNode {
     inner: Box<dyn LayoutBox>,
     parent: Option<LayoutNodePtr>,
-    children: Vec<LayoutNode>
+    children: Vec<LayoutNode>,
 }
 
 impl AsRef<LayoutNode> for LayoutNodePtr {
@@ -53,7 +57,7 @@ impl LayoutNode {
         Self {
             inner: Box::new(layout_box),
             parent: None,
-            children: Vec::new()
+            children: Vec::new(),
         }
     }
 
@@ -61,7 +65,7 @@ impl LayoutNode {
         Self {
             inner: layout_box,
             parent: None,
-            children: Vec::new()
+            children: Vec::new(),
         }
     }
 
