@@ -1,3 +1,5 @@
+use std::any::Any;
+
 use style::render_tree::RenderNodeRef;
 
 use crate::{box_model::Dimensions, layout_box::LayoutBox};
@@ -25,8 +27,20 @@ impl LayoutBox for InlineBox {
         "InlineBox"
     }
 
-    fn dimensions(&self) -> Dimensions {
-        self.dimensions.clone()
+    fn dimensions(&self) -> &Dimensions {
+        &self.dimensions
+    }
+
+    fn dimensions_mut(&mut self) -> &mut Dimensions {
+        &mut self.dimensions
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+
+    fn as_any_mut(&mut self) -> &mut dyn Any {
+        self
     }
 }
 
