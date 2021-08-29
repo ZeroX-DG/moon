@@ -62,13 +62,6 @@ impl BlockBox {
             dimensions: Default::default(),
         }
     }
-
-    pub fn is_initial(&self) -> bool {
-        match &self.node {
-            Some(node) => node.borrow().parent_render_node.is_none(),
-            _ => false,
-        }
-    }
 }
 
 pub struct BlockFormattingContext<'a> {
@@ -80,12 +73,7 @@ pub struct BlockFormattingContext<'a> {
 impl<'a> FormattingContext for BlockFormattingContext<'a> {
     fn run(&mut self, layout_node_id: &LayoutNodeId) {
         let layout_node = self.layout_tree_mut().get_node_mut(layout_node_id);
-        if layout_node
-            .as_any()
-            .downcast_ref::<BlockBox>()
-            .unwrap()
-            .is_initial()
-        {
+        if layout_node.is_block() && layout_node.parent().is_none() {
             self.layout_initial_block_box(layout_node_id);
             return;
         }
@@ -119,20 +107,15 @@ impl<'a> BlockFormattingContext<'a> {
         let width = self.layout_context.viewport.width;
         let height = self.layout_context.viewport.height;
 
-        {
-            let block_box = self.layout_tree_mut().get_node_mut(layout_node_id);
-            let block_box_dimensions = block_box.dimensions_mut();
-            block_box_dimensions.set_width(width);
-            block_box_dimensions.set_height(height);
-        }
+        let block_box = self.layout_tree_mut().get_node_mut(layout_node_id);
+        let block_box_dimensions = block_box.dimensions_mut();
+        block_box_dimensions.set_width(width);
+        block_box_dimensions.set_height(height);
 
         self.layout_block_level_children(layout_node_id);
     }
 
     fn layout_block_level_children(&mut self, layout_node_id: &LayoutNodeId) {
-        let mut content_height = 0.;
-        let mut content_width = 0.;
-
         let children = self
             .layout_tree()
             .children(layout_node_id)
@@ -159,30 +142,11 @@ impl<'a> BlockFormattingContext<'a> {
 
             let child_dimensions = self.layout_tree_mut().get_node_mut(&child).dimensions();
 
-            let child_bottom = child_dimensions.content_box().y
-                + child_dimensions.content_box().height
+            let child_vertical_space = child_dimensions.content_box().height
                 + child_dimensions.padding.bottom
                 + child_dimensions.margin.bottom;
 
-            let child_width = child_dimensions.margin_box().width;
-
-            content_height = if content_height > child_bottom {
-                content_height
-            } else {
-                child_bottom
-            };
-            content_width = if content_width > child_width {
-                content_width
-            } else {
-                child_width
-            };
-
-            self.previous_layout_y = content_height;
-        }
-
-        let block_box = self.layout_tree_mut().get_node_mut(layout_node_id);
-        if block_box.is_style_auto(&Property::Width) {
-            block_box.dimensions_mut().set_width(content_width);
+            self.previous_layout_y += child_vertical_space;
         }
     }
 
@@ -536,6 +500,14 @@ mod tests {
                 .content
                 .height,
             40.
+        );
+        assert_eq!(
+            layout_tree
+                .get_node(&initial_block_box)
+                .dimensions()
+                .content
+                .width,
+            layout_context.viewport.width
         );
         //assert_eq!(layout_box.offset_y, 40.);
     }

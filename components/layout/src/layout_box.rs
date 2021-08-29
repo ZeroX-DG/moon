@@ -63,7 +63,5 @@ pub fn children_are_inline(tree: &LayoutTree, node_id: &LayoutNodeId) -> bool {
 }
 
 pub fn get_containing_block(tree: &LayoutTree, node_id: &LayoutNodeId) -> LayoutNodeId {
-    tree.parent(node_id)
-        .unwrap_or(tree.get_node(node_id))
-        .id()
+    tree.parent(node_id).unwrap().id()
 }
