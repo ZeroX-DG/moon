@@ -1,36 +1,38 @@
-use super::layout_box::LayoutNode;
+use crate::layout_box::{LayoutNodeId, LayoutTree};
 
 pub enum DumpSpecificity {
     Structure,
     StructureAndDimensions,
 }
 
-pub fn dump_layout(root: &LayoutNode) {
-    println!("{}", layout_to_string(root, 0, &DumpSpecificity::Structure));
+pub fn dump_layout(tree: &LayoutTree, root: &LayoutNodeId) {
+    println!("{}", layout_to_string(tree, root, 0, &DumpSpecificity::Structure));
 }
 
-pub fn layout_to_string(root: &LayoutNode, level: usize, specificity: &DumpSpecificity) -> String {
+pub fn layout_to_string(tree: &LayoutTree, root: &LayoutNodeId, level: usize, specificity: &DumpSpecificity) -> String {
     let mut result = String::new();
-    let child_nodes = root.children();
+    let child_nodes = tree.children(root);
 
-    let box_type = if root.is_anonymous() {
-        format!("[Anonymous {}]", root.friendly_name())
+    let root_node = tree.get_node(root);
+
+    let box_type = if root_node.is_anonymous() {
+        format!("[Anonymous {}]", root_node.friendly_name())
     } else {
-        format!("[{}]", root.friendly_name())
+        format!("[{}]", root_node.friendly_name())
     };
 
     let dimensions = match specificity {
         DumpSpecificity::Structure => String::new(),
         DumpSpecificity::StructureAndDimensions => format!(
             " (x: {} | y: {} | w: {} | h: {})",
-            root.dimensions().content.x,
-            root.dimensions().content.y,
-            root.dimensions().content.width,
-            root.dimensions().content.height
+            root_node.dimensions().content.x,
+            root_node.dimensions().content.y,
+            root_node.dimensions().content.width,
+            root_node.dimensions().content.height
         ),
     };
 
-    let node_info = match &root.render_node() {
+    let node_info = match &root_node.render_node() {
         Some(node) => format!(" {:#?}", node.borrow().node),
         None => String::new(),
     };
@@ -44,7 +46,7 @@ pub fn layout_to_string(root: &LayoutNode, level: usize, specificity: &DumpSpeci
     ));
 
     for node in child_nodes {
-        result.push_str(&layout_to_string(node, level + 1, specificity));
+        result.push_str(&layout_to_string(tree, node, level + 1, specificity));
     }
     return result;
 }

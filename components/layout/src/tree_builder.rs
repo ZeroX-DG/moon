@@ -6,33 +6,37 @@ use style::{
 
 use crate::{
     flow::{block::BlockBox, inline::InlineBox},
-    layout_box::{LayoutBox, LayoutNode, LayoutNodePtr},
+    layout_box::{LayoutBox, LayoutTree, LayoutNodeId, children_are_inline},
 };
 
 pub struct TreeBuilder {
-    parent_stack: Vec<LayoutNodePtr>,
+    parent_stack: Vec<LayoutNodeId>,
+    tree: LayoutTree
 }
 
 impl TreeBuilder {
     pub fn new() -> Self {
         Self {
             parent_stack: Vec::new(),
+            tree: LayoutTree::new(),
         }
     }
 
-    pub fn build(&mut self, root: RenderNodeRef) -> Option<LayoutNode> {
-        let mut root_box = match self.build_box_by_display(&root) {
+    pub fn build(mut self, root: RenderNodeRef) -> LayoutTree {
+        let root_box = match self.build_box_by_display(&root) {
             Some(b) => b,
-            None => return None,
+            None => return self.tree,
         };
 
-        self.parent_stack.push(LayoutNodePtr::from(&mut root_box));
+        let root_box_id = self.tree.set_root(root_box);
+
+        self.parent_stack.push(root_box_id);
         for child in &root.borrow().children {
             self.build_layout_tree(child.clone());
         }
         self.parent_stack.pop();
 
-        return Some(root_box);
+        self.tree
     }
 
     fn build_layout_tree(&mut self, node: RenderNodeRef) {
@@ -41,19 +45,17 @@ impl TreeBuilder {
             None => return,
         };
 
-        let mut parent = if layout_box.is_inline() {
+        let parent = if layout_box.is_inline() {
             self.get_parent_for_inline()
         } else {
             self.get_parent_for_block()
         };
 
-        let parent = parent.as_mut();
+        self.tree.add_child(&parent, layout_box);
 
-        parent.add_child(layout_box);
+        let box_ref = self.tree.children(&parent).last().unwrap();
 
-        let box_ref = parent.children_mut().last_mut().unwrap();
-
-        self.parent_stack.push(LayoutNodePtr::from(box_ref));
+        self.parent_stack.push(*box_ref);
         for child in &node.borrow().children {
             self.build_layout_tree(child.clone());
         }
@@ -72,9 +74,9 @@ impl TreeBuilder {
     /// inline-level boxes currently in the parent. After that, set the
     /// formatting context of parent to block and insert the box as a direct
     /// children of the parent.
-    fn get_parent_for_block(&mut self) -> LayoutNodePtr {
+    fn get_parent_for_block(&mut self) -> LayoutNodeId {
         while let Some(parent_box) = self.parent_stack.last() {
-            let current_box = parent_box.as_ref();
+            let current_box = self.tree.get_node(parent_box);
             if current_box.is_inline() {
                 self.parent_stack.pop();
             } else {
@@ -86,16 +88,17 @@ impl TreeBuilder {
             panic!("Can't find block parent for block box");
         }
 
-        let parent_mut = self.parent_stack.last_mut().unwrap().as_mut();
+        let parent = self.parent_stack.last().unwrap();
 
-        if parent_mut.children_are_inline() {
-            let children = parent_mut.children_mut().drain(..).collect::<Vec<_>>();
-            let mut anonymous = LayoutNode::new(BlockBox::new_anonymous());
-            anonymous.set_children(children);
-            parent_mut.add_child(anonymous);
+        if children_are_inline(&self.tree, parent) {
+            let children = self.tree.children_mut(parent).drain(..).collect::<Vec<_>>();
+            let anonymous = Box::new(BlockBox::new_anonymous());
+            let anonymous_box_id = self.tree.add_child(parent, anonymous);
+
+            self.tree.get_node_mut(&anonymous_box_id).set_children(children);
         }
 
-        LayoutNodePtr::from(parent_mut)
+        *parent
     }
 
     /// Get a parent for an inline-level box
@@ -108,29 +111,28 @@ impl TreeBuilder {
     /// Otherwise, if the nearest parent established a block formatting context
     /// then create an anonymous block-level box to wrap the inline-box in before
     /// inserting into the parent.
-    fn get_parent_for_inline(&mut self) -> LayoutNodePtr {
-        let parent = self.parent_stack.last_mut().expect("No parent in stack");
+    fn get_parent_for_inline(&mut self) -> LayoutNodeId {
+        let parent = self.parent_stack.last().expect("No parent in stack");
 
-        let parent_mut = parent.as_mut();
-
-        if parent_mut.children_are_inline() {
-            return LayoutNodePtr::from(parent_mut);
+        if children_are_inline(&self.tree, parent) {
+            return *parent;
         }
 
-        if let Some(last) = parent_mut.children().last() {
-            if !last.is_anonymous() || !last.children_are_inline() {
-                let anonymous = LayoutNode::new(BlockBox::new_anonymous());
-                parent_mut.add_child(anonymous);
+        if let Some(last) = self.tree.children(parent).last() {
+            let last_node = self.tree.get_node(last);
+            if !last_node.is_anonymous() || !children_are_inline(&self.tree, &last) {
+                let anonymous = Box::new(BlockBox::new_anonymous());
+                self.tree.add_child(parent, anonymous);
             }
         } else {
-            let anonymous = LayoutNode::new(BlockBox::new_anonymous());
-            parent_mut.add_child(anonymous);
+            let anonymous = Box::new(BlockBox::new_anonymous());
+            self.tree.add_child(parent, anonymous);
         }
 
-        LayoutNodePtr::from(parent_mut.children_mut().last_mut().unwrap())
+        *self.tree.children(parent).last().unwrap()
     }
 
-    fn build_box_by_display(&self, node: &RenderNodeRef) -> Option<LayoutNode> {
+    fn build_box_by_display(&self, node: &RenderNodeRef) -> Option<Box<dyn LayoutBox>> {
         // TODO: support text
         if node.borrow().node.is_text() {
             return None;
@@ -161,16 +163,14 @@ impl TreeBuilder {
             _ => unreachable!(),
         };
 
-        let layout_node = LayoutNode::new_boxed(layout_box);
-
-        Some(layout_node)
+        Some(layout_box)
     }
 }
 
 #[cfg(test)]
 mod tests {
     use test_utils::dom_creator::*;
-    use crate::utils::*;
+    use crate::{layout_printer::dump_layout, utils::*};
 
     #[test]
     fn test_build_simple() {
@@ -192,7 +192,8 @@ mod tests {
             ],
         );
 
-        let layout_box = build_tree(dom, SHARED_CSS);
+        let layout_tree = build_tree(dom, SHARED_CSS);
+        let root = layout_tree.root().unwrap();
 
         // The result box tree should look like this
         // [Block] - Div
@@ -203,12 +204,11 @@ mod tests {
         //        |- [Inline] - Span
         //        |- [Inline] - Span
 
-        assert!(layout_box.is_block());
+        assert!(layout_tree.get_node(&root).is_block());
 
-        assert!(layout_box.children()[0].as_ref().is_block());
-        assert!(layout_box.children()[0].as_ref().is_anonymous());
-
-        assert!(layout_box.children()[1].as_ref().is_block());
+        assert!(layout_tree.get_node(&layout_tree.children(&root)[0]).is_block());
+        assert!(layout_tree.get_node(&layout_tree.children(&root)[0]).is_anonymous());
+        assert!(layout_tree.get_node(&layout_tree.children(&root)[1]).is_block());
     }
 
     #[test]
@@ -226,7 +226,8 @@ mod tests {
             ],
         );
 
-        let layout_box = build_tree(dom, SHARED_CSS);
+        let layout_tree = build_tree(dom, SHARED_CSS);
+        let root = layout_tree.root().unwrap();
 
         // The result box tree should look like this
         // [Block] - Div
@@ -238,17 +239,18 @@ mod tests {
         //        |- [Inline] - A
         //        |- [Inline] - A
 
-        assert!(layout_box.is_block());
+        dump_layout(&layout_tree, &root);
+        assert!(layout_tree.get_node(&root).is_block());
 
-        assert_eq!(layout_box.children().len(), 3);
+        assert_eq!(layout_tree.children(&root).len(), 3);
 
-        assert!(layout_box.children()[0].is_block());
-        assert!(layout_box.children()[0].is_anonymous());
 
-        assert!(layout_box.children()[1].is_block());
-        assert!(!layout_box.children()[1].is_anonymous());
+        assert!(layout_tree.get_node(&layout_tree.children(&root)[0]).is_block());
+        assert!(layout_tree.get_node(&layout_tree.children(&root)[0]).is_anonymous());
 
-        assert!(layout_box.children()[2].is_block());
-        assert!(layout_box.children()[2].is_anonymous());
+        assert!(layout_tree.get_node(&layout_tree.children(&root)[1]).is_block());
+
+        assert!(layout_tree.get_node(&layout_tree.children(&root)[2]).is_block());
+        assert!(layout_tree.get_node(&layout_tree.children(&root)[2]).is_anonymous());
     }
 }

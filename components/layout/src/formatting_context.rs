@@ -1,7 +1,6 @@
-use crate::box_model::Rect;
+use crate::{box_model::Rect, layout_box::{LayoutNodeId, LayoutTree, children_are_inline}};
 
 use super::flow::block::BlockFormattingContext;
-use super::layout_box::LayoutNode;
 use style::value_processing::{Property, Value};
 use style::values::display::{Display, InnerDisplayType};
 
@@ -11,20 +10,25 @@ pub struct LayoutContext {
 }
 
 pub trait FormattingContext {
-    fn run(&mut self, layout_node: &mut LayoutNode);
+    fn run(&mut self, layout_node: &LayoutNodeId);
 
-    fn layout_content(&self, layout_node: &mut LayoutNode, layout_context: LayoutContext) {
-        let mut formatting_context = get_formatting_context(layout_node, layout_context);
+    fn layout_tree(&self) -> &LayoutTree;
+    fn layout_tree_mut(&mut self) -> &mut LayoutTree;
+
+    fn layout_content(&mut self, layout_node: &LayoutNodeId, layout_context: &LayoutContext) {
+        let mut formatting_context = get_formatting_context(self.layout_tree_mut(), layout_node, layout_context);
         formatting_context.run(layout_node);
     }
 }
 
-fn get_formatting_context(
-    layout_node: &LayoutNode,
-    layout_context: LayoutContext,
-) -> Box<dyn FormattingContext> {
+fn get_formatting_context<'a>(
+    tree: &'a mut LayoutTree,
+    layout_node_id: &LayoutNodeId,
+    layout_context: &'a LayoutContext,
+) -> Box<dyn FormattingContext + 'a> {
+    let layout_node = tree.get_node(layout_node_id);
     if layout_node.is_anonymous() {
-        return Box::new(BlockFormattingContext::new(layout_context));
+        return Box::new(BlockFormattingContext::new(layout_context, tree));
     }
 
     let node = layout_node.render_node().clone().unwrap();
@@ -38,13 +42,13 @@ fn get_formatting_context(
 
     match inner_display {
         InnerDisplayType::Flow => {
-            if !layout_node.children_are_inline() {
-                Box::new(BlockFormattingContext::new(layout_context))
+            if !children_are_inline(tree, &layout_node.id()) {
+                Box::new(BlockFormattingContext::new(layout_context, tree))
             } else {
-                panic!("no")
+                Box::new(BlockFormattingContext::new(layout_context, tree))
             }
         }
-        InnerDisplayType::FlowRoot => Box::new(BlockFormattingContext::new(layout_context)),
+        InnerDisplayType::FlowRoot => Box::new(BlockFormattingContext::new(layout_context, tree)),
         _ => unimplemented!("Unsupported display type: {:#?}", display),
     }
 }
