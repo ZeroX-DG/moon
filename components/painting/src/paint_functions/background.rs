@@ -1,12 +1,12 @@
 use crate::command::{DisplayCommand, DrawCommand};
 use crate::primitive::{Corners, RRect, Radii, Rect};
-use crate::LayoutBox;
 use crate::{primitive::style_color_to_paint_color, utils::is_zero};
+use layout::layout_box::LayoutNode;
 use style::value_processing::{Property, Value};
 use style::values::border_radius::BorderRadius;
 
-pub fn paint_background(layout_box: &LayoutBox) -> Option<DisplayCommand> {
-    if let Some(render_node) = &layout_box.render_node {
+pub fn paint_background(layout_node: &LayoutNode) -> Option<DisplayCommand> {
+    if let Some(render_node) = &layout_node.render_node() {
         let render_node = render_node.borrow();
         let background = render_node.get_style(&Property::BackgroundColor);
 
@@ -17,7 +17,7 @@ pub fn paint_background(layout_box: &LayoutBox) -> Option<DisplayCommand> {
 
         let color = style_color_to_paint_color(background.inner()).unwrap_or_default();
 
-        let (x, y, width, height) = layout_box.dimensions.padding_box().into();
+        let (x, y, width, height) = layout_node.dimensions().padding_box().into();
 
         let has_no_border_radius = is_zero(border_top_left_radius.inner())
             && is_zero(border_bottom_left_radius.inner())
@@ -34,7 +34,7 @@ pub fn paint_background(layout_box: &LayoutBox) -> Option<DisplayCommand> {
 
             return Some(DisplayCommand::Draw(DrawCommand::FillRect(rect, color)));
         } else {
-            let border_box = layout_box.dimensions.border_box();
+            let border_box = layout_node.dimensions().border_box();
 
             let tl = to_radii(border_top_left_radius.inner(), border_box.width);
             let tr = to_radii(border_top_right_radius.inner(), border_box.width);

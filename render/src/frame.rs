@@ -2,7 +2,7 @@ use super::loader::frame::FrameLoader;
 use css::cssom::css_rule::CSSRule;
 use dom::dom_ref::NodeRef;
 
-use layout::{box_model::Rect, build_layout_tree, layout_box::LayoutBox};
+use layout::{box_model::Rect, flow::block::{BlockBox, BlockFormattingContext}, formatting_context::{FormattingContext, LayoutContext}, layout_box::{LayoutNodeId, LayoutTree}, tree_builder::TreeBuilder};
 use style::render_tree::{build_render_tree, RenderTree};
 use style::value_processing::{CSSLocation, CascadeOrigin, ContextualRule};
 
@@ -15,7 +15,7 @@ pub struct Frame {
 }
 
 pub struct FrameLayout {
-    layout_tree: Option<LayoutBox>,
+    layout_tree: LayoutTree,
     render_tree: Option<RenderTree>,
 }
 
@@ -60,12 +60,16 @@ impl Frame {
 impl FrameLayout {
     pub fn new() -> Self {
         Self {
-            layout_tree: None,
+            layout_tree: LayoutTree::new(),
             render_tree: None,
         }
     }
 
-    pub fn root(&self) -> &Option<LayoutBox> {
+    pub fn root(&self) -> Option<LayoutNodeId> {
+        self.layout_tree.root()
+    }
+
+    pub fn layout_tree(&self) -> &LayoutTree {
         &self.layout_tree
     }
 
@@ -96,21 +100,27 @@ impl FrameLayout {
     pub fn recalculate_layout(&mut self, size: FrameSize) {
         if let Some(render_tree) = &self.render_tree {
             log::debug!("Building layout tree");
-            self.layout_tree = build_layout_tree(render_tree);
+            self.layout_tree = TreeBuilder::new().build(render_tree.root.clone().unwrap());
             log::debug!("Finished layout tree");
 
-            if let Some(layout_tree) = &mut self.layout_tree {
+            if let Some(root) = self.layout_tree.root() {
                 let (width, height) = size;
 
-                layout::compute_layout(
-                    layout_tree,
-                    &Rect {
+                let layout_context = LayoutContext {
+                    viewport: Rect {
                         x: 0.,
                         y: 0.,
                         width: width as f32,
                         height: height as f32,
                     },
-                );
+                };
+    
+                let initial_block_box = self.layout_tree.set_root(Box::new(BlockBox::new_anonymous()));
+                self.layout_tree.add_child_by_id(&initial_block_box, &root);
+    
+                let mut formatting_context = BlockFormattingContext::new(&layout_context, &mut self.layout_tree);
+    
+                formatting_context.run(&initial_block_box);
             }
         }
     }

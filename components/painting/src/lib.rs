@@ -6,7 +6,7 @@ mod render;
 mod utils;
 
 use command::{DisplayCommand, DrawCommand};
-use layout::layout_box::LayoutBox;
+use layout::layout_box::{LayoutNodeId, LayoutTree};
 use render::PaintChainBuilder;
 
 pub use painter::Painter;
@@ -35,11 +35,11 @@ fn draw(draw_command: DrawCommand, painter: &mut dyn Painter) {
     }
 }
 
-pub fn build_display_list(layout_box: &LayoutBox) -> DisplayList {
+pub fn build_display_list(root: &LayoutNodeId, layout_tree: &LayoutTree) -> DisplayList {
     let chain = PaintChainBuilder::new_chain()
         .with_function(&paint_border)
         .with_function(&paint_background)
-        .build();
+        .build(layout_tree);
 
-    chain.paint(layout_box)
+    chain.paint(root)
 }
