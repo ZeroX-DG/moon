@@ -79,9 +79,7 @@ impl<'a> FormattingContext for BlockFormattingContext<'a> {
         }
 
         self.compute_position_non_replaced(layout_node_id);
-        self.compute_width(layout_node_id);
         self.layout_block_level_children(layout_node_id);
-        self.compute_height(layout_node_id);
     }
 
     fn layout_tree(&self) -> &LayoutTree {

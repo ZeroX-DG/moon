@@ -1,4 +1,8 @@
-use crate::{box_model::Rect, layout_box::{LayoutNodeId, LayoutTree, children_are_inline}};
+use crate::{
+    box_model::Rect,
+    flow::inline::InlineFormattingContext,
+    layout_box::{children_are_inline, LayoutNodeId, LayoutTree},
+};
 
 use super::flow::block::BlockFormattingContext;
 use style::value_processing::{Property, Value};
@@ -6,7 +10,7 @@ use style::values::display::{Display, InnerDisplayType};
 
 #[derive(Debug, Clone)]
 pub struct LayoutContext {
-    pub viewport: Rect
+    pub viewport: Rect,
 }
 
 pub trait FormattingContext {
@@ -16,7 +20,8 @@ pub trait FormattingContext {
     fn layout_tree_mut(&mut self) -> &mut LayoutTree;
 
     fn layout_content(&mut self, layout_node: &LayoutNodeId, layout_context: &LayoutContext) {
-        let mut formatting_context = get_formatting_context(self.layout_tree_mut(), layout_node, layout_context);
+        let mut formatting_context =
+            get_formatting_context(self.layout_tree_mut(), layout_node, layout_context);
         formatting_context.run(layout_node);
     }
 }
@@ -28,6 +33,9 @@ fn get_formatting_context<'a>(
 ) -> Box<dyn FormattingContext + 'a> {
     let layout_node = tree.get_node(layout_node_id);
     if layout_node.is_anonymous() {
+        if children_are_inline(&tree, layout_node_id) {
+            return Box::new(InlineFormattingContext::new(layout_context, tree));
+        }
         return Box::new(BlockFormattingContext::new(layout_context, tree));
     }
 
@@ -45,11 +53,10 @@ fn get_formatting_context<'a>(
             if !children_are_inline(tree, &layout_node.id()) {
                 Box::new(BlockFormattingContext::new(layout_context, tree))
             } else {
-                Box::new(BlockFormattingContext::new(layout_context, tree))
+                Box::new(InlineFormattingContext::new(layout_context, tree))
             }
         }
         InnerDisplayType::FlowRoot => Box::new(BlockFormattingContext::new(layout_context, tree)),
         _ => unimplemented!("Unsupported display type: {:#?}", display),
     }
 }
-

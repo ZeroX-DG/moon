@@ -1,9 +1,10 @@
-use std::{
-    any::Any,
-    fmt::Debug,
-};
+use std::{any::Any, fmt::Debug};
 
-use style::{render_tree::RenderNodeRef, value_processing::{Property, Value}, values::position::Position};
+use style::{
+    render_tree::RenderNodeRef,
+    value_processing::{Property, Value},
+    values::{display::Display, display::InnerDisplayType, position::Position},
+};
 
 use crate::box_model::Dimensions;
 use tree::idtree::{Tree, TreeNode, TreeNodeId};
@@ -26,9 +27,9 @@ pub trait LayoutBox: Any + Debug {
         match self.render_node() {
             Some(node) => match node.borrow().get_style(&Property::Position).inner() {
                 Value::Position(pos) => *pos == position,
-                _ => false
-            }
-            _ => false
+                _ => false,
+            },
+            _ => false,
         }
     }
     fn is_non_replaced(&self) -> bool {
@@ -51,6 +52,17 @@ pub trait LayoutBox: Any + Debug {
         }
         return true;
     }
+
+    fn is_inline_block(&self) -> bool {
+        match &self.render_node() {
+            Some(node) => match node.borrow().get_style(&Property::Display).inner() {
+                Value::Display(Display::Full(_, InnerDisplayType::FlowRoot)) => self.is_inline(),
+                _ => false,
+            },
+            _ => false,
+        }
+    }
+
     fn as_any(&self) -> &dyn Any;
     fn as_any_mut(&mut self) -> &mut dyn Any;
 }
@@ -65,3 +77,30 @@ pub fn children_are_inline(tree: &LayoutTree, node_id: &LayoutNodeId) -> bool {
 pub fn get_containing_block(tree: &LayoutTree, node_id: &LayoutNodeId) -> LayoutNodeId {
     tree.parent(node_id).unwrap().id()
 }
+
+pub fn apply_explicit_sizes(tree: &mut LayoutTree, layout_node_id: &LayoutNodeId) {
+    let containing_block = tree.get_node(&get_containing_block(&tree, layout_node_id))
+        .dimensions()
+        .content_box();
+    let layout_node = tree.get_node_mut(&layout_node_id);
+
+    if layout_node.is_inline() && !layout_node.is_inline_block() {
+        return;
+    }
+
+    if let Some(render_node) = layout_node.render_node() {
+        let computed_width = render_node.borrow().get_style(&Property::Width);
+        let computed_height = render_node.borrow().get_style(&Property::Height);
+
+        if !computed_width.is_auto() {
+            let used_width = computed_width.to_px(containing_block.width);
+            layout_node.dimensions_mut().set_width(used_width);
+        }
+
+        if !computed_height.is_auto() {
+            let used_height = computed_height.to_px(containing_block.height);
+            layout_node.dimensions_mut().set_height(used_height);
+        }
+    }
+}
+
