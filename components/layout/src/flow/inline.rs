@@ -1,29 +1,136 @@
-use crate::box_model::{BoxComponent, Edge};
-use crate::formatting_context::{apply_explicit_sizes, layout_children, FormattingContext};
-use crate::layout_box::LayoutBox;
-use crate::line_box::LineBox;
-use style::value_processing::Property;
+use std::any::Any;
 
-pub struct InlineFormattingContext {
-    line_boxes: Vec<LineBox>,
-    containing_block: *mut LayoutBox,
+use style::{render_tree::RenderNodeRef, value_processing::Property};
+
+use crate::{
+    box_model::{BoxComponent, Dimensions, Edge},
+    formatting_context::{FormattingContext, LayoutContext},
+    layout_box::{
+        apply_explicit_sizes, get_containing_block, LayoutBox, LayoutNode, LayoutNodeId, LayoutTree,
+    },
+};
+
+#[derive(Debug)]
+pub struct InlineBox {
+    node: Option<RenderNodeRef>,
+    dimensions: Dimensions,
 }
 
-impl InlineFormattingContext {
-    pub fn new(layout_box: &mut LayoutBox) -> Self {
+impl LayoutBox for InlineBox {
+    fn is_inline(&self) -> bool {
+        true
+    }
+
+    fn is_block(&self) -> bool {
+        false
+    }
+
+    fn render_node(&self) -> Option<RenderNodeRef> {
+        self.node.clone()
+    }
+
+    fn friendly_name(&self) -> &str {
+        "InlineBox"
+    }
+
+    fn dimensions(&self) -> &Dimensions {
+        &self.dimensions
+    }
+
+    fn dimensions_mut(&mut self) -> &mut Dimensions {
+        &mut self.dimensions
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+
+    fn as_any_mut(&mut self) -> &mut dyn Any {
+        self
+    }
+}
+
+impl InlineBox {
+    pub fn new(node: RenderNodeRef) -> Self {
         Self {
-            line_boxes: Vec::new(),
-            containing_block: layout_box,
+            node: Some(node),
+            dimensions: Default::default(),
         }
     }
 
-    fn calculate_width(&mut self, layout_box: &mut LayoutBox) {
-        let render_node = match &layout_box.render_node {
-            Some(node) => node.clone(),
-            None => return,
-        };
+    pub fn new_anonymous() -> Self {
+        Self {
+            node: None,
+            dimensions: Default::default(),
+        }
+    }
+}
 
-        let containing_block = &self.get_containing_block().dimensions.content;
+#[derive(Debug)]
+pub struct LineBox {
+    fragments: Vec<LayoutNodeId>,
+    width: f32,
+    height: f32,
+}
+
+impl LineBox {
+    pub fn new() -> Self {
+        Self {
+            fragments: Vec::new(),
+            width: 0.,
+            height: 0.,
+        }
+    }
+
+    pub fn add_fragment(&mut self, child: &LayoutNode) {
+        let child_size = child.dimensions().margin_box();
+        self.fragments.push(child.id());
+        self.width += child_size.width;
+        self.height = if self.height > child_size.height {
+            self.height
+        } else {
+            child_size.height
+        };
+    }
+
+    pub fn fragments(&self) -> &[LayoutNodeId] {
+        &self.fragments
+    }
+
+    pub fn width(&self) -> f32 {
+        self.width
+    }
+
+    pub fn height(&self) -> f32 {
+        self.height
+    }
+}
+
+pub struct InlineFormattingContext<'a> {
+    layout_context: &'a LayoutContext,
+    layout_tree: &'a mut LayoutTree,
+}
+
+impl<'a> InlineFormattingContext<'a> {
+    pub fn new(layout_context: &'a LayoutContext, layout_tree: &'a mut LayoutTree) -> Self {
+        Self {
+            layout_context,
+            layout_tree,
+        }
+    }
+
+    fn calculate_width(&mut self, layout_node_id: &LayoutNodeId) {
+        let containing_block = self
+            .layout_tree()
+            .get_node(&get_containing_block(self.layout_tree(), layout_node_id))
+            .dimensions()
+            .content_box();
+
+        let layout_node = self.layout_tree_mut().get_node_mut(layout_node_id);
+        let render_node = match layout_node.render_node() {
+            Some(node) => node.clone(),
+            _ => return,
+        };
 
         let render_node = render_node.borrow();
         let computed_width = render_node.get_style(&Property::Width);
@@ -35,13 +142,13 @@ impl InlineFormattingContext {
         let mut used_margin_left = computed_margin_left.to_px(containing_width);
         let mut used_margin_right = computed_margin_right.to_px(containing_width);
 
-        if layout_box.is_non_replaced() && !layout_box.is_inline_block() {
+        if layout_node.is_non_replaced() && !layout_node.is_inline_block() {
             used_width = 0.0;
             used_margin_left = 0.0;
             used_margin_right = 0.0;
         }
 
-        if layout_box.is_non_replaced() && layout_box.is_inline_block() {
+        if layout_node.is_non_replaced() && layout_node.is_inline_block() {
             if computed_margin_left.is_auto() {
                 used_margin_left = 0.0;
             }
@@ -54,17 +161,22 @@ impl InlineFormattingContext {
         }
 
         // apply all calculated used values
-        let box_model = layout_box.box_model();
+        let box_model = layout_node.dimensions_mut();
         box_model.set_width(used_width);
         box_model.set(BoxComponent::Margin, Edge::Left, used_margin_left);
         box_model.set(BoxComponent::Margin, Edge::Right, used_margin_right);
     }
 
-    fn apply_vertical_spacing(&mut self, layout_box: &mut LayoutBox) {
-        let containing_block = self.get_containing_block();
-        let containing_block = &containing_block.dimensions.content.clone();
-        let render_node = layout_box.render_node.clone();
-        let box_model = layout_box.box_model();
+    fn apply_vertical_spacing(&mut self, layout_node_id: &LayoutNodeId) {
+        let containing_block = self
+            .layout_tree()
+            .get_node(&get_containing_block(self.layout_tree(), layout_node_id))
+            .dimensions()
+            .content_box();
+
+        let layout_node = self.layout_tree_mut().get_node_mut(layout_node_id);
+        let render_node = layout_node.render_node();
+        let box_model = layout_node.dimensions_mut();
 
         if let Some(render_node) = render_node {
             let render_node = render_node.borrow();
@@ -100,59 +212,81 @@ impl InlineFormattingContext {
             box_model.set(BoxComponent::Border, Edge::Bottom, border_bottom);
         }
     }
-
-    fn ensure_last_line_box(&mut self) {
-        if self.line_boxes.is_empty() {
-            self.line_boxes.push(LineBox::new());
-        }
-    }
 }
 
-impl FormattingContext for InlineFormattingContext {
-    fn layout(&mut self, boxes: Vec<&mut LayoutBox>) -> f32 {
-        let containing_block = self.get_containing_block();
-        let containing_block = &containing_block.dimensions.content.clone();
+impl<'a> FormattingContext for InlineFormattingContext<'a> {
+    fn run(&mut self, layout_node_id: &LayoutNodeId) {
+        let mut line_boxes = Vec::new();
 
-        self.ensure_last_line_box();
+        line_boxes.push(LineBox::new());
 
-        for layout_box in boxes {
-            self.calculate_width(layout_box);
-            layout_children(layout_box);
-            self.apply_vertical_spacing(layout_box);
-            apply_explicit_sizes(layout_box, containing_block);
+        let containing_block = self
+            .layout_tree
+            .get_node(&layout_node_id)
+            .dimensions()
+            .content_box();
 
-            let new_width =
-                self.line_boxes.last().unwrap().width() + layout_box.dimensions.content.width;
+        let parent_width = containing_block.width;
 
-            if new_width > containing_block.width {
-                self.line_boxes.push(LineBox::new());
+        let children = self
+            .layout_tree()
+            .children(layout_node_id)
+            .iter()
+            .copied()
+            .collect::<Vec<usize>>();
+
+        for child_id in children {
+            self.calculate_width(&child_id);
+            self.layout_content(&child_id, &self.layout_context);
+            self.apply_vertical_spacing(&child_id);
+            apply_explicit_sizes(self.layout_tree_mut(), &child_id);
+
+            let child = self.layout_tree.get_node(&child_id);
+
+            let child_width = child.dimensions().content.width;
+
+            let line_box = line_boxes.last_mut().unwrap();
+
+            let new_line_box_width = line_box.width() + child_width;
+
+            if new_line_box_width > parent_width {
+                line_boxes.push(LineBox::new());
             }
 
-            let line_box = self.line_boxes.last_mut().unwrap();
-            line_box.push(layout_box);
+            let line_box = line_boxes.last_mut().unwrap();
+            line_box.add_fragment(child);
         }
 
         let mut offset_y = 0.;
 
-        for line in &self.line_boxes {
+        for line in &line_boxes {
             let mut offset_x = 0.;
 
             for fragment in line.fragments() {
-                let x = containing_block.x + offset_x + fragment.dimensions.margin.left;
+                let fragment = self.layout_tree.get_node_mut(fragment);
 
-                let y = containing_block.y + offset_y + fragment.dimensions.margin.top;
+                let x = containing_block.x + offset_x + fragment.dimensions().margin.left;
 
-                fragment.box_model().set_position(x, y);
-                offset_x += fragment.dimensions.margin_box().width;
+                let y = containing_block.y + offset_y + fragment.dimensions().margin.top;
+
+                fragment.dimensions_mut().set_position(x, y);
+                offset_x += fragment.dimensions().margin_box().width;
             }
 
             offset_y += line.height();
         }
 
-        offset_y
+        self.layout_tree
+            .get_node_mut(layout_node_id)
+            .dimensions_mut()
+            .set_height(offset_y);
     }
 
-    fn get_containing_block(&mut self) -> &mut LayoutBox {
-        unsafe { self.containing_block.as_mut().unwrap() }
+    fn layout_tree(&self) -> &LayoutTree {
+        &self.layout_tree
+    }
+
+    fn layout_tree_mut(&mut self) -> &mut LayoutTree {
+        &mut self.layout_tree
     }
 }

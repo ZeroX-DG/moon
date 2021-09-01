@@ -1,216 +1,177 @@
-/// This module is responsible for the box generation
-/// of elements in the render tree. In other words,
-/// this module transforms render tree to layout tree
-/// to prepare for layouting process.
-use super::layout_box::{BoxType, LayoutBox};
-use std::cell::RefCell;
-use std::rc::Rc;
-use style::render_tree::RenderNodeRef;
-use style::value_processing::{Property, Value};
-use style::values::display::{Display, InnerDisplayType, OuterDisplayType};
+use style::{
+    render_tree::RenderNodeRef,
+    value_processing::{Property, Value},
+    values::display::{Display, InnerDisplayType, OuterDisplayType},
+};
+
+use crate::{
+    flow::{block::BlockBox, inline::InlineBox},
+    layout_box::{children_are_inline, LayoutBox, LayoutNodeId, LayoutTree},
+};
 
 pub struct TreeBuilder {
-    parent_stack: Rc<RefCell<Vec<*mut LayoutBox>>>,
-    root: RenderNodeRef,
+    parent_stack: Vec<LayoutNodeId>,
+    tree: LayoutTree,
 }
 
 impl TreeBuilder {
-    pub fn new(root: RenderNodeRef) -> Self {
+    pub fn new() -> Self {
         Self {
-            parent_stack: Rc::new(RefCell::new(Vec::new())),
-            root,
+            parent_stack: Vec::new(),
+            tree: LayoutTree::new(),
         }
     }
 
-    /// Build the layout tree for the provided root render node
-    pub fn build(mut self) -> Option<LayoutBox> {
-        let root = self.root.clone();
-        let mut root_box = match build_box_by_display(&root) {
+    pub fn build(mut self, root: RenderNodeRef) -> LayoutTree {
+        let root_box = match self.build_box_by_display(&root) {
             Some(b) => b,
-            None => return None,
+            None => return self.tree,
         };
 
-        self.parent_stack.borrow_mut().push(&mut root_box);
+        let root_box_id = self.tree.set_root(root_box);
+
+        self.parent_stack.push(root_box_id);
         for child in &root.borrow().children {
             self.build_layout_tree(child.clone());
         }
-        self.parent_stack.borrow_mut().pop();
+        self.parent_stack.pop();
 
-        return Some(root_box);
+        self.tree
     }
 
-    /// Recursively building the layout tree for a node
-    fn build_layout_tree(&mut self, node: RenderNodeRef) -> Option<&LayoutBox> {
-        let layout_box = match build_box_by_display(&node) {
+    fn build_layout_tree(&mut self, node: RenderNodeRef) {
+        let layout_box = match self.build_box_by_display(&node) {
             Some(b) => b,
-            None => return None,
+            None => return,
         };
 
-        let parent = unsafe {
-            if layout_box.is_inline() {
-                get_parent_for_inline(self.parent_stack.clone())
-            } else {
-                get_parent_for_block(self.parent_stack.clone())
-            }
+        let parent = if layout_box.is_inline() {
+            self.get_parent_for_inline()
+        } else {
+            self.get_parent_for_block()
         };
 
-        parent.add_child(layout_box);
+        self.tree.add_child(&parent, layout_box);
 
-        let box_ref = parent.children.last_mut().unwrap();
+        let box_ref = self.tree.children(&parent).last().unwrap();
 
-        self.parent_stack.borrow_mut().push(box_ref);
+        self.parent_stack.push(*box_ref);
         for child in &node.borrow().children {
             self.build_layout_tree(child.clone());
         }
-        self.parent_stack.borrow_mut().pop();
-
-        parent.children.last()
-    }
-}
-
-/// Get a parent for an inline-level box
-///
-/// An inline-level box can be inserted into the nearest parent.
-///
-/// If the nearest parent established an inline formatting context, then
-/// insert the box as a direct children of the parent.
-///
-/// Otherwise, if the nearest parent established a block formatting context
-/// then create an anonymous block-level box to wrap the inline-box in before
-/// inserting into the parent.
-unsafe fn get_parent_for_inline<'a>(
-    parent_stack: Rc<RefCell<Vec<*mut LayoutBox>>>,
-) -> &'a mut LayoutBox {
-    let parent_stack = parent_stack.borrow();
-    let parent = parent_stack.last().expect("No parent in stack");
-
-    let parent_mut = parent
-        .as_mut()
-        .expect("Can't get mutable reference to parent");
-
-    if parent_mut.children_are_inline() {
-        return parent_mut;
+        self.parent_stack.pop();
     }
 
-    if let Some(last) = parent_mut.children.last() {
-        if !last.is_anonymous() || !last.children_are_inline() {
-            let mut anonymous = LayoutBox::new_anonymous(BoxType::Block);
-            anonymous.set_children_inline(true);
-            parent_mut.add_child(anonymous);
-        }
-    } else {
-        let mut anonymous = LayoutBox::new_anonymous(BoxType::Block);
-        anonymous.set_children_inline(true);
-        parent_mut.add_child(anonymous);
-    }
-
-    parent_mut.children.last_mut().unwrap()
-}
-
-/// Get a parent for an block-level box
-///
-/// A block-level box can only be inserted into the nearest non-inline parent.
-///
-/// If the parent established a non-inline formatting context, then
-/// insert the box as a direct children of the parent.
-///
-/// Otherwise, if the nearest parent established an inline formatting
-/// context, then create an anonymous block-level box to wrap all the
-/// inline-level boxes currently in the parent. After that, set the
-/// formatting context of parent to block and insert the box as a direct
-/// children of the parent.
-unsafe fn get_parent_for_block<'a>(
-    parent_stack: Rc<RefCell<Vec<*mut LayoutBox>>>,
-) -> &'a mut LayoutBox {
-    let mut parent_stack = parent_stack.borrow_mut();
-
-    while let Some(parent_box) = parent_stack.last() {
-        let current_box = parent_box.as_ref().unwrap();
-        if !current_box.is_inline_block() && current_box.is_inline() {
-            parent_stack.pop();
-        } else {
-            break;
-        }
-    }
-
-    if parent_stack.last().is_none() {
-        panic!("Can't find block parent for block box");
-    }
-
-    let parent_mut = parent_stack
-        .last()
-        .unwrap()
-        .as_mut()
-        .expect("Can't get mutable reference to parent");
-
-    if parent_mut.children_are_inline() {
-        let children = parent_mut.children.drain(..).collect::<Vec<_>>();
-        let mut anonymous = LayoutBox::new_anonymous(BoxType::Block);
-        anonymous.children = children;
-        anonymous.set_children_inline(true);
-        parent_mut.add_child(anonymous);
-        parent_mut.set_children_inline(false);
-    }
-
-    return parent_mut;
-}
-
-fn all_inline_children(node: &RenderNodeRef) -> bool {
-    for child in &node.borrow().children {
-        match child.borrow().get_style(&Property::Display).inner() {
-            Value::Display(Display::Full(OuterDisplayType::Block, _)) => return false,
-            _ => {}
-        }
-    }
-    true
-}
-
-fn build_box_by_display(node: &RenderNodeRef) -> Option<LayoutBox> {
-    // TODO: support text
-    if node.borrow().node.is_text() {
-        return None;
-    }
-
-    let display = node.borrow().get_style(&Property::Display);
-
-    let box_type = match display.inner() {
-        Value::Display(d) => match d {
-            Display::Full(outer, inner) => match (outer, inner) {
-                (OuterDisplayType::Block, InnerDisplayType::Flow) => BoxType::Block,
-                (OuterDisplayType::Inline, InnerDisplayType::Flow)
-                | (OuterDisplayType::Inline, InnerDisplayType::FlowRoot) => BoxType::Inline,
-                _ => return None,
-            },
-            _ => {
-                log::warn!("Unsupport display type: {:#?}", d);
-                return None;
+    /// Get a parent for an block-level box
+    ///
+    /// A block-level box can only be inserted into the nearest non-inline parent.
+    ///
+    /// If the parent established a non-inline formatting context, then
+    /// insert the box as a direct children of the parent.
+    ///
+    /// Otherwise, if the nearest parent established an inline formatting
+    /// context, then create an anonymous block-level box to wrap all the
+    /// inline-level boxes currently in the parent. After that, set the
+    /// formatting context of parent to block and insert the box as a direct
+    /// children of the parent.
+    fn get_parent_for_block(&mut self) -> LayoutNodeId {
+        while let Some(parent_box) = self.parent_stack.last() {
+            let current_box = self.tree.get_node(parent_box);
+            if current_box.is_inline() {
+                self.parent_stack.pop();
+            } else {
+                break;
             }
-        },
-        _ => unreachable!(),
-    };
-
-    let mut layout_box = LayoutBox::new(node.clone(), box_type.clone());
-
-    if all_inline_children(node) {
-        layout_box.set_children_inline(true);
-    }
-
-    if !layout_box.is_inline_block() {
-        if let BoxType::Inline = layout_box.box_type {
-            layout_box.set_children_inline(true);
         }
+
+        if self.parent_stack.last().is_none() {
+            panic!("Can't find block parent for block box");
+        }
+
+        let parent = self.parent_stack.last().unwrap();
+
+        if children_are_inline(&self.tree, parent) {
+            let children = self.tree.children_mut(parent).drain(..).collect::<Vec<_>>();
+            let anonymous = Box::new(BlockBox::new_anonymous());
+            let anonymous_box_id = self.tree.add_child(parent, anonymous);
+
+            self.tree
+                .get_node_mut(&anonymous_box_id)
+                .set_children(children);
+        }
+
+        *parent
     }
 
-    Some(layout_box)
+    /// Get a parent for an inline-level box
+    ///
+    /// An inline-level box can be inserted into the nearest parent.
+    ///
+    /// If the nearest parent established an inline formatting context, then
+    /// insert the box as a direct children of the parent.
+    ///
+    /// Otherwise, if the nearest parent established a block formatting context
+    /// then create an anonymous block-level box to wrap the inline-box in before
+    /// inserting into the parent.
+    fn get_parent_for_inline(&mut self) -> LayoutNodeId {
+        let parent = self.parent_stack.last().expect("No parent in stack");
+
+        if children_are_inline(&self.tree, parent) {
+            return *parent;
+        }
+
+        if let Some(last) = self.tree.children(parent).last() {
+            let last_node = self.tree.get_node(last);
+            if !last_node.is_anonymous() || !children_are_inline(&self.tree, &last) {
+                let anonymous = Box::new(BlockBox::new_anonymous());
+                self.tree.add_child(parent, anonymous);
+            }
+        } else {
+            let anonymous = Box::new(BlockBox::new_anonymous());
+            self.tree.add_child(parent, anonymous);
+        }
+
+        *self.tree.children(parent).last().unwrap()
+    }
+
+    fn build_box_by_display(&self, node: &RenderNodeRef) -> Option<Box<dyn LayoutBox>> {
+        // TODO: support text
+        if node.borrow().node.is_text() {
+            return None;
+        }
+
+        let display = node.borrow().get_style(&Property::Display);
+
+        let layout_box: Box<dyn LayoutBox> = match display.inner() {
+            Value::Display(d) => match d {
+                Display::Full(outer, inner) => match (outer, inner) {
+                    (OuterDisplayType::Block, InnerDisplayType::Flow) => {
+                        Box::new(BlockBox::new(node.clone()))
+                    }
+                    (OuterDisplayType::Inline, InnerDisplayType::Flow)
+                    | (OuterDisplayType::Inline, InnerDisplayType::FlowRoot) => {
+                        Box::new(InlineBox::new(node.clone()))
+                    }
+                    _ => {
+                        log::warn!("Unsupport display type: {:#?}", d);
+                        return None;
+                    }
+                },
+                _ => {
+                    log::warn!("Unsupport display type: {:#?}", d);
+                    return None;
+                }
+            },
+            _ => unreachable!(),
+        };
+
+        Some(layout_box)
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use css::cssom::css_rule::CSSRule;
-    use style::build_render_tree;
-    use style::value_processing::{CSSLocation, CascadeOrigin, ContextualRule};
-    use test_utils::css::parse_stylesheet;
+    use crate::{layout_printer::dump_layout, utils::*};
     use test_utils::dom_creator::*;
 
     #[test]
@@ -233,34 +194,8 @@ mod tests {
             ],
         );
 
-        let css = r#"
-        p, div {
-            display: block;
-        }
-        span {
-            display: inline;
-        }"#;
-
-        let stylesheet = parse_stylesheet(css);
-
-        let rules = stylesheet
-            .iter()
-            .map(|rule| match rule {
-                CSSRule::Style(style) => ContextualRule {
-                    inner: style,
-                    location: CSSLocation::Embedded,
-                    origin: CascadeOrigin::User,
-                },
-            })
-            .collect::<Vec<ContextualRule>>();
-
-        let render_tree = build_render_tree(dom.clone(), &rules);
-
-        let layout_tree_builder = TreeBuilder::new(render_tree.root.unwrap());
-
-        let layout_box = layout_tree_builder.build();
-
-        let layout_box = layout_box.unwrap();
+        let layout_tree = build_tree(dom, SHARED_CSS);
+        let root = layout_tree.root().unwrap();
 
         // The result box tree should look like this
         // [Block] - Div
@@ -271,12 +206,17 @@ mod tests {
         //        |- [Inline] - Span
         //        |- [Inline] - Span
 
-        assert!(layout_box.box_type == BoxType::Block);
+        assert!(layout_tree.get_node(&root).is_block());
 
-        assert!(layout_box.children[0].box_type == BoxType::Block);
-        assert!(layout_box.children[0].is_anonymous());
-
-        assert!(layout_box.children[1].box_type == BoxType::Block);
+        assert!(layout_tree
+            .get_node(&layout_tree.children(&root)[0])
+            .is_block());
+        assert!(layout_tree
+            .get_node(&layout_tree.children(&root)[0])
+            .is_anonymous());
+        assert!(layout_tree
+            .get_node(&layout_tree.children(&root)[1])
+            .is_block());
     }
 
     #[test]
@@ -294,34 +234,8 @@ mod tests {
             ],
         );
 
-        let css = r#"
-        p, div {
-            display: block;
-        }
-        span, a {
-            display: inline;
-        }"#;
-
-        let stylesheet = parse_stylesheet(css);
-
-        let rules = stylesheet
-            .iter()
-            .map(|rule| match rule {
-                CSSRule::Style(style) => ContextualRule {
-                    inner: style,
-                    location: CSSLocation::Embedded,
-                    origin: CascadeOrigin::User,
-                },
-            })
-            .collect::<Vec<ContextualRule>>();
-
-        let render_tree = build_render_tree(dom.clone(), &rules);
-
-        let layout_tree_builder = TreeBuilder::new(render_tree.root.unwrap());
-
-        let layout_box = layout_tree_builder.build();
-
-        let layout_box = layout_box.unwrap();
+        let layout_tree = build_tree(dom, SHARED_CSS);
+        let root = layout_tree.root().unwrap();
 
         // The result box tree should look like this
         // [Block] - Div
@@ -333,17 +247,27 @@ mod tests {
         //        |- [Inline] - A
         //        |- [Inline] - A
 
-        assert!(layout_box.box_type == BoxType::Block);
+        dump_layout(&layout_tree, &root);
+        assert!(layout_tree.get_node(&root).is_block());
 
-        assert_eq!(layout_box.children.len(), 3);
+        assert_eq!(layout_tree.children(&root).len(), 3);
 
-        assert!(layout_box.children[0].box_type == BoxType::Block);
-        assert!(layout_box.children[0].is_anonymous());
+        assert!(layout_tree
+            .get_node(&layout_tree.children(&root)[0])
+            .is_block());
+        assert!(layout_tree
+            .get_node(&layout_tree.children(&root)[0])
+            .is_anonymous());
 
-        assert!(layout_box.children[1].box_type == BoxType::Block);
-        assert!(!layout_box.children[1].is_anonymous());
+        assert!(layout_tree
+            .get_node(&layout_tree.children(&root)[1])
+            .is_block());
 
-        assert!(layout_box.children[2].box_type == BoxType::Block);
-        assert!(layout_box.children[2].is_anonymous());
+        assert!(layout_tree
+            .get_node(&layout_tree.children(&root)[2])
+            .is_block());
+        assert!(layout_tree
+            .get_node(&layout_tree.children(&root)[2])
+            .is_anonymous());
     }
 }

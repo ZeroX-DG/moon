@@ -1,36 +1,45 @@
-use super::box_model::Rect;
-use super::layout_box::LayoutBox;
+use crate::{
+    box_model::Rect,
+    flow::inline::InlineFormattingContext,
+    layout_box::{children_are_inline, LayoutNodeId, LayoutTree},
+};
+
+use super::flow::block::BlockFormattingContext;
 use style::value_processing::{Property, Value};
 use style::values::display::{Display, InnerDisplayType};
 
-use super::flow::block::BlockFormattingContext;
-use super::flow::inline::InlineFormattingContext;
+#[derive(Debug, Clone)]
+pub struct LayoutContext {
+    pub viewport: Rect,
+}
 
 pub trait FormattingContext {
-    fn layout(&mut self, boxes: Vec<&mut LayoutBox>) -> f32;
+    fn run(&mut self, layout_node: &LayoutNodeId);
 
-    fn get_containing_block(&mut self) -> &mut LayoutBox;
-}
+    fn layout_tree(&self) -> &LayoutTree;
+    fn layout_tree_mut(&mut self) -> &mut LayoutTree;
 
-pub fn layout_children(layout_box: &mut LayoutBox) {
-    let mut context = get_formatting_context(layout_box);
-
-    let height = context.layout(layout_box.children.iter_mut().collect());
-
-    if layout_box.is_height_auto() {
-        layout_box.dimensions.set_height(height);
+    fn layout_content(&mut self, layout_node: &LayoutNodeId, layout_context: &LayoutContext) {
+        let mut formatting_context =
+            get_formatting_context(self.layout_tree_mut(), layout_node, layout_context);
+        formatting_context.run(layout_node);
     }
 }
 
-fn get_formatting_context(layout_box: &mut LayoutBox) -> Box<dyn FormattingContext> {
-    if layout_box.render_node.is_none() {
-        if layout_box.children_are_inline() {
-            return Box::new(InlineFormattingContext::new(layout_box));
+fn get_formatting_context<'a>(
+    tree: &'a mut LayoutTree,
+    layout_node_id: &LayoutNodeId,
+    layout_context: &'a LayoutContext,
+) -> Box<dyn FormattingContext + 'a> {
+    let layout_node = tree.get_node(layout_node_id);
+    if layout_node.is_anonymous() {
+        if children_are_inline(&tree, layout_node_id) {
+            return Box::new(InlineFormattingContext::new(layout_context, tree));
         }
-        return Box::new(BlockFormattingContext::new(layout_box));
+        return Box::new(BlockFormattingContext::new(layout_context, tree));
     }
 
-    let node = layout_box.render_node.clone().unwrap();
+    let node = layout_node.render_node().clone().unwrap();
     let node = node.borrow();
 
     let display = node.get_style(&Property::Display);
@@ -41,34 +50,13 @@ fn get_formatting_context(layout_box: &mut LayoutBox) -> Box<dyn FormattingConte
 
     match inner_display {
         InnerDisplayType::Flow => {
-            if layout_box.children_are_inline() {
-                Box::new(InlineFormattingContext::new(layout_box))
+            if !children_are_inline(tree, &layout_node.id()) {
+                Box::new(BlockFormattingContext::new(layout_context, tree))
             } else {
-                Box::new(BlockFormattingContext::new(layout_box))
+                Box::new(InlineFormattingContext::new(layout_context, tree))
             }
         }
-        InnerDisplayType::FlowRoot => Box::new(BlockFormattingContext::new(layout_box)),
+        InnerDisplayType::FlowRoot => Box::new(BlockFormattingContext::new(layout_context, tree)),
         _ => unimplemented!("Unsupported display type: {:#?}", display),
-    }
-}
-
-pub fn apply_explicit_sizes(layout_box: &mut LayoutBox, containing_block: &Rect) {
-    if layout_box.is_inline() && !layout_box.is_inline_block() {
-        return;
-    }
-
-    if let Some(render_node) = &layout_box.render_node {
-        let computed_width = render_node.borrow().get_style(&Property::Width);
-        let computed_height = render_node.borrow().get_style(&Property::Height);
-
-        if !computed_width.is_auto() {
-            let used_width = computed_width.to_px(containing_block.width);
-            layout_box.box_model().set_width(used_width);
-        }
-
-        if !computed_height.is_auto() {
-            let used_height = computed_height.to_px(containing_block.height);
-            layout_box.box_model().set_height(used_height);
-        }
     }
 }

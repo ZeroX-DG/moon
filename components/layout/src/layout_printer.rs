@@ -1,33 +1,46 @@
-use super::layout_box::LayoutBox;
-use std::io::Write;
+use crate::layout_box::{LayoutNodeId, LayoutTree};
 
 pub enum DumpSpecificity {
     Structure,
     StructureAndDimensions,
 }
 
-pub fn layout_to_string(root: &LayoutBox, level: usize, specificity: &DumpSpecificity) -> String {
-    let mut result = String::new();
-    let child_nodes = &root.children;
+pub fn dump_layout(tree: &LayoutTree, root: &LayoutNodeId) {
+    println!(
+        "{}",
+        layout_to_string(tree, root, 0, &DumpSpecificity::StructureAndDimensions)
+    );
+}
 
-    let box_type = if root.is_anonymous() {
-        format!("[Anonymous {:?}]", root.box_type)
+pub fn layout_to_string(
+    tree: &LayoutTree,
+    root: &LayoutNodeId,
+    level: usize,
+    specificity: &DumpSpecificity,
+) -> String {
+    let mut result = String::new();
+    let child_nodes = tree.children(root);
+
+    let root_node = tree.get_node(root);
+
+    let box_type = if root_node.is_anonymous() {
+        format!("[{}][Anonymous {}]", root, root_node.friendly_name())
     } else {
-        format!("[{:?}]", root.box_type)
+        format!("[{}][{}]", root, root_node.friendly_name())
     };
 
     let dimensions = match specificity {
         DumpSpecificity::Structure => String::new(),
         DumpSpecificity::StructureAndDimensions => format!(
             " (x: {} | y: {} | w: {} | h: {})",
-            root.dimensions.content.x,
-            root.dimensions.content.y,
-            root.dimensions.content.width,
-            root.dimensions.content.height
+            root_node.dimensions().content.x,
+            root_node.dimensions().content.y,
+            root_node.dimensions().content.width,
+            root_node.dimensions().content.height
         ),
     };
 
-    let node_info = match &root.render_node {
+    let node_info = match &root_node.render_node() {
         Some(node) => format!(" {:#?}", node.borrow().node),
         None => String::new(),
     };
@@ -41,17 +54,7 @@ pub fn layout_to_string(root: &LayoutBox, level: usize, specificity: &DumpSpecif
     ));
 
     for node in child_nodes {
-        result.push_str(&layout_to_string(node, level + 1, specificity));
+        result.push_str(&layout_to_string(tree, node, level + 1, specificity));
     }
     return result;
-}
-
-pub fn dump_layout<W: Write>(
-    root: &LayoutBox,
-    specificity: &DumpSpecificity,
-    output: &mut W,
-) -> std::io::Result<()> {
-    let result = layout_to_string(root, 0, specificity);
-
-    output.write_all(result.as_bytes())
 }

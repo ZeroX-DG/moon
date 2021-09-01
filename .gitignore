@@ -3,3 +3,4 @@ node_modules/
 
 # output testing
 image.png
+output/

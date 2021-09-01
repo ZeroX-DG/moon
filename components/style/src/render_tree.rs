@@ -6,7 +6,7 @@ use super::values::display::{Display, DisplayBox};
 use dom::dom_ref::NodeRef;
 use std::collections::{HashMap, HashSet};
 use strum::IntoEnumIterator;
-use tree::{TreeNodeRef, TreeNodeWeakRef};
+use tree::rctree::{TreeNodeRef, TreeNodeWeakRef};
 
 pub type RenderNodeRef = TreeNodeRef<RenderNode>;
 pub type RenderNodeWeak = TreeNodeWeakRef<RenderNode>;
