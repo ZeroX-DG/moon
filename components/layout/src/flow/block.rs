@@ -2,11 +2,7 @@ use std::any::Any;
 
 use style::{render_tree::RenderNodeRef, value_processing::Property, values::prelude::Position};
 
-use crate::{
-    box_model::{BoxComponent, Dimensions, Edge},
-    formatting_context::{FormattingContext, LayoutContext},
-    layout_box::{children_are_inline, get_containing_block, LayoutBox, LayoutNodeId, LayoutTree},
-};
+use crate::{box_model::{BoxComponent, Dimensions, Edge}, formatting_context::{FormattingContext, LayoutContext}, layout_box::{LayoutBox, LayoutNodeId, LayoutTree, apply_explicit_sizes, children_are_inline, get_containing_block}};
 
 #[derive(Debug)]
 pub struct BlockBox {
@@ -77,8 +73,7 @@ impl<'a> FormattingContext for BlockFormattingContext<'a> {
             self.layout_initial_block_box(layout_node_id);
             return;
         }
-
-        self.compute_position_non_replaced(layout_node_id);
+        
         self.layout_block_level_children(layout_node_id);
     }
 
@@ -109,6 +104,7 @@ impl<'a> BlockFormattingContext<'a> {
         let block_box_dimensions = block_box.dimensions_mut();
         block_box_dimensions.set_width(width);
         block_box_dimensions.set_height(height);
+        block_box_dimensions.set_position(0., 0.);
 
         self.layout_block_level_children(layout_node_id);
     }
@@ -131,20 +127,20 @@ impl<'a> BlockFormattingContext<'a> {
             }
 
             self.compute_width(&child);
-            self.layout_content(&child, &self.layout_context);
-            self.compute_height(&child);
-
+            
             if self.layout_tree().get_node(&child).is_non_replaced() {
                 self.compute_position_non_replaced(&child);
             }
+            
+            self.layout_content(&child, &self.layout_context);
+
+            if !children_are_inline(&self.layout_tree(), &child) {
+                self.compute_height(&child);
+            }
+            apply_explicit_sizes(self.layout_tree_mut(), &child);
 
             let child_dimensions = self.layout_tree_mut().get_node_mut(&child).dimensions();
-
-            let child_vertical_space = child_dimensions.content_box().height
-                + child_dimensions.padding.bottom
-                + child_dimensions.margin.bottom;
-
-            self.previous_layout_y += child_vertical_space;
+            self.previous_layout_y += child_dimensions.margin_box().height;
         }
     }
 
@@ -351,22 +347,6 @@ impl<'a> BlockFormattingContext<'a> {
     }
 
     fn compute_auto_height(&self, layout_node_id: &LayoutNodeId) -> f32 {
-        if children_are_inline(self.layout_tree(), layout_node_id) {
-            return self
-                .layout_tree()
-                .children(layout_node_id)
-                .iter()
-                .map(|child| self.layout_tree().get_node(child))
-                .fold(0.0, |max_height, child| {
-                    let child_height = child.dimensions().margin_box().height;
-
-                    if max_height < child_height {
-                        child_height
-                    } else {
-                        max_height
-                    }
-                });
-        }
         self.layout_tree()
             .children(layout_node_id)
             .iter()

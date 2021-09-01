@@ -2,7 +2,13 @@ use std::any::Any;
 
 use style::{render_tree::RenderNodeRef, value_processing::Property};
 
-use crate::{box_model::{BoxComponent, Dimensions, Edge}, formatting_context::{FormattingContext, LayoutContext}, layout_box::{LayoutBox, LayoutNode, LayoutNodeId, LayoutTree, apply_explicit_sizes, get_containing_block}};
+use crate::{
+    box_model::{BoxComponent, Dimensions, Edge},
+    formatting_context::{FormattingContext, LayoutContext},
+    layout_box::{
+        apply_explicit_sizes, get_containing_block, LayoutBox, LayoutNode, LayoutNodeId, LayoutTree,
+    },
+};
 
 #[derive(Debug)]
 pub struct InlineBox {
@@ -214,8 +220,9 @@ impl<'a> FormattingContext for InlineFormattingContext<'a> {
 
         line_boxes.push(LineBox::new());
 
-        let containing_block = self.layout_tree
-            .get_node(&get_containing_block(&self.layout_tree, layout_node_id))
+        let containing_block = self
+            .layout_tree
+            .get_node(&layout_node_id)
             .dimensions()
             .content_box();
 
@@ -236,20 +243,18 @@ impl<'a> FormattingContext for InlineFormattingContext<'a> {
 
             let child = self.layout_tree.get_node(&child_id);
 
-            let child_width = child.dimensions().margin_box().width;
-
+            let child_width = child.dimensions().content.width;
 
             let line_box = line_boxes.last_mut().unwrap();
 
             let new_line_box_width = line_box.width() + child_width;
 
-            if new_line_box_width <= parent_width {
-                line_box.add_fragment(child);
-            }
-
-            if new_line_box_width >= parent_width {
+            if new_line_box_width > parent_width {
                 line_boxes.push(LineBox::new());
             }
+
+            let line_box = line_boxes.last_mut().unwrap();
+            line_box.add_fragment(child);
         }
 
         let mut offset_y = 0.;
@@ -270,6 +275,11 @@ impl<'a> FormattingContext for InlineFormattingContext<'a> {
 
             offset_y += line.height();
         }
+
+        self.layout_tree
+            .get_node_mut(layout_node_id)
+            .dimensions_mut()
+            .set_height(offset_y);
     }
 
     fn layout_tree(&self) -> &LayoutTree {

@@ -6,7 +6,7 @@ pub enum DumpSpecificity {
 }
 
 pub fn dump_layout(tree: &LayoutTree, root: &LayoutNodeId) {
-    println!("{}", layout_to_string(tree, root, 0, &DumpSpecificity::Structure));
+    println!("{}", layout_to_string(tree, root, 0, &DumpSpecificity::StructureAndDimensions));
 }
 
 pub fn layout_to_string(tree: &LayoutTree, root: &LayoutNodeId, level: usize, specificity: &DumpSpecificity) -> String {
@@ -16,9 +16,9 @@ pub fn layout_to_string(tree: &LayoutTree, root: &LayoutNodeId, level: usize, sp
     let root_node = tree.get_node(root);
 
     let box_type = if root_node.is_anonymous() {
-        format!("[Anonymous {}]", root_node.friendly_name())
+        format!("[{}][Anonymous {}]", root, root_node.friendly_name())
     } else {
-        format!("[{}]", root_node.friendly_name())
+        format!("[{}][{}]", root, root_node.friendly_name())
     };
 
     let dimensions = match specificity {
