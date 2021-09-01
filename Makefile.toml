@@ -18,10 +18,3 @@ script = '''
 cd target/debug && ./moon render --once --html=../../fixtures/${@}.html --size=500x300 --output=../../image.png
 
 '''
-
-[tasks.output]
-workspace = false
-dependencies = ["build"]
-script = '''
-cd target/debug && ./moon render --once --html=../../fixtures/${@}.html --size=500x300 --output=../../image.png
-'''
