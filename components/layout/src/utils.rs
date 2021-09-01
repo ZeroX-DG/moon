@@ -1,6 +1,9 @@
 use css::cssom::css_rule::CSSRule;
 use dom::dom_ref::NodeRef;
-use style::{build_render_tree, value_processing::{CSSLocation, CascadeOrigin, ContextualRule}};
+use style::{
+    build_render_tree,
+    value_processing::{CSSLocation, CascadeOrigin, ContextualRule},
+};
 use test_utils::css::parse_stylesheet;
 
 use crate::{layout_box::LayoutTree, tree_builder::TreeBuilder};

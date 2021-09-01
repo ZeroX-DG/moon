@@ -6,7 +6,7 @@ pub type DisplayList = Vec<DisplayCommand>;
 
 pub struct PaintChain<'a> {
     chain: Vec<&'a PaintFn>,
-    layout_tree: &'a LayoutTree
+    layout_tree: &'a LayoutTree,
 }
 
 pub struct PaintChainBuilder<'a> {
@@ -48,7 +48,7 @@ impl<'a> PaintChainBuilder<'a> {
     pub fn build(self, layout_tree: &'a LayoutTree) -> PaintChain<'a> {
         PaintChain {
             chain: self.paint_fns,
-            layout_tree
+            layout_tree,
         }
     }
 }

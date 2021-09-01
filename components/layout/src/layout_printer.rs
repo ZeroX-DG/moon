@@ -6,10 +6,18 @@ pub enum DumpSpecificity {
 }
 
 pub fn dump_layout(tree: &LayoutTree, root: &LayoutNodeId) {
-    println!("{}", layout_to_string(tree, root, 0, &DumpSpecificity::StructureAndDimensions));
+    println!(
+        "{}",
+        layout_to_string(tree, root, 0, &DumpSpecificity::StructureAndDimensions)
+    );
 }
 
-pub fn layout_to_string(tree: &LayoutTree, root: &LayoutNodeId, level: usize, specificity: &DumpSpecificity) -> String {
+pub fn layout_to_string(
+    tree: &LayoutTree,
+    root: &LayoutNodeId,
+    level: usize,
+    specificity: &DumpSpecificity,
+) -> String {
     let mut result = String::new();
     let child_nodes = tree.children(root);
 

@@ -2,7 +2,14 @@ use std::any::Any;
 
 use style::{render_tree::RenderNodeRef, value_processing::Property, values::prelude::Position};
 
-use crate::{box_model::{BoxComponent, Dimensions, Edge}, formatting_context::{FormattingContext, LayoutContext}, layout_box::{LayoutBox, LayoutNodeId, LayoutTree, apply_explicit_sizes, children_are_inline, get_containing_block}};
+use crate::{
+    box_model::{BoxComponent, Dimensions, Edge},
+    formatting_context::{FormattingContext, LayoutContext},
+    layout_box::{
+        apply_explicit_sizes, children_are_inline, get_containing_block, LayoutBox, LayoutNodeId,
+        LayoutTree,
+    },
+};
 
 #[derive(Debug)]
 pub struct BlockBox {
@@ -73,7 +80,7 @@ impl<'a> FormattingContext for BlockFormattingContext<'a> {
             self.layout_initial_block_box(layout_node_id);
             return;
         }
-        
+
         self.layout_block_level_children(layout_node_id);
     }
 
@@ -127,11 +134,11 @@ impl<'a> BlockFormattingContext<'a> {
             }
 
             self.compute_width(&child);
-            
+
             if self.layout_tree().get_node(&child).is_non_replaced() {
                 self.compute_position_non_replaced(&child);
             }
-            
+
             self.layout_content(&child, &self.layout_context);
 
             if !children_are_inline(&self.layout_tree(), &child) {
@@ -443,12 +450,15 @@ mod tests {
             ],
         );
 
-        let css = format!("
+        let css = format!(
+            "
         {}
         .box {{
             height: 10px;
         }}
-        ", SHARED_CSS);
+        ",
+            SHARED_CSS
+        );
 
         let mut layout_tree = build_tree(dom, &css);
         let root = layout_tree.root().unwrap();
@@ -471,14 +481,7 @@ mod tests {
 
         //println!("{}", layout_box.dump(&LayoutDumpSpecificity::StructureAndDimensions));
 
-        assert_eq!(
-            layout_tree
-                .get_node(&root)
-                .dimensions()
-                .content
-                .height,
-            40.
-        );
+        assert_eq!(layout_tree.get_node(&root).dimensions().content.height, 40.);
         assert_eq!(
             layout_tree
                 .get_node(&initial_block_box)

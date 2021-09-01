@@ -79,7 +79,8 @@ pub fn get_containing_block(tree: &LayoutTree, node_id: &LayoutNodeId) -> Layout
 }
 
 pub fn apply_explicit_sizes(tree: &mut LayoutTree, layout_node_id: &LayoutNodeId) {
-    let containing_block = tree.get_node(&get_containing_block(&tree, layout_node_id))
+    let containing_block = tree
+        .get_node(&get_containing_block(&tree, layout_node_id))
         .dimensions()
         .content_box();
     let layout_node = tree.get_node_mut(&layout_node_id);
@@ -103,4 +104,3 @@ pub fn apply_explicit_sizes(tree: &mut LayoutTree, layout_node_id: &LayoutNodeId
         }
     }
 }
-

@@ -5,14 +5,14 @@ pub type TreeNodeId = usize;
 pub struct Tree<T> {
     arena: HashMap<TreeNodeId, TreeNode<T>>,
     root: Option<TreeNodeId>,
-    next_id: TreeNodeId
+    next_id: TreeNodeId,
 }
 
 pub struct TreeNode<T> {
     id: TreeNodeId,
     data: T,
     children: Vec<TreeNodeId>,
-    parent: Option<TreeNodeId>
+    parent: Option<TreeNodeId>,
 }
 
 impl<T> Tree<T> {
@@ -20,7 +20,7 @@ impl<T> Tree<T> {
         Self {
             arena: HashMap::new(),
             next_id: 0,
-            root: None
+            root: None,
         }
     }
 
@@ -89,7 +89,7 @@ impl<T> TreeNode<T> {
             id: id,
             data: data,
             children: Vec::new(),
-            parent: None
+            parent: None,
         }
     }
 

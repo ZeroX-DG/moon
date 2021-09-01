@@ -6,12 +6,12 @@ use style::{
 
 use crate::{
     flow::{block::BlockBox, inline::InlineBox},
-    layout_box::{LayoutBox, LayoutTree, LayoutNodeId, children_are_inline},
+    layout_box::{children_are_inline, LayoutBox, LayoutNodeId, LayoutTree},
 };
 
 pub struct TreeBuilder {
     parent_stack: Vec<LayoutNodeId>,
-    tree: LayoutTree
+    tree: LayoutTree,
 }
 
 impl TreeBuilder {
@@ -95,7 +95,9 @@ impl TreeBuilder {
             let anonymous = Box::new(BlockBox::new_anonymous());
             let anonymous_box_id = self.tree.add_child(parent, anonymous);
 
-            self.tree.get_node_mut(&anonymous_box_id).set_children(children);
+            self.tree
+                .get_node_mut(&anonymous_box_id)
+                .set_children(children);
         }
 
         *parent
@@ -169,8 +171,8 @@ impl TreeBuilder {
 
 #[cfg(test)]
 mod tests {
-    use test_utils::dom_creator::*;
     use crate::{layout_printer::dump_layout, utils::*};
+    use test_utils::dom_creator::*;
 
     #[test]
     fn test_build_simple() {
@@ -206,9 +208,15 @@ mod tests {
 
         assert!(layout_tree.get_node(&root).is_block());
 
-        assert!(layout_tree.get_node(&layout_tree.children(&root)[0]).is_block());
-        assert!(layout_tree.get_node(&layout_tree.children(&root)[0]).is_anonymous());
-        assert!(layout_tree.get_node(&layout_tree.children(&root)[1]).is_block());
+        assert!(layout_tree
+            .get_node(&layout_tree.children(&root)[0])
+            .is_block());
+        assert!(layout_tree
+            .get_node(&layout_tree.children(&root)[0])
+            .is_anonymous());
+        assert!(layout_tree
+            .get_node(&layout_tree.children(&root)[1])
+            .is_block());
     }
 
     #[test]
@@ -244,13 +252,22 @@ mod tests {
 
         assert_eq!(layout_tree.children(&root).len(), 3);
 
+        assert!(layout_tree
+            .get_node(&layout_tree.children(&root)[0])
+            .is_block());
+        assert!(layout_tree
+            .get_node(&layout_tree.children(&root)[0])
+            .is_anonymous());
 
-        assert!(layout_tree.get_node(&layout_tree.children(&root)[0]).is_block());
-        assert!(layout_tree.get_node(&layout_tree.children(&root)[0]).is_anonymous());
+        assert!(layout_tree
+            .get_node(&layout_tree.children(&root)[1])
+            .is_block());
 
-        assert!(layout_tree.get_node(&layout_tree.children(&root)[1]).is_block());
-
-        assert!(layout_tree.get_node(&layout_tree.children(&root)[2]).is_block());
-        assert!(layout_tree.get_node(&layout_tree.children(&root)[2]).is_anonymous());
+        assert!(layout_tree
+            .get_node(&layout_tree.children(&root)[2])
+            .is_block());
+        assert!(layout_tree
+            .get_node(&layout_tree.children(&root)[2])
+            .is_anonymous());
     }
 }

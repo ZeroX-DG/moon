@@ -2,7 +2,13 @@ use super::loader::frame::FrameLoader;
 use css::cssom::css_rule::CSSRule;
 use dom::dom_ref::NodeRef;
 
-use layout::{box_model::Rect, flow::block::{BlockBox, BlockFormattingContext}, formatting_context::{FormattingContext, LayoutContext}, layout_box::{LayoutNodeId, LayoutTree}, tree_builder::TreeBuilder};
+use layout::{
+    box_model::Rect,
+    flow::block::{BlockBox, BlockFormattingContext},
+    formatting_context::{FormattingContext, LayoutContext},
+    layout_box::{LayoutNodeId, LayoutTree},
+    tree_builder::TreeBuilder,
+};
 use style::render_tree::{build_render_tree, RenderTree};
 use style::value_processing::{CSSLocation, CascadeOrigin, ContextualRule};
 
@@ -114,12 +120,15 @@ impl FrameLayout {
                         height: height as f32,
                     },
                 };
-    
-                let initial_block_box = self.layout_tree.set_root(Box::new(BlockBox::new_anonymous()));
+
+                let initial_block_box = self
+                    .layout_tree
+                    .set_root(Box::new(BlockBox::new_anonymous()));
                 self.layout_tree.add_child_by_id(&initial_block_box, &root);
-    
-                let mut formatting_context = BlockFormattingContext::new(&layout_context, &mut self.layout_tree);
-    
+
+                let mut formatting_context =
+                    BlockFormattingContext::new(&layout_context, &mut self.layout_tree);
+
                 formatting_context.run(&initial_block_box);
             }
         }
