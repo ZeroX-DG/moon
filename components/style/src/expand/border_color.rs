@@ -1,5 +1,6 @@
 use super::ExpandOutput;
-use crate::value_processing::{Property, Value};
+use crate::property::Property;
+use crate::value::Value;
 use css::parser::structs::ComponentValue;
 
 pub fn expand_border_color(values: &[&[ComponentValue]]) -> ExpandOutput {

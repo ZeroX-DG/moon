@@ -1,6 +1,7 @@
 use style::{
+    property::Property,
     render_tree::RenderNodeRef,
-    value_processing::{Property, Value},
+    value::Value,
     values::display::{Display, InnerDisplayType, OuterDisplayType},
 };
 

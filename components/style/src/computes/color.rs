@@ -1,6 +1,7 @@
+use crate::property::Property;
+use crate::value::Value;
 use crate::value_processing::ValueRef;
 use crate::value_processing::{compute, ComputeContext};
-use crate::value_processing::{Property, Value};
 use crate::values::color::Color;
 
 pub fn compute_color(value: &Value, property: &Property, context: &mut ComputeContext) -> ValueRef {

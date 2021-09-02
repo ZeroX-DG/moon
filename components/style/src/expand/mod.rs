@@ -1,4 +1,6 @@
-use crate::value_processing::{Property, Value};
+use crate::property::Property;
+use crate::value::Value;
+
 pub type ExpandOutput = Option<Vec<(Property, Option<Value>)>>;
 
 mod border;

@@ -1,12 +1,9 @@
 use css::cssom::css_rule::CSSRule;
 use dom::dom_ref::NodeRef;
-use style::{
-    build_render_tree,
-    value_processing::{CSSLocation, CascadeOrigin, ContextualRule},
-};
+use style::value_processing::{CSSLocation, CascadeOrigin, ContextualRule};
 use test_utils::css::parse_stylesheet;
 
-use crate::{layout_box::LayoutTree, tree_builder::TreeBuilder};
+use crate::layout_box::LayoutTree;
 
 pub const SHARED_CSS: &str = r#"
 p, div {
@@ -30,6 +27,6 @@ pub fn build_tree(dom: NodeRef, css: &str) -> LayoutTree {
         })
         .collect::<Vec<ContextualRule>>();
 
-    let render_tree = build_render_tree(dom.clone(), &rules);
-    TreeBuilder::new().build(render_tree.root.unwrap())
+    let render_tree = style::tree_builder::TreeBuilder::build(dom.clone(), &rules);
+    crate::tree_builder::TreeBuilder::new().build(render_tree.root.unwrap())
 }

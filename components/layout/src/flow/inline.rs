@@ -1,6 +1,6 @@
 use std::any::Any;
 
-use style::{render_tree::RenderNodeRef, value_processing::Property};
+use style::{property::Property, render_tree::RenderNodeRef};
 
 use crate::{
     box_model::{BoxComponent, Dimensions, Edge},

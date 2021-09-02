@@ -2,7 +2,8 @@ use crate::command::{DisplayCommand, DrawCommand};
 use crate::primitive::{Corners, RRect, Radii, Rect};
 use crate::{primitive::style_color_to_paint_color, utils::is_zero};
 use layout::layout_box::LayoutNode;
-use style::value_processing::{Property, Value};
+use style::property::Property;
+use style::value::Value;
 use style::values::border_radius::BorderRadius;
 
 pub fn paint_background(layout_node: &LayoutNode) -> Option<DisplayCommand> {

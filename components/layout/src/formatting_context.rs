@@ -5,7 +5,8 @@ use crate::{
 };
 
 use super::flow::block::BlockFormattingContext;
-use style::value_processing::{Property, Value};
+use style::property::Property;
+use style::value::Value;
 use style::values::display::{Display, InnerDisplayType};
 
 #[derive(Debug, Clone)]

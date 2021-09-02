@@ -7,9 +7,8 @@ use layout::{
     flow::block::{BlockBox, BlockFormattingContext},
     formatting_context::{FormattingContext, LayoutContext},
     layout_box::{LayoutNodeId, LayoutTree},
-    tree_builder::TreeBuilder,
 };
-use style::render_tree::{build_render_tree, RenderTree};
+use style::render_tree::RenderTree;
 use style::value_processing::{CSSLocation, CascadeOrigin, ContextualRule};
 
 pub type FrameSize = (u32, u32);
@@ -99,14 +98,18 @@ impl FrameLayout {
             .collect();
 
         log::debug!("Building render tree");
-        self.render_tree = Some(build_render_tree(document, &contextual_rules));
+        self.render_tree = Some(style::tree_builder::TreeBuilder::build(
+            document,
+            &contextual_rules,
+        ));
         log::debug!("Finished render tree");
     }
 
     pub fn recalculate_layout(&mut self, size: FrameSize) {
         if let Some(render_tree) = &self.render_tree {
             log::debug!("Building layout tree");
-            self.layout_tree = TreeBuilder::new().build(render_tree.root.clone().unwrap());
+            self.layout_tree =
+                layout::tree_builder::TreeBuilder::new().build(render_tree.root.clone().unwrap());
             log::debug!("Finished layout tree");
 
             if let Some(root) = self.layout_tree.root() {
