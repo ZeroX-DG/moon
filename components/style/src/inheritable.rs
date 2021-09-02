@@ -1,4 +1,4 @@
-use super::value_processing::Property;
+use super::property::Property;
 use std::collections::HashSet;
 
 lazy_static! {

@@ -2,7 +2,7 @@ use crate::command::{DisplayCommand, DrawCommand};
 use crate::primitive::style_color_to_paint_color;
 use crate::primitive::Rect;
 use layout::{box_model::Edge, layout_box::LayoutNode};
-use style::value_processing::Property;
+use style::property::Property;
 
 pub fn paint_border(layout_node: &LayoutNode) -> Option<DisplayCommand> {
     if let Some(render_node) = &layout_node.render_node() {

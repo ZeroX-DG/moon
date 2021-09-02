@@ -1,4 +1,4 @@
-use style::value_processing::Value;
+use style::value::Value;
 
 pub fn is_zero(value: &Value) -> bool {
     match value {

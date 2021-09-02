@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use style::value_processing::Value;
+use style::value::Value;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Color {
