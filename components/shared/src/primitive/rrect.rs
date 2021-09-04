@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize};
 use super::Rect;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct RRect {

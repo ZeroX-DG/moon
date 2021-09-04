@@ -1,5 +1,5 @@
-use style::value::Value;
 use shared::color::Color;
+use style::value::Value;
 
 pub fn is_zero(value: &Value) -> bool {
     match value {
@@ -16,7 +16,7 @@ pub fn color_from_value(color: &Value) -> Color {
             r: 0,
             g: 0,
             b: 0,
-            a: 0
-        }
+            a: 0,
+        },
     }
 }

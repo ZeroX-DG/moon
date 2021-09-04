@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize};
 use super::edge::EdgeSizes;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Rect {
@@ -24,7 +24,7 @@ impl Rect {
             x,
             y,
             width,
-            height
+            height,
         }
     }
 }
@@ -34,5 +34,3 @@ impl Into<(f32, f32, f32, f32)> for Rect {
         (self.x, self.y, self.width, self.height)
     }
 }
-
-

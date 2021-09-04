@@ -1,7 +1,7 @@
 use crate::command::{DisplayCommand, DrawCommand};
-use shared::primitive::*;
-use crate::utils::{is_zero, color_from_value};
+use crate::utils::{color_from_value, is_zero};
 use layout::layout_box::LayoutNode;
+use shared::primitive::*;
 use style::property::Property;
 use style::value::Value;
 use style::values::border_radius::BorderRadius;

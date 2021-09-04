@@ -1,5 +1,5 @@
-use shared::primitive::*;
 use shared::color::Color;
+use shared::primitive::*;
 
 pub trait Painter {
     fn fill_rect(&mut self, rect: Rect, color: Color);

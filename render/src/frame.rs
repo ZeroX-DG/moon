@@ -7,9 +7,9 @@ use layout::{
     formatting_context::{FormattingContext, LayoutContext},
     layout_box::{LayoutNodeId, LayoutTree},
 };
+use shared::primitive::Rect;
 use style::render_tree::RenderTree;
 use style::value_processing::{CSSLocation, CascadeOrigin, ContextualRule};
-use shared::primitive::Rect;
 
 pub type FrameSize = (u32, u32);
 

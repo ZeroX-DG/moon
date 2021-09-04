@@ -1,6 +1,6 @@
-use shared::primitive::*;
-use shared::color::Color;
 use serde::{Deserialize, Serialize};
+use shared::color::Color;
+use shared::primitive::*;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum DrawCommand {

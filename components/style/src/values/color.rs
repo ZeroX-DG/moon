@@ -26,7 +26,7 @@ impl From<&Color> for shared::color::Color {
             r: 0,
             g: 0,
             b: 0,
-            a: 0
+            a: 0,
         };
         match color {
             Color::Rgba(r, g, b, a) => {
@@ -39,7 +39,7 @@ impl From<&Color> for shared::color::Color {
                 }
             }
             _ => default_color,
-        } 
+        }
     }
 }
 

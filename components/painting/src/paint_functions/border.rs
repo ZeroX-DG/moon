@@ -1,8 +1,8 @@
 use crate::command::{DisplayCommand, DrawCommand};
-use shared::primitive::*;
-use layout::layout_box::LayoutNode;
-use style::property::Property;
 use crate::utils::color_from_value;
+use layout::layout_box::LayoutNode;
+use shared::primitive::*;
+use style::property::Property;
 
 pub fn paint_border(layout_node: &LayoutNode) -> Option<DisplayCommand> {
     if let Some(render_node) = &layout_node.render_node() {
