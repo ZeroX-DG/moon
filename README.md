@@ -44,7 +44,7 @@ Bold text is what I'm working on
 - [x] :memo: HTML Parsing
   - [x] HTML tokenizer
   - [x] HTML dom tree builder (85% specs)
-- [ ] :electric_plug: CSSOM API
+- [x] :electric_plug: CSSOM API
 - [x] :memo: CSS Parsing
   - [x] CSS tokenizer
   - [x] CSSOM parser/tree builder
