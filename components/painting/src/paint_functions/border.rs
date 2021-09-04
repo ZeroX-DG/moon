@@ -1,8 +1,8 @@
 use crate::command::{DisplayCommand, DrawCommand};
-use crate::primitive::style_color_to_paint_color;
-use crate::primitive::Rect;
-use layout::{box_model::Edge, layout_box::LayoutNode};
+use shared::primitive::*;
+use layout::layout_box::LayoutNode;
 use style::property::Property;
+use crate::utils::color_from_value;
 
 pub fn paint_border(layout_node: &LayoutNode) -> Option<DisplayCommand> {
     if let Some(render_node) = &layout_node.render_node() {
@@ -10,23 +10,19 @@ pub fn paint_border(layout_node: &LayoutNode) -> Option<DisplayCommand> {
 
         let border_top_color = render_node
             .get_style(&Property::BorderTopColor)
-            .map(style_color_to_paint_color)
-            .unwrap_or_default();
+            .map(color_from_value);
 
         let border_bottom_color = render_node
             .get_style(&Property::BorderBottomColor)
-            .map(style_color_to_paint_color)
-            .unwrap_or_default();
+            .map(color_from_value);
 
         let border_left_color = render_node
             .get_style(&Property::BorderLeftColor)
-            .map(style_color_to_paint_color)
-            .unwrap_or_default();
+            .map(color_from_value);
 
         let border_right_color = render_node
             .get_style(&Property::BorderRightColor)
-            .map(style_color_to_paint_color)
-            .unwrap_or_default();
+            .map(color_from_value);
 
         // TODO: support other border style other than solid
         let mut draw_commands = Vec::new();

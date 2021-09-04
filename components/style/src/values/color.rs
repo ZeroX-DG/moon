@@ -20,6 +20,29 @@ macro_rules! match_keyword {
     };
 }
 
+impl From<&Color> for shared::color::Color {
+    fn from(color: &Color) -> Self {
+        let default_color = shared::color::Color {
+            r: 0,
+            g: 0,
+            b: 0,
+            a: 0
+        };
+        match color {
+            Color::Rgba(r, g, b, a) => {
+                let alpha: u8 = a.as_u8();
+                shared::color::Color {
+                    r: r.as_u8(),
+                    g: g.as_u8(),
+                    b: b.as_u8(),
+                    a: alpha,
+                }
+            }
+            _ => default_color,
+        } 
+    }
+}
+
 impl Color {
     pub fn parse(values: &[ComponentValue]) -> Option<Self> {
         match values.iter().next() {

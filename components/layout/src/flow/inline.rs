@@ -3,12 +3,14 @@ use std::any::Any;
 use style::{property::Property, render_tree::RenderNodeRef};
 
 use crate::{
-    box_model::{BoxComponent, Dimensions, Edge},
+    box_model::{BoxComponent, Dimensions},
     formatting_context::{FormattingContext, LayoutContext},
     layout_box::{
         apply_explicit_sizes, get_containing_block, LayoutBox, LayoutNode, LayoutNodeId, LayoutTree,
     },
 };
+
+use shared::primitive::edge::Edge;
 
 #[derive(Debug)]
 pub struct InlineBox {

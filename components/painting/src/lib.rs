@@ -1,7 +1,6 @@
 mod command;
 mod paint_functions;
 mod painter;
-mod primitive;
 mod render;
 mod utils;
 
@@ -10,7 +9,6 @@ use layout::layout_box::{LayoutNodeId, LayoutTree};
 use render::PaintChainBuilder;
 
 pub use painter::Painter;
-pub use primitive::*;
 pub use render::DisplayList;
 
 use paint_functions::*;

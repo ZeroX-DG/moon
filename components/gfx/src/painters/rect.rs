@@ -1,7 +1,8 @@
 use lyon_tessellation::geom::point;
 use lyon_tessellation::path::Path;
 use lyon_tessellation::{BuffersBuilder, FillOptions, FillTessellator, VertexBuffers};
-use painting::{Color, RRect, Rect};
+use shared::color::Color;
+use shared::primitive::{RRect, Rect};
 
 use crate::triangle::{Index, Vertex, VertexConstructor};
 

@@ -2,7 +2,8 @@ use super::backend::{Backend, DrawRequest};
 use super::Bitmap;
 use crate::painters::rect::RectPainter;
 use futures::task::SpawnExt;
-use painting::{Color, RRect, Rect};
+use shared::color::Color;
+use shared::primitive::*;
 
 pub struct Painter<'a> {
     rect_painter: RectPainter,

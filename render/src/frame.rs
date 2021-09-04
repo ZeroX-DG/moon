@@ -3,13 +3,13 @@ use css::cssom::css_rule::CSSRule;
 use dom::dom_ref::NodeRef;
 
 use layout::{
-    box_model::Rect,
     flow::block::{BlockBox, BlockFormattingContext},
     formatting_context::{FormattingContext, LayoutContext},
     layout_box::{LayoutNodeId, LayoutTree},
 };
 use style::render_tree::RenderTree;
 use style::value_processing::{CSSLocation, CascadeOrigin, ContextualRule};
+use shared::primitive::Rect;
 
 pub type FrameSize = (u32, u32);
 

@@ -1,6 +1,6 @@
 use crate::command::{DisplayCommand, DrawCommand};
-use crate::primitive::{Corners, RRect, Radii, Rect};
-use crate::{primitive::style_color_to_paint_color, utils::is_zero};
+use shared::primitive::*;
+use crate::utils::{is_zero, color_from_value};
 use layout::layout_box::LayoutNode;
 use style::property::Property;
 use style::value::Value;
@@ -16,7 +16,7 @@ pub fn paint_background(layout_node: &LayoutNode) -> Option<DisplayCommand> {
         let border_top_right_radius = render_node.get_style(&Property::BorderTopRightRadius);
         let border_bottom_right_radius = render_node.get_style(&Property::BorderBottomRightRadius);
 
-        let color = style_color_to_paint_color(background.inner()).unwrap_or_default();
+        let color = color_from_value(background.inner());
 
         let (x, y, width, height) = layout_node.dimensions().padding_box().into();
 
@@ -43,10 +43,12 @@ pub fn paint_background(layout_node: &LayoutNode) -> Option<DisplayCommand> {
             let br = to_radii(border_bottom_right_radius.inner(), border_box.width);
 
             let rect = RRect {
-                x,
-                y,
-                width,
-                height,
+                rect: Rect {
+                    x,
+                    y,
+                    width,
+                    height,
+                },
                 corners: Corners::new(tl, tr, bl, br),
             };
 

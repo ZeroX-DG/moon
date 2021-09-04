@@ -1,3 +1,5 @@
+use shared::primitive::*;
+
 /// Box-model dimensions for each layout box
 #[derive(Debug, Clone)]
 pub struct Dimensions {
@@ -5,31 +7,6 @@ pub struct Dimensions {
     pub padding: EdgeSizes,
     pub margin: EdgeSizes,
     pub border: EdgeSizes,
-}
-
-/// Size of the content area (all in px)
-#[derive(Debug, Clone, PartialEq)]
-pub struct Rect {
-    pub width: f32,
-    pub height: f32,
-    pub x: f32,
-    pub y: f32,
-}
-
-/// Edge size of the box (all in px)
-#[derive(Debug, Clone)]
-pub struct EdgeSizes {
-    pub top: f32,
-    pub right: f32,
-    pub bottom: f32,
-    pub left: f32,
-}
-
-pub enum Edge {
-    Top,
-    Left,
-    Right,
-    Bottom,
 }
 
 pub enum BoxComponent {
@@ -99,23 +76,6 @@ impl Dimensions {
     }
 }
 
-impl Rect {
-    pub fn add_outer_edges(&self, edges: &EdgeSizes) -> Self {
-        Self {
-            x: self.x - edges.left,
-            y: self.y - edges.top,
-            width: self.width + edges.left + edges.right,
-            height: self.height + edges.top + edges.bottom,
-        }
-    }
-}
-
-impl Into<(f32, f32, f32, f32)> for Rect {
-    fn into(self) -> (f32, f32, f32, f32) {
-        (self.x, self.y, self.width, self.height)
-    }
-}
-
 impl Default for Dimensions {
     fn default() -> Self {
         Self {
@@ -132,13 +92,3 @@ impl Default for Dimensions {
     }
 }
 
-impl Default for EdgeSizes {
-    fn default() -> Self {
-        Self {
-            top: 0.0,
-            right: 0.0,
-            bottom: 0.0,
-            left: 0.0,
-        }
-    }
-}

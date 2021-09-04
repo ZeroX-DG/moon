@@ -1,8 +1,8 @@
 use crate::{
-    box_model::Rect,
     flow::inline::InlineFormattingContext,
     layout_box::{children_are_inline, LayoutNodeId, LayoutTree},
 };
+use shared::primitive::*;
 
 use super::flow::block::BlockFormattingContext;
 use style::property::Property;

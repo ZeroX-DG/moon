@@ -8,6 +8,7 @@ edition = "2018"
 
 [dependencies]
 painting = { version="*", path="../painting" }
+shared = { version = "*", path = "../shared" }
 bytemuck = { version = "1.5.0", features = ["derive"] }
 lyon_tessellation = "0.17.7"
 wgpu = "0.9"

@@ -22,6 +22,7 @@ members = [
   "components/url",
   "components/gfx",
   "components/loaders",
+  "components/shared",
   "render",
 ]
 

@@ -1,4 +1,5 @@
-use super::primitive::{Color, RRect, Rect};
+use shared::primitive::*;
+use shared::color::Color;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]

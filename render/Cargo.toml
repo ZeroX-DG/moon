@@ -13,6 +13,7 @@ css = { version="*", path="../components/css" }
 style = { version="*", path="../components/style" }
 layout = { version="*", path="../components/layout" }
 painting = { version="*", path="../components/painting" }
+shared = { version = "*", path = "../components/shared" }
 gfx = { version="*", path="../components/gfx" }
 loaders = { path="../components/loaders" }
 ipc = { version="*", path="../components/ipc" }
