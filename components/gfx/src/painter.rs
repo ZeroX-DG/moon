@@ -25,7 +25,7 @@ impl<'a> Painter<'a> {
     const CHUNK_SIZE: u64 = 10 * 1024;
 
     pub async fn new() -> Painter<'a> {
-        let instance = wgpu::Instance::new(wgpu::BackendBit::PRIMARY);
+        let instance = wgpu::Instance::new(wgpu::Backends::PRIMARY);
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions {
                 power_preference: wgpu::PowerPreference::default(),
@@ -53,7 +53,7 @@ impl<'a> Painter<'a> {
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
             format: TEXTURE_FORMAT,
-            usage: wgpu::TextureUsage::COPY_SRC | wgpu::TextureUsage::RENDER_ATTACHMENT,
+            usage: wgpu::TextureUsages::COPY_SRC | wgpu::TextureUsages::RENDER_ATTACHMENT,
         };
 
         let frame = device.create_texture(&frame_desc);
@@ -62,7 +62,7 @@ impl<'a> Painter<'a> {
         let output_buffer_desc = wgpu::BufferDescriptor {
             label: Some("moon output buffer"),
             size: 1,
-            usage: wgpu::BufferUsage::COPY_DST | wgpu::BufferUsage::MAP_READ,
+            usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
             mapped_at_creation: false,
         };
         let output_buffer = device.create_buffer(&output_buffer_desc);
@@ -133,6 +133,7 @@ impl<'a> Painter<'a> {
                 texture: &self.frame,
                 mip_level: 0,
                 origin: wgpu::Origin3d::ZERO,
+                aspect: wgpu::TextureAspect::All
             },
             wgpu::ImageCopyBuffer {
                 buffer: &self.output_buffer,
