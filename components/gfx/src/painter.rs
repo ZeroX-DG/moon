@@ -133,7 +133,7 @@ impl<'a> Painter<'a> {
                 texture: &self.frame,
                 mip_level: 0,
                 origin: wgpu::Origin3d::ZERO,
-                aspect: wgpu::TextureAspect::All
+                aspect: wgpu::TextureAspect::All,
             },
             wgpu::ImageCopyBuffer {
                 buffer: &self.output_buffer,
