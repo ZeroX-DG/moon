@@ -435,7 +435,8 @@ impl<'a> BlockFormattingContext<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{box_model::Rect, utils::*};
+    use crate::utils::*;
+    use shared::primitive::*;
     use test_utils::dom_creator::*;
 
     #[test]
