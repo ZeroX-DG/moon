@@ -34,7 +34,7 @@ struct Buffer<T> {
     label: &'static str,
     raw: wgpu::Buffer,
     size: usize,
-    usage: wgpu::BufferUsage,
+    usage: wgpu::BufferUsages,
     _type: std::marker::PhantomData<T>,
 }
 
@@ -51,7 +51,7 @@ impl<T> Buffer<T> {
         label: &'static str,
         device: &wgpu::Device,
         size: usize,
-        usage: wgpu::BufferUsage,
+        usage: wgpu::BufferUsages,
     ) -> Self {
         let raw = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some(label),
@@ -95,14 +95,13 @@ impl Pipeline {
                 env!("CARGO_MANIFEST_DIR"),
                 "/shaders/triangle.wgsl"
             )))),
-            flags: wgpu::ShaderFlags::default(),
         });
 
         let constants_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("moon::gfx::triangle uniforms layout"),
             entries: &[wgpu::BindGroupLayoutEntry {
                 binding: 0,
-                visibility: wgpu::ShaderStage::VERTEX,
+                visibility: wgpu::ShaderStages::VERTEX,
                 ty: wgpu::BindingType::Buffer {
                     ty: wgpu::BufferBindingType::Uniform,
                     has_dynamic_offset: false,
@@ -116,7 +115,7 @@ impl Pipeline {
             "moon::gfx::triangle uniforms buffer",
             device,
             UNIFORM_BUFFER_SIZE,
-            wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST,
+            wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         );
 
         let constant_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
@@ -148,7 +147,7 @@ impl Pipeline {
                 entry_point: "vs_main",
                 buffers: &[wgpu::VertexBufferLayout {
                     array_stride: std::mem::size_of::<Vertex>() as wgpu::BufferAddress,
-                    step_mode: wgpu::InputStepMode::Vertex,
+                    step_mode: wgpu::VertexStepMode::Vertex,
                     attributes: &wgpu::vertex_attr_array![
                         0 => Float32x2,
                         1 => Float32x4
@@ -174,7 +173,7 @@ impl Pipeline {
                             operation: wgpu::BlendOperation::Add,
                         },
                     }),
-                    write_mask: wgpu::ColorWrite::ALL,
+                    write_mask: wgpu::ColorWrites::ALL,
                 }],
             }),
             primitive: wgpu::PrimitiveState {
@@ -197,13 +196,13 @@ impl Pipeline {
                 "moon::gfx::triangle vertex buffer",
                 device,
                 VERTEX_BUFFER_SIZE,
-                wgpu::BufferUsage::VERTEX | wgpu::BufferUsage::COPY_DST,
+                wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
             ),
             index_buffer: Buffer::new(
                 "moon::gfx::triangle index buffer",
                 device,
                 INDEX_BUFFER_SIZE,
-                wgpu::BufferUsage::INDEX | wgpu::BufferUsage::COPY_DST,
+                wgpu::BufferUsages::INDEX | wgpu::BufferUsages::COPY_DST,
             ),
         }
     }

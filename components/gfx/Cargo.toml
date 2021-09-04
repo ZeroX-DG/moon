@@ -11,7 +11,7 @@ painting = { version="*", path="../painting" }
 shared = { version = "*", path = "../shared" }
 bytemuck = { version = "1.5.0", features = ["derive"] }
 lyon_tessellation = "0.17.7"
-wgpu = "0.9"
+wgpu = "0.10"
 log = "*"
 futures = "0.3.15"
 ultraviolet = { version = "0.8.1", features = [ "bytemuck", "int" ] }
