@@ -88,6 +88,10 @@ Bold text is what I'm working on
 
 I write about what I learn from this journey on my blog (order by latest):
 
+### Browser from Scratch: Layout
+
+A quick look into how the browser layout process works. - [**Read more**][5]
+
 ### Browser from Scratch: CSS parsing & processing
 
 A brief history of CSS & how browser process CSS values - [**Read more**][4]
@@ -116,3 +120,4 @@ This is the start of Browser from Scratch series, created to help me (and probab
 [2]: https://zerox-dg.github.io/blog/2020/09/01/Browser-from-Scratch-DOM-API/
 [3]: https://zerox-dg.github.io/blog/2020/10/24/Browser-from-Scratch-HTML-parsing/
 [4]: https://zerox-dg.github.io/blog/2021/01/13/Browser-from-Scratch-CSS-parsing-processing/
+[5]: https://zerox-dg.github.io/blog/2021/09/26/Browser-from-Scratch-Layout/
