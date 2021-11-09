@@ -17,9 +17,9 @@ fn read_file(path: String) -> String {
 #[tokio::main]
 async fn main() {
     let config = ConfigBuilder::new()
-        .add_filter_ignore_str("wgpu")
-        .add_filter_ignore_str("gfx_backend_vulkan")
-        .add_filter_ignore_str("naga")
+        // .add_filter_ignore_str("wgpu")
+        // .add_filter_ignore_str("gfx_backend_vulkan")
+        // .add_filter_ignore_str("naga")
         .set_target_level(LevelFilter::Info)
         .build();
     TermLogger::init(

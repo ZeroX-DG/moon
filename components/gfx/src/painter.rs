@@ -98,7 +98,7 @@ impl<'a> Painter<'a> {
     pub fn paint(&mut self) {
         let triangles = &self.rect_painter.vertex_buffers();
 
-        let request = DrawRequest { triangles };
+        let request = DrawRequest { triangles, texts: &[] };
 
         let mut encoder = self
             .device
