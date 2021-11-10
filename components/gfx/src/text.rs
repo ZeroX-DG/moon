@@ -18,7 +18,7 @@ impl Pipeline {
         format: wgpu::TextureFormat,
         default_font: Option<&[u8]>,
     ) -> Self {
-        let fallback = include_bytes!("../fonts/Lato-Regular.ttf");
+        const fallback: &[u8] = include_bytes!("../fonts/Lato-Regular.ttf");
         let default_font = default_font.map(|slice| slice.to_vec());
         let default_font = default_font.unwrap_or_else(|| fallback.to_vec());
 

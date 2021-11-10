@@ -17,9 +17,9 @@ fn read_file(path: String) -> String {
 #[tokio::main]
 async fn main() {
     let config = ConfigBuilder::new()
-        // .add_filter_ignore_str("wgpu")
-        // .add_filter_ignore_str("gfx_backend_vulkan")
-        // .add_filter_ignore_str("naga")
+        .add_filter_ignore_str("wgpu")
+        .add_filter_ignore_str("gfx_backend_vulkan")
+        .add_filter_ignore_str("naga")
         .set_target_level(LevelFilter::Info)
         .build();
     TermLogger::init(
@@ -30,20 +30,31 @@ async fn main() {
     )
     .unwrap();
 
-    let action = cli::get_action(cli::accept_cli());
+    //let action = cli::get_action(cli::accept_cli());
 
-    match action {
-        cli::Action::RenderOnce(params) => {
-            let html_code = read_file(params.html_path);
-            let viewport = params.viewport_size;
-            let output_path = params.output_path;
+//     match action {
+//         cli::Action::RenderOnce(_params) => {
+//             let html_code = read_file(params.html_path);
+//             let viewport = params.viewport_size;
+//             let output_path = params.output_path;
+// 
+//             let bitmap = render::render_once(html_code.to_string(), viewport).await;
+// 
+//             let (width, height) = viewport;
+// 
+//             let buffer = ImageBuffer::<Rgba<u8>, _>::from_raw(width, height, bitmap).unwrap();
+//             buffer.save(output_path).unwrap();
+//         }
+//     }
 
-            let bitmap = render::render_once(html_code, viewport).await;
+    let html_code = include_str!("../fixtures/test.html");
+    let viewport = (500, 300);
+    let output_path = "image.png";
 
-            let (width, height) = viewport;
+    let bitmap = render::render_once(html_code.to_string(), viewport).await;
 
-            let buffer = ImageBuffer::<Rgba<u8>, _>::from_raw(width, height, bitmap).unwrap();
-            buffer.save(output_path).unwrap();
-        }
-    }
+    let (width, height) = viewport;
+
+    let buffer = ImageBuffer::<Rgba<u8>, _>::from_raw(width, height, bitmap).unwrap();
+    buffer.save(output_path).unwrap();
 }
