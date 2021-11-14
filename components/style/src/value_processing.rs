@@ -103,6 +103,13 @@ impl ValueRef {
         }
     }
 
+    pub fn to_absolute_px(&self) -> f32 {
+        match self.borrow() {
+            Value::Length(l) => l.to_px(),
+            _ => 0.0,
+        }
+    }
+
     pub fn map<T, F>(&self, map_fn: F) -> T
     where
         F: FnOnce(&Value) -> T,

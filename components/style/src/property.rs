@@ -39,6 +39,7 @@ pub enum Property {
     Top,
     Bottom,
     Direction,
+    FontSize
 }
 
 impl Property {
@@ -68,6 +69,7 @@ impl Property {
             "border-top-right-radius" => Some(Property::BorderTopRightRadius),
             "border-bottom-left-radius" => Some(Property::BorderBottomLeftRadius),
             "border-bottom-right-radius" => Some(Property::BorderBottomRightRadius),
+            "font-size" => Some(Property::FontSize),
             _ => None,
         }
     }
