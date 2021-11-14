@@ -19,6 +19,7 @@ use super::expand::prelude::*;
 
 // computes
 use super::computes::color::compute_color;
+use super::computes::percentage::compute_percentage;
 
 type DeclaredValuesMap = HashMap<Property, Vec<PropertyDeclaration>>;
 
@@ -150,6 +151,7 @@ pub fn apply_styles(node: &NodeRef, rules: &[ContextualRule]) -> Properties {
 pub fn compute(property: &Property, value: &Value, context: &mut ComputeContext) -> ValueRef {
     match value {
         Value::Color(_) => compute_color(value, property, context),
+        Value::Percentage(_) if matches!(property, Property::FontSize) => compute_percentage(value, property, context),
         _ => {
             if !context.style_cache.contains(value) {
                 context.style_cache.insert(ValueRef::new(value.clone()));
