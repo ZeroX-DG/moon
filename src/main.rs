@@ -30,31 +30,31 @@ async fn main() {
     )
     .unwrap();
 
-    //let action = cli::get_action(cli::accept_cli());
+    let action = cli::get_action(cli::accept_cli());
 
-//     match action {
-//         cli::Action::RenderOnce(_params) => {
-//             let html_code = read_file(params.html_path);
-//             let viewport = params.viewport_size;
-//             let output_path = params.output_path;
+    match action {
+        cli::Action::RenderOnce(params) => {
+            let html_code = read_file(params.html_path);
+            let viewport = params.viewport_size;
+            let output_path = params.output_path;
+
+            let bitmap = render::render_once(html_code.to_string(), viewport).await;
+
+            let (width, height) = viewport;
+
+            let buffer = ImageBuffer::<Rgba<u8>, _>::from_raw(width, height, bitmap).unwrap();
+            buffer.save(output_path).unwrap();
+        }
+    }
+
+//     let html_code = include_str!("../fixtures/test_text.html");
+//     let viewport = (500, 300);
+//     let output_path = "image.png";
 // 
-//             let bitmap = render::render_once(html_code.to_string(), viewport).await;
+//     let bitmap = render::render_once(html_code.to_string(), viewport).await;
 // 
-//             let (width, height) = viewport;
+//     let (width, height) = viewport;
 // 
-//             let buffer = ImageBuffer::<Rgba<u8>, _>::from_raw(width, height, bitmap).unwrap();
-//             buffer.save(output_path).unwrap();
-//         }
-//     }
-
-    let html_code = include_str!("../fixtures/test.html");
-    let viewport = (500, 300);
-    let output_path = "image.png";
-
-    let bitmap = render::render_once(html_code.to_string(), viewport).await;
-
-    let (width, height) = viewport;
-
-    let buffer = ImageBuffer::<Rgba<u8>, _>::from_raw(width, height, bitmap).unwrap();
-    buffer.save(output_path).unwrap();
+//     let buffer = ImageBuffer::<Rgba<u8>, _>::from_raw(width, height, bitmap).unwrap();
+//     buffer.save(output_path).unwrap();
 }

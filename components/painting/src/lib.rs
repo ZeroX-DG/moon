@@ -30,6 +30,7 @@ fn draw(draw_command: DrawCommand, painter: &mut dyn Painter) {
     match draw_command {
         DrawCommand::FillRect(rect, color) => painter.fill_rect(rect, color),
         DrawCommand::FillRRect(rect, color) => painter.fill_rrect(rect, color),
+        DrawCommand::FillText(content, bounds, color, size) => painter.fill_text(content, bounds, color, size),
     }
 }
 
@@ -37,6 +38,7 @@ pub fn build_display_list(root: &LayoutNodeId, layout_tree: &LayoutTree) -> Disp
     let chain = PaintChainBuilder::new_chain()
         .with_function(&paint_border)
         .with_function(&paint_background)
+        .with_function(&paint_text)
         .build(layout_tree);
 
     chain.paint(root)

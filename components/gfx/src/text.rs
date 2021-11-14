@@ -1,6 +1,8 @@
 use wgpu_glyph::ab_glyph;
 use shared::{color::Color, primitive::rect::Rect};
 
+const FALLBACK: &[u8] = include_bytes!("../fonts/Lato-Regular.ttf");
+
 pub struct Text {
     pub content: String,
     pub bounds: Rect,
@@ -18,9 +20,8 @@ impl Pipeline {
         format: wgpu::TextureFormat,
         default_font: Option<&[u8]>,
     ) -> Self {
-        const fallback: &[u8] = include_bytes!("../fonts/Lato-Regular.ttf");
         let default_font = default_font.map(|slice| slice.to_vec());
-        let default_font = default_font.unwrap_or_else(|| fallback.to_vec());
+        let default_font = default_font.unwrap_or_else(|| FALLBACK.to_vec());
 
         let font = ab_glyph::FontArc::try_from_vec(default_font).unwrap_or_else(|_| {
             log::warn!(
@@ -28,7 +29,7 @@ impl Pipeline {
                     embedded font..."
             );
 
-            ab_glyph::FontArc::try_from_slice(fallback).expect("Load fallback font")
+            ab_glyph::FontArc::try_from_slice(FALLBACK).expect("Load fallback font")
         });
 
         let draw_brush = wgpu_glyph::GlyphBrushBuilder::using_font(font)

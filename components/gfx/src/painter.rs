@@ -1,12 +1,14 @@
 use super::backend::{Backend, DrawRequest};
 use super::Bitmap;
 use crate::painters::rect::RectPainter;
+use crate::painters::text::TextPainter;
 use futures::task::SpawnExt;
 use shared::color::Color;
 use shared::primitive::*;
 
 pub struct Painter<'a> {
     rect_painter: RectPainter,
+    text_painter: TextPainter,
     backend: Backend,
     device: wgpu::Device,
     queue: wgpu::Queue,
@@ -30,7 +32,7 @@ impl<'a> Painter<'a> {
             .request_adapter(&wgpu::RequestAdapterOptions {
                 power_preference: wgpu::PowerPreference::default(),
                 compatible_surface: None,
-                force_fallback_adapter: true
+                force_fallback_adapter: false
             })
             .await
             .unwrap();
@@ -71,6 +73,7 @@ impl<'a> Painter<'a> {
         Self {
             backend: Backend::new(&device, TEXTURE_FORMAT),
             rect_painter: RectPainter::new(),
+            text_painter: TextPainter::new(),
             device,
             queue,
             staging_belt,
@@ -96,9 +99,10 @@ impl<'a> Painter<'a> {
     }
 
     pub fn paint(&mut self) {
-        let triangles = &self.rect_painter.vertex_buffers();
+        let triangles = self.rect_painter.vertex_buffers();
+        let texts = self.text_painter.texts();
 
-        let request = DrawRequest { triangles, texts: &[] };
+        let request = DrawRequest { triangles, texts };
 
         let mut encoder = self
             .device
@@ -202,5 +206,9 @@ impl<'a> painting::Painter for Painter<'a> {
 
     fn fill_rrect(&mut self, rect: RRect, color: Color) {
         self.rect_painter.draw_solid_rrect(&rect, &color);
+    }
+
+    fn fill_text(&mut self, content: String, bounds: Rect, color: Color, size: f32) {
+        self.text_painter.fill_text(content, bounds, color, size);
     }
 }
