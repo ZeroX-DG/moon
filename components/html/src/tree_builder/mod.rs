@@ -30,7 +30,7 @@ fn is_trace() -> bool {
 
 macro_rules! trace {
     ($err:expr) => {
-        println!("[ParseError][HTML TreeBuilding]: {}", $err);
+        println!("[ParseError][HTML TreeBuilding]: {}", $err)
     };
 }
 

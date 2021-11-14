@@ -17,7 +17,7 @@ fn is_trace() -> bool {
 
 macro_rules! trace {
     ($err:expr) => {
-        println!("[ParseError][CSS Tokenization]: {}", $err);
+        println!("[ParseError][CSS Tokenization]: {}", $err)
     };
 }
 
