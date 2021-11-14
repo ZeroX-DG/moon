@@ -12,8 +12,8 @@ pub fn paint_text(layout_node: &LayoutNode) -> Option<DisplayCommand> {
             let content = text.get_data();
             // TODO: support text bounds width & height
             let mut bounds = layout_node.dimensions().content_box();
-            bounds.width = 100.;
-            bounds.height = 100.;
+            bounds.width = 1000.;
+            bounds.height = 1000.;
             let color = render_node.get_style(&Property::Color).map(color_from_value);
             let size = render_node.get_style(&Property::FontSize).to_absolute_px();
             return Some(DisplayCommand::Draw(DrawCommand::FillText(content, bounds, color, size)));

@@ -44,13 +44,6 @@ fn build_from_node(
         apply_styles(&node, &rules)
     };
 
-    // Filter head from render tree
-    if let Some(element) = node.borrow().as_element_opt() {
-        if element.tag_name() == "head" {
-            return None;
-        }
-    }
-
     // Filter display none from render tree
     if let Some(display_value) = properties.get(&Property::Display) {
         if let Some(value) = display_value {
