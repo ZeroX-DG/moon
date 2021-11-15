@@ -1,9 +1,9 @@
-use crate::property::Property;
+use crate::{property::Property, value_processing::StyleCache};
 
 use super::inheritable::INHERITABLES;
 use super::value_processing::ValueRef;
 use dom::dom_ref::NodeRef;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use tree::rctree::{TreeNodeRef, TreeNodeWeakRef};
 
 pub type RenderNodeRef = TreeNodeRef<RenderNode>;
@@ -14,7 +14,7 @@ pub struct RenderTree {
     /// The root node of the render tree
     pub root: Option<RenderNodeRef>,
     /// The style cache to share style value and reduce style size
-    pub style_cache: HashSet<ValueRef>,
+    pub style_cache: StyleCache,
 }
 
 /// A style node in the style tree

@@ -67,7 +67,23 @@ pub struct ContextualRule<'a> {
 pub struct ComputeContext<'a> {
     pub parent: &'a Option<RenderNodeWeak>,
     pub properties: HashMap<Property, Value>,
-    pub style_cache: &'a mut HashSet<ValueRef>,
+    pub style_cache: &'a mut StyleCache,
+}
+
+#[derive(Debug)]
+pub struct StyleCache(HashSet<ValueRef>);
+
+impl StyleCache {
+    pub fn new() -> Self {
+        Self(HashSet::new())
+    }
+
+    pub fn get(&mut self, value: &Value) -> ValueRef {
+        if !self.0.contains(value) {
+            self.0.insert(ValueRef::new(value.clone()));
+        }
+        self.0.get(value).unwrap().clone()
+    }
 }
 
 // TODO: drop the value from cache when rc is dropped to 1
@@ -152,12 +168,7 @@ pub fn compute(property: &Property, value: &Value, context: &mut ComputeContext)
     match property {
         Property::Color => compute_color(value, context),
         Property::FontSize => compute_font_size(value, context),
-        _ => {
-            if !context.style_cache.contains(value) {
-                context.style_cache.insert(ValueRef::new(value.clone()));
-            }
-            context.style_cache.get(value).unwrap().clone()
-        }
+        _ => context.style_cache.get(value)
     }
 }
 

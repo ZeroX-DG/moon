@@ -13,16 +13,8 @@ pub fn compute_color(value: &Value, context: &mut ComputeContext) -> ValueRef {
                 }
             }
             let value = Value::initial(&Property::Color);
-            if !context.style_cache.contains(&value) {
-                context.style_cache.insert(ValueRef::new(value.clone()));
-            }
-            context.style_cache.get(&value).unwrap().clone() 
+            context.style_cache.get(&value)
         },
-        _ => {
-            if !context.style_cache.contains(value) {
-                context.style_cache.insert(ValueRef::new(value.clone()));
-            }
-            context.style_cache.get(value).unwrap().clone()
-        }
+        _ => context.style_cache.get(value)
     }
 }

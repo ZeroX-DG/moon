@@ -21,16 +21,10 @@ pub fn compute_font_size(value: &Value, context: &mut ComputeContext) -> ValueRe
                 // TODO: investigate what will happen if we set percentage in font-size for
                 // HTML element
                 .unwrap_or(Value::Length(Length::new_px(percentage.to_px(BASE_FONT_SIZE))));
-            if !context.style_cache.contains(&value) {
-                context.style_cache.insert(ValueRef::new(value.clone()));
-            }
-            context.style_cache.get(&value).unwrap().clone() 
+            context.style_cache.get(&value)
         },
         Value::Length(Length { value: _, unit: LengthUnit::Px }) => {
-            if !context.style_cache.contains(value) {
-                context.style_cache.insert(ValueRef::new(value.clone()));
-            }
-            context.style_cache.get(value).unwrap().clone()
+            context.style_cache.get(value)
         },
         Value::Length(Length { value, unit: LengthUnit::Em }) => {
             let parent_font_size = context.parent.as_ref().map(|parent| {
@@ -44,10 +38,7 @@ pub fn compute_font_size(value: &Value, context: &mut ComputeContext) -> ValueRe
                 // TODO: investigate what will happen if we set percentage in font-size for
                 // HTML element
                 .unwrap_or(Value::Length(Length::new_px(value.0 * BASE_FONT_SIZE)));
-            if !context.style_cache.contains(&value) {
-                context.style_cache.insert(ValueRef::new(value.clone()));
-            }
-            context.style_cache.get(&value).unwrap().clone() 
+            context.style_cache.get(&value)
         }
         _ => unreachable!("Invalid value provided for font-size")
     }
