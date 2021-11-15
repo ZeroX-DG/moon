@@ -10,20 +10,26 @@ use style::value::Value;
 use style::values::display::{Display, InnerDisplayType};
 
 #[derive(Debug, Clone)]
+pub enum LayoutMode {
+    OnlyExplicitLineBreaks,
+    AllLineBreaks
+}
+
+#[derive(Debug, Clone)]
 pub struct LayoutContext {
     pub viewport: Rect,
 }
 
 pub trait FormattingContext {
-    fn run(&mut self, layout_node: &LayoutNodeId);
+    fn run(&mut self, layout_node: &LayoutNodeId, mode: LayoutMode);
 
     fn layout_tree(&self) -> &LayoutTree;
     fn layout_tree_mut(&mut self) -> &mut LayoutTree;
 
-    fn layout_content(&mut self, layout_node: &LayoutNodeId, layout_context: &LayoutContext) {
+    fn layout_content(&mut self, layout_node: &LayoutNodeId, layout_context: &LayoutContext, mode: LayoutMode) {
         let mut formatting_context =
             get_formatting_context(self.layout_tree_mut(), layout_node, layout_context);
-        formatting_context.run(layout_node);
+        formatting_context.run(layout_node, mode);
     }
 }
 

@@ -2,13 +2,9 @@ use std::any::Any;
 
 use style::{property::Property, render_tree::RenderNodeRef};
 
-use crate::{
-    box_model::{BoxComponent, Dimensions},
-    formatting_context::{FormattingContext, LayoutContext},
-    layout_box::{
+use crate::{box_model::{BoxComponent, Dimensions}, formatting_context::{FormattingContext, LayoutContext, LayoutMode}, layout_box::{
         apply_explicit_sizes, get_containing_block, LayoutBox, LayoutNode, LayoutNodeId, LayoutTree,
-    },
-};
+    }};
 
 use shared::primitive::edge::Edge;
 
@@ -217,7 +213,7 @@ impl<'a> InlineFormattingContext<'a> {
 }
 
 impl<'a> FormattingContext for InlineFormattingContext<'a> {
-    fn run(&mut self, layout_node_id: &LayoutNodeId) {
+    fn run(&mut self, layout_node_id: &LayoutNodeId, mode: LayoutMode) {
         let mut line_boxes = Vec::new();
 
         line_boxes.push(LineBox::new());
@@ -239,7 +235,7 @@ impl<'a> FormattingContext for InlineFormattingContext<'a> {
 
         for child_id in children {
             self.calculate_width(&child_id);
-            self.layout_content(&child_id, &self.layout_context);
+            self.layout_content(&child_id, &self.layout_context, mode.clone());
             self.apply_vertical_spacing(&child_id);
             apply_explicit_sizes(self.layout_tree_mut(), &child_id);
 

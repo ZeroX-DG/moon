@@ -2,11 +2,7 @@ use super::loader::frame::FrameLoader;
 use css::cssom::css_rule::CSSRule;
 use dom::dom_ref::NodeRef;
 
-use layout::{
-    flow::block::{BlockBox, BlockFormattingContext},
-    formatting_context::{FormattingContext, LayoutContext},
-    layout_box::{LayoutNodeId, LayoutTree},
-};
+use layout::{flow::block::{BlockBox, BlockFormattingContext}, formatting_context::{FormattingContext, LayoutContext, LayoutMode}, layout_box::{LayoutNodeId, LayoutTree}};
 use shared::primitive::Rect;
 use style::render_tree::RenderTree;
 use style::value_processing::{CSSLocation, CascadeOrigin, ContextualRule};
@@ -132,7 +128,7 @@ impl FrameLayout {
                 let mut formatting_context =
                     BlockFormattingContext::new(&layout_context, &mut self.layout_tree);
 
-                formatting_context.run(&initial_block_box);
+                formatting_context.run(&initial_block_box, LayoutMode::AllLineBreaks);
             }
         }
     }

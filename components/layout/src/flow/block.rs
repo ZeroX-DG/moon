@@ -2,14 +2,10 @@ use std::any::Any;
 
 use style::{property::Property, render_tree::RenderNodeRef, values::prelude::Position};
 
-use crate::{
-    box_model::{BoxComponent, Dimensions},
-    formatting_context::{FormattingContext, LayoutContext},
-    layout_box::{
+use crate::{box_model::{BoxComponent, Dimensions}, formatting_context::{FormattingContext, LayoutContext, LayoutMode}, layout_box::{
         apply_explicit_sizes, children_are_inline, get_containing_block, LayoutBox, LayoutNodeId,
         LayoutTree,
-    },
-};
+    }};
 
 use shared::primitive::edge::Edge;
 
@@ -76,14 +72,14 @@ pub struct BlockFormattingContext<'a> {
 }
 
 impl<'a> FormattingContext for BlockFormattingContext<'a> {
-    fn run(&mut self, layout_node_id: &LayoutNodeId) {
+    fn run(&mut self, layout_node_id: &LayoutNodeId, mode: LayoutMode) {
         let layout_node = self.layout_tree_mut().get_node_mut(layout_node_id);
         if layout_node.is_block() && layout_node.parent().is_none() {
-            self.layout_initial_block_box(layout_node_id);
+            self.layout_initial_block_box(layout_node_id, mode);
             return;
         }
 
-        self.layout_block_level_children(layout_node_id);
+        self.layout_block_level_children(layout_node_id, mode);
     }
 
     fn layout_tree(&self) -> &LayoutTree {
@@ -104,7 +100,7 @@ impl<'a> BlockFormattingContext<'a> {
         }
     }
 
-    fn layout_initial_block_box(&mut self, layout_node_id: &LayoutNodeId) {
+    fn layout_initial_block_box(&mut self, layout_node_id: &LayoutNodeId, mode: LayoutMode) {
         // Initial containing block has the dimensions of the viewport
         let width = self.layout_context.viewport.width;
         let height = self.layout_context.viewport.height;
@@ -115,10 +111,10 @@ impl<'a> BlockFormattingContext<'a> {
         block_box_dimensions.set_height(height);
         block_box_dimensions.set_position(0., 0.);
 
-        self.layout_block_level_children(layout_node_id);
+        self.layout_block_level_children(layout_node_id, mode);
     }
 
-    fn layout_block_level_children(&mut self, layout_node_id: &LayoutNodeId) {
+    fn layout_block_level_children(&mut self, layout_node_id: &LayoutNodeId, mode: LayoutMode) {
         let children = self
             .layout_tree()
             .children(layout_node_id)
@@ -141,7 +137,7 @@ impl<'a> BlockFormattingContext<'a> {
                 self.compute_position_non_replaced(&child);
             }
 
-            self.layout_content(&child, &self.layout_context);
+            self.layout_content(&child, &self.layout_context, mode.clone());
 
             if !children_are_inline(&self.layout_tree(), &child) {
                 self.compute_height(&child);
