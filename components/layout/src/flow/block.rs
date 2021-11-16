@@ -2,7 +2,7 @@ use std::any::Any;
 
 use style::{property::Property, render_tree::RenderNodeRef, values::prelude::Position};
 
-use crate::{box_model::{BoxComponent, Dimensions}, formatting_context::{FormattingContext, LayoutContext, LayoutMode}, layout_box::{
+use crate::{box_model::{BoxComponent, Dimensions}, formatting_context::{FormattingContext, LayoutContext}, layout_box::{
         apply_explicit_sizes, children_are_inline, get_containing_block, LayoutBox, LayoutNodeId,
         LayoutTree,
     }};
@@ -72,14 +72,14 @@ pub struct BlockFormattingContext<'a> {
 }
 
 impl<'a> FormattingContext for BlockFormattingContext<'a> {
-    fn run(&mut self, layout_node_id: &LayoutNodeId, mode: LayoutMode) {
+    fn run(&mut self, layout_node_id: &LayoutNodeId) {
         let layout_node = self.layout_tree_mut().get_node_mut(layout_node_id);
         if layout_node.is_block() && layout_node.parent().is_none() {
-            self.layout_initial_block_box(layout_node_id, mode);
+            self.layout_initial_block_box(layout_node_id);
             return;
         }
 
-        self.layout_block_level_children(layout_node_id, mode);
+        self.layout_block_level_children(layout_node_id);
     }
 
     fn layout_tree(&self) -> &LayoutTree {
@@ -100,7 +100,7 @@ impl<'a> BlockFormattingContext<'a> {
         }
     }
 
-    fn layout_initial_block_box(&mut self, layout_node_id: &LayoutNodeId, mode: LayoutMode) {
+    fn layout_initial_block_box(&mut self, layout_node_id: &LayoutNodeId) {
         // Initial containing block has the dimensions of the viewport
         let width = self.layout_context.viewport.width;
         let height = self.layout_context.viewport.height;
@@ -111,10 +111,10 @@ impl<'a> BlockFormattingContext<'a> {
         block_box_dimensions.set_height(height);
         block_box_dimensions.set_position(0., 0.);
 
-        self.layout_block_level_children(layout_node_id, mode);
+        self.layout_block_level_children(layout_node_id);
     }
 
-    fn layout_block_level_children(&mut self, layout_node_id: &LayoutNodeId, mode: LayoutMode) {
+    fn layout_block_level_children(&mut self, layout_node_id: &LayoutNodeId) {
         let children = self
             .layout_tree()
             .children(layout_node_id)
@@ -137,7 +137,7 @@ impl<'a> BlockFormattingContext<'a> {
                 self.compute_position_non_replaced(&child);
             }
 
-            self.layout_content(&child, &self.layout_context, mode.clone());
+            self.layout_content(&child, &self.layout_context);
 
             if !children_are_inline(&self.layout_tree(), &child) {
                 self.compute_height(&child);
@@ -476,7 +476,7 @@ mod tests {
 
         let mut formatting_context = BlockFormattingContext::new(&layout_context, &mut layout_tree);
 
-        formatting_context.run(&initial_block_box, LayoutMode::Default);
+        formatting_context.run(&initial_block_box);
 
         //println!("{}", layout_box.dump(&LayoutDumpSpecificity::StructureAndDimensions));
 
