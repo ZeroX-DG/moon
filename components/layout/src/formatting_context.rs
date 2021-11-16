@@ -11,6 +11,7 @@ use style::values::display::{Display, InnerDisplayType};
 
 #[derive(Debug, Clone)]
 pub enum LayoutMode {
+    Default,
     OnlyExplicitLineBreaks,
     AllLineBreaks
 }

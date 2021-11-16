@@ -476,7 +476,7 @@ mod tests {
 
         let mut formatting_context = BlockFormattingContext::new(&layout_context, &mut layout_tree);
 
-        formatting_context.run(&initial_block_box);
+        formatting_context.run(&initial_block_box, LayoutMode::Default);
 
         //println!("{}", layout_box.dump(&LayoutDumpSpecificity::StructureAndDimensions));
 

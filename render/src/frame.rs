@@ -128,7 +128,7 @@ impl FrameLayout {
                 let mut formatting_context =
                     BlockFormattingContext::new(&layout_context, &mut self.layout_tree);
 
-                formatting_context.run(&initial_block_box, LayoutMode::AllLineBreaks);
+                formatting_context.run(&initial_block_box, LayoutMode::Default);
             }
         }
     }
