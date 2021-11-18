@@ -39,7 +39,7 @@ pub enum Property {
     Top,
     Bottom,
     Direction,
-    FontSize
+    FontSize,
 }
 
 impl Property {

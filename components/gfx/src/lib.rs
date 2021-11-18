@@ -1,8 +1,8 @@
 mod backend;
 mod painter;
 mod painters;
-mod triangle;
 mod text;
+mod triangle;
 
 pub type Bitmap = Vec<u8>;
 

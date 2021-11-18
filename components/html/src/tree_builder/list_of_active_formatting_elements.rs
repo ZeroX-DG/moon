@@ -47,26 +47,33 @@ impl ListOfActiveFormattingElements {
     }
 
     pub fn remove_element(&mut self, element: &NodeRef) {
-        let remove_index = self.entries.iter().rposition(|entry| {
-            if let Entry::Element(el) = entry {
-                if el == element {
-                    return true;
+        let remove_index = self
+            .entries
+            .iter()
+            .rposition(|entry| {
+                if let Entry::Element(el) = entry {
+                    if el == element {
+                        return true;
+                    }
                 }
-            }
-            false
-        }).expect(&format!("Unable to find active element: {:?}", element));
+                false
+            })
+            .expect(&format!("Unable to find active element: {:?}", element));
         self.entries.remove(remove_index);
     }
 
     pub fn contains_node(&self, node: &NodeRef) -> bool {
-        self.entries.iter().rfind(|entry| {
-            if let Entry::Element(el) = entry {
-                if el == node {
-                    return true;
+        self.entries
+            .iter()
+            .rfind(|entry| {
+                if let Entry::Element(el) = entry {
+                    if el == node {
+                        return true;
+                    }
                 }
-            }
-            false
-        }).is_some()
+                false
+            })
+            .is_some()
     }
 
     pub fn get_index_of_node(&self, node: &NodeRef) -> Option<usize> {

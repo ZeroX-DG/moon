@@ -1,5 +1,5 @@
-use super::triangle;
 use super::text;
+use super::triangle;
 use lyon_tessellation::VertexBuffers;
 
 pub struct Backend {
@@ -9,14 +9,14 @@ pub struct Backend {
 
 pub struct DrawRequest<'a> {
     pub triangles: &'a [VertexBuffers<triangle::Vertex, triangle::Index>],
-    pub texts: &'a [text::Text]
+    pub texts: &'a [text::Text],
 }
 
 impl Backend {
     pub fn new(device: &wgpu::Device, texture_format: wgpu::TextureFormat) -> Self {
         Self {
             triangle_pipeline: triangle::Pipeline::new(device, texture_format),
-            text_pipeline: text::Pipeline::new(device, texture_format, None)
+            text_pipeline: text::Pipeline::new(device, texture_format, None),
         }
     }
 
@@ -64,7 +64,8 @@ impl Backend {
                 };
                 self.text_pipeline.queue(section)
             }
-            self.text_pipeline.draw_queued(device, staging_belt, encoder, target, size);
+            self.text_pipeline
+                .draw_queued(device, staging_belt, encoder, target, size);
         }
     }
 }

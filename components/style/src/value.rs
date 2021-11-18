@@ -218,7 +218,7 @@ impl Value {
             Property::FontSize => parse_value!(
                 Length | Percentage | Auto | Inherit | Initial | Unset;
                 tokens
-            )
+            ),
         }
     }
 

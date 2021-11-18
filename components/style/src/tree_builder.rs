@@ -1,6 +1,6 @@
 use crate::property::Property;
 use crate::value::Value;
-use crate::value_processing::{ComputeContext, Properties, StyleCache, compute};
+use crate::value_processing::{compute, ComputeContext, Properties, StyleCache};
 use crate::values::display::{Display, DisplayBox};
 use dom::dom_ref::NodeRef;
 use strum::IntoEnumIterator;

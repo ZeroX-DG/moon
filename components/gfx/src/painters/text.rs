@@ -3,14 +3,12 @@ use shared::{color::Color, primitive::Rect};
 use crate::text::Text;
 
 pub struct TextPainter {
-    texts: Vec<Text>
+    texts: Vec<Text>,
 }
 
 impl TextPainter {
     pub fn new() -> Self {
-        Self {
-            texts: Vec::new()
-        }
+        Self { texts: Vec::new() }
     }
 
     pub fn fill_text(&mut self, content: String, bounds: Rect, color: Color, size: f32) {
@@ -18,7 +16,7 @@ impl TextPainter {
             content,
             bounds,
             color,
-            size
+            size,
         })
     }
 

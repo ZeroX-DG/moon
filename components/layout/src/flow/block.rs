@@ -2,10 +2,14 @@ use std::any::Any;
 
 use style::{property::Property, render_tree::RenderNodeRef, values::prelude::Position};
 
-use crate::{box_model::{BoxComponent, Dimensions}, formatting_context::{FormattingContext, LayoutContext}, layout_box::{
+use crate::{
+    box_model::{BoxComponent, Dimensions},
+    formatting_context::{FormattingContext, LayoutContext},
+    layout_box::{
         apply_explicit_sizes, children_are_inline, get_containing_block, LayoutBox, LayoutNodeId,
         LayoutTree,
-    }};
+    },
+};
 
 use shared::primitive::edge::Edge;
 

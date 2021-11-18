@@ -1,6 +1,6 @@
 use css::parser::Parser;
-use css::tokenizer::Tokenizer;
 use css::tokenizer::token::Token;
+use css::tokenizer::Tokenizer;
 use dom::document::Document;
 use dom::dom_ref::NodeRef;
 use dom::node::{Node, NodeData};
@@ -20,7 +20,8 @@ impl FrameLoader {
         let tokenizer = Tokenizer::new(default_css.chars());
         let mut parser = Parser::<Token>::new(tokenizer.run());
         let stylesheet = parser.parse_a_css_stylesheet();
-        document.borrow_mut()
+        document
+            .borrow_mut()
             .as_document_mut()
             .append_stylesheet(stylesheet);
 

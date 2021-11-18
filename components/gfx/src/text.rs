@@ -1,5 +1,5 @@
-use wgpu_glyph::ab_glyph;
 use shared::{color::Color, primitive::rect::Rect};
+use wgpu_glyph::ab_glyph;
 
 const FALLBACK: &[u8] = include_bytes!("../fonts/Lato-Regular.ttf");
 
@@ -7,7 +7,7 @@ pub struct Text {
     pub content: String,
     pub bounds: Rect,
     pub size: f32,
-    pub color: Color
+    pub color: Color,
 }
 
 pub struct Pipeline {
@@ -50,18 +50,11 @@ impl Pipeline {
         staging_belt: &mut wgpu::util::StagingBelt,
         encoder: &mut wgpu::CommandEncoder,
         target: &wgpu::TextureView,
-        size: (u32, u32)
+        size: (u32, u32),
     ) {
         let (width, height) = size;
         self.draw_brush
-            .draw_queued(
-                device,
-                staging_belt,
-                encoder,
-                target,
-                width,
-                height
-            )
+            .draw_queued(device, staging_belt, encoder, target, width, height)
             .expect("Draw text");
     }
 }

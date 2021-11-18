@@ -2,7 +2,11 @@ use super::loader::frame::FrameLoader;
 use css::cssom::css_rule::CSSRule;
 use dom::dom_ref::NodeRef;
 
-use layout::{flow::block::{BlockBox, BlockFormattingContext}, formatting_context::{FormattingContext, LayoutContext}, layout_box::{LayoutNodeId, LayoutTree}};
+use layout::{
+    flow::block::{BlockBox, BlockFormattingContext},
+    formatting_context::{FormattingContext, LayoutContext},
+    layout_box::{LayoutNodeId, LayoutTree},
+};
 use shared::primitive::Rect;
 use style::render_tree::RenderTree;
 use style::value_processing::{CSSLocation, CascadeOrigin, ContextualRule};

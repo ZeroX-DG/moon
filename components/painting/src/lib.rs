@@ -30,7 +30,9 @@ fn draw(draw_command: DrawCommand, painter: &mut dyn Painter) {
     match draw_command {
         DrawCommand::FillRect(rect, color) => painter.fill_rect(rect, color),
         DrawCommand::FillRRect(rect, color) => painter.fill_rrect(rect, color),
-        DrawCommand::FillText(content, bounds, color, size) => painter.fill_text(content, bounds, color, size),
+        DrawCommand::FillText(content, bounds, color, size) => {
+            painter.fill_text(content, bounds, color, size)
+        }
     }
 }
 

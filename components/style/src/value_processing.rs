@@ -168,7 +168,7 @@ pub fn compute(property: &Property, value: &Value, context: &mut ComputeContext)
     match property {
         Property::Color => compute_color(value, context),
         Property::FontSize => compute_font_size(value, context),
-        _ => context.style_cache.get(value)
+        _ => context.style_cache.get(value),
     }
 }
 
