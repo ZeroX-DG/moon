@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Color {
     pub r: u8,
     pub g: u8,
@@ -16,5 +16,16 @@ impl Default for Color {
             b: 0,
             a: 0,
         }
+    }
+}
+
+impl Into<[f32; 4]> for Color {
+    fn into(self) -> [f32; 4] {
+        [
+            self.r as f32 / 255.,
+            self.g as f32 / 255.,
+            self.b as f32 / 255.,
+            self.a as f32 / 255.,
+        ]
     }
 }

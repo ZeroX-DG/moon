@@ -18,7 +18,7 @@ fn is_trace() -> bool {
 
 macro_rules! trace {
     ($err:expr) => {
-        println!("[ParseError][Tokenization]: {}", $err);
+        println!("[ParseError][Tokenization]: {}", $err)
     };
 }
 

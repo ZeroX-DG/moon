@@ -215,6 +215,10 @@ impl Value {
                 BorderRadius | Inherit | Initial | Unset;
                 tokens
             ),
+            Property::FontSize => parse_value!(
+                Length | Percentage | Auto | Inherit | Initial | Unset;
+                tokens
+            ),
         }
     }
 
@@ -256,6 +260,8 @@ impl Value {
             Property::BorderTopRightRadius => Value::BorderRadius(BorderRadius::zero()),
             Property::BorderBottomLeftRadius => Value::BorderRadius(BorderRadius::zero()),
             Property::BorderBottomRightRadius => Value::BorderRadius(BorderRadius::zero()),
+            // TODO: replace with `medium` when we support absolute size
+            Property::FontSize => Value::Length(Length::new_px(12.)),
         }
     }
 }

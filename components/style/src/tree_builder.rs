@@ -1,6 +1,6 @@
 use crate::property::Property;
 use crate::value::Value;
-use crate::value_processing::{compute, ComputeContext, Properties};
+use crate::value_processing::{compute, ComputeContext, Properties, StyleCache};
 use crate::values::display::{Display, DisplayBox};
 use dom::dom_ref::NodeRef;
 use strum::IntoEnumIterator;
@@ -9,13 +9,13 @@ use tree::rctree::TreeNodeRef;
 use super::inheritable::INHERITABLES;
 use super::render_tree::{RenderNode, RenderNodeRef, RenderNodeWeak, RenderTree};
 use super::value_processing::{apply_styles, ContextualRule, ValueRef};
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 pub struct TreeBuilder;
 
 impl TreeBuilder {
     pub fn build(node: NodeRef, rules: &[ContextualRule]) -> RenderTree {
-        let mut style_cache = HashSet::new();
+        let mut style_cache = StyleCache::new();
         let render_root = if node.is_document() {
             // the first child is HTML tag
             node.borrow().first_child()
@@ -36,20 +36,13 @@ fn build_from_node(
     node: NodeRef,
     rules: &[ContextualRule],
     parent: Option<RenderNodeWeak>,
-    cache: &mut HashSet<ValueRef>,
+    cache: &mut StyleCache,
 ) -> Option<RenderNodeRef> {
     let properties = if node.is_text() {
         HashMap::new()
     } else {
         apply_styles(&node, &rules)
     };
-
-    // Filter head from render tree
-    if let Some(element) = node.borrow().as_element_opt() {
-        if element.tag_name() == "head" {
-            return None;
-        }
-    }
 
     // Filter display none from render tree
     if let Some(display_value) = properties.get(&Property::Display) {
@@ -80,7 +73,7 @@ fn build_from_node(
 fn compute_styles(
     properties: Properties,
     parent: Option<RenderNodeWeak>,
-    cache: &mut HashSet<ValueRef>,
+    cache: &mut StyleCache,
 ) -> HashMap<Property, ValueRef> {
     // get inherit value for a property
     let inherit = |property: Property| {
@@ -160,10 +153,7 @@ fn compute_styles(
                 _ => false,
             };
             let computed_value = if is_not_compute {
-                if !context.style_cache.contains(&value) {
-                    context.style_cache.insert(ValueRef::new(value.clone()));
-                }
-                context.style_cache.get(&value).unwrap().clone()
+                context.style_cache.get(&value)
             } else {
                 compute(&property, &value, &mut context)
             };

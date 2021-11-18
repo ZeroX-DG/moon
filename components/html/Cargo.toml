@@ -13,6 +13,7 @@ criterion = "0.3"
 dom = { path = "../dom", version = "*" }
 phf = { version = "0.8.0", features = ["macros"] }
 io  = { path = "../io", version = "*" }
+log = "*"
 
 [[bench]]
 name = "html_processing"

@@ -19,6 +19,7 @@ use super::expand::prelude::*;
 
 // computes
 use super::computes::color::compute_color;
+use super::computes::font_size::compute_font_size;
 
 type DeclaredValuesMap = HashMap<Property, Vec<PropertyDeclaration>>;
 
@@ -66,7 +67,23 @@ pub struct ContextualRule<'a> {
 pub struct ComputeContext<'a> {
     pub parent: &'a Option<RenderNodeWeak>,
     pub properties: HashMap<Property, Value>,
-    pub style_cache: &'a mut HashSet<ValueRef>,
+    pub style_cache: &'a mut StyleCache,
+}
+
+#[derive(Debug)]
+pub struct StyleCache(HashSet<ValueRef>);
+
+impl StyleCache {
+    pub fn new() -> Self {
+        Self(HashSet::new())
+    }
+
+    pub fn get(&mut self, value: &Value) -> ValueRef {
+        if !self.0.contains(value) {
+            self.0.insert(ValueRef::new(value.clone()));
+        }
+        self.0.get(value).unwrap().clone()
+    }
 }
 
 // TODO: drop the value from cache when rc is dropped to 1
@@ -99,6 +116,13 @@ impl ValueRef {
         match self.borrow() {
             Value::Length(l) => l.to_px(),
             Value::Percentage(p) => p.to_px(relative_to),
+            _ => 0.0,
+        }
+    }
+
+    pub fn to_absolute_px(&self) -> f32 {
+        match self.borrow() {
+            Value::Length(l) => l.to_px(),
             _ => 0.0,
         }
     }
@@ -141,14 +165,10 @@ pub fn apply_styles(node: &NodeRef, rules: &[ContextualRule]) -> Properties {
 
 /// Resolve specified values to computed values
 pub fn compute(property: &Property, value: &Value, context: &mut ComputeContext) -> ValueRef {
-    match value {
-        Value::Color(_) => compute_color(value, property, context),
-        _ => {
-            if !context.style_cache.contains(value) {
-                context.style_cache.insert(ValueRef::new(value.clone()));
-            }
-            context.style_cache.get(value).unwrap().clone()
-        }
+    match property {
+        Property::Color => compute_color(value, context),
+        Property::FontSize => compute_font_size(value, context),
+        _ => context.style_cache.get(value),
     }
 }
 

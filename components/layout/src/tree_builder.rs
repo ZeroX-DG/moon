@@ -136,9 +136,8 @@ impl TreeBuilder {
     }
 
     fn build_box_by_display(&self, node: &RenderNodeRef) -> Option<Box<dyn LayoutBox>> {
-        // TODO: support text
         if node.borrow().node.is_text() {
-            return None;
+            return Some(Box::new(InlineBox::new(node.clone())));
         }
 
         let display = node.borrow().get_style(&Property::Display);

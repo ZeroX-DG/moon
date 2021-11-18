@@ -38,7 +38,7 @@ async fn main() {
             let viewport = params.viewport_size;
             let output_path = params.output_path;
 
-            let bitmap = render::render_once(html_code, viewport).await;
+            let bitmap = render::render_once(html_code.to_string(), viewport).await;
 
             let (width, height) = viewport;
 
@@ -46,4 +46,15 @@ async fn main() {
             buffer.save(output_path).unwrap();
         }
     }
+
+    //     let html_code = include_str!("../fixtures/test_text.html");
+    //     let viewport = (500, 300);
+    //     let output_path = "image.png";
+    //
+    //     let bitmap = render::render_once(html_code.to_string(), viewport).await;
+    //
+    //     let (width, height) = viewport;
+    //
+    //     let buffer = ImageBuffer::<Rgba<u8>, _>::from_raw(width, height, bitmap).unwrap();
+    //     buffer.save(output_path).unwrap();
 }
