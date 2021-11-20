@@ -1,16 +1,17 @@
+use std::rc::Rc;
+
 use css::selector::parse_selector_str;
 use css::selector::structs::*;
 use dom::create_element;
 use dom::document::Document;
-use dom::dom_ref::NodeRef;
 use dom::node::{Node, NodeData};
 use dom::text::Text;
 
-pub fn document() -> NodeRef {
-    NodeRef::new(Node::new(NodeData::Document(Document::new())))
+pub fn document() -> Rc<Node> {
+    Rc::new(Node::new(NodeData::Document(Document::new())))
 }
 
-pub fn element(selector: &str, doc: NodeRef, children: Vec<NodeRef>) -> NodeRef {
+pub fn element(selector: &str, doc: Rc<Node>, children: Vec<Rc<Node>>) -> Rc<Node> {
     let selector =
         parse_selector_str(selector).expect("Unable to parse selector in test_utils#element");
 
@@ -29,14 +30,13 @@ pub fn element(selector: &str, doc: NodeRef, children: Vec<NodeRef>) -> NodeRef 
         .clone()
         .unwrap();
 
-    let node = create_element(doc.downgrade(), &tag_name);
+    let node = create_element(Rc::downgrade(&doc), &tag_name);
     let mut classes = Vec::new();
 
     for part in selector_parts {
         match part.selector_type() {
             SimpleSelectorType::ID => {
-                node.borrow_mut()
-                    .as_element_mut()
+                node.as_element()
                     .set_attribute("id", &part.value().clone().unwrap());
             }
             SimpleSelectorType::Class => {
@@ -47,8 +47,7 @@ pub fn element(selector: &str, doc: NodeRef, children: Vec<NodeRef>) -> NodeRef 
     }
 
     if classes.len() > 0 {
-        node.borrow_mut()
-            .as_element_mut()
+        node.as_element()
             .set_attribute("class", &classes.join(" ").to_string());
     }
 
@@ -60,8 +59,8 @@ pub fn element(selector: &str, doc: NodeRef, children: Vec<NodeRef>) -> NodeRef 
 
 pub fn create_elemt_recursively() {}
 
-pub fn text(value: &str, doc: NodeRef) -> NodeRef {
-    let text_node = NodeRef::new(Node::new(NodeData::Text(Text::new(value.to_string()))));
-    text_node.borrow_mut().set_document(doc.downgrade());
+pub fn text(value: &str, doc: Rc<Node>) -> Rc<Node> {
+    let text_node = Rc::new(Node::new(NodeData::Text(Text::new(value.to_string()))));
+    text_node.set_document(Rc::downgrade(&doc));
     text_node
 }

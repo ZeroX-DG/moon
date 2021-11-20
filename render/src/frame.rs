@@ -1,7 +1,9 @@
+use std::rc::Rc;
+
 use super::loader::frame::FrameLoader;
 use css::cssom::css_rule::CSSRule;
-use dom::dom_ref::NodeRef;
 
+use dom::node::Node;
 use layout::{
     flow::block::{BlockBox, BlockFormattingContext},
     formatting_context::{FormattingContext, LayoutContext},
@@ -14,7 +16,7 @@ use style::value_processing::{CSSLocation, CascadeOrigin, ContextualRule};
 pub type FrameSize = (u32, u32);
 
 pub struct Frame {
-    document: Option<NodeRef>,
+    document: Option<Rc<Node>>,
     layout: FrameLayout,
     size: FrameSize,
 }
@@ -26,7 +28,7 @@ pub struct FrameLayout {
 
 #[derive(Debug)]
 pub enum ReflowType {
-    All(NodeRef),
+    All(Rc<Node>),
     LayoutOnly,
 }
 
@@ -48,7 +50,7 @@ impl Frame {
         self.size.clone()
     }
 
-    pub fn set_document(&mut self, document: NodeRef) {
+    pub fn set_document(&mut self, document: Rc<Node>) {
         self.document = Some(document.clone());
         self.layout.reflow(self.size, ReflowType::All(document));
     }
@@ -78,11 +80,9 @@ impl FrameLayout {
         &self.layout_tree
     }
 
-    pub fn recalculate_styles(&mut self, document: NodeRef) {
-        let document_clone = document.clone();
-        let document_borrow = document_clone.borrow();
-        let document_borrow = document_borrow.as_document();
-        let stylesheets = document_borrow.stylesheets();
+    pub fn recalculate_styles(&mut self, document_node: Rc<Node>) {
+        let document = document_node.as_document();
+        let stylesheets = document.stylesheets();
         // TODO: cache this step so we don't have to flat map on every reflow
         let contextual_rules: Vec<ContextualRule> = stylesheets
             .iter()
@@ -99,7 +99,7 @@ impl FrameLayout {
 
         log::debug!("Building render tree");
         self.render_tree = Some(style::tree_builder::TreeBuilder::build(
-            document,
+            document_node,
             &contextual_rules,
         ));
         log::debug!("Finished render tree");

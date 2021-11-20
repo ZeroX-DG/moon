@@ -1,7 +1,9 @@
-use dom::dom_ref::NodeRef;
+use std::rc::Rc;
 
-pub fn print_dom_tree(root: NodeRef, level: usize) {
-    let child_nodes = root.borrow().child_nodes();
+use dom::node::Node;
+
+pub fn print_dom_tree(root: Rc<Node>, level: usize) {
+    let child_nodes = root.child_nodes();
     println!(
         "{}{:#?}({} child)",
         "    ".repeat(level),

@@ -1,4 +1,7 @@
-use super::dom_ref::NodeRef;
+use std::rc::Rc;
+
+use crate::node::Node;
+
 use super::node::NodeHooks;
 use enum_dispatch::enum_dispatch;
 
@@ -36,7 +39,7 @@ pub enum ElementData {
 #[enum_dispatch]
 trait ElementHooks {
     #[allow(unused_variables)]
-    fn on_attribute_change(&mut self, attr: &str, value: &str) {}
+    fn on_attribute_change(&self, attr: &str, value: &str) {}
 }
 
 #[enum_dispatch]
@@ -47,11 +50,11 @@ pub trait ElementMethods {
 }
 
 impl ElementData {
-    pub fn handle_attribute_change(&mut self, attr: &str, value: &str) {
+    pub fn handle_attribute_change(&self, attr: &str, value: &str) {
         self.on_attribute_change(attr, value);
     }
 
-    pub fn handle_on_inserted(&mut self, document: NodeRef) {
+    pub fn handle_on_inserted(&self, document: Rc<Node>) {
         self.on_inserted(document);
     }
 }

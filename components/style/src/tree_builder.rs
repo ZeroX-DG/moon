@@ -2,7 +2,7 @@ use crate::property::Property;
 use crate::value::Value;
 use crate::value_processing::{compute, ComputeContext, Properties, StyleCache};
 use crate::values::display::{Display, DisplayBox};
-use dom::dom_ref::NodeRef;
+use dom::node::Node;
 use strum::IntoEnumIterator;
 use tree::rctree::TreeNodeRef;
 
@@ -10,15 +10,16 @@ use super::inheritable::INHERITABLES;
 use super::render_tree::{RenderNode, RenderNodeRef, RenderNodeWeak, RenderTree};
 use super::value_processing::{apply_styles, ContextualRule, ValueRef};
 use std::collections::HashMap;
+use std::rc::Rc;
 
 pub struct TreeBuilder;
 
 impl TreeBuilder {
-    pub fn build(node: NodeRef, rules: &[ContextualRule]) -> RenderTree {
+    pub fn build(node: Rc<Node>, rules: &[ContextualRule]) -> RenderTree {
         let mut style_cache = StyleCache::new();
         let render_root = if node.is_document() {
             // the first child is HTML tag
-            node.borrow().first_child()
+            node.first_child()
         } else {
             Some(node)
         };
@@ -33,7 +34,7 @@ impl TreeBuilder {
 }
 
 fn build_from_node(
-    node: NodeRef,
+    node: Rc<Node>,
     rules: &[ContextualRule],
     parent: Option<RenderNodeWeak>,
     cache: &mut StyleCache,
@@ -61,7 +62,6 @@ fn build_from_node(
     });
 
     render_node.borrow_mut().children = node
-        .borrow()
         .child_nodes()
         .into_iter() // this is fine because we clone the node when iterate
         .filter_map(|child| build_from_node(child, &rules, Some(render_node.downgrade()), cache))

@@ -1,7 +1,10 @@
+use std::cell::RefCell;
+use std::rc::Rc;
+
 use super::ElementHooks;
 use super::ElementMethods;
 use crate::document_loader::LoadRequest;
-use crate::dom_ref::NodeRef;
+use crate::node::Node;
 use crate::node::NodeHooks;
 use url::Url;
 
@@ -10,8 +13,8 @@ use css::tokenizer::{token::Token, Tokenizer};
 
 #[derive(Debug)]
 pub struct HTMLLinkElement {
-    href: Option<Url>,
-    relationship: Option<HTMLLinkRelationship>,
+    href: RefCell<Option<Url>>,
+    relationship: RefCell<Option<HTMLLinkRelationship>>,
 }
 
 #[derive(Debug)]
@@ -22,12 +25,12 @@ pub enum HTMLLinkRelationship {
 impl HTMLLinkElement {
     pub fn empty() -> Self {
         Self {
-            href: None,
-            relationship: None,
+            href: RefCell::new(None),
+            relationship: RefCell::new(None),
         }
     }
 
-    pub fn load_stylesheet(&self, url: &Url, document: NodeRef) {
+    pub fn load_stylesheet(&self, url: &Url, document: Rc<Node>) {
         let cloned_doc = document.clone();
         let raw_url = url.raw().to_string();
 
@@ -41,8 +44,7 @@ impl HTMLLinkElement {
                 let stylesheet = parser.parse_a_css_stylesheet();
 
                 cloned_doc
-                    .borrow_mut()
-                    .as_document_mut()
+                    .as_document()
                     .append_stylesheet(stylesheet);
             }))
             .on_error(Box::new(move |e| {
@@ -50,7 +52,6 @@ impl HTMLLinkElement {
             }));
 
         let loader = document
-            .borrow()
             .as_document()
             .loader()
             .expect("Document loader is not set");
@@ -59,10 +60,10 @@ impl HTMLLinkElement {
 }
 
 impl ElementHooks for HTMLLinkElement {
-    fn on_attribute_change(&mut self, attr: &str, value: &str) {
+    fn on_attribute_change(&self, attr: &str, value: &str) {
         match attr {
             "href" => {
-                self.href = match Url::parse(value) {
+                *self.href.borrow_mut() = match Url::parse(value) {
                     Ok(url) => Some(url),
                     Err(_) => {
                         log::info!("Invalid href URL: {}", value);
@@ -72,7 +73,7 @@ impl ElementHooks for HTMLLinkElement {
             }
             "rel" => {
                 if value == "stylesheet" {
-                    self.relationship = Some(HTMLLinkRelationship::Stylesheet);
+                    *self.relationship.borrow_mut() = Some(HTMLLinkRelationship::Stylesheet);
                 }
             }
             _ => {}
@@ -81,9 +82,9 @@ impl ElementHooks for HTMLLinkElement {
 }
 
 impl NodeHooks for HTMLLinkElement {
-    fn on_inserted(&mut self, document: NodeRef) {
-        match &self.href {
-            Some(url) => match self.relationship {
+    fn on_inserted(&self, document: Rc<Node>) {
+        match &*self.href.borrow() {
+            Some(url) => match *self.relationship.borrow() {
                 Some(HTMLLinkRelationship::Stylesheet) => self.load_stylesheet(url, document),
                 _ => {}
             },

@@ -1,18 +1,20 @@
+use std::cell::RefCell;
+
 #[derive(Debug)]
 pub struct CharacterData {
-    data: String,
+    data: RefCell<String>,
 }
 
 impl CharacterData {
     pub fn new(data: String) -> Self {
-        Self { data }
+        Self { data: RefCell::new(data) }
     }
 
     pub fn get_data(&self) -> String {
-        return self.data.clone();
+        return self.data.borrow().clone();
     }
 
-    pub fn append_data(&mut self, data: &str) {
-        self.data.push_str(data);
+    pub fn append_data(&self, data: &str) {
+        self.data.borrow_mut().push_str(data);
     }
 }

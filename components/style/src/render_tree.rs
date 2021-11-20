@@ -2,8 +2,8 @@ use crate::{property::Property, value_processing::StyleCache};
 
 use super::inheritable::INHERITABLES;
 use super::value_processing::ValueRef;
-use dom::dom_ref::NodeRef;
-use std::collections::HashMap;
+use std::{collections::HashMap, rc::Rc};
+use dom::node::Node;
 use tree::rctree::{TreeNodeRef, TreeNodeWeakRef};
 
 pub type RenderNodeRef = TreeNodeRef<RenderNode>;
@@ -21,7 +21,7 @@ pub struct RenderTree {
 #[derive(Debug)]
 pub struct RenderNode {
     /// A reference to the DOM node that uses this style
-    pub node: NodeRef,
+    pub node: Rc<Node>,
     /// A property HashMap containing computed styles
     pub properties: HashMap<Property, ValueRef>,
     /// Child style nodes

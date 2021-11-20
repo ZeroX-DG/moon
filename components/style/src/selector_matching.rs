@@ -1,9 +1,10 @@
-use css::selector::structs::*;
-use dom::dom_ref::NodeRef;
-use dom::element::Element;
+use std::rc::Rc;
 
-fn get_parent(el: &NodeRef) -> Option<NodeRef> {
-    let parent = el.borrow().parent();
+use css::selector::structs::*;
+use dom::{element::Element, node::Node};
+
+fn get_parent(el: &Rc<Node>) -> Option<Rc<Node>> {
+    let parent = el.parent();
     if let Some(p) = parent {
         if p.is_element() {
             return Some(p);
@@ -12,17 +13,17 @@ fn get_parent(el: &NodeRef) -> Option<NodeRef> {
     None
 }
 
-fn get_prev_sibling(el: &NodeRef) -> Option<NodeRef> {
-    el.borrow().prev_sibling()
+fn get_prev_sibling(el: &Rc<Node>) -> Option<Rc<Node>> {
+    el.prev_sibling()
 }
 
-pub fn is_match_selectors(element: &NodeRef, selectors: &Vec<Selector>) -> bool {
+pub fn is_match_selectors(element: &Rc<Node>, selectors: &Vec<Selector>) -> bool {
     selectors
         .iter()
         .any(|selector| is_match_selector(element.clone(), selector))
 }
 
-pub fn is_match_selector(element: NodeRef, selector: &Selector) -> bool {
+pub fn is_match_selector(element: Rc<Node>, selector: &Selector) -> bool {
     let mut current_element = Some(element);
     for (selector_seq, combinator) in selector.values().iter().rev() {
         if let Some(el) = current_element.clone() {
@@ -80,8 +81,7 @@ pub fn is_match_selector(element: NodeRef, selector: &Selector) -> bool {
     true
 }
 
-fn is_match_simple_selector_seq(element: &NodeRef, sequence: &SimpleSelectorSequence) -> bool {
-    let element = element.borrow();
+fn is_match_simple_selector_seq(element: &Rc<Node>, sequence: &SimpleSelectorSequence) -> bool {
     let element = element.as_element();
     sequence
         .values()
@@ -100,13 +100,13 @@ fn is_match_simple_selector(element: &Element, selector: &SimpleSelector) -> boo
         }
         SimpleSelectorType::Class => {
             if let Some(type_name) = selector.value() {
-                return element.class_list().contains(&type_name);
+                return element.class_list().borrow().contains(&type_name);
             }
             false
         }
         SimpleSelectorType::ID => {
             if let Some(id) = selector.value() {
-                return element.id() == id;
+                return element.id().map(|value | value == *id).unwrap_or(false);
             }
             false
         }
@@ -127,7 +127,7 @@ mod tests {
 
     #[test]
     fn match_simple_type() {
-        let element = create_element(document().downgrade(), "h1");
+        let element = create_element(Rc::downgrade(&document()), "h1");
         let css = "h1 { color: red; }";
 
         let tokenizer = Tokenizer::new(css.chars());
@@ -147,10 +147,9 @@ mod tests {
 
     #[test]
     fn match_simple_id() {
-        let element_node = create_element(document().downgrade(), "h1");
+        let element_node = create_element(Rc::downgrade(&document()), "h1");
         element_node
-            .borrow_mut()
-            .as_element_mut()
+            .as_element()
             .set_attribute("id", "button");
         let css = "h1#button { color: red; }";
 
@@ -172,8 +171,8 @@ mod tests {
     #[test]
     fn match_simple_decendant() {
         let doc = document();
-        let parent = create_element(doc.clone().downgrade(), "h1");
-        let child = create_element(doc.clone().downgrade(), "button");
+        let parent = create_element(Rc::downgrade(&doc), "h1");
+        let child = create_element(Rc::downgrade(&doc), "button");
         Node::append_child(parent.clone(), child.clone());
 
         let css = "h1 button { color: red; }";
@@ -196,8 +195,8 @@ mod tests {
     #[test]
     fn match_simple_child() {
         let doc = document();
-        let parent = create_element(doc.clone().downgrade(), "h1");
-        let child = create_element(doc.clone().downgrade(), "button");
+        let parent = create_element(Rc::downgrade(&doc), "h1");
+        let child = create_element(Rc::downgrade(&doc), "button");
         Node::append_child(parent.clone(), child.clone());
 
         let css = "h1 > button { color: red; }";
@@ -220,8 +219,8 @@ mod tests {
     #[test]
     fn match_invalid_child() {
         let doc = document();
-        let parent = create_element(doc.clone().downgrade(), "h1");
-        let child = create_element(doc.clone().downgrade(), "button");
+        let parent = create_element(Rc::downgrade(&doc), "h1");
+        let child = create_element(Rc::downgrade(&doc), "button");
         Node::append_child(parent.clone(), child.clone());
 
         let css = "button > h1 { color: red; }";
@@ -244,8 +243,8 @@ mod tests {
     #[test]
     fn match_invalid_id() {
         let doc = document();
-        let parent = create_element(doc.clone().downgrade(), "h1");
-        let child = create_element(doc.clone().downgrade(), "button");
+        let parent = create_element(Rc::downgrade(&doc), "h1");
+        let child = create_element(Rc::downgrade(&doc), "button");
         Node::append_child(parent.clone(), child.clone());
 
         let css = "h1#name > button { color: red; }";
@@ -268,8 +267,8 @@ mod tests {
     #[test]
     fn match_group_of_types() {
         let doc = document();
-        let parent = create_element(doc.clone().downgrade(), "h1");
-        let child = create_element(doc.clone().downgrade(), "button");
+        let parent = create_element(Rc::downgrade(&doc), "h1");
+        let child = create_element(Rc::downgrade(&doc), "button");
         Node::append_child(parent.clone(), child.clone());
 
         let css = "h1, button { color: red; }";

@@ -1,16 +1,17 @@
+use dom::node::Node;
+
 use super::Element;
-use super::NodeRef;
-use std::ops::{Deref, DerefMut};
+use std::{ops::{Deref, DerefMut}, rc::Rc};
 
 const BASE_LIST: [&str; 9] = [
     "applet", "caption", "html", "table", "td", "th", "marquee", "object", "template",
 ];
 
 #[derive(Debug)]
-pub struct StackOfOpenElements(pub Vec<NodeRef>);
+pub struct StackOfOpenElements(pub Vec<Rc<Node>>);
 
 impl Deref for StackOfOpenElements {
-    type Target = Vec<NodeRef>;
+    type Target = Vec<Rc<Node>>;
     fn deref(&self) -> &Self::Target {
         &self.0
     }
@@ -27,21 +28,20 @@ impl StackOfOpenElements {
         Self(Vec::new())
     }
 
-    pub fn current_node(&self) -> Option<NodeRef> {
+    pub fn current_node(&self) -> Option<Rc<Node>> {
         if let Some(node) = self.0.last() {
             return Some(node.clone());
         }
         None
     }
 
-    pub fn get(&self, index: usize) -> NodeRef {
+    pub fn get(&self, index: usize) -> Rc<Node> {
         return self.0[index].clone();
     }
 
-    pub fn last_element_with_tag_name(&self, tag_name: &str) -> Option<(&NodeRef, usize)> {
+    pub fn last_element_with_tag_name(&self, tag_name: &str) -> Option<(&Rc<Node>, usize)> {
         for (i, node) in self.0.iter().rev().enumerate() {
-            let node_borrow = node.borrow();
-            let element = node_borrow.as_element();
+            let element = node.as_element();
             if element.tag_name() == tag_name {
                 return Some((&node, i));
             }
@@ -51,7 +51,6 @@ impl StackOfOpenElements {
 
     pub fn pop_until(&mut self, tag_name: &str) {
         while let Some(node) = self.current_node() {
-            let node = node.borrow();
             let element = node.as_element();
             if element.tag_name() == tag_name {
                 self.0.pop();
@@ -66,7 +65,6 @@ impl StackOfOpenElements {
         F: Fn(&Element) -> bool,
     {
         while let Some(node) = self.current_node() {
-            let node = node.borrow();
             let element = node.as_element();
             if test(element) {
                 self.0.pop();
@@ -78,7 +76,6 @@ impl StackOfOpenElements {
 
     pub fn clear_back_to_table_context(&mut self) {
         while let Some(node) = self.current_node() {
-            let node = node.borrow();
             let element = node.as_element();
             let element_tag_name = element.tag_name();
             if element_tag_name == "table"
@@ -93,7 +90,7 @@ impl StackOfOpenElements {
 
     pub fn remove_first_matching<F>(&mut self, test: F)
     where
-        F: Fn(&NodeRef) -> bool,
+        F: Fn(&Rc<Node>) -> bool,
     {
         for (i, node) in self.0.iter().rev().enumerate() {
             if test(node) {
@@ -105,14 +102,13 @@ impl StackOfOpenElements {
 
     pub fn any<F>(&self, test: F) -> bool
     where
-        F: Fn(&NodeRef) -> bool,
+        F: Fn(&Rc<Node>) -> bool,
     {
         self.0.iter().any(test)
     }
 
     pub fn has_element_name_in_specific_scope(&self, target: &str, list: Vec<&str>) -> bool {
         for node in self.0.iter().rev() {
-            let node = node.borrow();
             let element = node.as_element();
             if element.tag_name() == target {
                 return true;
@@ -160,13 +156,12 @@ impl StackOfOpenElements {
         return self.has_element_name_in_specific_scope(target, list);
     }
 
-    pub fn has_element_in_specific_scope(&self, target: &NodeRef, list: Vec<&str>) -> bool {
+    pub fn has_element_in_specific_scope(&self, target: &Rc<Node>, list: Vec<&str>) -> bool {
         for node in self.0.iter().rev() {
-            if node == target {
+            if Rc::ptr_eq(node, target) {
                 return true;
             }
 
-            let node = node.borrow();
             let element = node.as_element();
 
             if list.contains(&element.tag_name().as_str()) {
@@ -176,13 +171,12 @@ impl StackOfOpenElements {
         return false;
     }
 
-    pub fn has_element_in_scope(&self, target: &NodeRef) -> bool {
+    pub fn has_element_in_scope(&self, target: &Rc<Node>) -> bool {
         self.has_element_in_specific_scope(target, BASE_LIST.to_vec())
     }
 
     pub fn contains(&self, tag_name: &str) -> bool {
         self.any(|node| {
-            let node = node.borrow();
             let element = node.as_element();
             if element.tag_name() == tag_name {
                 return true;
@@ -191,8 +185,8 @@ impl StackOfOpenElements {
         })
     }
 
-    pub fn contains_node(&self, node: &NodeRef) -> bool {
-        self.any(|fnode| *fnode == *node)
+    pub fn contains_node(&self, node: &Rc<Node>) -> bool {
+        self.any(|fnode| Rc::ptr_eq(fnode, node))
     }
 
     pub fn len(&self) -> usize {
