@@ -1,7 +1,10 @@
 use dom::node::Node;
 
 use super::Element;
-use std::{ops::{Deref, DerefMut}, rc::Rc};
+use std::{
+    ops::{Deref, DerefMut},
+    rc::Rc,
+};
 
 const BASE_LIST: [&str; 9] = [
     "applet", "caption", "html", "table", "td", "th", "marquee", "object", "template",

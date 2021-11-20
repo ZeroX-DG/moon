@@ -106,7 +106,7 @@ fn is_match_simple_selector(element: &Element, selector: &SimpleSelector) -> boo
         }
         SimpleSelectorType::ID => {
             if let Some(id) = selector.value() {
-                return element.id().map(|value | value == *id).unwrap_or(false);
+                return element.id().map(|value| value == *id).unwrap_or(false);
             }
             false
         }
@@ -148,9 +148,7 @@ mod tests {
     #[test]
     fn match_simple_id() {
         let element_node = create_element(Rc::downgrade(&document()), "h1");
-        element_node
-            .as_element()
-            .set_attribute("id", "button");
+        element_node.as_element().set_attribute("id", "button");
         let css = "h1#button { color: red; }";
 
         let tokenizer = Tokenizer::new(css.chars());

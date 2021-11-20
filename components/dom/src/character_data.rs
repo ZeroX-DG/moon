@@ -7,7 +7,9 @@ pub struct CharacterData {
 
 impl CharacterData {
     pub fn new(data: String) -> Self {
-        Self { data: RefCell::new(data) }
+        Self {
+            data: RefCell::new(data),
+        }
     }
 
     pub fn get_data(&self) -> String {

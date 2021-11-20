@@ -158,9 +158,11 @@ impl Node {
             previous_sibling.next_sibling.replace(node.next_sibling());
         }
         if let Some(next_sibling) = node.next_sibling() {
-            next_sibling.prev_sibling.replace(node.prev_sibling.borrow().clone());
+            next_sibling
+                .prev_sibling
+                .replace(node.prev_sibling.borrow().clone());
         }
-        if let Some(parent) = node.parent() {  
+        if let Some(parent) = node.parent() {
             let first_child = parent.first_child().unwrap();
             let last_child = parent.last_child().unwrap();
 
@@ -240,7 +242,9 @@ impl Node {
             // the inserted child will become reference child previous sibling
             if let Some(prev_sibling) = ref_child.prev_sibling() {
                 prev_sibling.next_sibling.replace(Some(child.clone()));
-                child.prev_sibling.replace(Some(Rc::downgrade(&prev_sibling)));
+                child
+                    .prev_sibling
+                    .replace(Some(Rc::downgrade(&prev_sibling)));
             } else {
                 // otherwise this is the first child of parent
                 // update first child
@@ -323,12 +327,12 @@ mod test {
     use super::*;
 
     pub fn assert_node_eq(a: NullableNode, b: NullableNode) {
-        let result =match (a, b) {
+        let result = match (a, b) {
             (None, None) => true,
             (Some(a), Some(b)) => Rc::ptr_eq(&a, &b),
-            _ => false
+            _ => false,
         };
-    
+
         assert!(result)
     }
 

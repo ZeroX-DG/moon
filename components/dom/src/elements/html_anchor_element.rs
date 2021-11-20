@@ -12,7 +12,9 @@ pub struct HTMLAnchorElement {
 
 impl HTMLAnchorElement {
     pub fn empty() -> Self {
-        Self { href: RefCell::new(None) }
+        Self {
+            href: RefCell::new(None),
+        }
     }
 }
 

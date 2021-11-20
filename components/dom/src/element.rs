@@ -88,7 +88,9 @@ impl Element {
             *self.class_list.borrow_mut() = DOMTokenList::from(value);
             return;
         }
-        self.attributes.borrow_mut().insert(name.to_owned(), value.to_owned());
+        self.attributes
+            .borrow_mut()
+            .insert(name.to_owned(), value.to_owned());
         self.data.handle_attribute_change(name, value);
     }
 

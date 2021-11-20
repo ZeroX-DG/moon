@@ -345,7 +345,9 @@ impl<T: Tokenizing> TreeBuilder<T> {
         };
         let element_ref = dom::create_element(Rc::downgrade(&self.document), &tag_name);
         for attribute in attributes {
-            element_ref.as_element().set_attribute(&attribute.name, &attribute.value);
+            element_ref
+                .as_element()
+                .set_attribute(&attribute.name, &attribute.value);
         }
         element_ref
     }
@@ -429,11 +431,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
 
     fn insert_character(&mut self, ch: char) {
         let insert_position = self.get_appropriate_place_for_inserting_a_node(None);
-        if insert_position
-            .parent()
-            .as_document_opt()
-            .is_some()
-        {
+        if insert_position.parent().as_document_opt().is_some() {
             return;
         }
         match &insert_position {
@@ -716,7 +714,8 @@ impl<T: Tokenizing> TreeBuilder<T> {
                     if let Some(index) = self.active_formatting_elements.get_index_of_node(&node) {
                         index
                     } else {
-                        self.open_elements.remove_first_matching(|n| Rc::ptr_eq(n, &node));
+                        self.open_elements
+                            .remove_first_matching(|n| Rc::ptr_eq(n, &node));
                         continue;
                     }
                 };
@@ -803,7 +802,14 @@ impl<T: Tokenizing> TreeBuilder<T> {
     fn close_p_element(&mut self) {
         self.generate_implied_end_tags("p");
 
-        if self.open_elements.current_node().unwrap().as_element().tag_name() != "p" {
+        if self
+            .open_elements
+            .current_node()
+            .unwrap()
+            .as_element()
+            .tag_name()
+            != "p"
+        {
             emit_error!("Expected p element");
         }
 
@@ -1651,7 +1657,12 @@ impl<T: Tokenizing> TreeBuilder<T> {
                 self.close_p_element();
             }
 
-            let current_tag_name = self.open_elements.current_node().unwrap().as_element().tag_name();
+            let current_tag_name = self
+                .open_elements
+                .current_node()
+                .unwrap()
+                .as_element()
+                .tag_name();
 
             if match_any!(current_tag_name, "h1", "h2", "h3", "h4", "h5", "h6") {
                 self.unexpected(&token);
@@ -3246,9 +3257,6 @@ mod test {
             a.as_element().attributes().borrow().get_str("href"),
             "http://google.com".to_string()
         );
-        assert_eq!(
-            a.child_text_content(),
-            "This is a link".to_string()
-        );
+        assert_eq!(a.child_text_content(), "This is a link".to_string());
     }
 }

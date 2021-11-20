@@ -2,8 +2,8 @@ use crate::{property::Property, value_processing::StyleCache};
 
 use super::inheritable::INHERITABLES;
 use super::value_processing::ValueRef;
-use std::{collections::HashMap, rc::Rc};
 use dom::node::Node;
+use std::{collections::HashMap, rc::Rc};
 use tree::rctree::{TreeNodeRef, TreeNodeWeakRef};
 
 pub type RenderNodeRef = TreeNodeRef<RenderNode>;

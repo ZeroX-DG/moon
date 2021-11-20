@@ -43,9 +43,7 @@ impl HTMLLinkElement {
                 let mut parser = Parser::<Token>::new(tokenizer.run());
                 let stylesheet = parser.parse_a_css_stylesheet();
 
-                cloned_doc
-                    .as_document()
-                    .append_stylesheet(stylesheet);
+                cloned_doc.as_document().append_stylesheet(stylesheet);
             }))
             .on_error(Box::new(move |e| {
                 log::info!("Unable to load CSS: {} ({})", e, raw_url)
