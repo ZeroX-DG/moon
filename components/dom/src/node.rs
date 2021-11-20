@@ -1,19 +1,24 @@
 use super::comment::Comment;
 use super::document::Document;
-use super::dom_ref::{NodeRef, WeakNodeRef};
 use super::element::Element;
 use super::elements::ElementData;
 use super::node_list::NodeList;
 use super::text::Text;
 use enum_dispatch::enum_dispatch;
+use std::cell::RefCell;
+use std::ops::Deref;
+use std::rc::{Rc, Weak};
+
+pub type NullableWeakNode = Option<Weak<Node>>;
+pub type NullableNode = Option<Rc<Node>>;
 
 pub struct Node {
-    parent_node: Option<WeakNodeRef>,
-    first_child: Option<NodeRef>,
-    last_child: Option<WeakNodeRef>,
-    next_sibling: Option<NodeRef>,
-    prev_sibling: Option<WeakNodeRef>,
-    owner_document: Option<WeakNodeRef>,
+    parent_node: RefCell<NullableWeakNode>,
+    first_child: RefCell<NullableNode>,
+    last_child: RefCell<NullableNode>,
+    next_sibling: RefCell<NullableNode>,
+    prev_sibling: RefCell<NullableWeakNode>,
+    owner_document: RefCell<NullableWeakNode>,
     data: Option<NodeData>,
 }
 
@@ -28,17 +33,17 @@ pub enum NodeData {
 #[enum_dispatch]
 pub trait NodeHooks {
     #[allow(unused_variables)]
-    fn on_inserted(&mut self, document: NodeRef) {}
+    fn on_inserted(&self, document: Rc<Node>) {}
 }
 
 impl core::fmt::Debug for Node {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "Node({:?})", self.data)
+        write!(f, "{:?}", self.data)
     }
 }
 
 impl NodeData {
-    pub fn handle_on_inserted(&mut self, document: NodeRef) {
+    pub fn handle_on_inserted(&self, document: Rc<Node>) {
         self.on_inserted(document);
     }
 }
@@ -63,19 +68,19 @@ impl Node {
 
     pub fn empty() -> Self {
         Self {
-            parent_node: None,
-            first_child: None,
-            last_child: None,
-            next_sibling: None,
-            prev_sibling: None,
-            owner_document: None,
+            parent_node: RefCell::new(None),
+            first_child: RefCell::new(None),
+            last_child: RefCell::new(None),
+            next_sibling: RefCell::new(None),
+            prev_sibling: RefCell::new(None),
+            owner_document: RefCell::new(None),
             data: None,
         }
     }
 
     /// Set the owner document for node
-    pub fn set_document(&mut self, doc: WeakNodeRef) {
-        self.owner_document = Some(doc);
+    pub fn set_document(&self, doc: Weak<Node>) {
+        self.owner_document.replace(Some(doc));
     }
 
     /// Children list
@@ -84,43 +89,40 @@ impl Node {
     }
 
     /// First child of the node
-    pub fn first_child(&self) -> Option<NodeRef> {
-        self.first_child.clone()
+    pub fn first_child(&self) -> NullableNode {
+        self.first_child.borrow().clone()
     }
 
     /// Last child of the node
-    pub fn last_child(&self) -> Option<NodeRef> {
-        match &self.last_child {
-            Some(node) => node.clone().upgrade(),
-            _ => None,
-        }
+    pub fn last_child(&self) -> NullableNode {
+        self.last_child.borrow().clone()
     }
 
     /// Next sibling of the node
-    pub fn next_sibling(&self) -> Option<NodeRef> {
-        self.next_sibling.clone()
+    pub fn next_sibling(&self) -> NullableNode {
+        self.next_sibling.borrow().clone()
     }
 
     /// Previous sibling of the node
-    pub fn prev_sibling(&self) -> Option<NodeRef> {
-        match &self.prev_sibling {
-            Some(node) => node.clone().upgrade(),
+    pub fn prev_sibling(&self) -> NullableNode {
+        match self.prev_sibling.borrow().deref() {
+            Some(node) => node.upgrade(),
             _ => None,
         }
     }
 
     /// Parent of the node
-    pub fn parent(&self) -> Option<NodeRef> {
-        match &self.parent_node {
-            Some(node) => node.clone().upgrade(),
+    pub fn parent(&self) -> NullableNode {
+        match self.parent_node.borrow().deref() {
+            Some(node) => node.upgrade(),
             _ => None,
         }
     }
 
     /// Owner document of the node
-    pub fn owner_document(&self) -> Option<NodeRef> {
-        match &self.owner_document {
-            Some(node) => node.clone().upgrade(),
+    pub fn owner_document(&self) -> NullableNode {
+        match self.owner_document.borrow().deref() {
+            Some(node) => node.upgrade(),
             _ => None,
         }
     }
@@ -133,7 +135,7 @@ impl Node {
         }
         let mut result = String::new();
         for child in self.child_nodes() {
-            result.push_str(&child.borrow().descendant_text_content());
+            result.push_str(&child.descendant_text_content());
         }
         result
     }
@@ -143,7 +145,7 @@ impl Node {
     pub fn child_text_content(&self) -> String {
         let mut result = String::new();
         for child in self.child_nodes() {
-            if let Some(text) = child.borrow().as_text_opt() {
+            if let Some(text) = child.as_text_opt() {
                 result.push_str(&text.get_data());
             }
         }
@@ -151,65 +153,41 @@ impl Node {
     }
 
     /// Detach node from the parent
-    pub fn detach(node_ref: &NodeRef) {
-        let mut node = node_ref.borrow_mut();
+    pub fn detach(node: Rc<Node>) {
+        if let Some(previous_sibling) = node.prev_sibling() {
+            previous_sibling.next_sibling.replace(node.next_sibling());
+        }
+        if let Some(next_sibling) = node.next_sibling() {
+            next_sibling
+                .prev_sibling
+                .replace(node.prev_sibling.borrow().clone());
+        }
+        if let Some(parent) = node.parent() {
+            let first_child = parent.first_child().unwrap();
+            let last_child = parent.last_child().unwrap();
 
-        let parent = node.parent();
-
-        if let Some(parent) = parent {
-            let mut parent_node = parent.borrow_mut();
-            {
-                let first_child = parent_node.first_child().unwrap();
-                let last_child = parent_node.last_child().unwrap();
-
-                if *node_ref == first_child {
-                    parent_node.first_child = node.next_sibling();
-                } else if *node_ref == last_child {
-                    parent_node.last_child = node.prev_sibling.clone();
-                }
-            }
-
-            let mut child = parent_node.first_child();
-
-            while let Some(c) = child {
-                if c == *node_ref {
-                    let inner = c.borrow_mut();
-                    let previous_sibling = inner.prev_sibling();
-                    let next_sibling = inner.next_sibling();
-
-                    if let Some(prev) = previous_sibling {
-                        if let Some(next) = next_sibling {
-                            prev.borrow_mut().next_sibling = Some(next.clone());
-                            next.borrow_mut().prev_sibling = Some(prev.downgrade());
-                        } else {
-                            prev.borrow_mut().next_sibling = None;
-                        }
-                    } else {
-                        if let Some(next) = next_sibling {
-                            next.borrow_mut().prev_sibling = None;
-                        }
-                    }
-                    break;
-                } else {
-                    child = c.borrow().next_sibling();
-                }
+            if Rc::ptr_eq(&node, &first_child) {
+                parent.first_child.replace(node.next_sibling());
+            } else if Rc::ptr_eq(&node, &last_child) {
+                parent.last_child.replace(node.prev_sibling());
             }
         }
 
-        node.parent_node = None;
-        node.prev_sibling = None;
-        node.next_sibling = None;
+        node.parent_node.replace(None);
+        node.prev_sibling.replace(None);
+        node.next_sibling.replace(None);
     }
 
     /// Transfer parent of nodes
-    pub fn reparent_nodes_in_node(old_parent: NodeRef, new_parent: NodeRef) {
-        let mut old = old_parent.borrow_mut();
-        let mut new = new_parent.borrow_mut();
-        new.first_child = old.first_child.take();
-        new.last_child = old.last_child.take();
+    pub fn reparent_nodes_in_node(old_parent: Rc<Node>, new_parent: Rc<Node>) {
+        for child in new_parent.child_nodes() {
+            Node::detach(child);
+        }
+        new_parent.first_child.replace(old_parent.first_child());
+        new_parent.last_child.replace(old_parent.last_child());
 
-        for child in new.child_nodes() {
-            child.borrow_mut().parent_node = Some(new_parent.clone().downgrade());
+        for child in new_parent.child_nodes() {
+            child.parent_node.replace(Some(Rc::downgrade(&new_parent)));
         }
     }
 
@@ -221,28 +199,24 @@ impl Node {
     /// 3. The child parent is this parent
     /// 4. The next-to-last child of the parent next sibling is the child if the parent has more
     ///    than 1 child
-    pub fn append_child(parent: NodeRef, child: NodeRef) {
+    pub fn append_child(parent: Rc<Node>, child: Rc<Node>) {
         // detach from parent
-        Node::detach(&child);
+        Node::detach(child.clone());
 
-        let mut parent_node = parent.borrow_mut();
-
-        let mut child_node = child.borrow_mut();
-
-        if let Some(last_child) = parent_node.last_child() {
-            last_child.borrow_mut().next_sibling = Some(child.clone());
-            child_node.prev_sibling = Some(last_child.clone().downgrade());
+        if let Some(last_child) = parent.last_child() {
+            last_child.next_sibling.replace(Some(child.clone()));
+            child.prev_sibling.replace(Some(Rc::downgrade(&last_child)));
         }
 
-        child_node.parent_node = Some(parent.clone().downgrade());
+        child.parent_node.replace(Some(Rc::downgrade(&parent)));
 
-        if parent_node.first_child().is_none() {
-            parent_node.first_child = Some(child.clone());
+        if parent.first_child().is_none() {
+            parent.first_child.replace(Some(child.clone()));
         }
 
-        parent_node.last_child = Some(child.clone().downgrade());
-        let document = child_node.owner_document().clone().unwrap();
-        if let Some(data) = &mut child_node.data {
+        parent.last_child.replace(Some(child.clone()));
+        let document = child.owner_document().clone().unwrap();
+        if let Some(data) = &child.data {
             data.handle_on_inserted(document);
         }
     }
@@ -258,32 +232,28 @@ impl Node {
     /// 5. The next sibling of the inserted child is the reference child
     /// 6. The previous sibling of the inserted node is the node before the reference node
     /// 7. The parent of the inserted child is the parent
-    pub fn insert_before(parent: NodeRef, child: NodeRef, ref_child: Option<NodeRef>) {
-        Node::detach(&child);
+    pub fn insert_before(parent: Rc<Node>, child: Rc<Node>, ref_child: Option<Rc<Node>>) {
+        Node::detach(child.clone());
         if let Some(ref_child) = ref_child {
-            let mut ref_child_node = ref_child.borrow_mut();
-
-            let mut parent_node = parent.borrow_mut();
-
-            let mut child_node = child.borrow_mut();
-
             // set parent of inserted node to be this parent
-            child_node.parent_node = Some(parent.clone().downgrade());
+            child.parent_node.replace(Some(Rc::downgrade(&parent)));
 
             // if the reference child has previous sibling (not first child)
             // the inserted child will become reference child previous sibling
-            if let Some(prev_sibling) = ref_child_node.prev_sibling() {
-                prev_sibling.borrow_mut().next_sibling = Some(child.clone());
-                child_node.prev_sibling = Some(prev_sibling.clone().downgrade());
+            if let Some(prev_sibling) = ref_child.prev_sibling() {
+                prev_sibling.next_sibling.replace(Some(child.clone()));
+                child
+                    .prev_sibling
+                    .replace(Some(Rc::downgrade(&prev_sibling)));
             } else {
                 // otherwise this is the first child of parent
                 // update first child
-                parent_node.first_child = Some(child.clone());
+                parent.first_child.replace(Some(child.clone()));
             }
 
             // set inserted child to be new previous sibling of ref child
-            ref_child_node.prev_sibling = Some(child.clone().downgrade());
-            child_node.next_sibling = Some(ref_child.clone());
+            ref_child.prev_sibling.replace(Some(Rc::downgrade(&child)));
+            child.next_sibling.replace(Some(ref_child.clone()));
         } else {
             Node::append_child(parent, child);
         }
@@ -298,22 +268,8 @@ impl Node {
         }
     }
 
-    pub fn as_text_mut_opt(&mut self) -> Option<&mut Text> {
-        match &mut self.data {
-            Some(NodeData::Text(text)) => Some(text),
-            _ => None,
-        }
-    }
-
     pub fn as_element_opt(&self) -> Option<&Element> {
         match &self.data {
-            Some(NodeData::Element(element)) => Some(element),
-            _ => None,
-        }
-    }
-
-    pub fn as_element_mut_opt(&mut self) -> Option<&mut Element> {
-        match &mut self.data {
             Some(NodeData::Element(element)) => Some(element),
             _ => None,
         }
@@ -326,22 +282,8 @@ impl Node {
         }
     }
 
-    pub fn as_document_mut_opt(&mut self) -> Option<&mut Document> {
-        match &mut self.data {
-            Some(NodeData::Document(doc)) => Some(doc),
-            _ => None,
-        }
-    }
-
     pub fn as_comment_opt(&self) -> Option<&Comment> {
         match &self.data {
-            Some(NodeData::Comment(com)) => Some(com),
-            _ => None,
-        }
-    }
-
-    pub fn as_comment_mut_opt(&mut self) -> Option<&mut Comment> {
-        match &mut self.data {
             Some(NodeData::Comment(com)) => Some(com),
             _ => None,
         }
@@ -351,28 +293,32 @@ impl Node {
         self.as_element_opt().expect("Node is not an Element")
     }
 
-    pub fn as_element_mut(&mut self) -> &mut Element {
-        self.as_element_mut_opt().expect("Node is not an Element")
-    }
-
     pub fn as_document(&self) -> &Document {
         self.as_document_opt().expect("Node is not a Document")
-    }
-
-    pub fn as_document_mut(&mut self) -> &mut Document {
-        self.as_document_mut_opt().expect("Node is not a Document")
     }
 
     pub fn as_comment(&self) -> &Comment {
         self.as_comment_opt().expect("Node is not a Comment")
     }
 
-    pub fn as_comment_mut(&mut self) -> &mut Comment {
-        self.as_comment_mut_opt().expect("Node is not a Comment")
-    }
-
     pub fn as_text(&self) -> &Text {
         self.as_text_opt().expect("Node is not a Text")
+    }
+
+    pub fn is_element(&self) -> bool {
+        self.as_element_opt().is_some()
+    }
+
+    pub fn is_document(&self) -> bool {
+        self.as_document_opt().is_some()
+    }
+
+    pub fn is_comment(&self) -> bool {
+        self.as_comment_opt().is_some()
+    }
+
+    pub fn is_text(&self) -> bool {
+        self.as_text_opt().is_some()
     }
 }
 
@@ -380,117 +326,127 @@ impl Node {
 mod test {
     use super::*;
 
+    pub fn assert_node_eq(a: NullableNode, b: NullableNode) {
+        let result = match (a, b) {
+            (None, None) => true,
+            (Some(a), Some(b)) => Rc::ptr_eq(&a, &b),
+            _ => false,
+        };
+
+        assert!(result)
+    }
+
     #[test]
     fn append_child_first_child() {
-        let parent = NodeRef::new(Node::empty());
-        let child = NodeRef::new(Node::empty());
+        let parent = Rc::new(Node::empty());
+        let child = Rc::new(Node::empty());
 
-        let doc = NodeRef::new(Node::new(NodeData::Document(Document::new())));
+        let doc = Rc::new(Node::new(NodeData::Document(Document::new())));
 
-        parent.borrow_mut().set_document(doc.clone().downgrade());
-        child.borrow_mut().set_document(doc.clone().downgrade());
+        parent.set_document(Rc::downgrade(&doc));
+        child.set_document(Rc::downgrade(&doc));
 
         Node::append_child(parent.clone(), child.clone());
 
-        assert_eq!(parent.borrow().first_child(), Some(child.clone()));
-        assert_eq!(parent.borrow().last_child(), Some(child.clone()));
-        assert_eq!(child.borrow().parent(), Some(parent.clone()));
-        assert_eq!(child.borrow().prev_sibling(), None);
-        assert_eq!(child.borrow().next_sibling(), None);
+        assert_node_eq(parent.first_child(), Some(child.clone()));
+        assert_node_eq(parent.last_child(), Some(child.clone()));
+        assert_node_eq(child.parent(), Some(parent.clone()));
+        assert_node_eq(child.prev_sibling(), None);
+        assert_node_eq(child.next_sibling(), None);
     }
 
     #[test]
     fn append_child_normal() {
-        let parent = NodeRef::new(Node::empty());
-        let child1 = NodeRef::new(Node::empty());
-        let child2 = NodeRef::new(Node::empty());
+        let parent = Rc::new(Node::empty());
+        let child1 = Rc::new(Node::empty());
+        let child2 = Rc::new(Node::empty());
 
-        let doc = NodeRef::new(Node::new(NodeData::Document(Document::new())));
+        let doc = Rc::new(Node::new(NodeData::Document(Document::new())));
 
-        parent.borrow_mut().set_document(doc.clone().downgrade());
-        child1.borrow_mut().set_document(doc.clone().downgrade());
-        child2.borrow_mut().set_document(doc.clone().downgrade());
+        parent.set_document(Rc::downgrade(&doc));
+        child1.set_document(Rc::downgrade(&doc));
+        child2.set_document(Rc::downgrade(&doc));
 
         Node::append_child(parent.clone(), child1.clone());
         Node::append_child(parent.clone(), child2.clone());
 
-        assert_eq!(parent.borrow().first_child(), Some(child1.clone()));
-        assert_eq!(parent.borrow().last_child(), Some(child2.clone()));
-        assert_eq!(child1.borrow().next_sibling(), Some(child2.clone()));
-        assert_eq!(child2.borrow().prev_sibling(), Some(child1.clone()));
-        assert_eq!(child1.borrow().prev_sibling(), None);
-        assert_eq!(child2.borrow().next_sibling(), None);
+        assert_node_eq(parent.first_child(), Some(child1.clone()));
+        assert_node_eq(parent.last_child(), Some(child2.clone()));
+        assert_node_eq(child1.next_sibling(), Some(child2.clone()));
+        assert_node_eq(child2.prev_sibling(), Some(child1.clone()));
+        assert_node_eq(child1.prev_sibling(), None);
+        assert_node_eq(child2.next_sibling(), None);
 
-        assert_eq!(child1.borrow().parent(), Some(parent.clone()));
-        assert_eq!(child2.borrow().parent(), Some(parent.clone()));
+        assert_node_eq(child1.parent(), Some(parent.clone()));
+        assert_node_eq(child2.parent(), Some(parent.clone()));
     }
 
     #[test]
     fn insert_before_normal() {
-        let parent = NodeRef::new(Node::empty());
-        let child1 = NodeRef::new(Node::empty());
-        let child2 = NodeRef::new(Node::empty());
+        let parent = Rc::new(Node::empty());
+        let child1 = Rc::new(Node::empty());
+        let child2 = Rc::new(Node::empty());
 
-        let doc = NodeRef::new(Node::new(NodeData::Document(Document::new())));
+        let doc = Rc::new(Node::new(NodeData::Document(Document::new())));
 
-        parent.borrow_mut().set_document(doc.clone().downgrade());
-        child1.borrow_mut().set_document(doc.clone().downgrade());
-        child2.borrow_mut().set_document(doc.clone().downgrade());
+        parent.set_document(Rc::downgrade(&doc));
+        child1.set_document(Rc::downgrade(&doc));
+        child2.set_document(Rc::downgrade(&doc));
 
         Node::append_child(parent.clone(), child1.clone());
         Node::insert_before(parent.clone(), child2.clone(), Some(child1.clone()));
 
-        assert_eq!(parent.borrow().first_child(), Some(child2.clone()));
-        assert_eq!(parent.borrow().last_child(), Some(child1.clone()));
-        assert_eq!(child2.borrow().next_sibling(), Some(child1.clone()));
-        assert_eq!(child1.borrow().prev_sibling(), Some(child2.clone()));
-        assert_eq!(child2.borrow().prev_sibling(), None);
-        assert_eq!(child1.borrow().next_sibling(), None);
+        assert_node_eq(parent.first_child(), Some(child2.clone()));
+        assert_node_eq(parent.last_child(), Some(child1.clone()));
+        assert_node_eq(child2.next_sibling(), Some(child1.clone()));
+        assert_node_eq(child1.prev_sibling(), Some(child2.clone()));
+        assert_node_eq(child2.prev_sibling(), None);
+        assert_node_eq(child1.next_sibling(), None);
 
-        assert_eq!(child1.borrow().parent(), Some(parent.clone()));
-        assert_eq!(child2.borrow().parent(), Some(parent.clone()));
+        assert_node_eq(child1.parent(), Some(parent.clone()));
+        assert_node_eq(child2.parent(), Some(parent.clone()));
     }
 
     #[test]
     fn insert_before_empty_ref_node() {
-        let parent = NodeRef::new(Node::empty());
-        let child = NodeRef::new(Node::empty());
+        let parent = Rc::new(Node::empty());
+        let child = Rc::new(Node::empty());
 
-        let doc = NodeRef::new(Node::new(NodeData::Document(Document::new())));
+        let doc = Rc::new(Node::new(NodeData::Document(Document::new())));
 
-        parent.borrow_mut().set_document(doc.clone().downgrade());
-        child.borrow_mut().set_document(doc.clone().downgrade());
+        parent.set_document(Rc::downgrade(&doc));
+        child.set_document(Rc::downgrade(&doc));
 
         Node::insert_before(parent.clone(), child.clone(), None);
 
-        assert_eq!(parent.borrow().first_child(), Some(child.clone()));
-        assert_eq!(parent.borrow().last_child(), Some(child.clone()));
-        assert_eq!(child.borrow().parent(), Some(parent.clone()));
-        assert_eq!(child.borrow().prev_sibling(), None);
-        assert_eq!(child.borrow().next_sibling(), None);
+        assert_node_eq(parent.first_child(), Some(child.clone()));
+        assert_node_eq(parent.last_child(), Some(child.clone()));
+        assert_node_eq(child.parent(), Some(parent.clone()));
+        assert_node_eq(child.prev_sibling(), None);
+        assert_node_eq(child.next_sibling(), None);
     }
 
     #[test]
     fn detach_before_append() {
-        let parent = NodeRef::new(Node::empty());
-        let child = NodeRef::new(Node::empty());
+        let parent = Rc::new(Node::empty());
+        let child = Rc::new(Node::empty());
 
-        let doc = NodeRef::new(Node::new(NodeData::Document(Document::new())));
+        let doc = Rc::new(Node::new(NodeData::Document(Document::new())));
 
-        parent.borrow_mut().set_document(doc.clone().downgrade());
-        child.borrow_mut().set_document(doc.clone().downgrade());
+        parent.set_document(Rc::downgrade(&doc));
+        child.set_document(Rc::downgrade(&doc));
 
         Node::append_child(parent.clone(), child.clone());
 
-        assert_eq!(parent.borrow().first_child(), Some(child.clone()));
-        assert_eq!(child.borrow().parent(), Some(parent.clone()));
+        assert_node_eq(parent.first_child(), Some(child.clone()));
+        assert_node_eq(child.parent(), Some(parent.clone()));
 
-        let new_parent = NodeRef::new(Node::empty());
+        let new_parent = Rc::new(Node::empty());
 
         Node::append_child(new_parent.clone(), child.clone());
 
-        assert_eq!(parent.borrow().first_child(), None);
-        assert_eq!(new_parent.borrow().first_child(), Some(child.clone()));
-        assert_eq!(child.borrow().parent(), Some(new_parent.clone()));
+        assert_node_eq(parent.first_child(), None);
+        assert_node_eq(new_parent.first_child(), Some(child.clone()));
+        assert_node_eq(child.parent(), Some(new_parent.clone()));
     }
 }

@@ -1,23 +1,25 @@
-use super::dom_ref::NodeRef;
+use std::rc::Rc;
+
+use crate::node::Node;
 
 #[derive(Debug)]
 pub struct NodeList {
-    start: Option<NodeRef>,
+    start: Option<Rc<Node>>,
 }
 
 impl NodeList {
-    pub fn new(start: Option<NodeRef>) -> Self {
+    pub fn new(start: Option<Rc<Node>>) -> Self {
         Self { start }
     }
 
-    pub fn item(&self, index: usize) -> Option<NodeRef> {
+    pub fn item(&self, index: usize) -> Option<Rc<Node>> {
         let mut node = self.start.clone();
         let mut current_idx = index;
         while let Some(node_ref) = &node {
             if current_idx == 0 {
                 break;
             }
-            node = node_ref.clone().borrow().next_sibling();
+            node = node_ref.next_sibling();
             current_idx -= 1;
         }
         node
@@ -27,7 +29,7 @@ impl NodeList {
         let mut node = self.start.clone();
         let mut length = 0;
         while let Some(node_ref) = &node {
-            node = node_ref.clone().borrow().next_sibling();
+            node = node_ref.next_sibling();
             length += 1;
         }
         length
@@ -40,9 +42,9 @@ pub struct NodeListIterator {
 }
 
 impl Iterator for NodeListIterator {
-    type Item = NodeRef;
+    type Item = Rc<Node>;
 
-    fn next(&mut self) -> Option<NodeRef> {
+    fn next(&mut self) -> Option<Self::Item> {
         let result = self.node_list.item(self.index);
         self.index += 1;
         result
@@ -50,7 +52,7 @@ impl Iterator for NodeListIterator {
 }
 
 impl IntoIterator for NodeList {
-    type Item = NodeRef;
+    type Item = Rc<Node>;
     type IntoIter = NodeListIterator;
 
     fn into_iter(self) -> Self::IntoIter {

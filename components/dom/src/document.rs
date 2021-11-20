@@ -2,13 +2,14 @@ use super::document_loader::DocumentLoader;
 use super::node::NodeHooks;
 use css::cssom::stylesheet::StyleSheet;
 use std::cell::RefCell;
+use std::ops::Deref;
 use std::rc::Rc;
 
 pub struct Document {
-    doctype: Option<DocumentType>,
-    mode: QuirksMode,
-    loader: Option<Rc<RefCell<dyn DocumentLoader>>>,
-    stylesheets: Vec<StyleSheet>,
+    doctype: RefCell<Option<DocumentType>>,
+    mode: RefCell<QuirksMode>,
+    loader: RefCell<Option<Rc<RefCell<dyn DocumentLoader>>>>,
+    stylesheets: RefCell<Vec<Rc<StyleSheet>>>,
 }
 
 pub struct DocumentType {
@@ -17,6 +18,7 @@ pub struct DocumentType {
     system_id: String,
 }
 
+#[derive(Clone)]
 pub enum QuirksMode {
     Quirks,
     NoQuirks,
@@ -34,39 +36,39 @@ impl NodeHooks for Document {}
 impl Document {
     pub fn new() -> Self {
         Self {
-            doctype: None,
-            mode: QuirksMode::NoQuirks,
-            loader: None,
-            stylesheets: Vec::new(),
+            doctype: RefCell::new(None),
+            mode: RefCell::new(QuirksMode::NoQuirks),
+            loader: RefCell::new(None),
+            stylesheets: RefCell::new(Vec::new()),
         }
     }
 
-    pub fn set_doctype(&mut self, doctype: DocumentType) {
-        self.doctype = Some(doctype);
+    pub fn set_doctype(&self, doctype: DocumentType) {
+        *self.doctype.borrow_mut() = Some(doctype);
     }
 
-    pub fn set_mode(&mut self, mode: QuirksMode) {
-        self.mode = mode;
+    pub fn set_mode(&self, mode: QuirksMode) {
+        *self.mode.borrow_mut() = mode;
     }
 
-    pub fn get_mode(&self) -> &QuirksMode {
-        &self.mode
+    pub fn get_mode(&self) -> QuirksMode {
+        self.mode.borrow().clone()
     }
 
     pub fn loader(&self) -> Option<Rc<RefCell<dyn DocumentLoader>>> {
-        self.loader.clone()
+        self.loader.borrow().clone()
     }
 
-    pub fn set_loader<L: DocumentLoader + 'static>(&mut self, loader: L) {
-        self.loader = Some(Rc::new(RefCell::new(loader)));
+    pub fn set_loader<L: DocumentLoader + 'static>(&self, loader: L) {
+        *self.loader.borrow_mut() = Some(Rc::new(RefCell::new(loader)));
     }
 
-    pub fn append_stylesheet(&mut self, stylesheet: StyleSheet) {
-        self.stylesheets.push(stylesheet);
+    pub fn append_stylesheet(&self, stylesheet: StyleSheet) {
+        self.stylesheets.borrow_mut().push(Rc::new(stylesheet));
     }
 
-    pub fn stylesheets(&self) -> &[StyleSheet] {
-        &self.stylesheets
+    pub fn stylesheets(&self) -> Vec<Rc<StyleSheet>> {
+        self.stylesheets.borrow().deref().to_vec()
     }
 }
 

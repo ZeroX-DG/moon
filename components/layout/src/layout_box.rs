@@ -35,7 +35,7 @@ pub trait LayoutBox: Any + Debug {
     }
     fn is_non_replaced(&self) -> bool {
         match &self.render_node() {
-            Some(node) => match node.borrow().node.borrow().as_element_opt() {
+            Some(node) => match node.borrow().node.as_element_opt() {
                 Some(e) => match e.tag_name().as_str() {
                     "video" | "image" | "img" | "canvas" => false,
                     _ => true,

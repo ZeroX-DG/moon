@@ -9,7 +9,6 @@ use super::tokenizer::token::Token;
 use crate::tokenizer::Tokenizing;
 use dom::comment::Comment;
 use dom::document::{Document, DocumentType, QuirksMode};
-use dom::dom_ref::NodeRef;
 use dom::element::Element;
 use dom::node::{Node, NodeData};
 use dom::text::Text;
@@ -20,6 +19,7 @@ use open_element_types::is_special_element;
 use phf::phf_map;
 use stack_of_open_elements::StackOfOpenElements;
 use std::env;
+use std::rc::Rc;
 
 fn is_trace() -> bool {
     match env::var("TRACE_HTML_TREE_BUILDER") {
@@ -51,16 +51,6 @@ macro_rules! match_any {
     };
 }
 
-/// Cast a node_ref to an Element. Only use when it is safe
-macro_rules! get_element {
-    ($target:ident) => {
-        $target.borrow().as_element()
-    };
-    ($target:expr) => {
-        $target.borrow().as_element()
-    };
-}
-
 /// The DOM tree builder
 pub struct TreeBuilder<T: Tokenizing> {
     /// The tokenizer controlled by TreeBuilder
@@ -79,16 +69,16 @@ pub struct TreeBuilder<T: Tokenizing> {
     original_insert_mode: Option<InsertMode>,
 
     /// The result document
-    document: NodeRef,
+    document: Rc<Node>,
 
     /// Enable or disable foster parenting
     foster_parenting: bool,
 
     /// Element pointer to head element
-    head_pointer: Option<NodeRef>,
+    head_pointer: Option<Rc<Node>>,
 
     /// Element pointer to last open form element
-    form_pointer: Option<NodeRef>,
+    form_pointer: Option<Rc<Node>>,
 
     /// Is scripting enable?
     scripting: bool,
@@ -109,17 +99,17 @@ pub struct TreeBuilder<T: Tokenizing> {
     is_fragment_case: bool,
 
     /// Context element for fragment html
-    context_element: Option<NodeRef>,
+    context_element: Option<Rc<Node>>,
 }
 
 /// The adjusted location to insert a node as mentioned the specs
 pub enum AdjustedInsertionLocation {
-    LastChild(NodeRef),
-    BeforeSibling(NodeRef, NodeRef),
+    LastChild(Rc<Node>),
+    BeforeSibling(Rc<Node>, Rc<Node>),
 }
 
 impl AdjustedInsertionLocation {
-    pub fn parent(&self) -> &NodeRef {
+    pub fn parent(&self) -> &Rc<Node> {
         match self {
             AdjustedInsertionLocation::LastChild(parent) => parent,
             AdjustedInsertionLocation::BeforeSibling(parent, _) => parent,
@@ -245,7 +235,7 @@ fn adjust_foreign_attributes(token: &mut Token) {
 }
 
 impl<T: Tokenizing> TreeBuilder<T> {
-    pub fn new(tokenizer: T, document: NodeRef) -> Self {
+    pub fn new(tokenizer: T, document: Rc<Node>) -> Self {
         Self {
             tokenizer,
             open_elements: StackOfOpenElements::new(),
@@ -269,12 +259,12 @@ impl<T: Tokenizing> TreeBuilder<T> {
     /// Create a HTML tree builder with default document & no loader.
     /// This should only be used for testing
     pub fn default(tokenizer: T) -> Self {
-        let document = NodeRef::new(Node::new(NodeData::Document(Document::new())));
+        let document = Rc::new(Node::new(NodeData::Document(Document::new())));
         Self::new(tokenizer, document)
     }
 
     /// Start the main loop for parsing DOM tree
-    pub fn run(mut self) -> NodeRef {
+    pub fn run(mut self) -> Rc<Node> {
         loop {
             let token = self.tokenizer.next_token();
 
@@ -314,7 +304,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
     }
 
     /// Get the current parsing document
-    pub fn get_document(&self) -> NodeRef {
+    pub fn get_document(&self) -> Rc<Node> {
         self.document.clone()
     }
 
@@ -342,7 +332,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
         self.should_stop = true;
     }
 
-    fn create_element(&self, tag_token: Token) -> NodeRef {
+    fn create_element(&self, tag_token: Token) -> Rc<Node> {
         let (tag_name, attributes) = if let Token::Tag {
             tag_name,
             attributes,
@@ -353,18 +343,16 @@ impl<T: Tokenizing> TreeBuilder<T> {
         } else {
             ("".to_string(), Vec::new())
         };
-        let element_ref = dom::create_element(self.document.clone().downgrade(), &tag_name);
-        {
-            let mut element = element_ref.borrow_mut();
-            let element = element.as_element_mut();
-            for attribute in attributes {
-                element.set_attribute(&attribute.name, &attribute.value);
-            }
+        let element_ref = dom::create_element(Rc::downgrade(&self.document), &tag_name);
+        for attribute in attributes {
+            element_ref
+                .as_element()
+                .set_attribute(&attribute.name, &attribute.value);
         }
         element_ref
     }
 
-    fn create_element_from_tag_name(&self, tag_name: &str) -> NodeRef {
+    fn create_element_from_tag_name(&self, tag_name: &str) -> Rc<Node> {
         self.create_element(Token::Tag {
             tag_name: tag_name.to_owned(),
             self_closing: false,
@@ -376,13 +364,13 @@ impl<T: Tokenizing> TreeBuilder<T> {
 
     fn get_appropriate_place_for_inserting_a_node(
         &self,
-        target: Option<NodeRef>,
+        target: Option<Rc<Node>>,
     ) -> AdjustedInsertionLocation {
         let target = target.unwrap_or(self.open_elements.current_node().unwrap());
 
         let adjusted_location = if self.foster_parenting
             && match_any!(
-                get_element!(target).tag_name(),
+                target.as_element().tag_name(),
                 "table",
                 "tbody",
                 "tfoot",
@@ -402,7 +390,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
                     AdjustedInsertionLocation::LastChild(self.open_elements.get(0))
                 } else {
                     if let Some((table, table_index)) = last_table {
-                        if let Some(table_parent) = table.borrow().parent() {
+                        if let Some(table_parent) = table.parent() {
                             AdjustedInsertionLocation::LastChild(table_parent)
                         } else {
                             let previous_element = self.open_elements.get(table_index - 1);
@@ -421,7 +409,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
         return adjusted_location;
     }
 
-    fn insert_html_element(&mut self, token: Token) -> NodeRef {
+    fn insert_html_element(&mut self, token: Token) -> Rc<Node> {
         let insert_position = self.get_appropriate_place_for_inserting_a_node(None);
         let element = self.create_element(token);
         let return_ref = element.clone();
@@ -432,7 +420,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
         return_ref
     }
 
-    fn insert_at(&mut self, location: AdjustedInsertionLocation, child: NodeRef) {
+    fn insert_at(&mut self, location: AdjustedInsertionLocation, child: Rc<Node>) {
         match location {
             AdjustedInsertionLocation::LastChild(parent) => Node::append_child(parent, child),
             AdjustedInsertionLocation::BeforeSibling(parent, sibling) => {
@@ -443,45 +431,36 @@ impl<T: Tokenizing> TreeBuilder<T> {
 
     fn insert_character(&mut self, ch: char) {
         let insert_position = self.get_appropriate_place_for_inserting_a_node(None);
-        if insert_position
-            .parent()
-            .borrow()
-            .as_document_opt()
-            .is_some()
-        {
+        if insert_position.parent().as_document_opt().is_some() {
             return;
         }
         match &insert_position {
             AdjustedInsertionLocation::LastChild(parent) => {
-                let parent_node = parent.borrow();
-                if let Some(last_child) = parent_node.last_child() {
-                    if let Some(text) = last_child.borrow_mut().as_text_mut_opt() {
+                if let Some(last_child) = parent.last_child() {
+                    if let Some(text) = last_child.as_text_opt() {
                         text.character_data.append_data(&ch.to_string());
                         return;
                     }
                 }
             }
             AdjustedInsertionLocation::BeforeSibling(_, sibling) => {
-                if let Some(prev_sibling) = sibling.borrow().prev_sibling() {
-                    if let Some(text) = prev_sibling.borrow_mut().as_text_mut_opt() {
+                if let Some(prev_sibling) = sibling.prev_sibling() {
+                    if let Some(text) = prev_sibling.as_text_opt() {
                         text.character_data.append_data(&ch.to_string());
                         return;
                     }
                 }
             }
         }
-        let text = NodeRef::new(Node::new(NodeData::Text(Text::new(ch.to_string()))));
-        text.borrow_mut()
-            .set_document(self.document.clone().downgrade());
+        let text = Rc::new(Node::new(NodeData::Text(Text::new(ch.to_string()))));
+        text.set_document(Rc::downgrade(&self.document));
         self.insert_at(insert_position, text);
     }
 
     fn insert_comment(&mut self, data: String) {
         let insert_position = self.get_appropriate_place_for_inserting_a_node(None);
-        let comment = NodeRef::new(Node::new(NodeData::Comment(Comment::new(data))));
-        comment
-            .borrow_mut()
-            .set_document(self.document.clone().downgrade());
+        let comment = Rc::new(Node::new(NodeData::Comment(Comment::new(data))));
+        comment.set_document(Rc::downgrade(&self.document));
         self.insert_at(insert_position, comment);
     }
 
@@ -501,7 +480,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
 
     fn generate_all_implied_end_tags_thoroughly(&mut self) {
         while let Some(node) = self.open_elements.current_node() {
-            let tag_name = node.borrow().as_element().tag_name();
+            let tag_name = node.as_element().tag_name();
             if match_any!(
                 tag_name, "caption", "colgroup", "dd", "dt", "li", "optgroup", "option", "p", "rb",
                 "rt", "rtc", "tbody", "td", "tfoot", "th", "thead", "tr"
@@ -523,13 +502,11 @@ impl<T: Tokenizing> TreeBuilder<T> {
                 node.clone()
             };
 
-            let node_clone = node.clone();
-            let node_clone = node_clone.borrow();
-            let element = node_clone.as_element();
+            let element = node.as_element();
 
             if element.tag_name() == "select" {
                 for ancestor in self.open_elements.0[0..index].iter().rev() {
-                    let ancestor_tag_name = get_element!(ancestor).tag_name();
+                    let ancestor_tag_name = ancestor.as_element().tag_name();
                     if ancestor_tag_name == "template" {
                         self.switch_to(InsertMode::InSelect);
                         return;
@@ -626,7 +603,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
         let subject = token.tag_name();
 
         let current_node = self.current_node();
-        if get_element!(current_node).tag_name() == *subject {
+        if current_node.as_element().tag_name() == *subject {
             if !self.active_formatting_elements.contains_node(&current_node) {
                 self.open_elements.pop();
                 return AdoptionAgencyOutcome::DoNothing;
@@ -655,7 +632,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
                 return AdoptionAgencyOutcome::DoNothing;
             }
 
-            if fmt_element != self.current_node() {
+            if Rc::ptr_eq(&fmt_element, &self.current_node()) {
                 self.unexpected(&token);
             }
 
@@ -663,10 +640,10 @@ impl<T: Tokenizing> TreeBuilder<T> {
                 let mut found_element = None;
                 let mut found_index = None;
                 for (index, element) in self.open_elements.iter().rev().enumerate() {
-                    if *element == fmt_element {
+                    if Rc::ptr_eq(&element, &fmt_element) {
                         break;
                     }
-                    if is_special_element(&get_element!(element).tag_name()) {
+                    if is_special_element(&element.as_element().tag_name()) {
                         found_element = Some(element.clone());
                         found_index = Some(index);
                     }
@@ -675,7 +652,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
             };
 
             if furthest_block.is_none() {
-                while self.current_node() != fmt_element {
+                while Rc::ptr_eq(&self.current_node(), &fmt_element) {
                     self.open_elements.pop();
                 }
                 self.open_elements.pop();
@@ -686,7 +663,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
             let mut common_ancestor = {
                 let mut found_element = None;
                 for (index, el) in self.open_elements.iter().rev().enumerate() {
-                    if *el == fmt_element {
+                    if Rc::ptr_eq(el, &fmt_element) {
                         if index < self.open_elements.len() - 1 {
                             found_element = Some(self.open_elements.get(index + 1));
                         }
@@ -704,7 +681,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
                 .active_formatting_elements
                 .iter()
                 .rposition(|el| match el {
-                    Entry::Element(e) => *e == fmt_element,
+                    Entry::Element(e) => Rc::ptr_eq(e, &fmt_element),
                     _ => false,
                 })
                 .unwrap();
@@ -724,7 +701,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
                 node_index -= 1;
                 node = self.open_elements.get(node_index);
 
-                if node == fmt_element {
+                if Rc::ptr_eq(&node, &fmt_element) {
                     break;
                 }
 
@@ -737,14 +714,13 @@ impl<T: Tokenizing> TreeBuilder<T> {
                     if let Some(index) = self.active_formatting_elements.get_index_of_node(&node) {
                         index
                     } else {
-                        self.open_elements.remove_first_matching(|n| *n == node);
+                        self.open_elements
+                            .remove_first_matching(|n| Rc::ptr_eq(n, &node));
                         continue;
                     }
                 };
 
-                let node_clone = node.clone();
-                let node_borrow = node_clone.borrow();
-                let node_element = node_borrow.as_element();
+                let node_element = node.as_element();
                 let new_element = self.create_element(Token::Tag {
                     tag_name: node_element.tag_name().to_string(),
                     self_closing: false,
@@ -752,6 +728,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
                     self_closing_acknowledged: false,
                     attributes: node_element
                         .attributes()
+                        .borrow()
                         .iter()
                         .map(|(k, v)| Attribute::from_name_value(k.clone(), v.clone()))
                         .collect(),
@@ -763,7 +740,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
 
                 node = new_element;
 
-                if last_node == furthest_block {
+                if Rc::ptr_eq(&last_node, &furthest_block) {
                     bookmark = node_formatting_index + 1;
                 }
 
@@ -775,8 +752,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
                 self.get_appropriate_place_for_inserting_a_node(Some(common_ancestor));
             self.insert_at(insert_place, last_node);
 
-            let node_borrow = fmt_element.borrow();
-            let node_element = node_borrow.as_element();
+            let node_element = node.as_element();
             let new_element = self.create_element(Token::Tag {
                 tag_name: node_element.tag_name().to_string(),
                 self_closing: false,
@@ -784,6 +760,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
                 self_closing_acknowledged: false,
                 attributes: node_element
                     .attributes()
+                    .borrow()
                     .iter()
                     .map(|(k, v)| Attribute::from_name_value(k.clone(), v.clone()))
                     .collect(),
@@ -795,7 +772,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
             self.active_formatting_elements.remove_element(&fmt_element);
             self.active_formatting_elements[bookmark] = Entry::Element(new_element.clone());
             self.open_elements
-                .remove_first_matching(|n| *n == fmt_element);
+                .remove_first_matching(|n| Rc::ptr_eq(n, &fmt_element));
             self.open_elements
                 .insert(furthest_block_index + 1, new_element);
         }
@@ -825,7 +802,14 @@ impl<T: Tokenizing> TreeBuilder<T> {
     fn close_p_element(&mut self) {
         self.generate_implied_end_tags("p");
 
-        if get_element!(self.open_elements.current_node().unwrap()).tag_name() != "p" {
+        if self
+            .open_elements
+            .current_node()
+            .unwrap()
+            .as_element()
+            .tag_name()
+            != "p"
+        {
             emit_error!("Expected p element");
         }
 
@@ -834,7 +818,6 @@ impl<T: Tokenizing> TreeBuilder<T> {
 
     fn generate_implied_end_tags(&mut self, exclude: &str) {
         while let Some(node) = self.open_elements.current_node() {
-            let node = node.borrow();
             let element = node.as_element();
             let tag_name = element.tag_name();
             if tag_name != exclude
@@ -849,7 +832,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
         }
     }
 
-    fn current_node(&self) -> NodeRef {
+    fn current_node(&self) -> Rc<Node> {
         self.open_elements.current_node().unwrap()
     }
 
@@ -887,7 +870,6 @@ impl<T: Tokenizing> TreeBuilder<T> {
             };
 
             let new_element = {
-                let element = element.borrow();
                 let element = element.as_element();
 
                 self.insert_html_element(Token::Tag {
@@ -897,6 +879,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
                     tag_name: element.tag_name().to_string(),
                     attributes: element
                         .attributes()
+                        .borrow()
                         .iter()
                         .map(|entry| Attribute {
                             name: entry.0.clone(),
@@ -919,7 +902,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
 
     fn close_cell(&mut self) {
         self.generate_implied_end_tags("");
-        let current_tag_name = get_element!(self.current_node()).tag_name();
+        let current_tag_name = self.current_node().as_element().tag_name();
         if current_tag_name != "td" || current_tag_name != "th" {
             emit_error!("Unexpected node encountered while closing cell");
         }
@@ -941,10 +924,8 @@ impl<T: Tokenizing> TreeBuilder<T> {
         }
 
         if let Token::Comment(data) = token {
-            let comment = NodeRef::new(Node::new(NodeData::Comment(Comment::new(data))));
-            comment
-                .borrow_mut()
-                .set_document(self.document.clone().downgrade());
+            let comment = Rc::new(Node::new(NodeData::Comment(Comment::new(data))));
+            comment.set_document(Rc::downgrade(&self.document));
             Node::append_child(self.document.clone(), comment);
             return;
         }
@@ -974,7 +955,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
 
             let doctype = DocumentType::new(name, public_identifier, system_identifier);
 
-            if let Some(doc) = self.document.borrow_mut().as_document_mut_opt() {
+            if let Some(doc) = self.document.as_document_opt() {
                 doc.set_doctype(doctype);
                 doc.set_mode(self.which_quirks_mode(token));
             }
@@ -1004,7 +985,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
         }
 
         if let Token::Comment(data) = token {
-            let comment = NodeRef::new(Node::new(NodeData::Comment(Comment::new(data))));
+            let comment = Rc::new(Node::new(NodeData::Comment(Comment::new(data))));
             Node::append_child(self.document.clone(), comment);
             return;
         }
@@ -1189,7 +1170,6 @@ impl<T: Tokenizing> TreeBuilder<T> {
             self.generate_all_implied_end_tags_thoroughly();
 
             if let Some(node) = self.open_elements.current_node() {
-                let node = node.borrow();
                 let element = node.as_element();
                 if element.tag_name() != "template" {
                     emit_error!("Expected current node to be template");
@@ -1349,7 +1329,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
             self.open_elements.push(head.clone());
             self.handle_in_head(token);
             self.open_elements
-                .remove_first_matching(|node| node.clone() == head);
+                .remove_first_matching(|node| Rc::ptr_eq(node, &head));
             return;
         }
 
@@ -1378,9 +1358,9 @@ impl<T: Tokenizing> TreeBuilder<T> {
         fn any_other_end_tags<T: Tokenizing>(this: &mut TreeBuilder<T>, token: Token) {
             let mut index: Option<usize> = None;
             for (idx, node) in this.open_elements.0.iter().enumerate().rev() {
-                let current_tag_name = get_element!(node).tag_name();
+                let current_tag_name = node.as_element().tag_name();
                 if current_tag_name == *token.tag_name() {
-                    if *node != this.current_node() {
+                    if Rc::ptr_eq(&node, &this.current_node()) {
                         this.unexpected(&token);
                     }
                     index = Some(idx);
@@ -1443,9 +1423,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
             }
 
             let current_node = self.open_elements.current_node().unwrap();
-            let mut current_node = current_node.borrow_mut();
-
-            let current_element = current_node.as_element_mut();
+            let current_element = current_node.as_element();
 
             for attribute in token.attributes() {
                 if current_element.has_attribute(&attribute.name) {
@@ -1484,7 +1462,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
                 return;
             }
 
-            if let Some(element) = self.open_elements.get(1).borrow().as_element_opt() {
+            if let Some(element) = self.open_elements.get(1).as_element_opt() {
                 if element.tag_name() != "body" {
                     return;
                 }
@@ -1496,8 +1474,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
 
             self.frameset_ok = false;
             let body = self.open_elements.get(1);
-            let mut body = body.borrow_mut();
-            let body = body.as_element_mut();
+            let body = body.as_element();
             for attribute in token.attributes() {
                 if body.has_attribute(&attribute.name) {
                     continue;
@@ -1512,7 +1489,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
                 return;
             }
 
-            if let Some(element) = self.open_elements.get(1).borrow().as_element_opt() {
+            if let Some(element) = self.open_elements.get(1).as_element_opt() {
                 if element.tag_name() != "body" {
                     return;
                 }
@@ -1523,9 +1500,9 @@ impl<T: Tokenizing> TreeBuilder<T> {
             }
 
             let second_element = self.open_elements.get(1);
-            Node::detach(&second_element);
+            Node::detach(second_element);
 
-            while get_element!(self.current_node()).tag_name() != "html" {
+            while self.current_node().as_element().tag_name() != "html" {
                 self.open_elements.pop();
             }
 
@@ -1541,7 +1518,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
 
             if self.open_elements.any(|node| {
                 !(match_any!(
-                    node.borrow().as_element().tag_name(),
+                    node.as_element().tag_name(),
                     "dd",
                     "dt",
                     "li",
@@ -1576,7 +1553,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
             }
             if self.open_elements.any(|node| {
                 !(match_any!(
-                    get_element!(node).tag_name(),
+                    node.as_element().tag_name(),
                     "dd",
                     "dt",
                     "li",
@@ -1610,7 +1587,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
             }
             if self.open_elements.any(|node| {
                 !(match_any!(
-                    get_element!(node).tag_name(),
+                    node.as_element().tag_name(),
                     "dd",
                     "dt",
                     "li",
@@ -1680,8 +1657,12 @@ impl<T: Tokenizing> TreeBuilder<T> {
                 self.close_p_element();
             }
 
-            let current_tag_name =
-                get_element!(self.open_elements.current_node().unwrap()).tag_name();
+            let current_tag_name = self
+                .open_elements
+                .current_node()
+                .unwrap()
+                .as_element()
+                .tag_name();
 
             if match_any!(current_tag_name, "h1", "h2", "h3", "h4", "h5", "h6") {
                 self.unexpected(&token);
@@ -1734,10 +1715,10 @@ impl<T: Tokenizing> TreeBuilder<T> {
         if token.is_start_tag() && token.tag_name() == "li" {
             self.frameset_ok = false;
             for node in self.open_elements.0.iter().rev() {
-                let element_tag_name = get_element!(node).tag_name();
+                let element_tag_name = node.as_element().tag_name();
                 if element_tag_name == "li" {
                     self.generate_implied_end_tags("li");
-                    if get_element!(self.current_node()).tag_name() != "li" {
+                    if self.current_node().as_element().tag_name() != "li" {
                         emit_error!("Expected 'li' tag");
                     }
                     self.open_elements.pop_until("li");
@@ -1761,10 +1742,10 @@ impl<T: Tokenizing> TreeBuilder<T> {
         if token.is_start_tag() && match_any!(token.tag_name(), "dd", "dt") {
             self.frameset_ok = false;
             for node in self.open_elements.0.iter().rev() {
-                let element_tag_name = get_element!(node).tag_name();
+                let element_tag_name = node.as_element().tag_name();
                 if element_tag_name == "dd" {
                     self.generate_implied_end_tags("dd");
-                    if get_element!(self.current_node()).tag_name() != "dd" {
+                    if self.current_node().as_element().tag_name() != "dd" {
                         emit_error!("Expected 'dd' tag");
                     }
                     self.open_elements.pop_until("dd");
@@ -1773,7 +1754,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
 
                 if element_tag_name == "dt" {
                     self.generate_implied_end_tags("dt");
-                    if get_element!(self.current_node()).tag_name() != "dt" {
+                    if self.current_node().as_element().tag_name() != "dt" {
                         emit_error!("Expected 'dt' tag");
                     }
                     self.open_elements.pop_until("dt");
@@ -1855,7 +1836,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
             }
 
             self.generate_implied_end_tags("");
-            if get_element!(self.current_node()).tag_name() != *token.tag_name() {
+            if self.current_node().as_element().tag_name() != *token.tag_name() {
                 self.unexpected(&token);
                 return;
             }
@@ -1882,19 +1863,19 @@ impl<T: Tokenizing> TreeBuilder<T> {
 
                 self.generate_implied_end_tags("");
 
-                if self.current_node() != node {
+                if !Rc::ptr_eq(&self.current_node(), &node) {
                     self.unexpected(&token);
                 }
 
                 self.open_elements
-                    .remove_first_matching(|fnode| *fnode == node);
+                    .remove_first_matching(|fnode| Rc::ptr_eq(fnode, &node));
             } else {
                 if !self.open_elements.has_element_name_in_scope("form") {
                     self.unexpected(&token);
                     return;
                 }
                 self.generate_implied_end_tags("");
-                if get_element!(self.current_node()).tag_name() != "form" {
+                if self.current_node().as_element().tag_name() != "form" {
                     self.unexpected(&token);
                 }
                 self.open_elements.pop_until("form");
@@ -1918,7 +1899,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
             }
 
             self.generate_implied_end_tags("li");
-            if get_element!(self.current_node()).tag_name() != "li" {
+            if self.current_node().as_element().tag_name() != "li" {
                 self.unexpected(&token);
             }
             self.open_elements.pop_until("li");
@@ -1934,7 +1915,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
                 return;
             }
             self.generate_implied_end_tags(&token.tag_name());
-            if get_element!(self.current_node()).tag_name() != *token.tag_name() {
+            if self.current_node().as_element().tag_name() != *token.tag_name() {
                 self.unexpected(&token);
             }
             self.open_elements.pop_until(&token.tag_name());
@@ -1953,7 +1934,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
                 return;
             }
             self.generate_implied_end_tags("");
-            if get_element!(self.current_node()).tag_name() != *token.tag_name() {
+            if self.current_node().as_element().tag_name() != *token.tag_name() {
                 self.unexpected(&token);
             }
             self.open_elements.pop_until_match(|element| {
@@ -1976,7 +1957,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
                 }
                 self.active_formatting_elements.remove_element(&el);
                 self.open_elements
-                    .remove_first_matching(|fnode| *fnode == el);
+                    .remove_first_matching(|fnode| Rc::ptr_eq(fnode, &el));
             }
             self.reconstruct_active_formatting_elements();
             let element = self.insert_html_element(token);
@@ -2071,7 +2052,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
                 return;
             }
             self.generate_implied_end_tags("");
-            if get_element!(self.current_node()).tag_name() != *token.tag_name() {
+            if self.current_node().as_element().tag_name() != *token.tag_name() {
                 self.unexpected(&token);
             }
             self.open_elements.pop_until(token.tag_name());
@@ -2081,7 +2062,6 @@ impl<T: Tokenizing> TreeBuilder<T> {
 
         if token.is_start_tag() && token.tag_name() == "table" {
             let document = self.document.clone();
-            let document = document.borrow();
             let document = document.as_document();
             if let QuirksMode::NoQuirks = document.get_mode() {
                 if self.open_elements.has_element_name_in_button_scope("p") {
@@ -2223,7 +2203,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
         }
 
         if token.is_start_tag() && match_any!(token.tag_name(), "optgroup", "option") {
-            if get_element!(self.current_node()).tag_name() == "option" {
+            if self.current_node().as_element().tag_name() == "option" {
                 self.open_elements.pop();
             }
             self.reconstruct_active_formatting_elements();
@@ -2234,7 +2214,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
         if token.is_start_tag() && match_any!(token.tag_name(), "rb", "rtc") {
             if self.open_elements.has_element_name_in_scope("ruby") {
                 self.generate_implied_end_tags("");
-                if get_element!(self.current_node()).tag_name() != "ruby" {
+                if self.current_node().as_element().tag_name() != "ruby" {
                     self.unexpected(&token);
                 }
             }
@@ -2245,7 +2225,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
         if token.is_start_tag() && match_any!(token.tag_name(), "rp", "rt") {
             if self.open_elements.has_element_name_in_scope("ruby") {
                 self.generate_implied_end_tags("rtc");
-                let current_tag_name = get_element!(self.current_node()).tag_name();
+                let current_tag_name = self.current_node().as_element().tag_name();
                 if current_tag_name != "ruby" || current_tag_name != "rtc" {
                     self.unexpected(&token);
                 }
@@ -2332,7 +2312,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
     fn handle_in_table(&mut self, mut token: Token) {
         if let Token::Character(_) = token {
             if match_any!(
-                get_element!(self.current_node()).tag_name(),
+                self.current_node().as_element().tag_name(),
                 "table",
                 "tbody",
                 "tfoot",
@@ -2463,7 +2443,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
             token.acknowledge_self_closing_if_set();
             let element = self.insert_html_element(token);
             self.open_elements
-                .remove_first_matching(|el| *el == element);
+                .remove_first_matching(|el| Rc::ptr_eq(el, &element));
             return;
         }
 
@@ -2476,7 +2456,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
             let element = self.insert_html_element(token);
             self.form_pointer = Some(element.clone());
             self.open_elements
-                .remove_first_matching(|el| *el == element);
+                .remove_first_matching(|el| Rc::ptr_eq(el, &element));
             return;
         }
 
@@ -2537,7 +2517,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
                 return;
             }
             self.generate_implied_end_tags("");
-            if get_element!(self.current_node()).tag_name() != "caption" {
+            if self.current_node().as_element().tag_name() != "caption" {
                 self.unexpected(&token);
             }
             self.open_elements.pop_until("caption");
@@ -2569,7 +2549,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
                 return;
             }
             self.generate_implied_end_tags("");
-            if get_element!(self.current_node()).tag_name() != "caption" {
+            if self.current_node().as_element().tag_name() != "caption" {
                 self.unexpected(&token);
             }
             self.open_elements.pop_until("caption");
@@ -2608,7 +2588,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
         }
 
         if let Token::Comment(data) = token {
-            let comment = NodeRef::new(Node::new(NodeData::Comment(Comment::new(data))));
+            let comment = Rc::new(Node::new(NodeData::Comment(Comment::new(data))));
             let html_el = self.open_elements.get(0);
             Node::append_child(html_el, comment);
             return;
@@ -2643,7 +2623,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
 
     fn handle_after_after_body(&mut self, token: Token) {
         if let Token::Comment(data) = token {
-            let comment = NodeRef::new(Node::new(NodeData::Comment(Comment::new(data))));
+            let comment = Rc::new(Node::new(NodeData::Comment(Comment::new(data))));
             Node::append_child(self.document.clone(), comment);
             return;
         }
@@ -2700,7 +2680,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
         }
 
         if token.is_end_tag() && token.tag_name() == "colgroup" {
-            if get_element!(self.current_node()).tag_name() != "colgroup" {
+            if self.current_node().as_element().tag_name() != "colgroup" {
                 return self.unexpected(&token);
             }
 
@@ -2723,7 +2703,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
             return;
         }
 
-        if get_element!(self.current_node()).tag_name() != "colgroup" {
+        if self.current_node().as_element().tag_name() != "colgroup" {
             return self.unexpected(&token);
         }
 
@@ -2902,7 +2882,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
 
             self.generate_implied_end_tags("");
 
-            if get_element!(self.current_node()).tag_name() != *token.tag_name() {
+            if self.current_node().as_element().tag_name() != *token.tag_name() {
                 emit_error!("Expected current node to have same tag name as token");
             }
             self.open_elements.pop_until(token.tag_name());
@@ -2991,7 +2971,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
         }
 
         if token.is_start_tag() && token.tag_name() == "option" {
-            if get_element!(self.current_node()).tag_name() == "option" {
+            if self.current_node().as_element().tag_name() == "option" {
                 self.open_elements.pop();
             }
             self.insert_html_element(token);
@@ -2999,10 +2979,10 @@ impl<T: Tokenizing> TreeBuilder<T> {
         }
 
         if token.is_start_tag() && token.tag_name() == "optgroup" {
-            if get_element!(self.current_node()).tag_name() == "option" {
+            if self.current_node().as_element().tag_name() == "option" {
                 self.open_elements.pop();
             }
-            if get_element!(self.current_node()).tag_name() == "optgroup" {
+            if self.current_node().as_element().tag_name() == "optgroup" {
                 self.open_elements.pop();
             }
             self.insert_html_element(token);
@@ -3010,13 +2990,13 @@ impl<T: Tokenizing> TreeBuilder<T> {
         }
 
         if token.is_end_tag() && token.tag_name() == "optgroup" {
-            if get_element!(self.current_node()).tag_name() == "option" {
+            if self.current_node().as_element().tag_name() == "option" {
                 let el = self.open_elements.get(self.open_elements.len() - 1);
-                if get_element!(el).tag_name() == "optgroup" {
+                if el.as_element().tag_name() == "optgroup" {
                     self.open_elements.pop();
                 }
             }
-            if get_element!(self.current_node()).tag_name() == "optgroup" {
+            if self.current_node().as_element().tag_name() == "optgroup" {
                 self.open_elements.pop();
             } else {
                 emit_error!("expected optgroup");
@@ -3025,7 +3005,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
         }
 
         if token.is_end_tag() && token.tag_name() == "option" {
-            if get_element!(self.current_node()).tag_name() == "option" {
+            if self.current_node().as_element().tag_name() == "option" {
                 self.open_elements.pop();
             } else {
                 self.unexpected(&token);
@@ -3239,10 +3219,8 @@ mod test {
         assert_eq!(
             tree_builder
                 .run()
-                .borrow()
                 .first_child()
                 .unwrap()
-                .borrow()
                 .as_comment()
                 .get_data(),
             " this is a test "
@@ -3256,11 +3234,11 @@ mod test {
         let tree_builder = TreeBuilder::default(tokenizer);
         let document = tree_builder.run();
 
-        let html = document.borrow().first_child().unwrap();
-        let body = html.borrow().last_child().unwrap();
-        let div = body.borrow().first_child().unwrap();
+        let html = document.first_child().unwrap();
+        let body = html.last_child().unwrap();
+        let div = body.first_child().unwrap();
 
-        assert_eq!(div.borrow().child_nodes().length(), 3);
+        assert_eq!(div.child_nodes().length(), 3);
     }
 
     #[test]
@@ -3270,18 +3248,15 @@ mod test {
         let tree_builder = TreeBuilder::default(tokenizer);
         let document = tree_builder.run();
 
-        let html = document.borrow().first_child().unwrap();
-        let body = html.borrow().last_child().unwrap();
-        let div = body.borrow().first_child().unwrap();
-        let a = div.borrow().first_child().unwrap();
+        let html = document.first_child().unwrap();
+        let body = html.last_child().unwrap();
+        let div = body.first_child().unwrap();
+        let a = div.first_child().unwrap();
 
         assert_eq!(
-            a.borrow().as_element().attributes().get_str("href"),
+            a.as_element().attributes().borrow().get_str("href"),
             "http://google.com".to_string()
         );
-        assert_eq!(
-            a.borrow().child_text_content(),
-            "This is a link".to_string()
-        );
+        assert_eq!(a.child_text_content(), "This is a link".to_string());
     }
 }

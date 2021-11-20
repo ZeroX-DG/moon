@@ -1,16 +1,20 @@
-use super::dom_ref::NodeRef;
+use crate::node::Node;
+
 use super::dom_token_list::DOMTokenList;
 use super::elements::{ElementData, ElementMethods};
 use super::node::NodeHooks;
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::ops::{Deref, DerefMut};
+use std::rc::Rc;
 
+#[derive(Clone)]
 pub struct AttributeMap(HashMap<String, String>);
 
 pub struct Element {
-    attributes: AttributeMap,
-    id: String,
-    class_list: DOMTokenList,
+    attributes: RefCell<AttributeMap>,
+    id: RefCell<Option<String>>,
+    class_list: RefCell<DOMTokenList>,
     data: ElementData,
 }
 
@@ -56,7 +60,7 @@ impl core::fmt::Debug for Element {
 }
 
 impl NodeHooks for Element {
-    fn on_inserted(&mut self, document: NodeRef) {
+    fn on_inserted(&self, document: Rc<Node>) {
         self.handle_on_inserted(document);
     }
 }
@@ -64,9 +68,9 @@ impl NodeHooks for Element {
 impl Element {
     pub fn new(data: ElementData) -> Self {
         Self {
-            attributes: AttributeMap::new(),
-            id: String::new(),
-            class_list: DOMTokenList::new(),
+            attributes: RefCell::new(AttributeMap::new()),
+            id: RefCell::new(None),
+            class_list: RefCell::new(DOMTokenList::new()),
             data,
         }
     }
@@ -75,36 +79,38 @@ impl Element {
         self.data.tag_name()
     }
 
-    pub fn set_attribute(&mut self, name: &str, value: &str) {
+    pub fn set_attribute(&self, name: &str, value: &str) {
         if name == "id" {
-            self.id = value.to_string();
+            *self.id.borrow_mut() = Some(value.to_string());
             return;
         }
         if name == "class" {
-            self.class_list = DOMTokenList::from(value);
+            *self.class_list.borrow_mut() = DOMTokenList::from(value);
             return;
         }
-        self.attributes.insert(name.to_owned(), value.to_owned());
+        self.attributes
+            .borrow_mut()
+            .insert(name.to_owned(), value.to_owned());
         self.data.handle_attribute_change(name, value);
     }
 
-    pub fn attributes(&self) -> &AttributeMap {
-        &self.attributes
+    pub fn attributes(&self) -> RefCell<AttributeMap> {
+        self.attributes.clone()
     }
 
     pub fn has_attribute(&self, name: &str) -> bool {
-        self.attributes.contains_key(name)
+        self.attributes.borrow().contains_key(name)
     }
 
-    pub fn class_list(&self) -> &DOMTokenList {
-        &self.class_list
+    pub fn class_list(&self) -> RefCell<DOMTokenList> {
+        self.class_list.clone()
     }
 
-    pub fn id(&self) -> &String {
-        &self.id
+    pub fn id(&self) -> Option<String> {
+        self.id.borrow().clone()
     }
 
-    pub fn handle_on_inserted(&mut self, document: NodeRef) {
+    pub fn handle_on_inserted(&self, document: Rc<Node>) {
         self.data.handle_on_inserted(document);
     }
 }

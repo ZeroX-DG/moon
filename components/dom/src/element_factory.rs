@@ -1,4 +1,5 @@
-use crate::dom_ref::{NodeRef, WeakNodeRef};
+use std::rc::{Rc, Weak};
+
 use crate::element::Element;
 use crate::node::{Node, NodeData};
 
@@ -18,8 +19,8 @@ macro_rules! translate {
     }
 }
 
-pub fn create_element(document: WeakNodeRef, tag_name: &str) -> NodeRef {
-    let mut node = translate!(tag_name, {
+pub fn create_element(document: Weak<Node>, tag_name: &str) -> Rc<Node> {
+    let node = translate!(tag_name, {
         "html" => Html > HTMLHtmlElement,
         "head" => Head > HTMLHeadElement,
         "title" => Title > HTMLTitleElement,
@@ -30,5 +31,5 @@ pub fn create_element(document: WeakNodeRef, tag_name: &str) -> NodeRef {
     });
 
     node.set_document(document);
-    NodeRef::new(node)
+    Rc::new(node)
 }

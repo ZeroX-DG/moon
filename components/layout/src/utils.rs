@@ -1,5 +1,7 @@
+use std::rc::Rc;
+
 use css::cssom::css_rule::CSSRule;
-use dom::dom_ref::NodeRef;
+use dom::node::Node;
 use style::value_processing::{CSSLocation, CascadeOrigin, ContextualRule};
 use test_utils::css::parse_stylesheet;
 
@@ -13,7 +15,7 @@ span, a {
     display: inline;
 }"#;
 
-pub fn build_tree(dom: NodeRef, css: &str) -> LayoutTree {
+pub fn build_tree(dom: Rc<Node>, css: &str) -> LayoutTree {
     let stylesheet = parse_stylesheet(css);
 
     let rules = stylesheet

@@ -1,5 +1,9 @@
-use dom::dom_ref::NodeRef;
-use std::ops::{Deref, DerefMut};
+use std::{
+    ops::{Deref, DerefMut},
+    rc::Rc,
+};
+
+use dom::node::Node;
 
 #[derive(Debug)]
 pub struct ListOfActiveFormattingElements {
@@ -8,7 +12,7 @@ pub struct ListOfActiveFormattingElements {
 
 #[derive(Debug)]
 pub enum Entry {
-    Element(NodeRef),
+    Element(Rc<Node>),
     Marker,
 }
 
@@ -32,13 +36,13 @@ impl ListOfActiveFormattingElements {
         }
     }
 
-    pub fn get_element_after_last_marker(&self, element: &str) -> Option<NodeRef> {
+    pub fn get_element_after_last_marker(&self, element: &str) -> Option<Rc<Node>> {
         for entry in self.entries.iter().rev() {
             if let Entry::Marker = entry {
                 return None;
             }
             if let Entry::Element(el) = entry {
-                if el.borrow().as_element().tag_name() == element {
+                if el.as_element().tag_name() == element {
                     return Some(el.clone());
                 }
             }
@@ -46,13 +50,13 @@ impl ListOfActiveFormattingElements {
         None
     }
 
-    pub fn remove_element(&mut self, element: &NodeRef) {
+    pub fn remove_element(&mut self, element: &Rc<Node>) {
         let remove_index = self
             .entries
             .iter()
             .rposition(|entry| {
                 if let Entry::Element(el) = entry {
-                    if el == element {
+                    if Rc::ptr_eq(el, element) {
                         return true;
                     }
                 }
@@ -62,12 +66,12 @@ impl ListOfActiveFormattingElements {
         self.entries.remove(remove_index);
     }
 
-    pub fn contains_node(&self, node: &NodeRef) -> bool {
+    pub fn contains_node(&self, node: &Rc<Node>) -> bool {
         self.entries
             .iter()
             .rfind(|entry| {
                 if let Entry::Element(el) = entry {
-                    if el == node {
+                    if Rc::ptr_eq(el, node) {
                         return true;
                     }
                 }
@@ -76,10 +80,10 @@ impl ListOfActiveFormattingElements {
             .is_some()
     }
 
-    pub fn get_index_of_node(&self, node: &NodeRef) -> Option<usize> {
+    pub fn get_index_of_node(&self, node: &Rc<Node>) -> Option<usize> {
         self.entries.iter().rposition(|entry| {
             if let Entry::Element(el) = entry {
-                if el == node {
+                if Rc::ptr_eq(el, node) {
                     return true;
                 }
             }
