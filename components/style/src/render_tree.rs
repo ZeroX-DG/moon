@@ -3,16 +3,12 @@ use crate::{property::Property, value_processing::StyleCache};
 use super::inheritable::INHERITABLES;
 use super::value_processing::ValueRef;
 use dom::node::Node;
-use std::{collections::HashMap, rc::Rc};
-use tree::rctree::{TreeNodeRef, TreeNodeWeakRef};
-
-pub type RenderNodeRef = TreeNodeRef<RenderNode>;
-pub type RenderNodeWeak = TreeNodeWeakRef<RenderNode>;
+use std::{cell::RefCell, collections::HashMap, rc::{Rc, Weak}};
 
 #[derive(Debug)]
 pub struct RenderTree {
     /// The root node of the render tree
-    pub root: Option<RenderNodeRef>,
+    pub root: Option<Rc<RenderNode>>,
     /// The style cache to share style value and reduce style size
     pub style_cache: StyleCache,
 }
@@ -25,9 +21,9 @@ pub struct RenderNode {
     /// A property HashMap containing computed styles
     pub properties: HashMap<Property, ValueRef>,
     /// Child style nodes
-    pub children: Vec<RenderNodeRef>,
+    pub children: RefCell<Vec<Rc<RenderNode>>>,
     /// Parent reference for inheritance
-    pub parent_render_node: Option<RenderNodeWeak>,
+    pub parent_render_node: Option<Weak<RenderNode>>,
 }
 
 impl RenderNode {
@@ -41,11 +37,31 @@ impl RenderNode {
         if INHERITABLES.contains(property) {
             if let Some(parent) = &self.parent_render_node {
                 if let Some(p) = parent.upgrade() {
-                    return p.borrow().get_style(&property);
+                    return p.get_style(&property);
                 }
             }
         }
 
         panic!("Oops, we should not reach here");
+    }
+}
+
+impl RenderTree {
+    pub fn to_str(&self) -> String {
+        let mut result = String::new();
+
+        fn print_node(result: &mut String, node: Rc<RenderNode>) {
+            result.push_str(&format!("{:?}\n", node.node));
+            
+            for child in node.children.borrow().iter() {
+                print_node(result, child.clone());
+            }
+        }
+
+        if let Some(root) = &self.root {
+            print_node(&mut result, root.clone());
+        }
+        
+        result
     }
 }

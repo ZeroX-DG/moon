@@ -1,6 +1,6 @@
-use std::any::Any;
+use std::{any::Any, rc::Rc};
 
-use style::{property::Property, render_tree::RenderNodeRef};
+use style::{property::Property, render_tree::RenderNode};
 
 use crate::{
     box_model::{BoxComponent, Dimensions},
@@ -14,7 +14,7 @@ use shared::primitive::edge::Edge;
 
 #[derive(Debug)]
 pub struct InlineBox {
-    node: Option<RenderNodeRef>,
+    node: Option<Rc<RenderNode>>,
     dimensions: Dimensions,
 }
 
@@ -27,7 +27,7 @@ impl LayoutBox for InlineBox {
         false
     }
 
-    fn render_node(&self) -> Option<RenderNodeRef> {
+    fn render_node(&self) -> Option<Rc<RenderNode>> {
         self.node.clone()
     }
 
@@ -53,7 +53,7 @@ impl LayoutBox for InlineBox {
 }
 
 impl InlineBox {
-    pub fn new(node: RenderNodeRef) -> Self {
+    pub fn new(node: Rc<RenderNode>) -> Self {
         Self {
             node: Some(node),
             dimensions: Default::default(),
@@ -134,7 +134,6 @@ impl<'a> InlineFormattingContext<'a> {
             _ => return,
         };
 
-        let render_node = render_node.borrow();
         let computed_width = render_node.get_style(&Property::Width);
         let computed_margin_left = render_node.get_style(&Property::MarginLeft);
         let computed_margin_right = render_node.get_style(&Property::MarginRight);
@@ -181,8 +180,6 @@ impl<'a> InlineFormattingContext<'a> {
         let box_model = layout_node.dimensions_mut();
 
         if let Some(render_node) = render_node {
-            let render_node = render_node.borrow();
-
             let margin_top = render_node
                 .get_style(&Property::MarginTop)
                 .to_px(containing_block.width);

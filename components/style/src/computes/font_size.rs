@@ -15,7 +15,7 @@ pub fn compute_font_size(value: &Value, context: &mut ComputeContext) -> ValueRe
                 .as_ref()
                 .map(|parent| {
                     if let Some(p) = parent.upgrade() {
-                        return Some(p.borrow().get_style(&Property::FontSize).to_absolute_px());
+                        return Some(p.get_style(&Property::FontSize).to_absolute_px());
                     }
                     None
                 })
@@ -42,7 +42,7 @@ pub fn compute_font_size(value: &Value, context: &mut ComputeContext) -> ValueRe
                 .as_ref()
                 .map(|parent| {
                     if let Some(p) = parent.upgrade() {
-                        return Some(p.borrow().get_style(&Property::FontSize).to_absolute_px());
+                        return Some(p.get_style(&Property::FontSize).to_absolute_px());
                     }
                     None
                 })

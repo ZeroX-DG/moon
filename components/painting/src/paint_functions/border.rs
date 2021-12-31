@@ -6,8 +6,6 @@ use style::property::Property;
 
 pub fn paint_border(layout_node: &LayoutNode) -> Option<DisplayCommand> {
     if let Some(render_node) = &layout_node.render_node() {
-        let render_node = render_node.borrow();
-
         let border_top_color = render_node
             .get_style(&Property::BorderTopColor)
             .map(color_from_value);

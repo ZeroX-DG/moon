@@ -5,8 +5,6 @@ use style::property::Property;
 
 pub fn paint_text(layout_node: &LayoutNode) -> Option<DisplayCommand> {
     if let Some(render_node) = &layout_node.render_node() {
-        let render_node = render_node.borrow();
-
         if let Some(text) = render_node.node.as_text_opt() {
             let content = text.get_data();
             // TODO: support text bounds width & height

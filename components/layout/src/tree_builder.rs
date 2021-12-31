@@ -1,6 +1,8 @@
+use std::rc::Rc;
+
 use style::{
     property::Property,
-    render_tree::RenderNodeRef,
+    render_tree::RenderNode,
     value::Value,
     values::display::{Display, InnerDisplayType, OuterDisplayType},
 };
@@ -23,8 +25,8 @@ impl TreeBuilder {
         }
     }
 
-    pub fn build(mut self, root: RenderNodeRef) -> LayoutTree {
-        let root_box = match self.build_box_by_display(&root) {
+    pub fn build(mut self, root: Rc<RenderNode>) -> LayoutTree {
+        let root_box = match self.build_box_by_display(root.clone()) {
             Some(b) => b,
             None => return self.tree,
         };
@@ -32,7 +34,7 @@ impl TreeBuilder {
         let root_box_id = self.tree.set_root(root_box);
 
         self.parent_stack.push(root_box_id);
-        for child in &root.borrow().children {
+        for child in root.children.borrow().iter() {
             self.build_layout_tree(child.clone());
         }
         self.parent_stack.pop();
@@ -40,8 +42,8 @@ impl TreeBuilder {
         self.tree
     }
 
-    fn build_layout_tree(&mut self, node: RenderNodeRef) {
-        let layout_box = match self.build_box_by_display(&node) {
+    fn build_layout_tree(&mut self, node: Rc<RenderNode>) {
+        let layout_box = match self.build_box_by_display(node.clone()) {
             Some(b) => b,
             None => return,
         };
@@ -57,7 +59,7 @@ impl TreeBuilder {
         let box_ref = self.tree.children(&parent).last().unwrap();
 
         self.parent_stack.push(*box_ref);
-        for child in &node.borrow().children {
+        for child in node.children.borrow().iter() {
             self.build_layout_tree(child.clone());
         }
         self.parent_stack.pop();
@@ -135,12 +137,12 @@ impl TreeBuilder {
         *self.tree.children(parent).last().unwrap()
     }
 
-    fn build_box_by_display(&self, node: &RenderNodeRef) -> Option<Box<dyn LayoutBox>> {
-        if node.borrow().node.is_text() {
+    fn build_box_by_display(&self, node: Rc<RenderNode>) -> Option<Box<dyn LayoutBox>> {
+        if node.node.is_text() {
             return Some(Box::new(InlineBox::new(node.clone())));
         }
 
-        let display = node.borrow().get_style(&Property::Display);
+        let display = node.get_style(&Property::Display);
 
         let layout_box: Box<dyn LayoutBox> = match display.inner() {
             Value::Display(d) => match d {

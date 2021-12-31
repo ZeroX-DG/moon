@@ -9,7 +9,7 @@ pub fn compute_color(value: &Value, context: &mut ComputeContext) -> ValueRef {
         Value::Color(Color::CurrentColor) => {
             if let Some(parent) = &context.parent {
                 if let Some(p) = parent.upgrade() {
-                    return p.borrow().get_style(&Property::Color);
+                    return p.get_style(&Property::Color);
                 }
             }
             let value = Value::initial(&Property::Color);

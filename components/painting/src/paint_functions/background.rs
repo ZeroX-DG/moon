@@ -8,7 +8,6 @@ use style::values::border_radius::BorderRadius;
 
 pub fn paint_background(layout_node: &LayoutNode) -> Option<DisplayCommand> {
     if let Some(render_node) = &layout_node.render_node() {
-        let render_node = render_node.borrow();
         let background = render_node.get_style(&Property::BackgroundColor);
 
         let border_top_left_radius = render_node.get_style(&Property::BorderTopLeftRadius);
