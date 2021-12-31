@@ -369,10 +369,7 @@ impl<'a> BlockFormattingContext<'a> {
             .content_box();
 
         let previous_layout_y = self.previous_layout_y;
-        let render_node = self
-            .layout_tree()
-            .get_node(layout_node_id)
-            .render_node();
+        let render_node = self.layout_tree().get_node(layout_node_id).render_node();
         let box_model = self
             .layout_tree_mut()
             .get_node_mut(layout_node_id)

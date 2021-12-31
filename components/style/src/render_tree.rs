@@ -3,7 +3,11 @@ use crate::{property::Property, value_processing::StyleCache};
 use super::inheritable::INHERITABLES;
 use super::value_processing::ValueRef;
 use dom::node::Node;
-use std::{cell::RefCell, collections::HashMap, rc::{Rc, Weak}};
+use std::{
+    cell::RefCell,
+    collections::HashMap,
+    rc::{Rc, Weak},
+};
 
 #[derive(Debug)]
 pub struct RenderTree {
@@ -52,7 +56,7 @@ impl RenderTree {
 
         fn print_node(result: &mut String, node: Rc<RenderNode>) {
             result.push_str(&format!("{:?}\n", node.node));
-            
+
             for child in node.children.borrow().iter() {
                 print_node(result, child.clone());
             }
@@ -61,7 +65,7 @@ impl RenderTree {
         if let Some(root) = &self.root {
             print_node(&mut result, root.clone());
         }
-        
+
         result
     }
 }
