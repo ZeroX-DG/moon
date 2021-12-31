@@ -41,7 +41,7 @@ pub fn layout_to_string(
     };
 
     let node_info = match &root_node.render_node() {
-        Some(node) => format!(" {:#?}", node.borrow().node),
+        Some(node) => format!(" {:#?}", node.node),
         None => String::new(),
     };
 

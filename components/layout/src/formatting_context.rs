@@ -40,8 +40,7 @@ fn get_formatting_context<'a>(
         return Box::new(BlockFormattingContext::new(layout_context, tree));
     }
 
-    let node = layout_node.render_node().clone().unwrap();
-    let node = node.borrow();
+    let node = layout_node.render_node().unwrap();
 
     let display = node.get_style(&Property::Display);
     let inner_display = match display.inner() {

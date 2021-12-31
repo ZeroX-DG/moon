@@ -1,6 +1,6 @@
-use std::any::Any;
+use std::{any::Any, rc::Rc};
 
-use style::{property::Property, render_tree::RenderNodeRef, values::prelude::Position};
+use style::{property::Property, render_tree::RenderNode, values::prelude::Position};
 
 use crate::{
     box_model::{BoxComponent, Dimensions},
@@ -15,7 +15,7 @@ use shared::primitive::edge::Edge;
 
 #[derive(Debug)]
 pub struct BlockBox {
-    node: Option<RenderNodeRef>,
+    node: Option<Rc<RenderNode>>,
     dimensions: Dimensions,
 }
 
@@ -28,7 +28,7 @@ impl LayoutBox for BlockBox {
         true
     }
 
-    fn render_node(&self) -> Option<RenderNodeRef> {
+    fn render_node(&self) -> Option<Rc<RenderNode>> {
         self.node.clone()
     }
 
@@ -54,7 +54,7 @@ impl LayoutBox for BlockBox {
 }
 
 impl BlockBox {
-    pub fn new(node: RenderNodeRef) -> Self {
+    pub fn new(node: Rc<RenderNode>) -> Self {
         Self {
             node: Some(node),
             dimensions: Default::default(),
@@ -166,7 +166,6 @@ impl<'a> BlockFormattingContext<'a> {
             _ => return,
         };
 
-        let render_node = render_node.borrow();
         let computed_width = render_node.get_style(&Property::Width);
         let computed_margin_left = render_node.get_style(&Property::MarginLeft);
         let computed_margin_right = render_node.get_style(&Property::MarginRight);
@@ -299,8 +298,7 @@ impl<'a> BlockFormattingContext<'a> {
 
         let layout_node = self.layout_tree_mut().get_node_mut(layout_node_id);
 
-        let render_node = layout_node.render_node().clone().unwrap();
-        let render_node = render_node.borrow();
+        let render_node = layout_node.render_node().unwrap();
 
         let margin_top = render_node
             .get_style(&Property::MarginTop)
@@ -343,9 +341,7 @@ impl<'a> BlockFormattingContext<'a> {
             .layout_tree()
             .get_node(layout_node_id)
             .render_node()
-            .clone()
             .unwrap()
-            .borrow()
             .get_style(&Property::Height);
 
         if computed_height.is_auto() {
@@ -373,19 +369,13 @@ impl<'a> BlockFormattingContext<'a> {
             .content_box();
 
         let previous_layout_y = self.previous_layout_y;
-        let render_node = self
-            .layout_tree()
-            .get_node(layout_node_id)
-            .render_node()
-            .clone();
+        let render_node = self.layout_tree().get_node(layout_node_id).render_node();
         let box_model = self
             .layout_tree_mut()
             .get_node_mut(layout_node_id)
             .dimensions_mut();
 
         if let Some(render_node) = render_node {
-            let render_node = render_node.borrow();
-
             let margin_top = render_node
                 .get_style(&Property::MarginTop)
                 .to_px(containing_block.width);

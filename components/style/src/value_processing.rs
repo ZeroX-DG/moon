@@ -1,7 +1,7 @@
 use crate::property::Property;
+use crate::render_tree::RenderNode;
 use crate::value::Value;
 
-use super::render_tree::RenderNodeWeak;
 use super::selector_matching::is_match_selectors;
 use css::cssom::style_rule::StyleRule;
 use css::parser::structs::ComponentValue;
@@ -14,6 +14,7 @@ use std::cmp::{Ord, Ordering};
 use std::collections::{HashMap, HashSet};
 use std::ops::Deref;
 use std::rc::Rc;
+use std::rc::Weak;
 
 use super::expand::prelude::*;
 
@@ -65,7 +66,7 @@ pub struct ContextualRule<'a> {
 
 /// Context for computing values
 pub struct ComputeContext<'a> {
-    pub parent: &'a Option<RenderNodeWeak>,
+    pub parent: Option<Weak<RenderNode>>,
     pub properties: HashMap<Property, Value>,
     pub style_cache: &'a mut StyleCache,
 }

@@ -4,13 +4,12 @@ use crate::value_processing::{compute, ComputeContext, Properties, StyleCache};
 use crate::values::display::{Display, DisplayBox};
 use dom::node::Node;
 use strum::IntoEnumIterator;
-use tree::rctree::TreeNodeRef;
 
 use super::inheritable::INHERITABLES;
-use super::render_tree::{RenderNode, RenderNodeRef, RenderNodeWeak, RenderTree};
+use super::render_tree::{RenderNode, RenderTree};
 use super::value_processing::{apply_styles, ContextualRule, ValueRef};
 use std::collections::HashMap;
-use std::rc::Rc;
+use std::rc::{Rc, Weak};
 
 pub struct TreeBuilder;
 
@@ -36,9 +35,9 @@ impl TreeBuilder {
 fn build_from_node(
     node: Rc<Node>,
     rules: &[ContextualRule],
-    parent: Option<RenderNodeWeak>,
+    parent: Option<Weak<RenderNode>>,
     cache: &mut StyleCache,
-) -> Option<RenderNodeRef> {
+) -> Option<Rc<RenderNode>> {
     let properties = if node.is_text() {
         HashMap::new()
     } else {
@@ -54,35 +53,35 @@ fn build_from_node(
         }
     }
 
-    let render_node = TreeNodeRef::new(RenderNode {
+    let render_node = Rc::new(RenderNode {
         node: node.clone(),
         properties: compute_styles(properties, parent.clone(), cache),
         parent_render_node: parent,
-        children: Vec::new(),
+        children: Default::default(),
     });
 
-    render_node.borrow_mut().children = node
-        .child_nodes()
-        .into_iter() // this is fine because we clone the node when iterate
-        .filter_map(|child| build_from_node(child, &rules, Some(render_node.downgrade()), cache))
-        .collect();
+    render_node.children.replace(
+        node.child_nodes()
+            .into_iter() // this is fine because we clone the node when iterate
+            .filter_map(|child| {
+                build_from_node(child, &rules, Some(Rc::downgrade(&render_node)), cache)
+            })
+            .collect(),
+    );
 
     Some(render_node)
 }
 
 fn compute_styles(
     properties: Properties,
-    parent: Option<RenderNodeWeak>,
+    parent: Option<Weak<RenderNode>>,
     cache: &mut StyleCache,
 ) -> HashMap<Property, ValueRef> {
     // get inherit value for a property
     let inherit = |property: Property| {
         if let Some(parent) = &parent {
             if let Some(p) = parent.upgrade() {
-                return (
-                    property.clone(),
-                    (**p.borrow().get_style(&property)).clone(),
-                );
+                return (property.clone(), (**p.get_style(&property)).clone());
             }
         }
         // if there's no parent
@@ -127,7 +126,7 @@ fn compute_styles(
     // TODO: Might be an expensive clone when we support all properties
     let temp_specified = specified_values.clone();
     let mut context = ComputeContext {
-        parent: &parent,
+        parent,
         properties: temp_specified,
         style_cache: cache,
     };
@@ -220,7 +219,6 @@ mod tests {
         let render_tree = TreeBuilder::build(dom_tree.clone(), &rules);
 
         let render_tree_inner = render_tree.root.expect("No root node");
-        let render_tree_inner = render_tree_inner.borrow();
         let parent_styles = &render_tree_inner.properties;
         assert_eq!(
             parent_styles.get(&Property::BackgroundColor),
@@ -232,7 +230,7 @@ mod tests {
             )))))
         );
 
-        let child_inner = render_tree_inner.children[0].borrow();
+        let child_inner = render_tree_inner.children.borrow()[0].clone();
         let child_styles = &child_inner.properties;
         assert_eq!(
             child_styles.get(&Property::Color),
@@ -276,7 +274,6 @@ mod tests {
         let render_tree = TreeBuilder::build(dom_tree.clone(), &rules);
 
         let render_tree_inner = render_tree.root.expect("No root node");
-        let render_tree_inner = render_tree_inner.borrow();
         let parent_styles = &render_tree_inner.properties;
         assert_eq!(
             parent_styles.get(&Property::MarginTop),
@@ -334,7 +331,6 @@ mod tests {
         let render_tree = TreeBuilder::build(dom_tree.clone(), &rules);
 
         let render_tree_inner = render_tree.root.expect("No root node");
-        let render_tree_inner = render_tree_inner.borrow();
         let parent_styles = &render_tree_inner.properties;
         assert_eq!(
             parent_styles.get(&Property::BorderTopColor),
@@ -412,7 +408,6 @@ mod tests {
         let render_tree = TreeBuilder::build(dom_tree.clone(), &rules);
 
         let render_tree_inner = render_tree.root.expect("No root node");
-        let render_tree_inner = render_tree_inner.borrow();
         let parent_styles = &render_tree_inner.properties;
         assert_eq!(
             parent_styles.get(&Property::PaddingTop),
@@ -478,7 +473,6 @@ mod tests {
         let render_tree = TreeBuilder::build(dom_tree.clone(), &rules);
 
         let render_tree_inner = render_tree.root.expect("No root node");
-        let render_tree_inner = render_tree_inner.borrow();
         let parent_styles = &render_tree_inner.properties;
         assert_eq!(
             parent_styles.get(&Property::Color),
@@ -490,7 +484,7 @@ mod tests {
             )))))
         );
 
-        let child_inner = render_tree_inner.children[0].borrow();
+        let child_inner = render_tree_inner.children.borrow()[0].clone();
         let child_styles = &child_inner.properties;
 
         assert_eq!(
@@ -525,7 +519,6 @@ mod tests {
         let render_tree = TreeBuilder::build(dom_tree.clone(), &rules);
 
         let render_tree_inner = render_tree.root.expect("No root node");
-        let render_tree_inner = render_tree_inner.borrow();
         let parent_styles = &render_tree_inner.properties;
         assert_eq!(
             parent_styles.get(&Property::MarginTop),
@@ -583,7 +576,6 @@ mod tests {
         let render_tree = TreeBuilder::build(dom_tree.clone(), &rules);
 
         let render_tree_inner = render_tree.root.expect("No root node");
-        let render_tree_inner = render_tree_inner.borrow();
         let parent_styles = &render_tree_inner.properties;
         assert_eq!(
             parent_styles.get(&Property::BorderTopColor),

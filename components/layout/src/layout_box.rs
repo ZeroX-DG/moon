@@ -1,8 +1,8 @@
-use std::{any::Any, fmt::Debug};
+use std::{any::Any, fmt::Debug, rc::Rc};
 
 use style::{
     property::Property,
-    render_tree::RenderNodeRef,
+    render_tree::RenderNode,
     value::Value,
     values::{display::Display, display::InnerDisplayType, position::Position},
 };
@@ -17,7 +17,7 @@ pub type LayoutNodeId = TreeNodeId;
 pub trait LayoutBox: Any + Debug {
     fn is_block(&self) -> bool;
     fn is_inline(&self) -> bool;
-    fn render_node(&self) -> Option<RenderNodeRef>;
+    fn render_node(&self) -> Option<Rc<RenderNode>>;
     fn is_anonymous(&self) -> bool {
         self.render_node().is_none()
     }
@@ -26,7 +26,7 @@ pub trait LayoutBox: Any + Debug {
     fn dimensions_mut(&mut self) -> &mut Dimensions;
     fn is_positioned(&self, position: Position) -> bool {
         match self.render_node() {
-            Some(node) => match node.borrow().get_style(&Property::Position).inner() {
+            Some(node) => match node.get_style(&Property::Position).inner() {
                 Value::Position(pos) => *pos == position,
                 _ => false,
             },
@@ -35,7 +35,7 @@ pub trait LayoutBox: Any + Debug {
     }
     fn is_non_replaced(&self) -> bool {
         match &self.render_node() {
-            Some(node) => match node.borrow().node.as_element_opt() {
+            Some(node) => match node.node.as_element_opt() {
                 Some(e) => match e.tag_name().as_str() {
                     "video" | "image" | "img" | "canvas" => false,
                     _ => true,
@@ -47,7 +47,7 @@ pub trait LayoutBox: Any + Debug {
     }
     fn is_style_auto(&self, property: &Property) -> bool {
         if let Some(node) = &self.render_node() {
-            let style = node.borrow().get_style(property);
+            let style = node.get_style(property);
 
             return style.is_auto();
         }
@@ -56,7 +56,7 @@ pub trait LayoutBox: Any + Debug {
 
     fn is_inline_block(&self) -> bool {
         match &self.render_node() {
-            Some(node) => match node.borrow().get_style(&Property::Display).inner() {
+            Some(node) => match node.get_style(&Property::Display).inner() {
                 Value::Display(Display::Full(_, InnerDisplayType::FlowRoot)) => self.is_inline(),
                 _ => false,
             },
@@ -91,8 +91,8 @@ pub fn apply_explicit_sizes(tree: &mut LayoutTree, layout_node_id: &LayoutNodeId
     }
 
     if let Some(render_node) = layout_node.render_node() {
-        let computed_width = render_node.borrow().get_style(&Property::Width);
-        let computed_height = render_node.borrow().get_style(&Property::Height);
+        let computed_width = render_node.get_style(&Property::Width);
+        let computed_height = render_node.get_style(&Property::Height);
 
         if !computed_width.is_auto() {
             let used_width = computed_width.to_px(containing_block.width);
