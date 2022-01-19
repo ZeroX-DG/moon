@@ -74,7 +74,6 @@ impl InlineFormattingContext {
         line_boxes.push(LineBox::new());
 
         let containing_block = layout_node
-            .containing_block()
             .dimensions()
             .content_box();
 
@@ -86,7 +85,7 @@ impl InlineFormattingContext {
             self.apply_vertical_spacing(child.clone());
             child.apply_explicit_sizes();
 
-            let child_width = child.dimensions().content.width;
+            let child_width = child.dimensions().margin_box().width;
 
             let line_box = line_boxes.last_mut().unwrap();
 

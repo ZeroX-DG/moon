@@ -15,13 +15,13 @@ impl TreeBuilder {
 
     pub fn build(mut self, root: Rc<RenderNode>) -> Rc<LayoutBox> {
         let root_box = Rc::new(LayoutBox::new(root.clone()));
-        establish_context_for(root_box.clone());
 
         self.parent_stack.push(root_box.clone());
         for child in root.children.borrow().iter() {
             self.build_layout_tree(child.clone());
         }
         self.parent_stack.pop();
+        establish_context_for(root_box.clone());
 
         root_box
     }

@@ -127,8 +127,6 @@ impl FrameLayout {
 
                 establish_context(FormattingContextType::BlockFormattingContext, initial_block_box.clone());
                 initial_block_box.formatting_context().run(layout_context.clone(), initial_block_box.clone());
-
-                root.set_containing_block(initial_block_box.clone());
             }
         }
     }

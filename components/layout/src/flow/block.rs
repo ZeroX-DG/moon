@@ -22,7 +22,6 @@ impl BlockFormattingContext {
             return;
         }
 
-        self.compute_width(layout_node.clone());
         self.layout_block_level_children(layout_node);
     }
 
@@ -43,7 +42,6 @@ impl BlockFormattingContext {
             if child.is_positioned(Position::Absolute) {
                 continue;
             }
-
             self.compute_width(child.clone());
 
             if child.is_non_replaced() {
