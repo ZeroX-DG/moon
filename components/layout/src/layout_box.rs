@@ -1,8 +1,23 @@
-use std::{cell::{Ref, RefCell, RefMut}, fmt::Debug, rc::{Rc, Weak}};
+use std::{
+    cell::{Ref, RefCell, RefMut},
+    fmt::Debug,
+    rc::{Rc, Weak},
+};
 
-use style::{property::Property, render_tree::RenderNode, value::Value, values::{display::{InnerDisplayType, OuterDisplayType}, display::Display, prelude::Position}};
+use style::{
+    property::Property,
+    render_tree::RenderNode,
+    value::Value,
+    values::{
+        display::Display,
+        display::{InnerDisplayType, OuterDisplayType},
+        prelude::Position,
+    },
+};
 
-use crate::{box_model::Dimensions, flow::inline::InlineBox, formatting_context::FormattingContext};
+use crate::{
+    box_model::Dimensions, flow::inline::InlineBox, formatting_context::FormattingContext,
+};
 
 #[derive(Debug)]
 pub struct BaseBox {
@@ -20,7 +35,7 @@ impl BaseBox {
             children: RefCell::new(Vec::new()),
             containing_block: RefCell::new(None),
             formatting_context: RefCell::new(context),
-            parent: RefCell::new(None)
+            parent: RefCell::new(None),
         }
     }
 }
@@ -29,7 +44,7 @@ impl BaseBox {
 pub struct LayoutBox {
     pub base: BaseBox,
     pub data: BoxData,
-    pub node: Option<Rc<RenderNode>>
+    pub node: Option<Rc<RenderNode>>,
 }
 
 #[derive(Debug)]
@@ -55,8 +70,9 @@ impl LayoutBox {
                         Display::Full(outer, inner) => match (outer, inner) {
                             (OuterDisplayType::Block, InnerDisplayType::Flow) => BoxData::BlockBox,
                             (OuterDisplayType::Inline, InnerDisplayType::Flow)
-                            | (OuterDisplayType::Inline, InnerDisplayType::FlowRoot) =>
-                                BoxData::InlineContents(InlineContents::InlineBox(InlineBox::new())),
+                            | (OuterDisplayType::Inline, InnerDisplayType::FlowRoot) => {
+                                BoxData::InlineContents(InlineContents::InlineBox(InlineBox::new()))
+                            }
                             _ => unimplemented!("Unsupport display type: {:#?}", d),
                         },
                         _ => unimplemented!("Unsupport display type: {:#?}", d),
@@ -69,7 +85,7 @@ impl LayoutBox {
         Self {
             base: BaseBox::new(None),
             data: box_data,
-            node: Some(render_node)
+            node: Some(render_node),
         }
     }
 
@@ -77,7 +93,7 @@ impl LayoutBox {
         Self {
             base: BaseBox::new(None),
             data,
-            node: None
+            node: None,
         }
     }
 
@@ -88,8 +104,8 @@ impl LayoutBox {
     pub fn parent(&self) -> Option<Rc<LayoutBox>> {
         match self.base.parent.borrow().clone() {
             Some(parent) => parent.upgrade(),
-            _ => None
-        } 
+            _ => None,
+        }
     }
 
     pub fn children(&self) -> Ref<Vec<Rc<LayoutBox>>> {
@@ -101,12 +117,15 @@ impl LayoutBox {
     }
 
     pub fn set_children(parent: Rc<LayoutBox>, children: Vec<Rc<LayoutBox>>) {
-        children.iter().for_each(|child| child.set_parent(parent.clone()));
+        children
+            .iter()
+            .for_each(|child| child.set_parent(parent.clone()));
         parent.base.children.replace(children);
     }
 
     pub fn children_are_inline(&self) -> bool {
-        self.base.children
+        self.base
+            .children
             .borrow()
             .iter()
             .all(|child| child.is_inline())
@@ -119,7 +138,9 @@ impl LayoutBox {
     }
 
     pub fn set_containing_block(&self, containing_block: Rc<LayoutBox>) {
-        self.base.containing_block.replace(Some(Rc::downgrade(&containing_block)));
+        self.base
+            .containing_block
+            .replace(Some(Rc::downgrade(&containing_block)));
     }
 
     pub fn containing_block(&self) -> Rc<LayoutBox> {
@@ -127,21 +148,21 @@ impl LayoutBox {
             Some(containing_block) => containing_block
                 .upgrade()
                 .expect("Unable to obtain containing block"),
-            _ => panic!("No containing block has been set. This should not happen!")
+            _ => panic!("No containing block has been set. This should not happen!"),
         }
     }
 
     pub fn is_inline(&self) -> bool {
         match self.data {
             BoxData::InlineContents(_) => true,
-            _ => false
+            _ => false,
         }
     }
 
     pub fn is_block(&self) -> bool {
         match self.data {
             BoxData::BlockBox => true,
-            _ => false
+            _ => false,
         }
     }
 
@@ -199,17 +220,15 @@ impl LayoutBox {
     }
 
     pub fn formatting_context(&self) -> Rc<FormattingContext> {
-        self.base.formatting_context
+        self.base
+            .formatting_context
             .borrow()
             .clone()
             .expect("No layout context! This should not happen!")
     }
 
     pub fn apply_explicit_sizes(&self) {
-        let containing_block = self
-            .containing_block()
-            .dimensions()
-            .content_box();
+        let containing_block = self.containing_block().dimensions().content_box();
 
         if self.is_inline() && !self.is_inline_block() {
             return;
@@ -236,4 +255,3 @@ impl LayoutBox {
         child.set_parent(parent);
     }
 }
-

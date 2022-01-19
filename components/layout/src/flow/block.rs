@@ -1,18 +1,18 @@
-use std::rc::Rc;
-use style::{property::Property, values::prelude::Position};
 use crate::{box_model::BoxComponent, formatting_context::LayoutContext, layout_box::LayoutBox};
 use shared::primitive::edge::Edge;
+use std::rc::Rc;
+use style::{property::Property, values::prelude::Position};
 
 pub struct BlockFormattingContext {
     previous_layout_y: f32,
-    layout_context: Rc<LayoutContext>
+    layout_context: Rc<LayoutContext>,
 }
 
 impl BlockFormattingContext {
     pub fn new(layout_context: Rc<LayoutContext>) -> Self {
         Self {
             previous_layout_y: 0.,
-            layout_context
+            layout_context,
         }
     }
 
@@ -48,7 +48,9 @@ impl BlockFormattingContext {
                 self.compute_position_non_replaced(child.clone());
             }
 
-            child.formatting_context().run(self.layout_context.clone(), child.clone());
+            child
+                .formatting_context()
+                .run(self.layout_context.clone(), child.clone());
 
             if !child.children_are_inline() {
                 self.compute_height(child.clone());
@@ -61,10 +63,7 @@ impl BlockFormattingContext {
     }
 
     fn compute_width(&mut self, layout_node: Rc<LayoutBox>) {
-        let containing_block = layout_node
-            .containing_block()
-            .dimensions()
-            .content_box();
+        let containing_block = layout_node.containing_block().dimensions().content_box();
 
         let render_node = match layout_node.render_node() {
             Some(node) => node.clone(),
@@ -192,10 +191,7 @@ impl BlockFormattingContext {
             return;
         }
 
-        let containing_block = layout_node
-            .containing_block()
-            .dimensions()
-            .content_box();
+        let containing_block = layout_node.containing_block().dimensions().content_box();
 
         let height = self.compute_box_height(layout_node.clone());
 
@@ -233,10 +229,7 @@ impl BlockFormattingContext {
     }
 
     fn compute_box_height(&self, layout_node: Rc<LayoutBox>) -> f32 {
-        let containing_block = layout_node
-            .containing_block()
-            .dimensions()
-            .content_box();
+        let containing_block = layout_node.containing_block().dimensions().content_box();
         let computed_height = layout_node
             .render_node()
             .unwrap()
@@ -250,19 +243,13 @@ impl BlockFormattingContext {
     }
 
     fn compute_auto_height(&self, layout_node: Rc<LayoutBox>) -> f32 {
-        layout_node
-            .children()
-            .iter()
-            .fold(0.0, |acc, child| {
-                acc + child.dimensions().margin_box().height
-            })
+        layout_node.children().iter().fold(0.0, |acc, child| {
+            acc + child.dimensions().margin_box().height
+        })
     }
 
     fn compute_position_non_replaced(&mut self, layout_node: Rc<LayoutBox>) {
-        let containing_block = layout_node
-            .containing_block()
-            .dimensions()
-            .content_box();
+        let containing_block = layout_node.containing_block().dimensions().content_box();
 
         let previous_layout_y = self.previous_layout_y;
         let render_node = layout_node.render_node();
@@ -318,7 +305,7 @@ impl BlockFormattingContext {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::formatting_context::{FormattingContextType, LayoutContext, establish_context};
+    use crate::formatting_context::{establish_context, FormattingContextType, LayoutContext};
     use crate::layout_box::BoxData;
     use crate::utils::*;
     use shared::primitive::*;
@@ -360,12 +347,20 @@ mod tests {
         });
 
         let initial_block_box = Rc::new(LayoutBox::new_anonymous(BoxData::BlockBox));
-        establish_context(FormattingContextType::BlockFormattingContext, initial_block_box.clone());
+        establish_context(
+            FormattingContextType::BlockFormattingContext,
+            initial_block_box.clone(),
+        );
         LayoutBox::add_child(initial_block_box.clone(), root.clone());
 
-        initial_block_box.formatting_context().run(layout_context.clone(), initial_block_box.clone());
+        initial_block_box
+            .formatting_context()
+            .run(layout_context.clone(), initial_block_box.clone());
 
         assert_eq!(root.dimensions().content.height, 40.);
-        assert_eq!(root.dimensions().content.width, layout_context.viewport.width);
+        assert_eq!(
+            root.dimensions().content.width,
+            layout_context.viewport.width
+        );
     }
 }

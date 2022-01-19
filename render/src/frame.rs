@@ -4,12 +4,9 @@ use super::loader::frame::FrameLoader;
 use css::cssom::css_rule::CSSRule;
 
 use dom::node::Node;
-use layout::formatting_context::{FormattingContextType, establish_context};
+use layout::formatting_context::{establish_context, FormattingContextType};
 use layout::layout_printer::dump_layout;
-use layout::{
-    formatting_context::LayoutContext,
-    layout_box::LayoutBox,
-};
+use layout::{formatting_context::LayoutContext, layout_box::LayoutBox};
 use shared::primitive::Rect;
 use style::render_tree::RenderTree;
 use style::value_processing::{CSSLocation, CascadeOrigin, ContextualRule};
@@ -122,11 +119,18 @@ impl FrameLayout {
                     },
                 });
 
-                let initial_block_box = Rc::new(LayoutBox::new_anonymous(layout::layout_box::BoxData::BlockBox));
+                let initial_block_box = Rc::new(LayoutBox::new_anonymous(
+                    layout::layout_box::BoxData::BlockBox,
+                ));
                 LayoutBox::add_child(initial_block_box.clone(), root.clone());
 
-                establish_context(FormattingContextType::BlockFormattingContext, initial_block_box.clone());
-                initial_block_box.formatting_context().run(layout_context.clone(), initial_block_box.clone());
+                establish_context(
+                    FormattingContextType::BlockFormattingContext,
+                    initial_block_box.clone(),
+                );
+                initial_block_box
+                    .formatting_context()
+                    .run(layout_context.clone(), initial_block_box.clone());
             }
         }
     }

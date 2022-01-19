@@ -3,7 +3,12 @@ use crate::{property::Property, value_processing::StyleCache};
 use super::inheritable::INHERITABLES;
 use super::value_processing::ValueRef;
 use dom::node::Node;
-use std::{cell::RefCell, collections::HashMap, fmt::Debug, rc::{Rc, Weak}};
+use std::{
+    cell::RefCell,
+    collections::HashMap,
+    fmt::Debug,
+    rc::{Rc, Weak},
+};
 
 #[derive(Debug)]
 pub struct RenderTree {

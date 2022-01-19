@@ -1,6 +1,9 @@
+use crate::{
+    formatting_context::{establish_context, establish_context_for, FormattingContextType},
+    layout_box::{BoxData, LayoutBox},
+};
 use std::rc::Rc;
 use style::render_tree::RenderNode;
-use crate::{formatting_context::{FormattingContextType, establish_context, establish_context_for}, layout_box::{BoxData, LayoutBox}};
 
 pub struct TreeBuilder {
     parent_stack: Vec<Rc<LayoutBox>>,
@@ -47,7 +50,6 @@ impl TreeBuilder {
         establish_context_for(layout_box.clone());
     }
 
-
     /// Get a parent for an block-level box
     ///
     /// A block-level box can only be inserted into the nearest non-inline parent.
@@ -78,7 +80,10 @@ impl TreeBuilder {
         if parent.children_are_inline() {
             let children = parent.children_mut().drain(..).collect::<Vec<_>>();
             let anonymous = Rc::new(LayoutBox::new_anonymous(BoxData::BlockBox));
-            establish_context(FormattingContextType::BlockFormattingContext, anonymous.clone());
+            establish_context(
+                FormattingContextType::BlockFormattingContext,
+                anonymous.clone(),
+            );
 
             LayoutBox::set_children(anonymous.clone(), children);
             LayoutBox::add_child(parent.clone(), anonymous);
@@ -98,7 +103,11 @@ impl TreeBuilder {
     /// then create an anonymous block-level box to wrap the inline-box in before
     /// inserting into the parent.
     fn get_parent_for_inline(&mut self) -> Rc<LayoutBox> {
-        let parent = self.parent_stack.last().expect("No parent in stack").clone();
+        let parent = self
+            .parent_stack
+            .last()
+            .expect("No parent in stack")
+            .clone();
 
         if parent.children_are_inline() {
             return parent;
@@ -111,7 +120,10 @@ impl TreeBuilder {
 
         if require_anonymous_box {
             let anonymous = Rc::new(LayoutBox::new_anonymous(BoxData::BlockBox));
-            establish_context(FormattingContextType::InlineFormattingContext, anonymous.clone());
+            establish_context(
+                FormattingContextType::InlineFormattingContext,
+                anonymous.clone(),
+            );
             LayoutBox::add_child(parent.clone(), anonymous);
         }
 
