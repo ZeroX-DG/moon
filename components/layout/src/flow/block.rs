@@ -22,6 +22,7 @@ impl BlockFormattingContext {
             return;
         }
 
+        self.compute_width(layout_node.clone());
         self.layout_block_level_children(layout_node);
     }
 
@@ -49,7 +50,7 @@ impl BlockFormattingContext {
                 self.compute_position_non_replaced(child.clone());
             }
 
-            child.layout(self.layout_context.clone());
+            child.formatting_context().run(self.layout_context.clone(), child.clone());
 
             if !child.children_are_inline() {
                 self.compute_height(child.clone());
@@ -319,7 +320,8 @@ impl BlockFormattingContext {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::formatting_context::LayoutContext;
+    use crate::formatting_context::{FormattingContextType, LayoutContext, establish_context};
+    use crate::layout_box::BoxData;
     use crate::utils::*;
     use shared::primitive::*;
     use test_utils::dom_creator::*;
@@ -359,11 +361,13 @@ mod tests {
             },
         });
 
-        let mut formatting_context = BlockFormattingContext::new(layout_context.clone());
+        let initial_block_box = Rc::new(LayoutBox::new_anonymous(BoxData::BlockBox));
+        establish_context(FormattingContextType::BlockFormattingContext, initial_block_box.clone());
+        LayoutBox::add_child(initial_block_box.clone(), root.clone());
 
-        formatting_context.run(root.clone());
+        initial_block_box.formatting_context().run(layout_context.clone(), initial_block_box.clone());
 
-        assert_eq!(root.dimensions().content_box().height, 40.);
-        assert_eq!(root.dimensions().content_box().width, layout_context.viewport.width);
+        assert_eq!(root.dimensions().content.height, 40.);
+        assert_eq!(root.dimensions().content.width, layout_context.viewport.width);
     }
 }

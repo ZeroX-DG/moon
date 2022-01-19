@@ -2,7 +2,7 @@ use std::{cell::{Ref, RefCell, RefMut}, fmt::Debug, rc::{Rc, Weak}};
 
 use style::{property::Property, render_tree::RenderNode, value::Value, values::{display::{InnerDisplayType, OuterDisplayType}, display::Display, prelude::Position}};
 
-use crate::{box_model::Dimensions, flow::inline::InlineBox, formatting_context::{FormattingContext, LayoutContext}};
+use crate::{box_model::Dimensions, flow::inline::InlineBox, formatting_context::FormattingContext};
 
 #[derive(Debug)]
 pub struct BaseBox {
@@ -100,8 +100,9 @@ impl LayoutBox {
         self.base.children.borrow_mut()
     }
 
-    pub fn set_children(&self, children: Vec<Rc<LayoutBox>>) {
-        self.base.children.replace(children);
+    pub fn set_children(parent: Rc<LayoutBox>, children: Vec<Rc<LayoutBox>>) {
+        children.iter().for_each(|child| child.set_parent(parent.clone()));
+        parent.base.children.replace(children);
     }
 
     pub fn children_are_inline(&self) -> bool {
@@ -114,7 +115,11 @@ impl LayoutBox {
     pub fn set_parent(&self, parent: Rc<LayoutBox>) {
         self.base.parent.replace(Some(Rc::downgrade(&parent)));
         // TODO: re-calculate containing block instead of doing this.
-        self.base.containing_block.replace(Some(Rc::downgrade(&parent)));
+        self.set_containing_block(parent);
+    }
+
+    pub fn set_containing_block(&self, containing_block: Rc<LayoutBox>) {
+        self.base.containing_block.replace(Some(Rc::downgrade(&containing_block)));
     }
 
     pub fn containing_block(&self) -> Rc<LayoutBox> {
@@ -193,12 +198,11 @@ impl LayoutBox {
         }
     }
 
-    pub fn layout(&self, context: Rc<LayoutContext>) {
+    pub fn formatting_context(&self) -> Rc<FormattingContext> {
         self.base.formatting_context
-            .borrow_mut()
-            .as_mut()
+            .borrow()
+            .clone()
             .expect("No layout context! This should not happen!")
-            .run(context, &self.children());
     }
 
     pub fn apply_explicit_sizes(&self) {

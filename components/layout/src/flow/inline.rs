@@ -82,7 +82,7 @@ impl InlineFormattingContext {
 
         for child in layout_node.children().iter() {
             self.calculate_width(child.clone());
-            child.layout(self.layout_context.clone());
+            child.formatting_context().run(self.layout_context.clone(), child.clone());
             self.apply_vertical_spacing(child.clone());
             child.apply_explicit_sizes();
 

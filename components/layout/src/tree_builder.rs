@@ -1,6 +1,6 @@
 use std::rc::Rc;
 use style::render_tree::RenderNode;
-use crate::{formatting_context::{FormattingContextType, establish_context}, layout_box::{BoxData, LayoutBox}};
+use crate::{formatting_context::{FormattingContextType, establish_context, establish_context_for}, layout_box::{BoxData, LayoutBox}};
 
 pub struct TreeBuilder {
     parent_stack: Vec<Rc<LayoutBox>>,
@@ -15,6 +15,7 @@ impl TreeBuilder {
 
     pub fn build(mut self, root: Rc<RenderNode>) -> Rc<LayoutBox> {
         let root_box = Rc::new(LayoutBox::new(root.clone()));
+        establish_context_for(root_box.clone());
 
         self.parent_stack.push(root_box.clone());
         for child in root.children.borrow().iter() {
@@ -34,7 +35,7 @@ impl TreeBuilder {
             self.get_parent_for_block()
         };
 
-        LayoutBox::add_child(parent.clone(), layout_box);
+        LayoutBox::add_child(parent.clone(), layout_box.clone());
 
         let box_ref = parent.children().last().unwrap().clone();
 
@@ -43,6 +44,7 @@ impl TreeBuilder {
             self.build_layout_tree(child.clone());
         }
         self.parent_stack.pop();
+        establish_context_for(layout_box.clone());
     }
 
 
@@ -78,7 +80,8 @@ impl TreeBuilder {
             let anonymous = Rc::new(LayoutBox::new_anonymous(BoxData::BlockBox));
             establish_context(FormattingContextType::BlockFormattingContext, anonymous.clone());
 
-            anonymous.set_children(children);
+            LayoutBox::set_children(anonymous.clone(), children);
+            LayoutBox::add_child(parent.clone(), anonymous);
         }
 
         parent
@@ -108,7 +111,8 @@ impl TreeBuilder {
 
         if require_anonymous_box {
             let anonymous = Rc::new(LayoutBox::new_anonymous(BoxData::BlockBox));
-            establish_context(FormattingContextType::InlineFormattingContext, anonymous);
+            establish_context(FormattingContextType::InlineFormattingContext, anonymous.clone());
+            LayoutBox::add_child(parent.clone(), anonymous);
         }
 
         let children = parent.children();

@@ -3,11 +3,7 @@ use crate::{property::Property, value_processing::StyleCache};
 use super::inheritable::INHERITABLES;
 use super::value_processing::ValueRef;
 use dom::node::Node;
-use std::{
-    cell::RefCell,
-    collections::HashMap,
-    rc::{Rc, Weak},
-};
+use std::{cell::RefCell, collections::HashMap, fmt::Debug, rc::{Rc, Weak}};
 
 #[derive(Debug)]
 pub struct RenderTree {
@@ -18,7 +14,6 @@ pub struct RenderTree {
 }
 
 /// A style node in the style tree
-#[derive(Debug)]
 pub struct RenderNode {
     /// A reference to the DOM node that uses this style
     pub node: Rc<Node>,
@@ -47,6 +42,12 @@ impl RenderNode {
         }
 
         panic!("Oops, we should not reach here");
+    }
+}
+
+impl Debug for RenderNode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self.node)
     }
 }
 

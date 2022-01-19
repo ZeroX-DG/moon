@@ -111,7 +111,6 @@ impl FrameLayout {
             log::debug!("Finished layout tree");
 
             if let Some(root) = &self.layout_tree {
-                dump_layout(root.clone());
                 let (width, height) = size;
 
                 let layout_context = Rc::new(LayoutContext {
@@ -124,10 +123,12 @@ impl FrameLayout {
                 });
 
                 let initial_block_box = Rc::new(LayoutBox::new_anonymous(layout::layout_box::BoxData::BlockBox));
-                initial_block_box.set_children(vec![root.clone()]);
+                LayoutBox::add_child(initial_block_box.clone(), root.clone());
 
                 establish_context(FormattingContextType::BlockFormattingContext, initial_block_box.clone());
-                initial_block_box.layout(layout_context);
+                initial_block_box.formatting_context().run(layout_context.clone(), initial_block_box.clone());
+
+                root.set_containing_block(initial_block_box.clone());
             }
         }
     }
