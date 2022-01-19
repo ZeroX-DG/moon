@@ -4,11 +4,9 @@ use super::loader::frame::FrameLoader;
 use css::cssom::css_rule::CSSRule;
 
 use dom::node::Node;
-use layout::{
-    flow::block::{BlockBox, BlockFormattingContext},
-    formatting_context::{FormattingContext, LayoutContext},
-    layout_box::{LayoutNodeId, LayoutTree},
-};
+use layout::formatting_context::{establish_context, FormattingContextType};
+use layout::layout_printer::dump_layout;
+use layout::{formatting_context::LayoutContext, layout_box::LayoutBox};
 use shared::primitive::Rect;
 use style::render_tree::RenderTree;
 use style::value_processing::{CSSLocation, CascadeOrigin, ContextualRule};
@@ -22,7 +20,7 @@ pub struct Frame {
 }
 
 pub struct FrameLayout {
-    layout_tree: LayoutTree,
+    layout_tree: Option<Rc<LayoutBox>>,
     render_tree: Option<RenderTree>,
 }
 
@@ -67,17 +65,13 @@ impl Frame {
 impl FrameLayout {
     pub fn new() -> Self {
         Self {
-            layout_tree: LayoutTree::new(),
+            layout_tree: None,
             render_tree: None,
         }
     }
 
-    pub fn root(&self) -> Option<LayoutNodeId> {
-        self.layout_tree.root()
-    }
-
-    pub fn layout_tree(&self) -> &LayoutTree {
-        &self.layout_tree
+    pub fn layout_tree(&self) -> Option<Rc<LayoutBox>> {
+        self.layout_tree.clone()
     }
 
     pub fn recalculate_styles(&mut self, document_node: Rc<Node>) {
@@ -108,31 +102,35 @@ impl FrameLayout {
     pub fn recalculate_layout(&mut self, size: FrameSize) {
         if let Some(render_tree) = &self.render_tree {
             log::debug!("Building layout tree");
+            let render_tree_root = render_tree.root.clone().unwrap();
             self.layout_tree =
-                layout::tree_builder::TreeBuilder::new().build(render_tree.root.clone().unwrap());
+                Some(layout::tree_builder::TreeBuilder::new().build(render_tree_root));
             log::debug!("Finished layout tree");
 
-            if let Some(root) = self.layout_tree.root() {
+            if let Some(root) = &self.layout_tree {
                 let (width, height) = size;
 
-                let layout_context = LayoutContext {
+                let layout_context = Rc::new(LayoutContext {
                     viewport: Rect {
                         x: 0.,
                         y: 0.,
                         width: width as f32,
                         height: height as f32,
                     },
-                };
+                });
 
-                let initial_block_box = self
-                    .layout_tree
-                    .set_root(Box::new(BlockBox::new_anonymous()));
-                self.layout_tree.add_child_by_id(&initial_block_box, &root);
+                let initial_block_box = Rc::new(LayoutBox::new_anonymous(
+                    layout::layout_box::BoxData::BlockBox,
+                ));
+                LayoutBox::add_child(initial_block_box.clone(), root.clone());
 
-                let mut formatting_context =
-                    BlockFormattingContext::new(&layout_context, &mut self.layout_tree);
-
-                formatting_context.run(&initial_block_box);
+                establish_context(
+                    FormattingContextType::BlockFormattingContext,
+                    initial_block_box.clone(),
+                );
+                initial_block_box
+                    .formatting_context()
+                    .run(layout_context.clone(), initial_block_box.clone());
             }
         }
     }

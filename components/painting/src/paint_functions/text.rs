@@ -1,9 +1,11 @@
+use std::rc::Rc;
+
 use crate::command::{DisplayCommand, DrawCommand};
 use crate::utils::color_from_value;
-use layout::layout_box::LayoutNode;
+use layout::layout_box::LayoutBox;
 use style::property::Property;
 
-pub fn paint_text(layout_node: &LayoutNode) -> Option<DisplayCommand> {
+pub fn paint_text(layout_node: Rc<LayoutBox>) -> Option<DisplayCommand> {
     if let Some(render_node) = &layout_node.render_node() {
         if let Some(text) = render_node.node.as_text_opt() {
             let content = text.get_data();

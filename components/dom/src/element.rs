@@ -55,7 +55,7 @@ impl DerefMut for AttributeMap {
 
 impl core::fmt::Debug for Element {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "Element({:?})", self.data)
+        write!(f, "Element({:?} | Class: {:?})", self.data, self.class_list)
     }
 }
 
