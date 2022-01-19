@@ -1,32 +1,30 @@
-use crate::layout_box::{LayoutNodeId, LayoutTree};
+use std::rc::Rc;
+
+use crate::layout_box::LayoutBox;
 
 pub enum DumpSpecificity {
     Structure,
     StructureAndDimensions,
 }
 
-pub fn dump_layout(tree: &LayoutTree, root: &LayoutNodeId) {
+pub fn dump_layout(root: Rc<LayoutBox>) {
     println!(
         "{}",
-        layout_to_string(tree, root, 0, &DumpSpecificity::StructureAndDimensions)
+        layout_to_string(root, 0, &DumpSpecificity::StructureAndDimensions)
     );
 }
 
 pub fn layout_to_string(
-    tree: &LayoutTree,
-    root: &LayoutNodeId,
+    root_node: Rc<LayoutBox>,
     level: usize,
     specificity: &DumpSpecificity,
 ) -> String {
     let mut result = String::new();
-    let child_nodes = tree.children(root);
-
-    let root_node = tree.get_node(root);
 
     let box_type = if root_node.is_anonymous() {
-        format!("[{}][Anonymous {}]", root, root_node.friendly_name())
+        format!("[Anonymous {}]", root_node.friendly_name())
     } else {
-        format!("[{}][{}]", root, root_node.friendly_name())
+        format!("[{}]", root_node.friendly_name())
     };
 
     let dimensions = match specificity {
@@ -53,8 +51,8 @@ pub fn layout_to_string(
         dimensions
     ));
 
-    for node in child_nodes {
-        result.push_str(&layout_to_string(tree, node, level + 1, specificity));
+    for node in root_node.children().iter() {
+        result.push_str(&layout_to_string(node.clone(), level + 1, specificity));
     }
     return result;
 }

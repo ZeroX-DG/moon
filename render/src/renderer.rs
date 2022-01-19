@@ -31,9 +31,9 @@ impl<'a> Renderer<'a> {
     pub fn paint(&mut self) {
         let main_frame = self.page.main_frame();
 
-        if let Some(layout_root) = main_frame.layout().root() {
+        if let Some(layout_root) = main_frame.layout().layout_tree() {
             let display_list =
-                painting::build_display_list(&layout_root, main_frame.layout().layout_tree());
+                painting::build_display_list(layout_root);
             painting::paint(display_list, &mut self.painter);
 
             self.painter.paint();

@@ -1,12 +1,14 @@
+use std::rc::Rc;
+
 use crate::command::{DisplayCommand, DrawCommand};
 use crate::utils::{color_from_value, is_zero};
-use layout::layout_box::LayoutNode;
+use layout::layout_box::LayoutBox;
 use shared::primitive::*;
 use style::property::Property;
 use style::value::Value;
 use style::values::border_radius::BorderRadius;
 
-pub fn paint_background(layout_node: &LayoutNode) -> Option<DisplayCommand> {
+pub fn paint_background(layout_node: Rc<LayoutBox>) -> Option<DisplayCommand> {
     if let Some(render_node) = &layout_node.render_node() {
         let background = render_node.get_style(&Property::BackgroundColor);
 

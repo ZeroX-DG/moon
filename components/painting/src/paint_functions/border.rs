@@ -1,10 +1,12 @@
+use std::rc::Rc;
+
 use crate::command::{DisplayCommand, DrawCommand};
 use crate::utils::color_from_value;
-use layout::layout_box::LayoutNode;
+use layout::layout_box::LayoutBox;
 use shared::primitive::*;
 use style::property::Property;
 
-pub fn paint_border(layout_node: &LayoutNode) -> Option<DisplayCommand> {
+pub fn paint_border(layout_node: Rc<LayoutBox>) -> Option<DisplayCommand> {
     if let Some(render_node) = &layout_node.render_node() {
         let border_top_color = render_node
             .get_style(&Property::BorderTopColor)
@@ -27,22 +29,22 @@ pub fn paint_border(layout_node: &LayoutNode) -> Option<DisplayCommand> {
 
         // TODO: Use trapezoid instead of rect
         if layout_node.dimensions().border.top > 0. {
-            let rect = create_border_rect(layout_node, Edge::Top);
+            let rect = create_border_rect(layout_node.clone(), Edge::Top);
             draw_commands.push(DrawCommand::FillRect(rect, border_top_color));
         }
 
         if layout_node.dimensions().border.left > 0. {
-            let rect = create_border_rect(layout_node, Edge::Left);
+            let rect = create_border_rect(layout_node.clone(), Edge::Left);
             draw_commands.push(DrawCommand::FillRect(rect, border_left_color));
         }
 
         if layout_node.dimensions().border.right > 0. {
-            let rect = create_border_rect(layout_node, Edge::Right);
+            let rect = create_border_rect(layout_node.clone(), Edge::Right);
             draw_commands.push(DrawCommand::FillRect(rect, border_right_color));
         }
 
         if layout_node.dimensions().border.bottom > 0. {
-            let rect = create_border_rect(layout_node, Edge::Bottom);
+            let rect = create_border_rect(layout_node.clone(), Edge::Bottom);
             draw_commands.push(DrawCommand::FillRect(rect, border_bottom_color));
         }
 
@@ -51,7 +53,7 @@ pub fn paint_border(layout_node: &LayoutNode) -> Option<DisplayCommand> {
     None
 }
 
-fn create_border_rect(layout_node: &LayoutNode, edge: Edge) -> Rect {
+fn create_border_rect(layout_node: Rc<LayoutBox>, edge: Edge) -> Rect {
     let border_box = layout_node.dimensions().border_box();
 
     match edge {

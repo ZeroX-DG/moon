@@ -1,166 +1,72 @@
-use std::{any::Any, rc::Rc};
-
-use style::{property::Property, render_tree::RenderNode, values::prelude::Position};
-
-use crate::{
-    box_model::{BoxComponent, Dimensions},
-    formatting_context::{FormattingContext, LayoutContext},
-    layout_box::{
-        apply_explicit_sizes, children_are_inline, get_containing_block, LayoutBox, LayoutNodeId,
-        LayoutTree,
-    },
-};
-
+use std::rc::Rc;
+use style::{property::Property, values::prelude::Position};
+use crate::{box_model::BoxComponent, formatting_context::LayoutContext, layout_box::LayoutBox};
 use shared::primitive::edge::Edge;
 
-#[derive(Debug)]
-pub struct BlockBox {
-    node: Option<Rc<RenderNode>>,
-    dimensions: Dimensions,
-}
-
-impl LayoutBox for BlockBox {
-    fn is_inline(&self) -> bool {
-        false
-    }
-
-    fn is_block(&self) -> bool {
-        true
-    }
-
-    fn render_node(&self) -> Option<Rc<RenderNode>> {
-        self.node.clone()
-    }
-
-    fn friendly_name(&self) -> &str {
-        "BlockBox"
-    }
-
-    fn dimensions(&self) -> &Dimensions {
-        &self.dimensions
-    }
-
-    fn dimensions_mut(&mut self) -> &mut Dimensions {
-        &mut self.dimensions
-    }
-
-    fn as_any(&self) -> &dyn Any {
-        self
-    }
-
-    fn as_any_mut(&mut self) -> &mut dyn Any {
-        self
-    }
-}
-
-impl BlockBox {
-    pub fn new(node: Rc<RenderNode>) -> Self {
-        Self {
-            node: Some(node),
-            dimensions: Default::default(),
-        }
-    }
-
-    pub fn new_anonymous() -> Self {
-        Self {
-            node: None,
-            dimensions: Default::default(),
-        }
-    }
-}
-
-pub struct BlockFormattingContext<'a> {
-    layout_context: &'a LayoutContext,
+pub struct BlockFormattingContext {
     previous_layout_y: f32,
-    layout_tree: &'a mut LayoutTree,
+    layout_context: Rc<LayoutContext>
 }
 
-impl<'a> FormattingContext for BlockFormattingContext<'a> {
-    fn run(&mut self, layout_node_id: &LayoutNodeId) {
-        let layout_node = self.layout_tree_mut().get_node_mut(layout_node_id);
+impl BlockFormattingContext {
+    pub fn new(layout_context: Rc<LayoutContext>) -> Self {
+        Self {
+            previous_layout_y: 0.,
+            layout_context
+        }
+    }
+
+    pub fn run(&mut self, layout_node: Rc<LayoutBox>) {
         if layout_node.is_block() && layout_node.parent().is_none() {
-            self.layout_initial_block_box(layout_node_id);
+            self.layout_initial_block_box(layout_node);
             return;
         }
 
-        self.layout_block_level_children(layout_node_id);
+        self.layout_block_level_children(layout_node);
     }
 
-    fn layout_tree(&self) -> &LayoutTree {
-        &self.layout_tree
-    }
-
-    fn layout_tree_mut(&mut self) -> &mut LayoutTree {
-        &mut self.layout_tree
-    }
-}
-
-impl<'a> BlockFormattingContext<'a> {
-    pub fn new(layout_context: &'a LayoutContext, layout_tree: &'a mut LayoutTree) -> Self {
-        Self {
-            layout_context,
-            previous_layout_y: 0.,
-            layout_tree,
-        }
-    }
-
-    fn layout_initial_block_box(&mut self, layout_node_id: &LayoutNodeId) {
+    fn layout_initial_block_box(&mut self, layout_node: Rc<LayoutBox>) {
         // Initial containing block has the dimensions of the viewport
         let width = self.layout_context.viewport.width;
         let height = self.layout_context.viewport.height;
 
-        let block_box = self.layout_tree_mut().get_node_mut(layout_node_id);
-        let block_box_dimensions = block_box.dimensions_mut();
-        block_box_dimensions.set_width(width);
-        block_box_dimensions.set_height(height);
-        block_box_dimensions.set_position(0., 0.);
+        layout_node.dimensions_mut().set_width(width);
+        layout_node.dimensions_mut().set_height(height);
+        layout_node.dimensions_mut().set_position(0., 0.);
 
-        self.layout_block_level_children(layout_node_id);
+        self.layout_block_level_children(layout_node);
     }
 
-    fn layout_block_level_children(&mut self, layout_node_id: &LayoutNodeId) {
-        let children = self
-            .layout_tree()
-            .children(layout_node_id)
-            .iter()
-            .copied()
-            .collect::<Vec<usize>>();
-
-        for child in children {
-            if self
-                .layout_tree()
-                .get_node(&child)
-                .is_positioned(Position::Absolute)
-            {
+    fn layout_block_level_children(&mut self, layout_node: Rc<LayoutBox>) {
+        for child in layout_node.children().iter() {
+            if child.is_positioned(Position::Absolute) {
                 continue;
             }
 
-            self.compute_width(&child);
+            self.compute_width(child.clone());
 
-            if self.layout_tree().get_node(&child).is_non_replaced() {
-                self.compute_position_non_replaced(&child);
+            if child.is_non_replaced() {
+                self.compute_position_non_replaced(child.clone());
             }
 
-            self.layout_content(&child, &self.layout_context);
+            child.layout(self.layout_context.clone());
 
-            if !children_are_inline(&self.layout_tree(), &child) {
-                self.compute_height(&child);
+            if !child.children_are_inline() {
+                self.compute_height(child.clone());
             }
-            apply_explicit_sizes(self.layout_tree_mut(), &child);
+            child.apply_explicit_sizes();
 
-            let child_dimensions = self.layout_tree_mut().get_node_mut(&child).dimensions();
+            let child_dimensions = child.dimensions();
             self.previous_layout_y += child_dimensions.margin_box().height;
         }
     }
 
-    fn compute_width(&mut self, layout_node_id: &LayoutNodeId) {
-        let containing_block = self
-            .layout_tree()
-            .get_node(&get_containing_block(self.layout_tree(), layout_node_id))
+    fn compute_width(&mut self, layout_node: Rc<LayoutBox>) {
+        let containing_block = layout_node
+            .containing_block()
             .dimensions()
             .content_box();
 
-        let layout_node = self.layout_tree_mut().get_node_mut(layout_node_id);
         let render_node = match layout_node.render_node() {
             Some(node) => node.clone(),
             _ => return,
@@ -255,7 +161,7 @@ impl<'a> BlockFormattingContext<'a> {
         }
 
         // apply all calculated used values
-        let box_model = layout_node.dimensions_mut();
+        let mut box_model = layout_node.dimensions_mut();
 
         box_model.set_width(used_width);
         box_model.set(BoxComponent::Margin, Edge::Left, used_margin_left);
@@ -282,21 +188,17 @@ impl<'a> BlockFormattingContext<'a> {
         );
     }
 
-    fn compute_height(&mut self, layout_node_id: &LayoutNodeId) {
-        if self.layout_tree().get_node(layout_node_id).is_anonymous() {
+    fn compute_height(&mut self, layout_node: Rc<LayoutBox>) {
+        if layout_node.is_anonymous() {
             return;
         }
 
-        let containing_block = self
-            .layout_tree()
-            .get_node(&get_containing_block(self.layout_tree(), layout_node_id))
-            .as_ref()
+        let containing_block = layout_node
+            .containing_block()
             .dimensions()
             .content_box();
 
-        let height = self.compute_box_height(layout_node_id);
-
-        let layout_node = self.layout_tree_mut().get_node_mut(layout_node_id);
+        let height = self.compute_box_height(layout_node.clone());
 
         let render_node = layout_node.render_node().unwrap();
 
@@ -321,7 +223,7 @@ impl<'a> BlockFormattingContext<'a> {
             .get_style(&Property::BorderBottomWidth)
             .to_px(containing_block.width);
 
-        let box_model = layout_node.dimensions_mut();
+        let mut box_model = layout_node.dimensions_mut();
         box_model.set_height(height);
         box_model.set(BoxComponent::Margin, Edge::Top, margin_top);
         box_model.set(BoxComponent::Margin, Edge::Bottom, margin_bottom);
@@ -331,49 +233,41 @@ impl<'a> BlockFormattingContext<'a> {
         box_model.set(BoxComponent::Border, Edge::Bottom, border_bottom);
     }
 
-    fn compute_box_height(&self, layout_node_id: &LayoutNodeId) -> f32 {
-        let containing_block = self
-            .layout_tree()
-            .get_node(&get_containing_block(self.layout_tree(), layout_node_id))
+    fn compute_box_height(&self, layout_node: Rc<LayoutBox>) -> f32 {
+        let containing_block = layout_node
+            .containing_block()
             .dimensions()
             .content_box();
-        let computed_height = self
-            .layout_tree()
-            .get_node(layout_node_id)
+        let computed_height = layout_node
             .render_node()
             .unwrap()
             .get_style(&Property::Height);
 
         if computed_height.is_auto() {
-            self.compute_auto_height(layout_node_id)
+            self.compute_auto_height(layout_node)
         } else {
             computed_height.to_px(containing_block.height)
         }
     }
 
-    fn compute_auto_height(&self, layout_node_id: &LayoutNodeId) -> f32 {
-        self.layout_tree()
-            .children(layout_node_id)
+    fn compute_auto_height(&self, layout_node: Rc<LayoutBox>) -> f32 {
+        layout_node
+            .children()
             .iter()
-            .map(|child| self.layout_tree().get_node(child))
             .fold(0.0, |acc, child| {
                 acc + child.dimensions().margin_box().height
             })
     }
 
-    fn compute_position_non_replaced(&mut self, layout_node_id: &LayoutNodeId) {
-        let containing_block = self
-            .layout_tree()
-            .get_node(&get_containing_block(self.layout_tree(), layout_node_id))
+    fn compute_position_non_replaced(&mut self, layout_node: Rc<LayoutBox>) {
+        let containing_block = layout_node
+            .containing_block()
             .dimensions()
             .content_box();
 
         let previous_layout_y = self.previous_layout_y;
-        let render_node = self.layout_tree().get_node(layout_node_id).render_node();
-        let box_model = self
-            .layout_tree_mut()
-            .get_node_mut(layout_node_id)
-            .dimensions_mut();
+        let render_node = layout_node.render_node();
+        let mut box_model = layout_node.dimensions_mut();
 
         if let Some(render_node) = render_node {
             let margin_top = render_node
@@ -425,6 +319,7 @@ impl<'a> BlockFormattingContext<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::formatting_context::LayoutContext;
     use crate::utils::*;
     use shared::primitive::*;
     use test_utils::dom_creator::*;
@@ -453,36 +348,22 @@ mod tests {
             SHARED_CSS
         );
 
-        let mut layout_tree = build_tree(dom, &css);
-        let root = layout_tree.root().unwrap();
+        let root = build_tree(dom, &css);
 
-        let layout_context = LayoutContext {
+        let layout_context = Rc::new(LayoutContext {
             viewport: Rect {
                 x: 0.,
                 y: 0.,
                 width: 500.,
                 height: 300.,
             },
-        };
+        });
 
-        let initial_block_box = layout_tree.set_root(Box::new(BlockBox::new_anonymous()));
-        layout_tree.add_child_by_id(&initial_block_box, &root);
+        let mut formatting_context = BlockFormattingContext::new(layout_context.clone());
 
-        let mut formatting_context = BlockFormattingContext::new(&layout_context, &mut layout_tree);
+        formatting_context.run(root.clone());
 
-        formatting_context.run(&initial_block_box);
-
-        //println!("{}", layout_box.dump(&LayoutDumpSpecificity::StructureAndDimensions));
-
-        assert_eq!(layout_tree.get_node(&root).dimensions().content.height, 40.);
-        assert_eq!(
-            layout_tree
-                .get_node(&initial_block_box)
-                .dimensions()
-                .content
-                .width,
-            layout_context.viewport.width
-        );
-        //assert_eq!(layout_box.offset_y, 40.);
+        assert_eq!(root.dimensions().content_box().height, 40.);
+        assert_eq!(root.dimensions().content_box().width, layout_context.viewport.width);
     }
 }

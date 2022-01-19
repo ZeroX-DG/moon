@@ -4,8 +4,10 @@ mod painter;
 mod render;
 mod utils;
 
+use std::rc::Rc;
+
 use command::{DisplayCommand, DrawCommand};
-use layout::layout_box::{LayoutNodeId, LayoutTree};
+use layout::layout_box::LayoutBox;
 use render::PaintChainBuilder;
 
 pub use painter::Painter;
@@ -36,12 +38,12 @@ fn draw(draw_command: DrawCommand, painter: &mut dyn Painter) {
     }
 }
 
-pub fn build_display_list(root: &LayoutNodeId, layout_tree: &LayoutTree) -> DisplayList {
+pub fn build_display_list(root: Rc<LayoutBox>) -> DisplayList {
     let chain = PaintChainBuilder::new_chain()
         .with_function(&paint_border)
         .with_function(&paint_background)
         .with_function(&paint_text)
-        .build(layout_tree);
+        .build();
 
     chain.paint(root)
 }

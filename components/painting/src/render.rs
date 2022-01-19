@@ -1,12 +1,13 @@
-use crate::command::DisplayCommand;
-use layout::layout_box::{LayoutNode, LayoutNodeId, LayoutTree};
+use std::rc::Rc;
 
-pub type PaintFn = dyn Fn(&LayoutNode) -> Option<DisplayCommand>;
+use crate::command::DisplayCommand;
+use layout::layout_box::LayoutBox;
+
+pub type PaintFn = dyn Fn(Rc<LayoutBox>) -> Option<DisplayCommand>;
 pub type DisplayList = Vec<DisplayCommand>;
 
 pub struct PaintChain<'a> {
     chain: Vec<&'a PaintFn>,
-    layout_tree: &'a LayoutTree,
 }
 
 pub struct PaintChainBuilder<'a> {
@@ -14,19 +15,17 @@ pub struct PaintChainBuilder<'a> {
 }
 
 impl<'a> PaintChain<'a> {
-    pub fn paint(&self, layout_node_id: &LayoutNodeId) -> DisplayList {
+    pub fn paint(&self, layout_node: Rc<LayoutBox>) -> DisplayList {
         let mut result = Vec::new();
 
-        let node = self.layout_tree.get_node(layout_node_id);
-
         for paint_fn in &self.chain {
-            if let Some(command) = paint_fn(node) {
+            if let Some(command) = paint_fn(layout_node.clone()) {
                 result.push(command);
             }
         }
 
-        for child in self.layout_tree.children(layout_node_id) {
-            result.extend(self.paint(child));
+        for child in layout_node.children().iter() {
+            result.extend(self.paint(child.clone()));
         }
 
         result
@@ -45,10 +44,9 @@ impl<'a> PaintChainBuilder<'a> {
         self
     }
 
-    pub fn build(self, layout_tree: &'a LayoutTree) -> PaintChain<'a> {
+    pub fn build(self) -> PaintChain<'a> {
         PaintChain {
             chain: self.paint_fns,
-            layout_tree,
         }
     }
 }
