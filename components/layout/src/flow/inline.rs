@@ -5,19 +5,6 @@ use shared::primitive::edge::Edge;
 use style::property::Property;
 
 #[derive(Debug)]
-pub struct InlineBox {
-    line_boxes: Vec<LineBox>,
-}
-
-impl InlineBox {
-    pub fn new() -> Self {
-        Self {
-            line_boxes: Vec::new(),
-        }
-    }
-}
-
-#[derive(Debug)]
 pub struct LineBox {
     fragments: Vec<Rc<LayoutBox>>,
     width: f32,
@@ -59,17 +46,19 @@ impl LineBox {
 
 pub struct InlineFormattingContext {
     layout_context: Rc<LayoutContext>,
+    line_boxes: Vec<LineBox>,
 }
 
 impl InlineFormattingContext {
     pub fn new(layout_context: Rc<LayoutContext>) -> Self {
-        Self { layout_context }
+        Self {
+            layout_context,
+            line_boxes: Vec::new(),
+        }
     }
 
     pub fn run(&mut self, layout_node: Rc<LayoutBox>) {
-        let mut line_boxes = Vec::new();
-
-        line_boxes.push(LineBox::new());
+        self.line_boxes.push(LineBox::new());
 
         let containing_block = layout_node.dimensions().content_box();
 
@@ -85,21 +74,21 @@ impl InlineFormattingContext {
 
             let child_width = child.dimensions().margin_box().width;
 
-            let line_box = line_boxes.last_mut().unwrap();
+            let line_box = self.line_boxes.last_mut().unwrap();
 
             let new_line_box_width = line_box.width() + child_width;
 
             if new_line_box_width > parent_width {
-                line_boxes.push(LineBox::new());
+                self.line_boxes.push(LineBox::new());
             }
 
-            let line_box = line_boxes.last_mut().unwrap();
+            let line_box = self.line_boxes.last_mut().unwrap();
             line_box.add_fragment(child.clone());
         }
 
         let mut offset_y = 0.;
 
-        for line in &line_boxes {
+        for line in &self.line_boxes {
             let mut offset_x = 0.;
 
             for fragment in line.fragments() {

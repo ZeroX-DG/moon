@@ -15,9 +15,7 @@ use style::{
     },
 };
 
-use crate::{
-    box_model::Dimensions, flow::inline::InlineBox, formatting_context::FormattingContext,
-};
+use crate::{box_model::Dimensions, formatting_context::FormattingContext};
 
 #[derive(Debug)]
 pub struct BaseBox {
@@ -55,7 +53,7 @@ pub enum BoxData {
 
 #[derive(Debug)]
 pub enum InlineContents {
-    InlineBox(InlineBox),
+    InlineBox,
     TextRun,
 }
 
@@ -71,7 +69,7 @@ impl LayoutBox {
                             (OuterDisplayType::Block, InnerDisplayType::Flow) => BoxData::BlockBox,
                             (OuterDisplayType::Inline, InnerDisplayType::Flow)
                             | (OuterDisplayType::Inline, InnerDisplayType::FlowRoot) => {
-                                BoxData::InlineContents(InlineContents::InlineBox(InlineBox::new()))
+                                BoxData::InlineContents(InlineContents::InlineBox)
                             }
                             _ => unimplemented!("Unsupport display type: {:#?}", d),
                         },
