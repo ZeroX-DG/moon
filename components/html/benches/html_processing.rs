@@ -7,7 +7,7 @@ fn html_parsing_benchmark(c: &mut Criterion) {
     c.bench_function("parse_purecss_gaze", |b| {
         b.iter(|| {
             let tokenizer = Tokenizer::new(black_box(html.chars()));
-            let tree_builder = TreeBuilder::new(tokenizer);
+            let tree_builder = TreeBuilder::default(tokenizer);
             tree_builder.run();
         })
     });
