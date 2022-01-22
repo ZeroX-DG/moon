@@ -114,16 +114,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3441f0f7b02788e948e47f457ca01f1d7e6d92c693bc132c22b087d3141c03ff"
 
 [[package]]
-name = "bincode"
-version = "1.3.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f30d3a39baa26f9651f17b375061f3233dde33424a8b72b0dbe93a68a0bc896d"
-dependencies = [
- "byteorder",
- "serde",
-]
-
-[[package]]
 name = "bit-set"
 version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -570,18 +560,6 @@ dependencies = [
 
 [[package]]
 name = "flume"
-version = "0.9.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d9e818efa7776f4dd7df0e542f877f7a5a87bddd6a1a10f59a7732b71ffb9d55"
-dependencies = [
- "futures-core",
- "futures-sink",
- "rand 0.7.3",
- "spinning_top",
-]
-
-[[package]]
-name = "flume"
 version = "0.10.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fa9d66b91e902db43baefd8e40c8678ce29db2cf1d88ebd715174368d5fe70a9"
@@ -952,16 +930,6 @@ name = "io"
 version = "0.1.0"
 
 [[package]]
-name = "ipc"
-version = "0.1.0"
-dependencies = [
- "flume 0.9.1",
- "log",
- "nanoid",
- "serde",
-]
-
-[[package]]
 name = "itertools"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1142,15 +1110,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "message"
-version = "0.1.0"
-dependencies = [
- "bincode",
- "ipc",
- "serde",
-]
-
-[[package]]
 name = "metal"
 version = "0.23.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1188,11 +1147,9 @@ name = "moon"
 version = "0.1.0"
 dependencies = [
  "clap",
- "flume 0.10.5",
+ "flume",
  "image",
- "ipc",
  "log",
- "message",
  "render",
  "simplelog",
  "tokio",
@@ -1214,15 +1171,6 @@ dependencies = [
  "num-traits",
  "spirv",
  "thiserror",
-]
-
-[[package]]
-name = "nanoid"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3ffa00dec017b5b1a8b7cf5e2c008bfda1aa7e0697ac1508b491fdf2622fb4d8"
-dependencies = [
- "rand 0.8.3",
 ]
 
 [[package]]
@@ -1711,11 +1659,9 @@ dependencies = [
  "futures",
  "gfx",
  "html",
- "ipc",
  "layout",
  "loaders",
  "log",
- "message",
  "painting",
  "serde",
  "shared",

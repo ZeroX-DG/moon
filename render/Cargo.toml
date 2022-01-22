@@ -16,8 +16,6 @@ painting = { version="*", path="../components/painting" }
 shared = { version = "*", path = "../components/shared" }
 gfx = { version="*", path="../components/gfx" }
 loaders = { path="../components/loaders" }
-ipc = { version="*", path="../components/ipc" }
-message = { version="*", path="../components/message" }
 dirs = "2.0.2"
 log = "*"
 serde = { version = "*", features = ["derive"] }
