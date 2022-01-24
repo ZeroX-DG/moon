@@ -1,8 +1,6 @@
 use url::Url;
 
 type Bytes = Vec<u8>;
-type SuccessCallback = Box<dyn FnOnce(Bytes)>;
-type ErrorCallback = Box<dyn FnOnce(String)>;
 
 pub trait DocumentLoader {
     fn load(&mut self, request: LoadRequest);
@@ -10,8 +8,8 @@ pub trait DocumentLoader {
 
 pub struct LoadRequest {
     pub url: Url,
-    pub success_callback: Option<SuccessCallback>,
-    pub error_callback: Option<ErrorCallback>,
+    pub success_callback: Option<Box<dyn FnOnce(Bytes)>>,
+    pub error_callback: Option<Box<dyn FnOnce(String)>>,
 }
 
 impl LoadRequest {
@@ -23,13 +21,13 @@ impl LoadRequest {
         }
     }
 
-    pub fn on_success(mut self, callback: SuccessCallback) -> Self {
-        self.success_callback = Some(callback);
+    pub fn on_success<C: FnOnce(Bytes) + 'static>(mut self, callback: C) -> Self {
+        self.success_callback = Some(Box::new(callback));
         self
     }
 
-    pub fn on_error(mut self, callback: ErrorCallback) -> Self {
-        self.error_callback = Some(callback);
+    pub fn on_error<C: FnOnce(String) + 'static>(mut self, callback: C) -> Self {
+        self.error_callback = Some(Box::new(callback));
         self
     }
 }

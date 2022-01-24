@@ -37,17 +37,17 @@ impl HTMLLinkElement {
         log::info!("Loading stylesheet from: {}", raw_url);
 
         let request = LoadRequest::new(url.clone())
-            .on_success(Box::new(move |bytes| {
+            .on_success(move |bytes| {
                 let css = String::from_utf8(bytes).unwrap();
                 let tokenizer = Tokenizer::new(css.chars());
                 let mut parser = Parser::<Token>::new(tokenizer.run());
                 let stylesheet = parser.parse_a_css_stylesheet();
 
                 cloned_doc.as_document().append_stylesheet(stylesheet);
-            }))
-            .on_error(Box::new(move |e| {
+            })
+            .on_error(move |e| {
                 log::info!("Unable to load CSS: {} ({})", e, raw_url)
-            }));
+            });
 
         let loader = document
             .as_document()
