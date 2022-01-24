@@ -45,9 +45,7 @@ impl HTMLLinkElement {
 
                 cloned_doc.as_document().append_stylesheet(stylesheet);
             })
-            .on_error(move |e| {
-                log::info!("Unable to load CSS: {} ({})", e, raw_url)
-            });
+            .on_error(move |e| log::error!("Unable to load CSS: {} ({})", e, raw_url));
 
         let loader = document
             .as_document()

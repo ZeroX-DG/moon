@@ -1,47 +1,41 @@
 use dom::document_loader::{DocumentLoader, LoadRequest};
 use relative_path::RelativePath;
 
-pub struct InprocessLoader {}
+use crate::error::LoadError;
+
+pub struct InprocessLoader;
 
 impl InprocessLoader {
     pub fn new() -> Self {
-        Self {}
+        Self
     }
 }
 
 impl DocumentLoader for InprocessLoader {
     fn load(&mut self, request: LoadRequest) {
-        match request.url.protocol() {
-            "file" => match std::fs::read(request.url.path()) {
-                Ok(bytes) => {
-                    if let Some(cb) = request.success_callback {
-                        cb(bytes);
-                    }
-                }
-                Err(e) => {
-                    if let Some(cb) = request.error_callback {
-                        cb(e.to_string());
-                    }
-                }
-            },
+        let load_result = match request.url.protocol() {
+            "file" => {
+                std::fs::read(request.url.path()).map_err(|e| LoadError::IOError(e.to_string()))
+            }
             "relative" => {
                 let path = RelativePath::new(request.url.path())
                     .to_logical_path(std::env::current_dir().unwrap());
+                std::fs::read(path).map_err(|e| LoadError::IOError(e.to_string()))
+            }
+            protocol => Err(LoadError::UnsupportedProtocol(protocol.to_string())),
+        };
 
-                match std::fs::read(path) {
-                    Ok(bytes) => {
-                        if let Some(cb) = request.success_callback {
-                            cb(bytes);
-                        }
-                    }
-                    Err(e) => {
-                        if let Some(cb) = request.error_callback {
-                            cb(e.to_string());
-                        }
-                    }
+        match load_result {
+            Ok(bytes) => {
+                if let Some(cb) = request.success_callback {
+                    cb(bytes);
                 }
             }
-            _ => {}
+            Err(e) => {
+                if let Some(cb) = request.error_callback {
+                    cb(e.to_string());
+                }
+            }
         }
     }
 }
