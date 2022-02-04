@@ -1154,6 +1154,7 @@ dependencies = [
  "render",
  "simplelog",
  "tokio",
+ "url",
 ]
 
 [[package]]
@@ -1667,6 +1668,7 @@ dependencies = [
  "serde",
  "shared",
  "style",
+ "url",
 ]
 
 [[package]]
@@ -2095,6 +2097,7 @@ name = "url"
 version = "0.1.0"
 dependencies = [
  "io",
+ "regex",
 ]
 
 [[package]]

@@ -3,6 +3,7 @@ mod cli;
 use image::{ImageBuffer, Rgba};
 use simplelog::*;
 use std::io::Read;
+use url::parser::URLParser;
 
 fn read_file(path: String) -> String {
     let mut file = std::fs::File::open(path).expect("Unable to open file");
@@ -34,11 +35,15 @@ async fn main() {
 
     match action {
         cli::Action::RenderOnce(params) => {
-            let html_code = read_file(params.html_path);
+            let html_code = read_file(params.html_path.clone());
             let viewport = params.viewport_size;
             let output_path = params.output_path;
 
-            let bitmap = render::render_once(html_code.to_string(), viewport).await;
+            let absolute_html_path = std::fs::canonicalize(params.html_path).unwrap();
+            let absolute_path = absolute_html_path.parent().unwrap();
+            let absolute_path_url = format!("file://{}/", absolute_path.to_str().unwrap());
+            let base_url = URLParser::parse(&absolute_path_url, None).unwrap();
+            let bitmap = render::render_once(html_code.to_string(), base_url, viewport).await;
 
             let (width, height) = viewport;
 

@@ -5,11 +5,11 @@ use css::cssom::css_rule::CSSRule;
 
 use dom::node::Node;
 use layout::formatting_context::{establish_context, FormattingContextType};
-use layout::layout_printer::dump_layout;
 use layout::{formatting_context::LayoutContext, layout_box::LayoutBox};
 use shared::primitive::Rect;
 use style::render_tree::RenderTree;
 use style::value_processing::{CSSLocation, CascadeOrigin, ContextualRule};
+use url::Url;
 
 pub type FrameSize = (u32, u32);
 
@@ -53,8 +53,8 @@ impl Frame {
         self.layout.reflow(self.size, ReflowType::All(document));
     }
 
-    pub fn load_html(&mut self, html: String) {
-        self.set_document(FrameLoader::load_html(html));
+    pub fn load_html(&mut self, html: String, base_url: Url) {
+        self.set_document(FrameLoader::load_html(html, base_url));
     }
 
     pub fn layout(&self) -> &FrameLayout {

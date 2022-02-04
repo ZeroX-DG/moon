@@ -4,12 +4,14 @@ use document_loader::DocumentLoader;
 use std::cell::RefCell;
 use std::ops::Deref;
 use std::rc::Rc;
+use url::Url;
 
 pub struct Document {
     doctype: RefCell<Option<DocumentType>>,
     mode: RefCell<QuirksMode>,
     loader: RefCell<Option<Rc<RefCell<dyn DocumentLoader>>>>,
     stylesheets: RefCell<Vec<Rc<StyleSheet>>>,
+    base: RefCell<Option<Url>>,
 }
 
 pub struct DocumentType {
@@ -40,6 +42,7 @@ impl Document {
             mode: RefCell::new(QuirksMode::NoQuirks),
             loader: RefCell::new(None),
             stylesheets: RefCell::new(Vec::new()),
+            base: RefCell::new(None),
         }
     }
 
@@ -69,6 +72,14 @@ impl Document {
 
     pub fn stylesheets(&self) -> Vec<Rc<StyleSheet>> {
         self.stylesheets.borrow().deref().to_vec()
+    }
+
+    pub fn base(&self) -> Option<Url> {
+        self.base.borrow().deref().clone()
+    }
+
+    pub fn set_base(&self, base: Option<Url>) {
+        *self.base.borrow_mut() = base;
     }
 }
 

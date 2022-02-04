@@ -10,11 +10,13 @@ use url::Url;
 
 use css::parser::Parser;
 use css::tokenizer::{token::Token, Tokenizer};
+use url::parser::URLParser;
 
 #[derive(Debug)]
 pub struct HTMLLinkElement {
     href: RefCell<Option<Url>>,
     relationship: RefCell<Option<HTMLLinkRelationship>>,
+    _raw_href: RefCell<String>,
 }
 
 #[derive(Debug)]
@@ -27,14 +29,15 @@ impl HTMLLinkElement {
         Self {
             href: RefCell::new(None),
             relationship: RefCell::new(None),
+            _raw_href: RefCell::new(String::new()),
         }
     }
 
     pub fn load_stylesheet(&self, url: &Url, document: Rc<Node>) {
         let cloned_doc = document.clone();
-        let raw_url = url.raw().to_string();
+        let cloned_url = url.clone();
 
-        log::info!("Loading stylesheet from: {}", raw_url);
+        log::info!("Loading stylesheet from: {}", url);
 
         let request = LoadRequest::new(url.clone())
             .on_success(move |bytes| {
@@ -45,7 +48,7 @@ impl HTMLLinkElement {
 
                 cloned_doc.as_document().append_stylesheet(stylesheet);
             })
-            .on_error(move |e| log::error!("Unable to load CSS: {} ({})", e, raw_url));
+            .on_error(move |e| log::error!("Unable to load CSS: {} ({})", e, cloned_url));
 
         let loader = document
             .as_document()
@@ -59,13 +62,7 @@ impl ElementHooks for HTMLLinkElement {
     fn on_attribute_change(&self, attr: &str, value: &str) {
         match attr {
             "href" => {
-                *self.href.borrow_mut() = match Url::parse(value) {
-                    Ok(url) => Some(url),
-                    Err(_) => {
-                        log::info!("Invalid href URL: {}", value);
-                        None
-                    }
-                }
+                *self._raw_href.borrow_mut() = value.to_string();
             }
             "rel" => {
                 if value == "stylesheet" {
@@ -79,12 +76,14 @@ impl ElementHooks for HTMLLinkElement {
 
 impl NodeHooks for HTMLLinkElement {
     fn on_inserted(&self, document: Rc<Node>) {
+        let href_url = &*self._raw_href.borrow();
+        *self.href.borrow_mut() = URLParser::parse(href_url, document.as_document().base());
         match &*self.href.borrow() {
             Some(url) => match *self.relationship.borrow() {
                 Some(HTMLLinkRelationship::Stylesheet) => self.load_stylesheet(url, document),
                 _ => {}
             },
-            None => log::info!("No URL found, ignoring"),
+            None => log::info!("Empty or invalid URL, ignoring"),
         }
     }
 }
