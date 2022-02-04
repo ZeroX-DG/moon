@@ -1,8 +1,16 @@
-use std::iter::FromIterator;
-use regex::Regex;
-use crate::{UrlPath, helper::{SPECIAL_SCHEME_PORTS, is_window_drive_letter, is_double_dot_path_segment, is_single_dot_path_segment, is_url_c, is_c0_control_or_space, is_start_with_two_hex, is_start_with_windows_drive_letter}, encode::{URLPercentEncode, PercentEncodeSet}};
-use super::Url;
 use super::host_parser::HostParser;
+use super::Url;
+use crate::{
+    encode::{PercentEncodeSet, URLPercentEncode},
+    helper::{
+        is_c0_control_or_space, is_double_dot_path_segment, is_single_dot_path_segment,
+        is_start_with_two_hex, is_start_with_windows_drive_letter, is_url_c,
+        is_window_drive_letter, SPECIAL_SCHEME_PORTS,
+    },
+    UrlPath,
+};
+use regex::Regex;
+use std::iter::FromIterator;
 
 pub struct URLParser;
 
@@ -28,7 +36,7 @@ pub enum URLParseState {
     FileHost,
     Port,
     PathStart,
-    FileSlash
+    FileSlash,
 }
 
 fn report_validation_error() {
@@ -40,13 +48,20 @@ impl URLParser {
         URLParser::simple_parse(raw_input, base, None, None)
     }
 
-    fn simple_parse(p_input: &str, base: Option<Url>, p_url: Option<Url>, p_state: Option<URLParseState>) -> Option<Url> {
+    fn simple_parse(
+        p_input: &str,
+        base: Option<Url>,
+        p_url: Option<Url>,
+        p_state: Option<URLParseState>,
+    ) -> Option<Url> {
         let mut url = p_url.unwrap_or(Url::new());
         let mut state = p_state.clone().unwrap_or(URLParseState::SchemeStart);
 
         let tab_newline_re = Regex::new(r"[\t\r\n]").unwrap();
 
-        let mut input = p_input.trim_start_matches(|c| is_c0_control_or_space(c as u32)).to_string();
+        let mut input = p_input
+            .trim_start_matches(|c| is_c0_control_or_space(c as u32))
+            .to_string();
         input = tab_newline_re.replace_all(&input, "").to_string();
 
         let mut buffer = String::new();
@@ -98,7 +113,9 @@ impl URLParser {
                                 report_validation_error();
                             }
                             state = URLParseState::File;
-                        } else if url.is_special() && matches!(&base, Some(b) if b.scheme == url.scheme) {
+                        } else if url.is_special()
+                            && matches!(&base, Some(b) if b.scheme == url.scheme)
+                        {
                             state = URLParseState::SpecialRelativeOrAuthority;
                         } else if url.is_special() {
                             state = URLParseState::SpecialAuthoritySlashes;
@@ -120,7 +137,8 @@ impl URLParser {
                     }
                 }
                 URLParseState::NoScheme => {
-                    if base.is_none() || matches!(&base, Some(b) if b.has_opaque_path()) && c != '#' {
+                    if base.is_none() || matches!(&base, Some(b) if b.has_opaque_path()) && c != '#'
+                    {
                         report_validation_error();
                         return None;
                     } else if matches!(&base, Some(b) if b.has_opaque_path()) && c == '#' {
@@ -236,7 +254,9 @@ impl URLParser {
                         }
 
                         buffer.clear();
-                    } else if (c == eof || c == '/' || c == '?' || c == '#') || (url.is_special() && c == '\\') {
+                    } else if (c == eof || c == '/' || c == '?' || c == '#')
+                        || (url.is_special() && c == '\\')
+                    {
                         if at_sign_seen && buffer.is_empty() {
                             report_validation_error();
                             return None;
@@ -267,7 +287,9 @@ impl URLParser {
                         url.host = host;
                         buffer.clear();
                         state = URLParseState::Port;
-                    } else if (c == eof || c == '/' || c == '?' || c == '#') || (url.is_special() && c == '\\') {
+                    } else if (c == eof || c == '/' || c == '?' || c == '#')
+                        || (url.is_special() && c == '\\')
+                    {
                         if url.is_special() && buffer.is_empty() {
                             report_validation_error();
                             return None;
@@ -294,14 +316,16 @@ impl URLParser {
                 URLParseState::Port => {
                     if c.is_ascii_digit() {
                         buffer.push(c);
-                    }
-                    else if (c == eof || c == '/' || c == '?' || c == '#')
-                    || (url.is_special() && c == '\\')
-                    || p_state.is_some() {
+                    } else if (c == eof || c == '/' || c == '?' || c == '#')
+                        || (url.is_special() && c == '\\')
+                        || p_state.is_some()
+                    {
                         if !buffer.is_empty() {
                             match u16::from_str_radix(&buffer, 10) {
                                 Ok(port) => {
-                                    if SPECIAL_SCHEME_PORTS.iter().any(|(scheme, s_port)| *scheme == url.scheme && *s_port == Some(port)) {
+                                    if SPECIAL_SCHEME_PORTS.iter().any(|(scheme, s_port)| {
+                                        *scheme == url.scheme && *s_port == Some(port)
+                                    }) {
                                         url.port = None;
                                     } else {
                                         url.port = Some(port);
@@ -316,8 +340,7 @@ impl URLParser {
                         }
                         state = URLParseState::PathStart;
                         continue;
-                    }
-                    else {
+                    } else {
                         report_validation_error();
                         return None;
                     }
@@ -432,7 +455,12 @@ impl URLParser {
                     }
                 }
                 URLParseState::Path => {
-                    if c == eof || c == '/' || (url.is_special() && c == '\\') || c == '?' || c == '#' {
+                    if c == eof
+                        || c == '/'
+                        || (url.is_special() && c == '\\')
+                        || c == '?'
+                        || c == '#'
+                    {
                         if url.is_special() && c == '\\' {
                             report_validation_error();
                         }
@@ -443,12 +471,18 @@ impl URLParser {
                                     list.push(String::new());
                                 }
                             }
-                        } else if is_single_dot_path_segment(&buffer) && c != '/' && !(url.is_special() && c == '\\') {
+                        } else if is_single_dot_path_segment(&buffer)
+                            && c != '/'
+                            && !(url.is_special() && c == '\\')
+                        {
                             if let UrlPath::List(ref mut list) = &mut url.path {
                                 list.push(String::new());
                             }
                         } else if !is_single_dot_path_segment(&buffer) {
-                            if url.scheme == "file" && url.path.is_empty() && is_window_drive_letter(&buffer) {
+                            if url.scheme == "file"
+                                && url.path.is_empty()
+                                && is_window_drive_letter(&buffer)
+                            {
                                 buffer.replace_range(1..2, ":");
                             }
                             url.path.append(&buffer);
@@ -465,7 +499,11 @@ impl URLParser {
                         if !is_url_c(c) && c != '%' {
                             report_validation_error();
                         }
-                        buffer.push_str(&URLPercentEncode::encode(&[c as u8], PercentEncodeSet::Path, false));
+                        buffer.push_str(&URLPercentEncode::encode(
+                            &[c as u8],
+                            PercentEncodeSet::Path,
+                            false,
+                        ));
                     }
                 }
                 URLParseState::OpaquePath => {
@@ -485,7 +523,11 @@ impl URLParser {
                         }
 
                         if c != eof {
-                            url.path.append(&URLPercentEncode::encode(&[c as u8], PercentEncodeSet::C0Control, false));
+                            url.path.append(&URLPercentEncode::encode(
+                                &[c as u8],
+                                PercentEncodeSet::C0Control,
+                                false,
+                            ));
                         }
                     }
                 }
@@ -498,7 +540,11 @@ impl URLParser {
                             PercentEncodeSet::Query
                         };
                         if let Some(query) = &mut url.query {
-                            query.push_str(&URLPercentEncode::encode(buffer.as_bytes(), percent_encode_set, false));
+                            query.push_str(&URLPercentEncode::encode(
+                                buffer.as_bytes(),
+                                percent_encode_set,
+                                false,
+                            ));
                         }
                         buffer.clear();
 
@@ -527,9 +573,13 @@ impl URLParser {
                         if c == '%' && !is_start_with_two_hex(&remaining(pointer)) {
                             report_validation_error();
                         }
-                        
+
                         if let Some(fragment) = &mut url.fragment {
-                            fragment.push_str(&URLPercentEncode::encode(&[c as u8], PercentEncodeSet::Fragment, false));
+                            fragment.push_str(&URLPercentEncode::encode(
+                                &[c as u8],
+                                PercentEncodeSet::Fragment,
+                                false,
+                            ));
                         }
                     }
                 }

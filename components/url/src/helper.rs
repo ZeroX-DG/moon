@@ -13,7 +13,7 @@ pub fn is_normalized_window_drive_letter(input: &str) -> bool {
     let mut chars = input.chars();
     match (chars.next(), chars.next()) {
         (Some(c), Some(':')) if c.is_ascii_alphabetic() => true,
-        _ => false
+        _ => false,
     }
 }
 
@@ -22,15 +22,16 @@ pub fn is_window_drive_letter(input: &str) -> bool {
     match (chars.next(), chars.next()) {
         (Some(c), Some(':')) if c.is_ascii_alphabetic() => true,
         (Some(c), Some('|')) if c.is_ascii_alphabetic() => true,
-        _ => false
+        _ => false,
     }
 }
 
 pub fn is_double_dot_path_segment(input: &str) -> bool {
-    input == ".." || match input.to_ascii_lowercase().as_str() {
-        ".%2e" | "%2e." | "%2e%2e" => true,
-        _ => false
-    }
+    input == ".."
+        || match input.to_ascii_lowercase().as_str() {
+            ".%2e" | "%2e." | "%2e%2e" => true,
+            _ => false,
+        }
 }
 
 pub fn is_single_dot_path_segment(input: &str) -> bool {
@@ -40,16 +41,16 @@ pub fn is_single_dot_path_segment(input: &str) -> bool {
 // TODO: Implement the rest of this
 pub fn is_url_c(c: char) -> bool {
     match c {
-        '!' | '$' | '&' | '\'' | '(' | ')' | '*' | '+' |
-        ',' | '-' | '.' | '/' | ':' | ';' | '=' | '?' | '@' | '_' | '~' => true,
-        c => c.is_ascii_alphanumeric()
+        '!' | '$' | '&' | '\'' | '(' | ')' | '*' | '+' | ',' | '-' | '.' | '/' | ':' | ';'
+        | '=' | '?' | '@' | '_' | '~' => true,
+        c => c.is_ascii_alphanumeric(),
     }
 }
 
-pub fn is_c0_control (n: u32) -> bool {
+pub fn is_c0_control(n: u32) -> bool {
     match n {
         0x0000..=0x001F => true,
-        _ => false
+        _ => false,
     }
 }
 
@@ -61,17 +62,25 @@ pub fn is_start_with_two_hex(input: &str) -> bool {
     let mut chars = input.chars();
     match (chars.next(), chars.next()) {
         (Some(a), Some(b)) => a.is_ascii_hexdigit() && b.is_ascii_hexdigit(),
-        _ => false
+        _ => false,
     }
 }
 
 pub fn is_start_with_windows_drive_letter(input: &str) -> bool {
-    is_window_drive_letter(input) && (input.len() == 2 || match input.chars().nth(2) {
-        Some('/') | Some('\\') | Some('?') | Some('#') => true,
-        _ => false
-    })
+    is_window_drive_letter(input)
+        && (input.len() == 2
+            || match input.chars().nth(2) {
+                Some('/') | Some('\\') | Some('?') | Some('#') => true,
+                _ => false,
+            })
 }
 
 pub fn contains_forbidden_host_code_point(input: &str) -> bool {
-    input.contains(|c| ['\0', '\t', '\r', '\n', ' ', '#', '/', ':', '<', '>', '?', '@', '[', '\\', ']', '^', '|'].contains(&c))
+    input.contains(|c| {
+        [
+            '\0', '\t', '\r', '\n', ' ', '#', '/', ':', '<', '>', '?', '@', '[', '\\', ']', '^',
+            '|',
+        ]
+        .contains(&c)
+    })
 }

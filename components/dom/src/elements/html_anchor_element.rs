@@ -5,20 +5,20 @@ use super::ElementHooks;
 use super::ElementMethods;
 use crate::node::Node;
 use crate::node::NodeHooks;
-use url::Url;
 use url::parser::URLParser;
+use url::Url;
 
 #[derive(Debug)]
 pub struct HTMLAnchorElement {
     href: RefCell<Option<Url>>,
-    _raw_href: RefCell<String>
+    _raw_href: RefCell<String>,
 }
 
 impl HTMLAnchorElement {
     pub fn empty() -> Self {
         Self {
             href: RefCell::new(None),
-            _raw_href: RefCell::new(String::new())
+            _raw_href: RefCell::new(String::new()),
         }
     }
 }

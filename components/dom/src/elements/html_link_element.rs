@@ -16,7 +16,7 @@ use url::parser::URLParser;
 pub struct HTMLLinkElement {
     href: RefCell<Option<Url>>,
     relationship: RefCell<Option<HTMLLinkRelationship>>,
-    _raw_href: RefCell<String>
+    _raw_href: RefCell<String>,
 }
 
 #[derive(Debug)]
@@ -29,7 +29,7 @@ impl HTMLLinkElement {
         Self {
             href: RefCell::new(None),
             relationship: RefCell::new(None),
-            _raw_href: RefCell::new(String::new())
+            _raw_href: RefCell::new(String::new()),
         }
     }
 

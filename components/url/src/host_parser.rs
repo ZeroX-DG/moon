@@ -1,4 +1,7 @@
-use crate::{helper::{contains_forbidden_host_code_point, is_url_c}, encode::{URLPercentEncode, PercentEncodeSet}};
+use crate::{
+    encode::{PercentEncodeSet, URLPercentEncode},
+    helper::{contains_forbidden_host_code_point, is_url_c},
+};
 
 pub struct HostParser;
 
@@ -36,6 +39,10 @@ impl HostParser {
 
         // TODO: If input contains a U+0025 (%) and the two code points following it are not ASCII hex digits, validation error.
 
-        return Some(URLPercentEncode::encode(input.as_bytes(), PercentEncodeSet::C0Control, false));
+        return Some(URLPercentEncode::encode(
+            input.as_bytes(),
+            PercentEncodeSet::C0Control,
+            false,
+        ));
     }
 }

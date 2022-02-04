@@ -1,17 +1,17 @@
 use super::node::NodeHooks;
 use css::cssom::stylesheet::StyleSheet;
 use document_loader::DocumentLoader;
-use url::Url;
 use std::cell::RefCell;
 use std::ops::Deref;
 use std::rc::Rc;
+use url::Url;
 
 pub struct Document {
     doctype: RefCell<Option<DocumentType>>,
     mode: RefCell<QuirksMode>,
     loader: RefCell<Option<Rc<RefCell<dyn DocumentLoader>>>>,
     stylesheets: RefCell<Vec<Rc<StyleSheet>>>,
-    base: RefCell<Option<Url>>
+    base: RefCell<Option<Url>>,
 }
 
 pub struct DocumentType {
@@ -42,7 +42,7 @@ impl Document {
             mode: RefCell::new(QuirksMode::NoQuirks),
             loader: RefCell::new(None),
             stylesheets: RefCell::new(Vec::new()),
-            base: RefCell::new(None)
+            base: RefCell::new(None),
         }
     }
 

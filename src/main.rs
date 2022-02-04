@@ -2,8 +2,8 @@ mod cli;
 
 use image::{ImageBuffer, Rgba};
 use simplelog::*;
-use url::parser::URLParser;
 use std::io::Read;
+use url::parser::URLParser;
 
 fn read_file(path: String) -> String {
     let mut file = std::fs::File::open(path).expect("Unable to open file");
