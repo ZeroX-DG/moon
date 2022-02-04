@@ -11,7 +11,6 @@ pub mod text;
 
 pub mod conversion;
 
-pub mod document_loader;
 mod element_factory;
 
 pub use element_factory::create_element;

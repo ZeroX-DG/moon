@@ -3,9 +3,9 @@ use std::rc::Rc;
 
 use super::ElementHooks;
 use super::ElementMethods;
-use crate::document_loader::LoadRequest;
 use crate::node::Node;
 use crate::node::NodeHooks;
+use document_loader::LoadRequest;
 use url::Url;
 
 use css::parser::Parser;

@@ -10,4 +10,5 @@ edition = "2018"
 enum_dispatch = "0.3.7"
 url = { path="../url" }
 css = { path="../css" }
+document_loader = { path="../document_loader" }
 log = "*"
