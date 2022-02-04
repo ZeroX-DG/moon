@@ -67,6 +67,13 @@ impl UrlPath {
             UrlPath::Opaque(path) => path.is_empty()
         }
     }
+
+    pub fn as_str(&self) -> String {
+        match self {
+            UrlPath::List(path) => path.join("/"),
+            UrlPath::Opaque(path) => path.to_string(),
+        }
+    }
 }
 
 impl PartialEq<&str> for UrlPath {
@@ -80,11 +87,7 @@ impl PartialEq<&str> for UrlPath {
 
 impl Display for UrlPath {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let path = match self {
-            UrlPath::List(path) => path.join("/"),
-            UrlPath::Opaque(path) => path.to_string(),
-        };
-        write!(f, "{}", path)
+        write!(f, "{}", self.as_str())
     }
 }
 

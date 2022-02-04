@@ -76,7 +76,7 @@ impl ElementHooks for HTMLLinkElement {
 
 impl NodeHooks for HTMLLinkElement {
     fn on_inserted(&self, document: Rc<Node>) {
-        let href_url = &self._raw_href.borrow();
+        let href_url = &*self._raw_href.borrow();
         *self.href.borrow_mut() = URLParser::parse(href_url, document.as_document().base());
         match &*self.href.borrow() {
             Some(url) => match *self.relationship.borrow() {

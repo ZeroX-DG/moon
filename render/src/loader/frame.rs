@@ -6,11 +6,12 @@ use css::tokenizer::Tokenizer;
 use document_loader::inprocess::InprocessLoader;
 use dom::document::Document;
 use dom::node::{Node, NodeData};
+use url::Url;
 
 pub struct FrameLoader;
 
 impl FrameLoader {
-    pub fn load_html(html: String) -> Rc<Node> {
+    pub fn load_html(html: String, url: Url) -> Rc<Node> {
         let document = Rc::new(Node::new(NodeData::Document(Document::new())));
         document.as_document().set_loader(InprocessLoader::new());
 
@@ -19,6 +20,9 @@ impl FrameLoader {
         let mut parser = Parser::<Token>::new(tokenizer.run());
         let stylesheet = parser.parse_a_css_stylesheet();
         document.as_document().append_stylesheet(stylesheet);
+
+        log::debug!("Base URL: {}", url);
+        document.as_document().set_base(Some(url));
 
         let tokenizer = html::tokenizer::Tokenizer::new(html.chars());
         let tree_builder = html::tree_builder::TreeBuilder::new(tokenizer, document);

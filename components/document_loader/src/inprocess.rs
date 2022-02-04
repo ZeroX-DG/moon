@@ -1,5 +1,4 @@
 use super::{DocumentLoader, LoadError, LoadRequest};
-use relative_path::RelativePath;
 
 pub struct InprocessLoader;
 
@@ -11,14 +10,9 @@ impl InprocessLoader {
 
 impl DocumentLoader for InprocessLoader {
     fn load(&mut self, request: LoadRequest) {
-        let load_result = match request.url.protocol() {
+        let load_result = match request.url.scheme.as_str() {
             "file" => {
-                std::fs::read(request.url.path()).map_err(|e| LoadError::IOError(e.to_string()))
-            }
-            "relative" => {
-                let path = RelativePath::new(request.url.path())
-                    .to_logical_path(std::env::current_dir().unwrap());
-                std::fs::read(path).map_err(|e| LoadError::IOError(e.to_string()))
+                std::fs::read(request.url.path.as_str()).map_err(|e| LoadError::IOError(e.to_string()))
             }
             protocol => Err(LoadError::UnsupportedProtocol(protocol.to_string())),
         };

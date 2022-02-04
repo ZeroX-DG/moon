@@ -27,6 +27,7 @@ members = [
 
 [dependencies]
 render = { version = "*", path = "./render" }
+url = { path="./components/url" }
 log = "*"
 flume = "*"
 clap = "*"

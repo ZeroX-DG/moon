@@ -65,6 +65,13 @@ pub fn is_start_with_two_hex(input: &str) -> bool {
     }
 }
 
+pub fn is_start_with_windows_drive_letter(input: &str) -> bool {
+    is_window_drive_letter(input) && (input.len() == 2 || match input.chars().nth(2) {
+        Some('/') | Some('\\') | Some('?') | Some('#') => true,
+        _ => false
+    })
+}
+
 pub fn contains_forbidden_host_code_point(input: &str) -> bool {
     input.contains(|c| ['\0', '\t', '\r', '\n', ' ', '#', '/', ':', '<', '>', '?', '@', '[', '\\', ']', '^', '|'].contains(&c))
 }

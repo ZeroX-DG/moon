@@ -1,3 +1,5 @@
+use url::Url;
+
 use super::frame::Frame;
 
 pub struct Page {
@@ -19,7 +21,7 @@ impl Page {
         self.main_frame.resize(size);
     }
 
-    pub fn load_html(&mut self, html: String) {
-        self.main_frame.load_html(html);
+    pub fn load_html(&mut self, html: String, base_url: Url) {
+        self.main_frame.load_html(html, base_url);
     }
 }

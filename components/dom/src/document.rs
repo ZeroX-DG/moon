@@ -1,6 +1,7 @@
 use super::node::NodeHooks;
 use css::cssom::stylesheet::StyleSheet;
 use document_loader::DocumentLoader;
+use url::Url;
 use std::cell::RefCell;
 use std::ops::Deref;
 use std::rc::Rc;
@@ -75,6 +76,10 @@ impl Document {
 
     pub fn base(&self) -> Option<Url> {
         self.base.borrow().deref().clone()
+    }
+
+    pub fn set_base(&self, base: Option<Url>) {
+        *self.base.borrow_mut() = base;
     }
 }
 

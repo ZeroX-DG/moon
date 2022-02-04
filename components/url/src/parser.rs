@@ -1,6 +1,6 @@
 use std::iter::FromIterator;
 use regex::Regex;
-use crate::{UrlPath, helper::{SPECIAL_SCHEME_PORTS, is_window_drive_letter, is_double_dot_path_segment, is_single_dot_path_segment, is_url_c, is_c0_control_or_space, is_start_with_two_hex}, encode::{URLPercentEncode, PercentEncodeSet}};
+use crate::{UrlPath, helper::{SPECIAL_SCHEME_PORTS, is_window_drive_letter, is_double_dot_path_segment, is_single_dot_path_segment, is_url_c, is_c0_control_or_space, is_start_with_two_hex, is_start_with_windows_drive_letter}, encode::{URLPercentEncode, PercentEncodeSet}};
 use super::Url;
 use super::host_parser::HostParser;
 
@@ -344,14 +344,14 @@ impl URLParser {
                             state = URLParseState::Fragment;
                         } else if c != eof {
                             url.query = None;
-                            if is_window_drive_letter(&codepoint_substr(pointer)) {
+                            if !is_start_with_windows_drive_letter(&codepoint_substr(pointer)) {
                                 url.shorten_path();
                             } else {
                                 report_validation_error();
                                 url.path = UrlPath::List(Vec::new());
-                                state = URLParseState::Path;
-                                continue;
                             }
+                            state = URLParseState::Path;
+                            continue;
                         } else {
                             state = URLParseState::Path;
                             continue;
@@ -627,5 +627,16 @@ mod tests {
         assert_eq!(url.scheme, "http");
         assert_eq!(url.host, Some("google.com".to_string()));
         assert_eq!(url.path, "index.html");
+    }
+
+    #[test]
+    fn filename_with_base_file() {
+        let input_url = "index.html";
+        let base_url = URLParser::parse("file:///home/user/data/", None);
+
+        let url = URLParser::parse(input_url, base_url).unwrap();
+
+        assert_eq!(url.scheme, "file");
+        assert_eq!(url.path, "/home/user/data/index.html");
     }
 }

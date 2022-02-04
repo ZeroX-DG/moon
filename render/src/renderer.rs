@@ -1,6 +1,7 @@
 use super::frame::FrameSize;
 use super::page::Page;
 use gfx::{Bitmap, Painter};
+use url::Url;
 
 pub struct Renderer<'a> {
     painter: Painter<'a>,
@@ -24,8 +25,8 @@ impl<'a> Renderer<'a> {
         self.painter.resize(params.viewport);
     }
 
-    pub fn load_html(&mut self, html: String) {
-        self.page.load_html(html);
+    pub fn load_html(&mut self, html: String, base_url: Url) {
+        self.page.load_html(html, base_url);
     }
 
     pub fn paint(&mut self) {
