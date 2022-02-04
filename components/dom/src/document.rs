@@ -10,6 +10,7 @@ pub struct Document {
     mode: RefCell<QuirksMode>,
     loader: RefCell<Option<Rc<RefCell<dyn DocumentLoader>>>>,
     stylesheets: RefCell<Vec<Rc<StyleSheet>>>,
+    base: RefCell<Option<Url>>
 }
 
 pub struct DocumentType {
@@ -40,6 +41,7 @@ impl Document {
             mode: RefCell::new(QuirksMode::NoQuirks),
             loader: RefCell::new(None),
             stylesheets: RefCell::new(Vec::new()),
+            base: RefCell::new(None)
         }
     }
 
@@ -69,6 +71,10 @@ impl Document {
 
     pub fn stylesheets(&self) -> Vec<Rc<StyleSheet>> {
         self.stylesheets.borrow().deref().to_vec()
+    }
+
+    pub fn base(&self) -> Option<Url> {
+        self.base.borrow().deref().clone()
     }
 }
 

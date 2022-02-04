@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use crate::helper::{SPECIAL_SCHEMES, is_normalized_window_drive_letter};
 
 #[derive(Debug, Clone)]
@@ -73,5 +75,35 @@ impl PartialEq<&str> for UrlPath {
             UrlPath::List(path) => path.join("/") == *other,
             UrlPath::Opaque(path) => path == other
         }
+    }
+}
+
+impl Display for UrlPath {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let path = match self {
+            UrlPath::List(path) => path.join("/"),
+            UrlPath::Opaque(path) => path.to_string(),
+        };
+        write!(f, "{}", path)
+    }
+}
+
+impl Display for Url {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}://", self.scheme)?;
+        if let Some(host) = &self.host {
+            write!(f, "{}", host)?;
+        }
+        if let Some(port) = self.port {
+            write!(f, ":{}", port)?;
+        }
+        write!(f, "/{}", self.path)?;
+        if let Some(fragment) = &self.fragment {
+            write!(f, "#{}", fragment)?;
+        }
+        if let Some(query) = &self.query {
+            write!(f, "?{}", query)?;
+        }
+        Ok(())
     }
 }
