@@ -2,9 +2,9 @@ use std::iter::FromIterator;
 use regex::Regex;
 use crate::{UrlPath, helper::{SPECIAL_SCHEME_PORTS, is_window_drive_letter, is_double_dot_path_segment, is_single_dot_path_segment, is_url_c, is_c0_control_or_space, is_start_with_two_hex}, encode::{URLPercentEncode, PercentEncodeSet}};
 use super::Url;
+use super::host_parser::HostParser;
 
 pub struct URLParser;
-pub struct HostParser;
 
 #[derive(Clone)]
 pub enum URLParseState {
@@ -79,14 +79,14 @@ impl URLParser {
                         state = URLParseState::Scheme;
                     } else if p_state.is_none() {
                         state = URLParseState::NoScheme;
-                        pointer -= 1;
+                        continue;
                     } else {
                         report_validation_error();
                         return None;
                     }
                 }
                 URLParseState::Scheme => {
-                    if c.is_alphanumeric() || c == '+' || c == '-' || c == '.' {
+                    if c != eof && (c.is_alphanumeric() || c == '+' || c == '-' || c == '.') {
                         buffer.push(c.to_ascii_lowercase());
                     } else if c == ':' {
                         // TODO: Skipped step 1, 3
@@ -132,10 +132,10 @@ impl URLParser {
                         state = URLParseState::Fragment;
                     } else if matches!(&base, Some(b) if b.scheme != "file") {
                         state = URLParseState::Relative;
-                        pointer -= 1;
+                        continue;
                     } else {
                         state = URLParseState::File;
-                        pointer -= 1;
+                        continue;
                     }
                 }
                 URLParseState::SpecialRelativeOrAuthority => {
@@ -145,7 +145,7 @@ impl URLParser {
                     } else {
                         report_validation_error();
                         state = URLParseState::Relative;
-                        pointer -= 1;
+                        continue;
                     }
                 }
                 URLParseState::PathOrAuthority => {
@@ -153,7 +153,7 @@ impl URLParser {
                         state = URLParseState::Authority;
                     } else {
                         state = URLParseState::Path;
-                        pointer -= 1;
+                        continue;
                     }
                 }
                 URLParseState::Relative => {
@@ -177,11 +177,11 @@ impl URLParser {
                         } else if c == '#' {
                             url.fragment = Some(String::new());
                             state = URLParseState::Fragment;
-                        } else if c == eof {
+                        } else if c != eof {
                             url.query = None;
                             url.shorten_path();
                             state = URLParseState::Path;
-                            pointer -= 1;
+                            continue;
                         }
                     }
                 }
@@ -197,7 +197,7 @@ impl URLParser {
                             url.host = base_clone.host;
                             url.port = base_clone.port;
                             state = URLParseState::Path;
-                            pointer -= 1;
+                            continue;
                         }
                     }
                 }
@@ -208,13 +208,13 @@ impl URLParser {
                     } else {
                         report_validation_error();
                         state = URLParseState::SpecialAuthorityIgnoreSlashes;
-                        pointer -= 1;
+                        continue;
                     }
                 }
                 URLParseState::SpecialAuthorityIgnoreSlashes => {
                     if c != '/' && c != '\\' {
                         state = URLParseState::Authority;
-                        pointer -= 1;
+                        continue;
                     } else {
                         report_validation_error();
                     }
@@ -250,8 +250,8 @@ impl URLParser {
                 }
                 URLParseState::Host | URLParseState::Hostname => {
                     if p_state.is_some() && url.scheme == "file" {
-                        pointer -= 1;
                         state = URLParseState::FileHost;
+                        continue;
                     } else if c == ':' && !inside_brackets {
                         if buffer.is_empty() {
                             report_validation_error();
@@ -268,7 +268,6 @@ impl URLParser {
                         buffer.clear();
                         state = URLParseState::Port;
                     } else if (c == eof || c == '/' || c == '?' || c == '#') || (url.is_special() && c == '\\') {
-                        pointer -= 1;
                         if url.is_special() && buffer.is_empty() {
                             report_validation_error();
                             return None;
@@ -282,6 +281,7 @@ impl URLParser {
                         url.host = host;
                         buffer.clear();
                         state = URLParseState::PathStart;
+                        continue;
                     } else {
                         if c == '[' {
                             inside_brackets = true;
@@ -315,7 +315,7 @@ impl URLParser {
                             buffer.clear();
                         }
                         state = URLParseState::PathStart;
-                        pointer -= 1;
+                        continue;
                     }
                     else {
                         report_validation_error();
@@ -325,7 +325,7 @@ impl URLParser {
                 URLParseState::File => {
                     url.scheme = String::from("file");
                     url.host = Some(String::new());
-                    if c == '/' && c == '\\' {
+                    if c == '/' || c == '\\' {
                         if c == '\\' {
                             report_validation_error();
                         }
@@ -350,11 +350,11 @@ impl URLParser {
                                 report_validation_error();
                                 url.path = UrlPath::List(Vec::new());
                                 state = URLParseState::Path;
-                                pointer -= 1;
+                                continue;
                             }
                         } else {
                             state = URLParseState::Path;
-                            pointer -= 1;
+                            continue;
                         }
                     }
                 }
@@ -370,18 +370,16 @@ impl URLParser {
                             url.host = base_clone.host;
                         }
                         state = URLParseState::Path;
-                        pointer -= 1;
+                        continue;
                     }
                 }
                 URLParseState::FileHost => {
                     if c == eof || c == '/' || c == '\\' || c == '?' || c == '#' {
-                        pointer -= 1;
-
                         if p_state.is_none() {
                             if is_window_drive_letter(&buffer) {
                                 report_validation_error();
-                                state = URLParseState::Path;
                             }
+                            state = URLParseState::Path;
                         } else if buffer.is_empty() {
                             url.host = Some(String::new());
                             state = URLParseState::PathStart;
@@ -400,6 +398,7 @@ impl URLParser {
                             buffer.clear();
                             state = URLParseState::PathStart;
                         }
+                        continue;
                     } else {
                         buffer.push(c);
                     }
@@ -411,7 +410,7 @@ impl URLParser {
                         }
                         state = URLParseState::Path;
                         if c != '/' && c != '\\' {
-                            pointer -= 1;
+                            continue;
                         }
                     } else if c == '?' {
                         url.query = Some(String::new());
@@ -422,7 +421,7 @@ impl URLParser {
                     } else if c != eof {
                         state = URLParseState::Path;
                         if c != '/' {
-                            pointer -= 1;
+                            continue;
                         }
                     } else {
                         if p_state.is_some() && url.host.is_none() {
@@ -451,8 +450,8 @@ impl URLParser {
                         } else if !is_single_dot_path_segment(&buffer) {
                             if url.scheme == "file" && url.path.is_empty() && is_window_drive_letter(&buffer) {
                                 buffer.replace_range(1..2, ":");
-                                url.path.append(&buffer);
                             }
+                            url.path.append(&buffer);
                         }
                         buffer.clear();
                         if c == '?' {
@@ -547,8 +546,86 @@ impl URLParser {
     }
 }
 
-impl HostParser {
-    pub fn parse(input: &str, is_not_special: bool) -> Option<String> {
-        None
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn basic() {
+        let input_url = "http://google.com/index.php";
+
+        let url = URLParser::parse(input_url, None).unwrap();
+
+        assert_eq!(url.scheme, "http");
+        assert_eq!(url.host, Some("google.com".to_string()));
+        assert_eq!(url.port, None);
+        assert_eq!(url.path, "index.php");
+    }
+
+    #[test]
+    fn empty_path() {
+        let input_url = "http://google.com";
+
+        let url = URLParser::parse(input_url, None).unwrap();
+
+        assert_eq!(url.scheme, "http");
+        assert_eq!(url.host, Some("google.com".to_string()));
+        assert_eq!(url.port, None);
+        assert_eq!(url.path, "");
+    }
+
+    #[test]
+    fn with_special_port() {
+        let input_url = "https://google.com:443";
+
+        let url = URLParser::parse(input_url, None).unwrap();
+
+        assert_eq!(url.scheme, "https");
+        assert_eq!(url.host, Some("google.com".to_string()));
+        assert_eq!(url.port, None);
+        assert_eq!(url.path, "");
+    }
+
+    #[test]
+    fn with_non_special_port() {
+        let input_url = "https://google.com:1242";
+
+        let url = URLParser::parse(input_url, None).unwrap();
+
+        assert_eq!(url.scheme, "https");
+        assert_eq!(url.host, Some("google.com".to_string()));
+        assert_eq!(url.port, Some(1242));
+        assert_eq!(url.path, "");
+    }
+
+    #[test]
+    fn invalid_port() {
+        let input_url = "https://google.com:44a3";
+
+        let url = URLParser::parse(input_url, None);
+
+        assert!(url.is_none());
+    }
+
+    #[test]
+    fn file_scheme() {
+        let input_url = "file:///home/user/html/index.html";
+
+        let url = URLParser::parse(input_url, None).unwrap();
+
+        assert_eq!(url.scheme, "file");
+        assert_eq!(url.path, "/home/user/html/index.html");
+    }
+
+    #[test]
+    fn filename_with_base() {
+        let input_url = "index.html";
+        let base_url = URLParser::parse("http://google.com", None);
+
+        let url = URLParser::parse(input_url, base_url).unwrap();
+
+        assert_eq!(url.scheme, "http");
+        assert_eq!(url.host, Some("google.com".to_string()));
+        assert_eq!(url.path, "index.html");
     }
 }

@@ -10,7 +10,7 @@ pub struct Url {
     pub fragment: Option<String>
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum UrlPath {
     Opaque(String),
     List(Vec<String>)
@@ -63,6 +63,15 @@ impl UrlPath {
         match self {
             UrlPath::List(list) => list.is_empty(),
             UrlPath::Opaque(path) => path.is_empty()
+        }
+    }
+}
+
+impl PartialEq<&str> for UrlPath {
+    fn eq(&self, other: &&str) -> bool {
+        match self {
+            UrlPath::List(path) => path.join("/") == *other,
+            UrlPath::Opaque(path) => path == other
         }
     }
 }

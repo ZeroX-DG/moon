@@ -10,18 +10,18 @@ pub const SPECIAL_SCHEME_PORTS: [(&str, Option<u16>); 6] = [
 ];
 
 pub fn is_normalized_window_drive_letter(input: &str) -> bool {
-    let chars: Vec<char> = input.chars().collect();
-    match (chars[0], chars[1]) {
-        (c, ':') if c.is_ascii_alphabetic() => true,
+    let mut chars = input.chars();
+    match (chars.next(), chars.next()) {
+        (Some(c), Some(':')) if c.is_ascii_alphabetic() => true,
         _ => false
     }
 }
 
 pub fn is_window_drive_letter(input: &str) -> bool {
-    let chars: Vec<char> = input.chars().collect();
-    match (chars[0], chars[1]) {
-        (c, ':') if c.is_ascii_alphabetic() => true,
-        (c, '|') if c.is_ascii_alphabetic() => true,
+    let mut chars = input.chars();
+    match (chars.next(), chars.next()) {
+        (Some(c), Some(':')) if c.is_ascii_alphabetic() => true,
+        (Some(c), Some('|')) if c.is_ascii_alphabetic() => true,
         _ => false
     }
 }
@@ -63,4 +63,8 @@ pub fn is_start_with_two_hex(input: &str) -> bool {
         (Some(a), Some(b)) => a.is_ascii_hexdigit() && b.is_ascii_hexdigit(),
         _ => false
     }
+}
+
+pub fn contains_forbidden_host_code_point(input: &str) -> bool {
+    input.contains(|c| ['\0', '\t', '\r', '\n', ' ', '#', '/', ':', '<', '>', '?', '@', '[', '\\', ']', '^', '|'].contains(&c))
 }
