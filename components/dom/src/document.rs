@@ -1,6 +1,6 @@
-use super::document_loader::DocumentLoader;
 use super::node::NodeHooks;
 use css::cssom::stylesheet::StyleSheet;
+use document_loader::DocumentLoader;
 use std::cell::RefCell;
 use std::ops::Deref;
 use std::rc::Rc;

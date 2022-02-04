@@ -3,9 +3,9 @@ use std::rc::Rc;
 use css::parser::Parser;
 use css::tokenizer::token::Token;
 use css::tokenizer::Tokenizer;
+use document_loader::inprocess::InprocessLoader;
 use dom::document::Document;
 use dom::node::{Node, NodeData};
-use loaders::inprocess::InprocessLoader;
 
 pub struct FrameLoader;
 
