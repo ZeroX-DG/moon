@@ -8,3 +8,4 @@ edition = "2018"
 
 [dependencies]
 io = { path = "../io" }
+regex = "1"
