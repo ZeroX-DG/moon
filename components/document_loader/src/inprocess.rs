@@ -1,7 +1,5 @@
-use dom::document_loader::{DocumentLoader, LoadRequest};
+use super::{DocumentLoader, LoadError, LoadRequest};
 use relative_path::RelativePath;
-
-use crate::error::LoadError;
 
 pub struct InprocessLoader;
 
@@ -33,7 +31,7 @@ impl DocumentLoader for InprocessLoader {
             }
             Err(e) => {
                 if let Some(cb) = request.error_callback {
-                    cb(e.to_string());
+                    cb(e);
                 }
             }
         }

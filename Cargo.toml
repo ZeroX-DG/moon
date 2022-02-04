@@ -20,7 +20,7 @@ members = [
   "components/tree",
   "components/url",
   "components/gfx",
-  "components/loaders",
+  "components/document_loader",
   "components/shared",
   "render",
 ]
