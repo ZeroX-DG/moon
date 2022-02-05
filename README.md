@@ -64,8 +64,7 @@ Bold text is what I'm working on
 - [ ] :art: Rendering
   - [x] Display list
   - [x] **GPU rendering** (still WIP to support all drawing operations)
-  - [ ] Font rendering
-- [x] IPC between kernel & rendering engine
+  - [x] **Text rendering** (still working on layouting text nodes)
 - [ ] :earth_americas: Networking
   - [ ] URL parsing
   - [ ] DNS resolving
