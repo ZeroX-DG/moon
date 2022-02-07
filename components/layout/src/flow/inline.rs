@@ -5,18 +5,16 @@ use dom::node::NodeData;
 use shared::primitive::edge::Edge;
 use style::property::Property;
 
-use super::line_box::{LineBox, LineBoxBuilder, LineFragment};
+use super::line_box::{LineBoxBuilder, LineFragment};
 
 pub struct InlineFormattingContext {
     layout_context: Rc<LayoutContext>,
-    line_boxes: Vec<LineBox>,
 }
 
 impl InlineFormattingContext {
     pub fn new(layout_context: Rc<LayoutContext>) -> Self {
         Self {
             layout_context,
-            line_boxes: Vec::new(),
         }
     }
 
@@ -27,7 +25,7 @@ impl InlineFormattingContext {
 
         let mut offset_y = 0.;
 
-        for line in &self.line_boxes {
+        for line in &*layout_node.lines().borrow() {
             let mut offset_x = 0.;
 
             for fragment in line.fragments() {
@@ -50,7 +48,7 @@ impl InlineFormattingContext {
 
     fn generate_line_boxes(&mut self, layout_node: Rc<LayoutBox>) {
         let mut line_box_builder = LineBoxBuilder::new(layout_node.clone());
-        self.line_boxes.clear();
+        layout_node.lines().borrow_mut().clear();
 
         for child in layout_node.children().iter() {
             match child.render_node() {
@@ -67,7 +65,7 @@ impl InlineFormattingContext {
                 }
             }
         }
-        self.line_boxes = line_box_builder.finish();
+        *layout_node.lines().borrow_mut() = line_box_builder.finish();
     }
 
     fn layout_dimension_box(&mut self, layout_node: Rc<LayoutBox>) {

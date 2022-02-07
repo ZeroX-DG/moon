@@ -346,7 +346,7 @@ mod tests {
             },
         });
 
-        let initial_block_box = Rc::new(LayoutBox::new_anonymous(BoxData::BlockBox));
+        let initial_block_box = Rc::new(LayoutBox::new_anonymous(BoxData::block_box()));
         establish_context(
             FormattingContextType::BlockFormattingContext,
             initial_block_box.clone(),

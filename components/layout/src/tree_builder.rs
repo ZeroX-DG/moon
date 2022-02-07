@@ -79,7 +79,7 @@ impl TreeBuilder {
 
         if parent.children_are_inline() {
             let children = parent.children_mut().drain(..).collect::<Vec<_>>();
-            let anonymous = Rc::new(LayoutBox::new_anonymous(BoxData::BlockBox));
+            let anonymous = Rc::new(LayoutBox::new_anonymous(BoxData::block_box()));
             establish_context(
                 FormattingContextType::BlockFormattingContext,
                 anonymous.clone(),
@@ -119,7 +119,7 @@ impl TreeBuilder {
         };
 
         if require_anonymous_box {
-            let anonymous = Rc::new(LayoutBox::new_anonymous(BoxData::BlockBox));
+            let anonymous = Rc::new(LayoutBox::new_anonymous(BoxData::block_box()));
             establish_context(
                 FormattingContextType::InlineFormattingContext,
                 anonymous.clone(),

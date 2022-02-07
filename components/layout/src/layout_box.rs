@@ -15,7 +15,7 @@ use style::{
     },
 };
 
-use crate::{box_model::Dimensions, formatting_context::FormattingContext};
+use crate::{box_model::Dimensions, formatting_context::FormattingContext, flow::line_box::LineBox};
 
 #[derive(Debug)]
 pub struct BaseBox {
@@ -47,7 +47,9 @@ pub struct LayoutBox {
 
 #[derive(Debug)]
 pub enum BoxData {
-    BlockBox,
+    BlockBox {
+        lines: RefCell<Vec<LineBox>> // Only if the block box establish IFC
+    },
     InlineContents(InlineContents),
 }
 
@@ -55,6 +57,22 @@ pub enum BoxData {
 pub enum InlineContents {
     InlineBox,
     TextRun,
+}
+
+impl BoxData {
+    pub fn block_box() -> Self {
+        Self::BlockBox {
+            lines: RefCell::new(Vec::new())
+        }
+    }
+
+    pub fn inline_box() -> Self {
+        Self::InlineContents(InlineContents::InlineBox)
+    }
+
+    pub fn text_run() -> Self {
+        Self::InlineContents(InlineContents::TextRun)
+    }
 }
 
 impl LayoutBox {
@@ -66,11 +84,9 @@ impl LayoutBox {
                 match render_node.get_style(&Property::Display).inner() {
                     Value::Display(d) => match d {
                         Display::Full(outer, inner) => match (outer, inner) {
-                            (OuterDisplayType::Block, InnerDisplayType::Flow) => BoxData::BlockBox,
+                            (OuterDisplayType::Block, InnerDisplayType::Flow) => BoxData::block_box(),
                             (OuterDisplayType::Inline, InnerDisplayType::Flow)
-                            | (OuterDisplayType::Inline, InnerDisplayType::FlowRoot) => {
-                                BoxData::InlineContents(InlineContents::InlineBox)
-                            }
+                            | (OuterDisplayType::Inline, InnerDisplayType::FlowRoot) => BoxData::inline_box(),
                             _ => unimplemented!("Unsupport display type: {:#?}", d),
                         },
                         _ => unimplemented!("Unsupport display type: {:#?}", d),
@@ -159,7 +175,7 @@ impl LayoutBox {
 
     pub fn is_block(&self) -> bool {
         match self.data {
-            BoxData::BlockBox => true,
+            BoxData::BlockBox{..} => true,
             _ => false,
         }
     }
@@ -211,7 +227,7 @@ impl LayoutBox {
 
     pub fn friendly_name(&self) -> &str {
         match self.data {
-            BoxData::BlockBox => "BlockBox",
+            BoxData::BlockBox{..} => "BlockBox",
             BoxData::InlineContents(InlineContents::TextRun) => "TextRun",
             BoxData::InlineContents(_) => "InlineBox",
         }
@@ -251,5 +267,12 @@ impl LayoutBox {
     pub fn add_child(parent: Rc<LayoutBox>, child: Rc<LayoutBox>) {
         parent.children_mut().push(child.clone());
         child.set_parent(parent);
+    }
+
+    pub fn lines(&self) -> &RefCell<Vec<LineBox>> {
+        match &self.data {
+            BoxData::BlockBox { lines } => lines,
+            _ => unreachable!("Non-block box does not have line boxes")
+        }
     }
 }

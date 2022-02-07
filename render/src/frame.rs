@@ -120,7 +120,7 @@ impl FrameLayout {
                 });
 
                 let initial_block_box = Rc::new(LayoutBox::new_anonymous(
-                    layout::layout_box::BoxData::BlockBox,
+                    layout::layout_box::BoxData::block_box(),
                 ));
                 LayoutBox::add_child(initial_block_box.clone(), root.clone());
 
