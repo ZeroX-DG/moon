@@ -320,6 +320,10 @@ impl Node {
     pub fn is_text(&self) -> bool {
         self.as_text_opt().is_some()
     }
+
+    pub fn data(&self) -> &Option<NodeData> {
+        &self.data
+    }
 }
 
 #[cfg(test)]
