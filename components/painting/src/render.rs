@@ -26,7 +26,7 @@ impl<'a> PaintChain<'a> {
 
         for child in layout_node.children().iter() {
             result.extend(self.paint(child.clone()));
-        }
+        } 
 
         result
     }

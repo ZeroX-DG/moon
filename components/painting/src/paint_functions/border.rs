@@ -27,23 +27,25 @@ pub fn paint_border(layout_node: Rc<LayoutBox>) -> Option<DisplayCommand> {
         // TODO: support other border style other than solid
         let mut draw_commands = Vec::new();
 
+        let box_model = layout_node.box_model().borrow();
+
         // TODO: Use trapezoid instead of rect
-        if layout_node.dimensions().border.top > 0. {
+        if box_model.border.top > 0. {
             let rect = create_border_rect(layout_node.clone(), Edge::Top);
             draw_commands.push(DrawCommand::FillRect(rect, border_top_color));
         }
 
-        if layout_node.dimensions().border.left > 0. {
+        if box_model.border.left > 0. {
             let rect = create_border_rect(layout_node.clone(), Edge::Left);
             draw_commands.push(DrawCommand::FillRect(rect, border_left_color));
         }
 
-        if layout_node.dimensions().border.right > 0. {
+        if box_model.border.right > 0. {
             let rect = create_border_rect(layout_node.clone(), Edge::Right);
             draw_commands.push(DrawCommand::FillRect(rect, border_right_color));
         }
 
-        if layout_node.dimensions().border.bottom > 0. {
+        if box_model.border.bottom > 0. {
             let rect = create_border_rect(layout_node.clone(), Edge::Bottom);
             draw_commands.push(DrawCommand::FillRect(rect, border_bottom_color));
         }
@@ -54,32 +56,33 @@ pub fn paint_border(layout_node: Rc<LayoutBox>) -> Option<DisplayCommand> {
 }
 
 fn create_border_rect(layout_node: Rc<LayoutBox>, edge: Edge) -> Rect {
-    let border_box = layout_node.dimensions().border_box();
+    let border_box = layout_node.border_box_absolute();
+    let box_model = layout_node.box_model().borrow();
 
     match edge {
         Edge::Top => Rect::new(
             border_box.x,
             border_box.y,
             border_box.width,
-            layout_node.dimensions().border.top,
+            box_model.border.top,
         ),
         Edge::Left => Rect::new(
             border_box.x,
             border_box.y,
-            layout_node.dimensions().border.left,
+            box_model.border.left,
             border_box.height,
         ),
         Edge::Right => Rect::new(
-            border_box.x + border_box.width - layout_node.dimensions().border.right,
+            border_box.x + border_box.width - box_model.border.right,
             border_box.y,
-            layout_node.dimensions().border.right,
+            box_model.border.right,
             border_box.height,
         ),
         Edge::Bottom => Rect::new(
             border_box.x,
-            border_box.y + border_box.height - layout_node.dimensions().border.bottom,
+            border_box.y + border_box.height - box_model.border.bottom,
             border_box.width,
-            layout_node.dimensions().border.bottom,
+            box_model.border.bottom,
         ),
     }
 }

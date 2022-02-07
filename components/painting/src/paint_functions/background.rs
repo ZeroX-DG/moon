@@ -19,7 +19,7 @@ pub fn paint_background(layout_node: Rc<LayoutBox>) -> Option<DisplayCommand> {
 
         let color = color_from_value(background.inner());
 
-        let (x, y, width, height) = layout_node.dimensions().padding_box().into();
+        let (x, y, width, height) = layout_node.padding_box_absolute().into();
 
         let has_no_border_radius = is_zero(border_top_left_radius.inner())
             && is_zero(border_bottom_left_radius.inner())
@@ -36,7 +36,7 @@ pub fn paint_background(layout_node: Rc<LayoutBox>) -> Option<DisplayCommand> {
 
             return Some(DisplayCommand::Draw(DrawCommand::FillRect(rect, color)));
         } else {
-            let border_box = layout_node.dimensions().border_box();
+            let border_box = layout_node.border_box_absolute();
 
             let tl = to_radii(border_top_left_radius.inner(), border_box.width);
             let tr = to_radii(border_top_right_radius.inner(), border_box.width);

@@ -31,10 +31,10 @@ pub fn layout_to_string(
         DumpSpecificity::Structure => String::new(),
         DumpSpecificity::StructureAndDimensions => format!(
             " (x: {} | y: {} | w: {} | h: {})",
-            root_node.dimensions().content.x,
-            root_node.dimensions().content.y,
-            root_node.dimensions().content.width,
-            root_node.dimensions().content.height
+            root_node.absolute_rect().x,
+            root_node.absolute_rect().y,
+            root_node.absolute_rect().width,
+            root_node.absolute_rect().height
         ),
     };
 

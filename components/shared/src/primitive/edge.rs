@@ -23,3 +23,14 @@ impl Default for EdgeSizes {
         }
     }
 }
+
+impl EdgeSizes {
+    pub fn add_edge_sizes(&self, other: &EdgeSizes) -> Self {
+        Self {
+            top: self.top + other.top,
+            right: self.right + other.right,
+            bottom: self.bottom + other.bottom,
+            left: self.left + other.left,
+        }
+    }
+}

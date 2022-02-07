@@ -5,7 +5,7 @@ use dom::node::NodeData;
 use shared::primitive::edge::Edge;
 use style::property::Property;
 
-use super::line_box::{LineBoxBuilder, LineFragment};
+use super::line_box::LineBoxBuilder;
 
 pub struct InlineFormattingContext {
     layout_context: Rc<LayoutContext>,
@@ -19,31 +19,16 @@ impl InlineFormattingContext {
     }
 
     pub fn run(&mut self, layout_node: Rc<LayoutBox>) {
-        self.generate_line_boxes(layout_node.clone());
-
-        let containing_block = layout_node.dimensions().content_box();
-
-        let mut offset_y = 0.;
-
-        for line in &*layout_node.lines().borrow() {
-            let mut offset_x = 0.;
-
-            for fragment in line.fragments() {
-                match fragment {
-                    LineFragment::Box(box_fragment) => {
-                        let x = containing_block.x + offset_x + box_fragment.dimensions().margin.left;
-                        let y = containing_block.y + offset_y + box_fragment.dimensions().margin.top;
-
-                        box_fragment.dimensions_mut().set_position(x, y);
-                        offset_x += box_fragment.dimensions().margin_box().width;
-                    }
-                }
-            }
-
-            offset_y += line.height();
-        }
-
-        layout_node.dimensions_mut().set_height(offset_y);
+//         self.generate_line_boxes(layout_node.clone());
+//         
+//         let content_height = layout_node.lines()
+//             .borrow()
+//             .iter()
+//             .map(|line| line.size.height)
+//             .reduce(f32::max)
+//             .unwrap_or(0.);
+// 
+//         layout_node.set_content_height(content_height);
     }
 
     fn generate_line_boxes(&mut self, layout_node: Rc<LayoutBox>) {
@@ -80,7 +65,7 @@ impl InlineFormattingContext {
     }
 
     fn calculate_width_for_element(&mut self, layout_node: Rc<LayoutBox>) {
-        let containing_block = layout_node.containing_block().dimensions().content_box();
+        let containing_block = layout_node.containing_block().content_size();
 
         let render_node = match layout_node.render_node() {
             Some(node) => node.clone(),
@@ -115,17 +100,17 @@ impl InlineFormattingContext {
         }
 
         // apply all calculated used values
-        let mut box_model = layout_node.dimensions_mut();
-        box_model.set_width(used_width);
+        let mut box_model = layout_node.base.box_model.borrow_mut();
+        layout_node.set_content_width(used_width);
         box_model.set(BoxComponent::Margin, Edge::Left, used_margin_left);
         box_model.set(BoxComponent::Margin, Edge::Right, used_margin_right);
     }
 
     fn apply_vertical_spacing(&mut self, layout_node: Rc<LayoutBox>) {
-        let containing_block = layout_node.containing_block().dimensions().content_box();
+        let containing_block = layout_node.containing_block().content_size();
 
         let render_node = layout_node.render_node();
-        let mut box_model = layout_node.dimensions_mut();
+        let mut box_model = layout_node.base.box_model.borrow_mut();
 
         if let Some(render_node) = render_node {
             let margin_top = render_node

@@ -5,6 +5,7 @@ use css::cssom::css_rule::CSSRule;
 
 use dom::node::Node;
 use layout::formatting_context::{establish_context, FormattingContextType};
+use layout::layout_printer::dump_layout;
 use layout::{formatting_context::LayoutContext, layout_box::LayoutBox};
 use shared::primitive::Rect;
 use style::render_tree::RenderTree;
@@ -108,6 +109,7 @@ impl FrameLayout {
             log::debug!("Finished layout tree");
 
             if let Some(root) = &self.layout_tree {
+                log::debug!("Starting layout process");
                 let (width, height) = size;
 
                 let layout_context = Rc::new(LayoutContext {
@@ -131,6 +133,10 @@ impl FrameLayout {
                 initial_block_box
                     .formatting_context()
                     .run(layout_context.clone(), initial_block_box.clone());
+                log::debug!("Finished layout process");
+                dump_layout(root.clone()); 
+            } else {
+                log::info!("Empty layout tree. Skipping layout process");
             }
         }
     }
