@@ -6,7 +6,7 @@ pub struct BoxModel {
     pub padding: EdgeSizes,
     pub margin: EdgeSizes,
     pub border: EdgeSizes,
-    pub offset: EdgeSizes
+    pub offset: EdgeSizes,
 }
 
 pub enum BoxComponent {
@@ -62,7 +62,7 @@ impl Default for BoxModel {
             padding: Default::default(),
             border: Default::default(),
             margin: Default::default(),
-            offset: Default::default()
+            offset: Default::default(),
         }
     }
 }

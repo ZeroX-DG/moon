@@ -24,7 +24,10 @@ impl<'a> Renderer<'a> {
 
     pub fn initialize(&mut self, params: RendererInitializeParams) {
         self.page.resize(params.viewport);
-        self.painter.resize(Size::new(params.viewport.0 as f32, params.viewport.1 as f32));
+        self.painter.resize(Size::new(
+            params.viewport.0 as f32,
+            params.viewport.1 as f32,
+        ));
     }
 
     pub fn load_html(&mut self, html: String, base_url: Url) {

@@ -40,7 +40,7 @@ impl core::fmt::Debug for Node {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         let inner = match &self.data {
             Some(data) => format!("{:?}", data),
-            None => "[Empty Node]".to_string()
+            None => "[Empty Node]".to_string(),
         };
         write!(f, "{}", inner)
     }

@@ -1,4 +1,4 @@
-use super::{Point, Size, edge::EdgeSizes};
+use super::{edge::EdgeSizes, Point, Size};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -40,7 +40,7 @@ impl From<(Point, Size)> for Rect {
             x: location.x,
             y: location.y,
             width: size.width,
-            height: size.height
+            height: size.height,
         }
     }
 }

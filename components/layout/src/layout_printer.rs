@@ -75,7 +75,11 @@ fn line_box_to_string(line: &LineBox, level: usize, specificity: &DumpSpecificit
 
     let line_dimensions = format!("(w: {} | h: {})", line.size.width, line.size.height);
 
-    result.push_str(&format!("{}[LineBox]{}\n", "  ".repeat(level), line_dimensions));
+    result.push_str(&format!(
+        "{}[LineBox]{}\n",
+        "  ".repeat(level),
+        line_dimensions
+    ));
 
     for fragment in line.fragments.iter() {
         result.push_str(&fragment_to_string(fragment, level + 1, specificity));

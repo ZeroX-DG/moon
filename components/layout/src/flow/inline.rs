@@ -13,9 +13,7 @@ pub struct InlineFormattingContext {
 
 impl InlineFormattingContext {
     pub fn new(layout_context: Rc<LayoutContext>) -> Self {
-        Self {
-            layout_context,
-        }
+        Self { layout_context }
     }
 
     pub fn run(&mut self, layout_node: Rc<LayoutBox>) {
@@ -23,10 +21,11 @@ impl InlineFormattingContext {
             log::debug!("Attempt to run IFC on non-block box");
             return;
         }
-        
+
         self.generate_line_boxes(layout_node.clone());
-        
-        let content_height = layout_node.lines()
+
+        let content_height = layout_node
+            .lines()
             .borrow()
             .iter()
             .map(|line| line.size.height)
@@ -48,7 +47,7 @@ impl InlineFormattingContext {
                         self.layout_dimension_box(child.clone());
                         line_box_builder.add_box_fragment(child.clone());
                     }
-                }
+                },
                 _ => {
                     self.layout_dimension_box(child.clone());
                     line_box_builder.add_box_fragment(child.clone());

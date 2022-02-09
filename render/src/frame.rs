@@ -134,7 +134,7 @@ impl FrameLayout {
                     .formatting_context()
                     .run(layout_context.clone(), initial_block_box.clone());
                 log::debug!("Finished layout process");
-                dump_layout!(root.clone()); 
+                dump_layout!(root.clone());
             } else {
                 log::info!("Empty layout tree. Skipping layout process");
             }

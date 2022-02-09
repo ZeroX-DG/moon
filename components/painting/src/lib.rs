@@ -3,22 +3,26 @@ mod utils;
 
 use std::rc::Rc;
 
-use layout::{layout_box::LayoutBox, flow::line_box::{LineBox, LineFragmentData}};
+use layout::{
+    flow::line_box::{LineBox, LineFragmentData},
+    layout_box::LayoutBox,
+};
 
 pub use gfx_painter::GfxPainter;
-use shared::{primitive::{Size, Rect, Corners}, color::Color};
+use shared::{
+    color::Color,
+    primitive::{Corners, Rect, Size},
+};
 use style::property::Property;
-use utils::{color_from_value, to_radii, is_zero};
+use utils::{color_from_value, is_zero, to_radii};
 
 pub struct Painter<G: GfxPainter> {
-    gfx: G
+    gfx: G,
 }
 
 impl<G: GfxPainter> Painter<G> {
     pub fn new(gfx: G) -> Self {
-        Self {
-            gfx
-        }
+        Self { gfx }
     }
 
     pub fn resize(&mut self, size: Size) {
@@ -50,9 +54,11 @@ impl<G: GfxPainter> Painter<G> {
             match &fragment.data {
                 LineFragmentData::Box(layout_box) if !layout_box.is_anonymous() => {
                     let render_node = layout_box.render_node().unwrap();
-                    let mut background_rect = Rect::from((containing_block.absolute_location(), fragment.size.clone()));
+                    let mut background_rect =
+                        Rect::from((containing_block.absolute_location(), fragment.size.clone()));
                     background_rect.translate(fragment.offset.x, fragment.offset.y);
-                    let background_color = color_from_value(&render_node.get_style(&Property::BackgroundColor));
+                    let background_color =
+                        color_from_value(&render_node.get_style(&Property::BackgroundColor));
                     let corners = self.compute_border_radius_corner(layout_box.clone());
                     self.paint_background(background_rect, background_color, corners);
                 }
@@ -75,7 +81,8 @@ impl<G: GfxPainter> Painter<G> {
 
     fn paint_background(&mut self, rect: Rect, color: Color, maybe_corners: Option<Corners>) {
         if let Some(corners) = maybe_corners {
-            self.gfx.fill_rrect(shared::primitive::RRect { rect, corners }, color);
+            self.gfx
+                .fill_rrect(shared::primitive::RRect { rect, corners }, color);
         } else {
             self.gfx.fill_rect(rect, color);
         }
@@ -110,4 +117,3 @@ impl<G: GfxPainter> Painter<G> {
         Some(Corners::new(tl, tr, bl, br))
     }
 }
-

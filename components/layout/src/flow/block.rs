@@ -5,14 +5,14 @@ use style::{property::Property, values::prelude::Position};
 
 pub struct BlockFormattingContext {
     layout_context: Rc<LayoutContext>,
-    previous_y: f32
+    previous_y: f32,
 }
 
 impl BlockFormattingContext {
     pub fn new(layout_context: Rc<LayoutContext>) -> Self {
         Self {
             layout_context,
-            previous_y: 0.
+            previous_y: 0.,
         }
     }
 
@@ -55,7 +55,6 @@ impl BlockFormattingContext {
                 self.compute_height(child.clone());
             }
 
-
             child.apply_explicit_sizes();
         }
     }
@@ -64,16 +63,11 @@ impl BlockFormattingContext {
         self.apply_vertical_box_model_values(layout_node.clone());
 
         let box_model = layout_node.box_model().borrow();
-        let y = box_model.margin_box().top
-            + box_model.offset.top
-            + self.previous_y;
+        let y = box_model.margin_box().top + box_model.offset.top + self.previous_y;
 
-        self.previous_y = y
-            + box_model.margin_box().bottom
-            + layout_node.margin_box_height();
+        self.previous_y = y + box_model.margin_box().bottom + layout_node.margin_box_height();
 
-        let x = box_model.margin_box().left
-            + box_model.offset.left;
+        let x = box_model.margin_box().left + box_model.offset.left;
 
         layout_node.set_offset(x, y);
     }
@@ -203,12 +197,12 @@ impl BlockFormattingContext {
     }
 
     fn apply_vertical_box_model_values(&self, layout_node: Rc<LayoutBox>) {
-       if layout_node.is_anonymous() {
+        if layout_node.is_anonymous() {
             return;
         }
 
-       let render_node = layout_node.render_node().unwrap();
-        let containing_block = layout_node.containing_block().content_size(); 
+        let render_node = layout_node.render_node().unwrap();
+        let containing_block = layout_node.containing_block().content_size();
         let margin_top = render_node
             .get_style(&Property::MarginTop)
             .to_px(containing_block.width);
@@ -263,9 +257,10 @@ impl BlockFormattingContext {
     }
 
     fn compute_auto_height(&self, layout_node: Rc<LayoutBox>) -> f32 {
-        layout_node.children().iter().fold(0.0, |acc, child| {
-            acc + child.margin_box_height()
-        })
+        layout_node
+            .children()
+            .iter()
+            .fold(0.0, |acc, child| acc + child.margin_box_height())
     }
 }
 
@@ -325,9 +320,6 @@ mod tests {
             .run(layout_context.clone(), initial_block_box.clone());
 
         assert_eq!(root.content_size().height, 40.);
-        assert_eq!(
-            root.content_size().width,
-            layout_context.viewport.width
-        );
+        assert_eq!(root.content_size().width, layout_context.viewport.width);
     }
 }

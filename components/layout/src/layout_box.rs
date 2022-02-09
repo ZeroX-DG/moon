@@ -4,7 +4,7 @@ use std::{
     rc::{Rc, Weak},
 };
 
-use shared::primitive::{Point, Size, Rect};
+use shared::primitive::{Point, Rect, Size};
 use style::{
     property::Property,
     render_tree::RenderNode,
@@ -16,7 +16,7 @@ use style::{
     },
 };
 
-use crate::{box_model::BoxModel, formatting_context::FormattingContext, flow::line_box::LineBox};
+use crate::{box_model::BoxModel, flow::line_box::LineBox, formatting_context::FormattingContext};
 
 #[derive(Debug)]
 pub struct BaseBox {
@@ -53,7 +53,7 @@ pub struct LayoutBox {
 #[derive(Debug)]
 pub enum BoxData {
     BlockBox {
-        lines: RefCell<Vec<LineBox>> // Only if the block box establish IFC
+        lines: RefCell<Vec<LineBox>>, // Only if the block box establish IFC
     },
     InlineContents(InlineContents),
 }
@@ -67,7 +67,7 @@ pub enum InlineContents {
 impl BoxData {
     pub fn block_box() -> Self {
         Self::BlockBox {
-            lines: RefCell::new(Vec::new())
+            lines: RefCell::new(Vec::new()),
         }
     }
 
@@ -89,9 +89,13 @@ impl LayoutBox {
                 match render_node.get_style(&Property::Display).inner() {
                     Value::Display(d) => match d {
                         Display::Full(outer, inner) => match (outer, inner) {
-                            (OuterDisplayType::Block, InnerDisplayType::Flow) => BoxData::block_box(),
+                            (OuterDisplayType::Block, InnerDisplayType::Flow) => {
+                                BoxData::block_box()
+                            }
                             (OuterDisplayType::Inline, InnerDisplayType::Flow)
-                            | (OuterDisplayType::Inline, InnerDisplayType::FlowRoot) => BoxData::inline_box(),
+                            | (OuterDisplayType::Inline, InnerDisplayType::FlowRoot) => {
+                                BoxData::inline_box()
+                            }
                             _ => unimplemented!("Unsupport display type: {:#?}", d),
                         },
                         _ => unimplemented!("Unsupport display type: {:#?}", d),
@@ -174,7 +178,7 @@ impl LayoutBox {
     pub fn containing_block_opt(&self) -> Option<Rc<LayoutBox>> {
         match self.base.containing_block.borrow().clone() {
             Some(containing_block) => containing_block.upgrade(),
-            _ => None
+            _ => None,
         }
     }
 
@@ -187,7 +191,7 @@ impl LayoutBox {
 
     pub fn is_block(&self) -> bool {
         match self.data {
-            BoxData::BlockBox{..} => true,
+            BoxData::BlockBox { .. } => true,
             _ => false,
         }
     }
@@ -269,7 +273,7 @@ impl LayoutBox {
             rect.translate(block.offset().x, block.offset().y);
             containing_block = block.containing_block_opt();
         }
-        
+
         rect
     }
 
@@ -280,14 +284,12 @@ impl LayoutBox {
 
     pub fn border_box_absolute(&self) -> Rect {
         let border_box = self.base.box_model.borrow().border_box();
-        self.padding_box_absolute()
-            .add_outer_edges(&border_box)
+        self.padding_box_absolute().add_outer_edges(&border_box)
     }
 
     pub fn padding_box_absolute(&self) -> Rect {
         let padding_box = self.base.box_model.borrow().padding_box();
-        self.absolute_rect()
-            .add_outer_edges(&padding_box)
+        self.absolute_rect().add_outer_edges(&padding_box)
     }
 
     pub fn render_node(&self) -> Option<Rc<RenderNode>> {
@@ -296,7 +298,7 @@ impl LayoutBox {
 
     pub fn friendly_name(&self) -> &str {
         match self.data {
-            BoxData::BlockBox{..} => "BlockBox",
+            BoxData::BlockBox { .. } => "BlockBox",
             BoxData::InlineContents(InlineContents::TextRun) => "TextRun",
             BoxData::InlineContents(_) => "InlineBox",
         }
@@ -341,7 +343,7 @@ impl LayoutBox {
     pub fn lines(&self) -> &RefCell<Vec<LineBox>> {
         match &self.data {
             BoxData::BlockBox { lines } => lines,
-            _ => unreachable!("Non-block box does not have line boxes")
+            _ => unreachable!("Non-block box does not have line boxes"),
         }
     }
 }
