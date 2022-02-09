@@ -1,10 +1,12 @@
 use super::frame::FrameSize;
 use super::page::Page;
-use gfx::{Bitmap, Painter};
+use gfx::{Bitmap, Canvas};
+use painting::Painter;
+use shared::primitive::Size;
 use url::Url;
 
 pub struct Renderer<'a> {
-    painter: Painter<'a>,
+    painter: Painter<Canvas<'a>>,
     page: Page,
 }
 
@@ -15,14 +17,14 @@ pub struct RendererInitializeParams {
 impl<'a> Renderer<'a> {
     pub async fn new() -> Renderer<'a> {
         Self {
-            painter: Painter::new().await,
+            painter: Painter::new(Canvas::new().await),
             page: Page::new(),
         }
     }
 
     pub fn initialize(&mut self, params: RendererInitializeParams) {
         self.page.resize(params.viewport);
-        self.painter.resize(params.viewport);
+        self.painter.resize(Size::new(params.viewport.0 as f32, params.viewport.1 as f32));
     }
 
     pub fn load_html(&mut self, html: String, base_url: Url) {
@@ -33,10 +35,7 @@ impl<'a> Renderer<'a> {
         let main_frame = self.page.main_frame();
 
         if let Some(layout_root) = main_frame.layout().layout_tree() {
-            let display_list = painting::build_display_list(layout_root);
-            painting::paint(display_list, &mut self.painter);
-
-            self.painter.paint();
+            self.painter.paint(layout_root);
         }
     }
 

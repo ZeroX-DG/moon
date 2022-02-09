@@ -2,11 +2,13 @@ use super::backend::{Backend, DrawRequest};
 use super::Bitmap;
 use crate::painters::rect::RectPainter;
 use crate::painters::text::TextPainter;
+use async_trait::async_trait;
 use futures::task::SpawnExt;
+use painting::GfxPainter;
 use shared::color::Color;
 use shared::primitive::*;
 
-pub struct Painter<'a> {
+pub struct Canvas<'a> {
     rect_painter: RectPainter,
     text_painter: TextPainter,
     backend: Backend,
@@ -23,10 +25,10 @@ pub struct Painter<'a> {
 
 pub const TEXTURE_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Rgba8Unorm;
 
-impl<'a> Painter<'a> {
+impl<'a> Canvas<'a> {
     const CHUNK_SIZE: u64 = 10 * 1024;
 
-    pub async fn new() -> Painter<'a> {
+    pub async fn new() -> Canvas<'a> {
         let instance = wgpu::Instance::new(wgpu::Backends::PRIMARY);
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions {
@@ -199,7 +201,8 @@ impl<'a> Painter<'a> {
     }
 }
 
-impl<'a> painting::Painter for Painter<'a> {
+#[async_trait(?Send)]
+impl<'a> GfxPainter for Canvas<'a> {
     fn fill_rect(&mut self, rect: Rect, color: Color) {
         self.rect_painter.draw_solid_rect(&rect, &color);
     }
@@ -210,5 +213,14 @@ impl<'a> painting::Painter for Painter<'a> {
 
     fn fill_text(&mut self, content: String, bounds: Rect, color: Color, size: f32) {
         self.text_painter.fill_text(content, bounds, color, size);
+    }
+
+    fn resize(&mut self, size: Size) {
+        self.resize((size.width as u32, size.height as u32));
+    }
+
+    async fn output(&mut self) -> Vec<u8> {
+        self.paint();
+        self.output().await
     }
 }

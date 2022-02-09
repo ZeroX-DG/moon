@@ -1,9 +1,9 @@
 mod backend;
-mod painter;
+mod canvas;
 mod painters;
 mod text;
 mod triangle;
 
 pub type Bitmap = Vec<u8>;
 
-pub use painter::Painter;
+pub use canvas::Canvas;

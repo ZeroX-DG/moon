@@ -1,49 +1,52 @@
-mod command;
-mod paint_functions;
-mod painter;
-mod render;
+mod gfx_painter;
 mod utils;
 
 use std::rc::Rc;
 
-use command::{DisplayCommand, DrawCommand};
 use layout::layout_box::LayoutBox;
-use render::PaintChainBuilder;
 
-pub use painter::Painter;
-pub use render::DisplayList;
+pub use gfx_painter::GfxPainter;
+use shared::primitive::Size;
+use style::property::Property;
+use utils::color_from_value;
 
-use paint_functions::*;
+pub struct Painter<G: GfxPainter> {
+    gfx: G
+}
 
-pub fn paint(display_list: DisplayList, painter: &mut dyn Painter) {
-    for command in display_list {
-        match command {
-            DisplayCommand::Draw(draw_command) => draw(draw_command, painter),
-            DisplayCommand::GroupDraw(draw_commands) => {
-                for draw_command in draw_commands {
-                    draw(draw_command, painter);
-                }
-            }
+impl<G: GfxPainter> Painter<G> {
+    pub fn new(gfx: G) -> Self {
+        Self {
+            gfx
         }
+    }
+
+    pub fn resize(&mut self, size: Size) {
+        self.gfx.resize(size);
+    }
+
+    pub async fn output(&mut self) -> Vec<u8> {
+        let result = self.gfx.output().await;
+        result
+    }
+
+    pub fn paint(&mut self, layout_box: Rc<LayoutBox>) {
+        self.paint_background(layout_box.clone());
+
+        for child in layout_box.children().iter() {
+            self.paint(child.clone());
+        }
+    }
+
+    fn paint_background(&mut self, layout_box: Rc<LayoutBox>) {
+        if layout_box.is_anonymous() {
+            return;
+        }
+        let render_node = layout_box.render_node().unwrap();
+        let background_rect = layout_box.padding_box_absolute();
+        let background_color = color_from_value(&render_node.get_style(&Property::BackgroundColor));
+
+        self.gfx.fill_rect(background_rect, background_color);
     }
 }
 
-fn draw(draw_command: DrawCommand, painter: &mut dyn Painter) {
-    match draw_command {
-        DrawCommand::FillRect(rect, color) => painter.fill_rect(rect, color),
-        DrawCommand::FillRRect(rect, color) => painter.fill_rrect(rect, color),
-        DrawCommand::FillText(content, bounds, color, size) => {
-            painter.fill_text(content, bounds, color, size)
-        }
-    }
-}
-
-pub fn build_display_list(root: Rc<LayoutBox>) -> DisplayList {
-    let chain = PaintChainBuilder::new_chain()
-        .with_function(&paint_border)
-        .with_function(&paint_background)
-        .with_function(&paint_text)
-        .build();
-
-    chain.paint(root)
-}
