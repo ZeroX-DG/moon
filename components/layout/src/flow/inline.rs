@@ -24,15 +24,15 @@ impl InlineFormattingContext {
 
         self.generate_line_boxes(layout_node.clone());
 
-        let content_height = layout_node
+        let content_height: f32 = layout_node
             .lines()
             .borrow()
             .iter()
             .map(|line| line.size.height)
-            .reduce(f32::max)
-            .unwrap_or(0.);
+            .sum();
 
         layout_node.set_content_height(content_height);
+        layout_node.apply_explicit_sizes();
     }
 
     fn generate_line_boxes(&mut self, layout_node: Rc<LayoutBox>) {

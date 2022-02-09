@@ -77,7 +77,8 @@ impl LineBoxBuilder {
         }
     }
 
-    pub fn finish(self) -> Vec<LineBox> {
+    pub fn finish(mut self) -> Vec<LineBox> {
+        self.update_last_line();
         self.line_boxes
     }
 

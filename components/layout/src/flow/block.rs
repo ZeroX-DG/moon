@@ -5,14 +5,14 @@ use style::{property::Property, values::prelude::Position};
 
 pub struct BlockFormattingContext {
     layout_context: Rc<LayoutContext>,
-    previous_y: f32,
+    current_y: f32,
 }
 
 impl BlockFormattingContext {
     pub fn new(layout_context: Rc<LayoutContext>) -> Self {
         Self {
             layout_context,
-            previous_y: 0.,
+            current_y: 0.,
         }
     }
 
@@ -56,6 +56,7 @@ impl BlockFormattingContext {
             }
 
             child.apply_explicit_sizes();
+            self.current_y += child.margin_box_height();
         }
     }
 
@@ -63,11 +64,8 @@ impl BlockFormattingContext {
         self.apply_vertical_box_model_values(layout_node.clone());
 
         let box_model = layout_node.box_model().borrow();
-        let y = box_model.margin_box().top + box_model.offset.top + self.previous_y;
-
-        self.previous_y = y + box_model.margin_box().bottom + layout_node.margin_box_height();
-
         let x = box_model.margin_box().left + box_model.offset.left;
+        let y = self.current_y + box_model.margin_box().top + box_model.offset.top;
 
         layout_node.set_offset(x, y);
     }
