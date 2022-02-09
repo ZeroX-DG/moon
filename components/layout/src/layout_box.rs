@@ -273,6 +273,11 @@ impl LayoutBox {
         rect
     }
 
+    pub fn absolute_location(&self) -> Point {
+        let absolute_rect = self.absolute_rect();
+        Point::new(absolute_rect.x, absolute_rect.y)
+    }
+
     pub fn border_box_absolute(&self) -> Rect {
         let border_box = self.base.box_model.borrow().border_box();
         self.padding_box_absolute()

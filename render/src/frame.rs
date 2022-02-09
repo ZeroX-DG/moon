@@ -4,8 +4,8 @@ use super::loader::frame::FrameLoader;
 use css::cssom::css_rule::CSSRule;
 
 use dom::node::Node;
+use layout::dump_layout;
 use layout::formatting_context::{establish_context, FormattingContextType};
-use layout::layout_printer::dump_layout;
 use layout::{formatting_context::LayoutContext, layout_box::LayoutBox};
 use shared::primitive::Rect;
 use style::render_tree::RenderTree;
@@ -134,7 +134,7 @@ impl FrameLayout {
                     .formatting_context()
                     .run(layout_context.clone(), initial_block_box.clone());
                 log::debug!("Finished layout process");
-                dump_layout(root.clone()); 
+                dump_layout!(root.clone()); 
             } else {
                 log::info!("Empty layout tree. Skipping layout process");
             }

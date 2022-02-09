@@ -19,16 +19,21 @@ impl InlineFormattingContext {
     }
 
     pub fn run(&mut self, layout_node: Rc<LayoutBox>) {
-//         self.generate_line_boxes(layout_node.clone());
-//         
-//         let content_height = layout_node.lines()
-//             .borrow()
-//             .iter()
-//             .map(|line| line.size.height)
-//             .reduce(f32::max)
-//             .unwrap_or(0.);
-// 
-//         layout_node.set_content_height(content_height);
+        if !layout_node.is_block() {
+            log::debug!("Attempt to run IFC on non-block box");
+            return;
+        }
+        
+        self.generate_line_boxes(layout_node.clone());
+        
+        let content_height = layout_node.lines()
+            .borrow()
+            .iter()
+            .map(|line| line.size.height)
+            .reduce(f32::max)
+            .unwrap_or(0.);
+
+        layout_node.set_content_height(content_height);
     }
 
     fn generate_line_boxes(&mut self, layout_node: Rc<LayoutBox>) {

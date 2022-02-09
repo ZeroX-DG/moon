@@ -8,60 +8,63 @@ use crate::layout_box::LayoutBox;
 pub struct LineFragment {
     pub data: LineFragmentData,
     pub offset: Point,
-    pub size: Size
+    pub size: Size,
 }
 
 #[derive(Debug)]
 pub enum LineFragmentData {
-    Box(Rc<LayoutBox>)
+    Box(Rc<LayoutBox>),
 }
 
 pub struct LineBoxBuilder {
     line_boxes: Vec<LineBox>,
-    parent: Rc<LayoutBox>
+    parent: Rc<LayoutBox>,
+    current_offset_y: f32,
 }
 
 #[derive(Debug)]
 pub struct LineBox {
-    fragments: Vec<LineFragment>,
-    pub size: Size
+    pub fragments: Vec<LineFragment>,
+    pub size: Size,
 }
 
 impl LineBox {
     pub fn new() -> Self {
         Self {
             fragments: Vec::new(),
-            size: Size::new(0., 0.)
+            size: Size::new(0., 0.),
         }
     }
 
-    pub fn add_box_fragment(&mut self, child: Rc<LayoutBox>) {
-        let child_size = child.content_size();
-        self.fragments.push(LineFragment::new_box(child));
-        self.size.width += child_size.width;
-        self.size.height = if self.size.height > child_size.height {
-            self.size.height
-        } else {
-            child_size.height
-        };
-    }
-
-    pub fn fragments(&self) -> &[LineFragment] {
-        &self.fragments
+    pub fn add_box_fragment(
+        &mut self,
+        fragment_width: f32,
+        fragment_height: f32,
+        child: Rc<LayoutBox>,
+    ) {
+        let mut fragment = LineFragment::new_box(
+            child.clone(),
+            Point::new(self.size.width, 0.),
+            Size::new(fragment_width, fragment_height),
+        );
+        fragment.offset.x = self.size.width;
+        self.fragments.push(fragment);
+        self.size.width += fragment_width;
+        self.size.height = f32::max(self.size.height, fragment_height);
     }
 }
 
 impl LineFragment {
-    pub fn new(data: LineFragmentData) -> Self {
-        Self {
-            data,
-            offset: Point::new(0., 0.),
-            size: Size::new(0., 0.)
-        }
+    pub fn new(data: LineFragmentData, offset: Point, size: Size) -> Self {
+        Self { data, offset, size }
     }
 
-    pub fn new_box(layout_box: Rc<LayoutBox>) -> Self {
-        Self::new(LineFragmentData::Box(layout_box))
+    pub fn set_offset(&mut self, offset: Point) {
+        self.offset = offset;
+    }
+
+    pub fn new_box(layout_box: Rc<LayoutBox>, offset: Point, size: Size) -> Self {
+        Self::new(LineFragmentData::Box(layout_box), offset, size)
     }
 }
 
@@ -69,28 +72,57 @@ impl LineBoxBuilder {
     pub fn new(parent: Rc<LayoutBox>) -> Self {
         Self {
             line_boxes: Vec::new(),
-            parent
-        }
-    }
-
-    pub fn add_box_fragment(&mut self, layout_box: Rc<LayoutBox>) {
-        let fragment_width = layout_box.content_size().width;
-        self.add_fragment(fragment_width, LineFragment::new_box(layout_box));
-    }
-
-    fn add_fragment(&mut self, fragment_width: f32, fragment: LineFragment) {
-        let parent_width = self.parent.content_size().width;
-        let new_line_box_width = self.current_line().size.width + fragment_width;
-        if new_line_box_width > parent_width {
-            self.line_boxes.push(LineBox::new());
-        }
-        match fragment.data {
-            LineFragmentData::Box(layout_box) => self.current_line().add_box_fragment(layout_box),
+            parent,
+            current_offset_y: 0.,
         }
     }
 
     pub fn finish(self) -> Vec<LineBox> {
         self.line_boxes
+    }
+
+    pub fn add_box_fragment(&mut self, layout_box: Rc<LayoutBox>) {
+        let fragment_width = layout_box.content_size().width;
+        let fragment_height = layout_box.content_size().height;
+        self.break_line_if_needed(fragment_width);
+
+        self.current_line()
+            .add_box_fragment(fragment_width, fragment_height, layout_box);
+    }
+
+    fn break_line_if_needed(&mut self, next_fragment_width: f32) {
+        if self.line_boxes.is_empty() {
+            return;
+        }
+        let parent_width = self.parent.content_size().width;
+        let new_line_box_width = self.current_line().size.width + next_fragment_width;
+
+        let should_break = new_line_box_width > parent_width;
+
+        if should_break {
+            self.break_line();
+        }
+    }
+
+    fn break_line(&mut self) {
+        self.update_last_line();
+
+        let last_line_height = self.line_boxes.last().unwrap().size.height;
+        self.current_offset_y += last_line_height;
+
+        self.line_boxes.push(LineBox::new());
+    }
+
+    fn update_last_line(&mut self) {
+        if self.line_boxes.is_empty() {
+            return;
+        }
+
+        let last_line = self.line_boxes.last_mut().unwrap();
+
+        for fragment in &mut last_line.fragments {
+            fragment.set_offset(Point::new(fragment.offset.x, self.current_offset_y));
+        }
     }
 
     fn current_line(&mut self) -> &mut LineBox {
