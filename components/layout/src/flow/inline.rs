@@ -1,113 +1,74 @@
 use std::rc::Rc;
 
 use crate::{box_model::BoxComponent, formatting_context::LayoutContext, layout_box::LayoutBox};
+use dom::node::NodeData;
 use shared::primitive::edge::Edge;
 use style::property::Property;
 
-#[derive(Debug)]
-pub struct LineBox {
-    fragments: Vec<Rc<LayoutBox>>,
-    width: f32,
-    height: f32,
-}
-
-impl LineBox {
-    pub fn new() -> Self {
-        Self {
-            fragments: Vec::new(),
-            width: 0.,
-            height: 0.,
-        }
-    }
-
-    pub fn add_fragment(&mut self, child: Rc<LayoutBox>) {
-        let child_size = child.dimensions().margin_box();
-        self.fragments.push(child);
-        self.width += child_size.width;
-        self.height = if self.height > child_size.height {
-            self.height
-        } else {
-            child_size.height
-        };
-    }
-
-    pub fn fragments(&self) -> &[Rc<LayoutBox>] {
-        &self.fragments
-    }
-
-    pub fn width(&self) -> f32 {
-        self.width
-    }
-
-    pub fn height(&self) -> f32 {
-        self.height
-    }
-}
+use super::line_box::LineBoxBuilder;
 
 pub struct InlineFormattingContext {
     layout_context: Rc<LayoutContext>,
-    line_boxes: Vec<LineBox>,
 }
 
 impl InlineFormattingContext {
     pub fn new(layout_context: Rc<LayoutContext>) -> Self {
-        Self {
-            layout_context,
-            line_boxes: Vec::new(),
-        }
+        Self { layout_context }
     }
 
     pub fn run(&mut self, layout_node: Rc<LayoutBox>) {
-        self.line_boxes.push(LineBox::new());
-
-        let containing_block = layout_node.dimensions().content_box();
-
-        let parent_width = containing_block.width;
-
-        for child in layout_node.children().iter() {
-            self.calculate_width(child.clone());
-            child
-                .formatting_context()
-                .run(self.layout_context.clone(), child.clone());
-            self.apply_vertical_spacing(child.clone());
-            child.apply_explicit_sizes();
-
-            let child_width = child.dimensions().margin_box().width;
-
-            let line_box = self.line_boxes.last_mut().unwrap();
-
-            let new_line_box_width = line_box.width() + child_width;
-
-            if new_line_box_width > parent_width {
-                self.line_boxes.push(LineBox::new());
-            }
-
-            let line_box = self.line_boxes.last_mut().unwrap();
-            line_box.add_fragment(child.clone());
+        if !layout_node.is_block() {
+            log::debug!("Attempt to run IFC on non-block box");
+            return;
         }
 
-        let mut offset_y = 0.;
+        self.generate_line_boxes(layout_node.clone());
 
-        for line in &self.line_boxes {
-            let mut offset_x = 0.;
+        let content_height: f32 = layout_node
+            .lines()
+            .borrow()
+            .iter()
+            .map(|line| line.size.height)
+            .sum();
 
-            for fragment in line.fragments() {
-                let x = containing_block.x + offset_x + fragment.dimensions().margin.left;
-
-                let y = containing_block.y + offset_y + fragment.dimensions().margin.top;
-
-                fragment.dimensions_mut().set_position(x, y);
-                offset_x += fragment.dimensions().margin_box().width;
-            }
-
-            offset_y += line.height();
-        }
-
-        layout_node.dimensions_mut().set_height(offset_y);
+        layout_node.set_content_height(content_height);
     }
 
-    fn calculate_width(&mut self, layout_node: Rc<LayoutBox>) {
-        let containing_block = layout_node.containing_block().dimensions().content_box();
+    fn generate_line_boxes(&mut self, layout_node: Rc<LayoutBox>) {
+        let mut line_box_builder = LineBoxBuilder::new(layout_node.clone());
+        layout_node.lines().borrow_mut().clear();
+
+        for child in layout_node.children().iter() {
+            match child.render_node() {
+                Some(render_node) => match render_node.node.data() {
+                    Some(NodeData::Text(_)) | Some(NodeData::Comment(_)) => {}
+                    _ => {
+                        self.layout_dimension_box(child.clone());
+                        line_box_builder.add_box_fragment(child.clone());
+                    }
+                },
+                _ => {
+                    self.layout_dimension_box(child.clone());
+                    line_box_builder.add_box_fragment(child.clone());
+                }
+            }
+        }
+        *layout_node.lines().borrow_mut() = line_box_builder.finish();
+    }
+
+    fn layout_dimension_box(&mut self, layout_node: Rc<LayoutBox>) {
+        self.calculate_width_for_element(layout_node.clone());
+
+        layout_node
+            .formatting_context()
+            .run(self.layout_context.clone(), layout_node.clone());
+
+        self.apply_vertical_spacing(layout_node.clone());
+        layout_node.apply_explicit_sizes();
+    }
+
+    fn calculate_width_for_element(&mut self, layout_node: Rc<LayoutBox>) {
+        let containing_block = layout_node.containing_block().content_size();
 
         let render_node = match layout_node.render_node() {
             Some(node) => node.clone(),
@@ -142,17 +103,17 @@ impl InlineFormattingContext {
         }
 
         // apply all calculated used values
-        let mut box_model = layout_node.dimensions_mut();
-        box_model.set_width(used_width);
+        let mut box_model = layout_node.base.box_model.borrow_mut();
+        layout_node.set_content_width(used_width);
         box_model.set(BoxComponent::Margin, Edge::Left, used_margin_left);
         box_model.set(BoxComponent::Margin, Edge::Right, used_margin_right);
     }
 
     fn apply_vertical_spacing(&mut self, layout_node: Rc<LayoutBox>) {
-        let containing_block = layout_node.containing_block().dimensions().content_box();
+        let containing_block = layout_node.containing_block().content_size();
 
         let render_node = layout_node.render_node();
-        let mut box_model = layout_node.dimensions_mut();
+        let mut box_model = layout_node.base.box_model.borrow_mut();
 
         if let Some(render_node) = render_node {
             let margin_top = render_node

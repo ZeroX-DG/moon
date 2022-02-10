@@ -7,6 +7,7 @@ use css::tokenizer::token::Token;
 pub enum Color {
     CurrentColor,
     Rgba(Number, Number, Number, Number),
+    Transparent,
 }
 
 impl Eq for Color {}
@@ -115,7 +116,7 @@ impl Color {
     fn parse_color_keyword(keyword: &str) -> Option<Self> {
         match_keyword!(keyword, {
             "currentColor" => Color::CurrentColor,
-            "transparent" => Color::transparent(),
+            "transparent" => Color::Transparent,
             "black" => Color::black(),
             "silver" => Color::Rgba(
                 192.0.into(),
@@ -244,7 +245,7 @@ impl Color {
     }
 
     pub fn transparent() -> Self {
-        Color::Rgba(0.0.into(), 0.0.into(), 0.0.into(), 0.0.into())
+        Color::Transparent
     }
 
     pub fn black() -> Self {

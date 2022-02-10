@@ -1,4 +1,4 @@
-use super::edge::EdgeSizes;
+use super::{edge::EdgeSizes, Point, Size};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -19,12 +19,28 @@ impl Rect {
         }
     }
 
+    pub fn translate(&mut self, dx: f32, dy: f32) {
+        self.x += dx;
+        self.y += dy;
+    }
+
     pub fn new(x: f32, y: f32, width: f32, height: f32) -> Self {
         Self {
             x,
             y,
             width,
             height,
+        }
+    }
+}
+
+impl From<(Point, Size)> for Rect {
+    fn from((location, size): (Point, Size)) -> Self {
+        Self {
+            x: location.x,
+            y: location.y,
+            width: size.width,
+            height: size.height,
         }
     }
 }

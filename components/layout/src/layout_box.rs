@@ -4,6 +4,7 @@ use std::{
     rc::{Rc, Weak},
 };
 
+use shared::primitive::{Point, Rect, Size};
 use style::{
     property::Property,
     render_tree::RenderNode,
@@ -15,11 +16,13 @@ use style::{
     },
 };
 
-use crate::{box_model::Dimensions, formatting_context::FormattingContext};
+use crate::{box_model::BoxModel, flow::line_box::LineBox, formatting_context::FormattingContext};
 
 #[derive(Debug)]
 pub struct BaseBox {
-    pub dimensions: RefCell<Dimensions>,
+    pub box_model: RefCell<BoxModel>,
+    pub offset: RefCell<Point>,
+    pub content_size: RefCell<Size>,
     pub children: RefCell<Vec<Rc<LayoutBox>>>,
     pub containing_block: RefCell<Option<Weak<LayoutBox>>>,
     pub formatting_context: RefCell<Option<Rc<FormattingContext>>>,
@@ -29,7 +32,9 @@ pub struct BaseBox {
 impl BaseBox {
     pub fn new(context: Option<Rc<FormattingContext>>) -> Self {
         Self {
-            dimensions: Default::default(),
+            box_model: Default::default(),
+            offset: Default::default(),
+            content_size: Default::default(),
             children: RefCell::new(Vec::new()),
             containing_block: RefCell::new(None),
             formatting_context: RefCell::new(context),
@@ -47,7 +52,9 @@ pub struct LayoutBox {
 
 #[derive(Debug)]
 pub enum BoxData {
-    BlockBox,
+    BlockBox {
+        lines: RefCell<Vec<LineBox>>, // Only if the block box establish IFC
+    },
     InlineContents(InlineContents),
 }
 
@@ -55,6 +62,22 @@ pub enum BoxData {
 pub enum InlineContents {
     InlineBox,
     TextRun,
+}
+
+impl BoxData {
+    pub fn block_box() -> Self {
+        Self::BlockBox {
+            lines: RefCell::new(Vec::new()),
+        }
+    }
+
+    pub fn inline_box() -> Self {
+        Self::InlineContents(InlineContents::InlineBox)
+    }
+
+    pub fn text_run() -> Self {
+        Self::InlineContents(InlineContents::TextRun)
+    }
 }
 
 impl LayoutBox {
@@ -66,10 +89,12 @@ impl LayoutBox {
                 match render_node.get_style(&Property::Display).inner() {
                     Value::Display(d) => match d {
                         Display::Full(outer, inner) => match (outer, inner) {
-                            (OuterDisplayType::Block, InnerDisplayType::Flow) => BoxData::BlockBox,
+                            (OuterDisplayType::Block, InnerDisplayType::Flow) => {
+                                BoxData::block_box()
+                            }
                             (OuterDisplayType::Inline, InnerDisplayType::Flow)
                             | (OuterDisplayType::Inline, InnerDisplayType::FlowRoot) => {
-                                BoxData::InlineContents(InlineContents::InlineBox)
+                                BoxData::inline_box()
                             }
                             _ => unimplemented!("Unsupport display type: {:#?}", d),
                         },
@@ -92,6 +117,26 @@ impl LayoutBox {
             base: BaseBox::new(None),
             data,
             node: None,
+        }
+    }
+
+    pub fn is_root_element(&self) -> bool {
+        match &self.node {
+            Some(node) => match node.node.as_element_opt() {
+                Some(element) => element.tag_name() == "html",
+                _ => false,
+            },
+            _ => false,
+        }
+    }
+
+    pub fn is_body_element(&self) -> bool {
+        match &self.node {
+            Some(node) => match node.node.as_element_opt() {
+                Some(element) => element.tag_name() == "body",
+                _ => false,
+            },
+            _ => false,
         }
     }
 
@@ -150,6 +195,13 @@ impl LayoutBox {
         }
     }
 
+    pub fn containing_block_opt(&self) -> Option<Rc<LayoutBox>> {
+        match self.base.containing_block.borrow().clone() {
+            Some(containing_block) => containing_block.upgrade(),
+            _ => None,
+        }
+    }
+
     pub fn is_inline(&self) -> bool {
         match self.data {
             BoxData::InlineContents(_) => true,
@@ -159,7 +211,7 @@ impl LayoutBox {
 
     pub fn is_block(&self) -> bool {
         match self.data {
-            BoxData::BlockBox => true,
+            BoxData::BlockBox { .. } => true,
             _ => false,
         }
     }
@@ -197,12 +249,67 @@ impl LayoutBox {
         }
     }
 
-    pub fn dimensions(&self) -> Ref<Dimensions> {
-        self.base.dimensions.borrow()
+    pub fn box_model(&self) -> &RefCell<BoxModel> {
+        &self.base.box_model
     }
 
-    pub fn dimensions_mut(&self) -> RefMut<Dimensions> {
-        self.base.dimensions.borrow_mut()
+    pub fn content_size(&self) -> Size {
+        self.base.content_size.borrow().clone()
+    }
+
+    pub fn set_content_width(&self, width: f32) {
+        self.base.content_size.borrow_mut().width = width;
+    }
+
+    pub fn set_content_height(&self, height: f32) {
+        self.base.content_size.borrow_mut().height = height;
+    }
+
+    pub fn set_offset(&self, x: f32, y: f32) {
+        self.base.offset.borrow_mut().x = x;
+        self.base.offset.borrow_mut().y = y;
+    }
+
+    pub fn offset(&self) -> Point {
+        self.base.offset.borrow().clone()
+    }
+
+    pub fn margin_box_height(&self) -> f32 {
+        let margin_box = self.base.box_model.borrow().margin_box();
+        self.content_size().height + margin_box.top + margin_box.bottom
+    }
+
+    pub fn margin_box_width(&self) -> f32 {
+        let margin_box = self.base.box_model.borrow().margin_box();
+        self.content_size().width + margin_box.left + margin_box.right
+    }
+
+    pub fn absolute_rect(&self) -> Rect {
+        let mut rect = Rect::from((self.offset(), self.content_size()));
+
+        let mut containing_block = self.containing_block_opt();
+
+        while let Some(block) = containing_block {
+            rect.translate(block.offset().x, block.offset().y);
+            containing_block = block.containing_block_opt();
+        }
+
+        rect
+    }
+
+    pub fn absolute_location(&self) -> Point {
+        let absolute_rect = self.absolute_rect();
+        Point::new(absolute_rect.x, absolute_rect.y)
+    }
+
+    pub fn border_box_absolute(&self) -> Rect {
+        let border_box = self.base.box_model.borrow().border_box();
+        self.padding_box_absolute().add_outer_edges(&border_box)
+    }
+
+    pub fn padding_box_absolute(&self) -> Rect {
+        let padding_box = self.base.box_model.borrow().padding_box();
+        self.absolute_rect().add_outer_edges(&padding_box)
     }
 
     pub fn render_node(&self) -> Option<Rc<RenderNode>> {
@@ -211,7 +318,7 @@ impl LayoutBox {
 
     pub fn friendly_name(&self) -> &str {
         match self.data {
-            BoxData::BlockBox => "BlockBox",
+            BoxData::BlockBox { .. } => "BlockBox",
             BoxData::InlineContents(InlineContents::TextRun) => "TextRun",
             BoxData::InlineContents(_) => "InlineBox",
         }
@@ -226,7 +333,7 @@ impl LayoutBox {
     }
 
     pub fn apply_explicit_sizes(&self) {
-        let containing_block = self.containing_block().dimensions().content_box();
+        let containing_block = self.containing_block().content_size();
 
         if self.is_inline() && !self.is_inline_block() {
             return;
@@ -238,12 +345,12 @@ impl LayoutBox {
 
             if !computed_width.is_auto() {
                 let used_width = computed_width.to_px(containing_block.width);
-                self.base.dimensions.borrow_mut().set_width(used_width);
+                self.set_content_width(used_width);
             }
 
             if !computed_height.is_auto() {
                 let used_height = computed_height.to_px(containing_block.height);
-                self.base.dimensions.borrow_mut().set_height(used_height);
+                self.set_content_height(used_height);
             }
         }
     }
@@ -251,5 +358,12 @@ impl LayoutBox {
     pub fn add_child(parent: Rc<LayoutBox>, child: Rc<LayoutBox>) {
         parent.children_mut().push(child.clone());
         child.set_parent(parent);
+    }
+
+    pub fn lines(&self) -> &RefCell<Vec<LineBox>> {
+        match &self.data {
+            BoxData::BlockBox { lines } => lines,
+            _ => unreachable!("Non-block box does not have line boxes"),
+        }
     }
 }

@@ -1,5 +1,5 @@
-use shared::color::Color;
-use style::value::Value;
+use shared::{color::Color, primitive::Radii};
+use style::{value::Value, values::prelude::BorderRadius};
 
 pub fn is_zero(value: &Value) -> bool {
     match value {
@@ -18,5 +18,12 @@ pub fn color_from_value(color: &Value) -> Color {
             b: 0,
             a: 0,
         },
+    }
+}
+
+pub fn to_radii(value: &Value, width: f32) -> Radii {
+    match value {
+        Value::BorderRadius(BorderRadius(hr, vr)) => Radii::new(hr.to_px(width), vr.to_px(width)),
+        _ => Radii::new(0.0, 0.0),
     }
 }

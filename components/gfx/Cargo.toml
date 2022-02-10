@@ -16,3 +16,4 @@ log = "*"
 futures = "0.3.15"
 ultraviolet = { version = "0.8.1", features = [ "bytemuck", "int" ] }
 wgpu_glyph = "0.15.1"
+async-trait = "0.1.52"
