@@ -13,20 +13,27 @@ use shared::{
     color::Color,
     primitive::{Corners, Rect, Size},
 };
-use style::property::Property;
+use style::{property::Property, value::Value, values::color::Color as CSSColor};
 use utils::{color_from_value, is_zero, to_radii};
 
 pub struct Painter<G: GfxPainter> {
     gfx: G,
+    root_element_use_body_background: bool,
+    canvas_size: Size,
 }
 
 impl<G: GfxPainter> Painter<G> {
     pub fn new(gfx: G) -> Self {
-        Self { gfx }
+        Self {
+            gfx,
+            root_element_use_body_background: false,
+            canvas_size: Size::default(),
+        }
     }
 
     pub fn resize(&mut self, size: Size) {
-        self.gfx.resize(size);
+        self.gfx.resize(size.clone());
+        self.canvas_size = size;
     }
 
     pub async fn output(&mut self) -> Vec<u8> {
@@ -71,9 +78,32 @@ impl<G: GfxPainter> Painter<G> {
         if layout_box.is_anonymous() {
             return;
         }
+
         let render_node = layout_box.render_node().unwrap();
-        let background_rect = layout_box.padding_box_absolute();
+        let mut background_rect = layout_box.padding_box_absolute();
         let background_color = color_from_value(&render_node.get_style(&Property::BackgroundColor));
+
+        if layout_box.is_root_element() {
+            self.root_element_use_body_background = {
+                match render_node.get_style(&Property::BackgroundColor).inner() {
+                    Value::Color(CSSColor::Transparent) => true,
+                    _ => false,
+                }
+            };
+
+            if self.root_element_use_body_background {
+                // Delegate the rendering to the body element
+                return;
+            }
+        }
+
+        if layout_box.is_body_element() && self.root_element_use_body_background {
+            // Render the canvas for the root element if has been delegated.
+            if self.root_element_use_body_background {
+                background_rect =
+                    Rect::new(0., 0., self.canvas_size.width, self.canvas_size.height);
+            }
+        }
 
         let corners = self.compute_border_radius_corner(layout_box);
         self.paint_background(background_rect, background_color, corners);

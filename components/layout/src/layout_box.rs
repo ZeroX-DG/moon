@@ -120,6 +120,26 @@ impl LayoutBox {
         }
     }
 
+    pub fn is_root_element(&self) -> bool {
+        match &self.node {
+            Some(node) => match node.node.as_element_opt() {
+                Some(element) => element.tag_name() == "html",
+                _ => false,
+            },
+            _ => false,
+        }
+    }
+
+    pub fn is_body_element(&self) -> bool {
+        match &self.node {
+            Some(node) => match node.node.as_element_opt() {
+                Some(element) => element.tag_name() == "body",
+                _ => false,
+            },
+            _ => false,
+        }
+    }
+
     pub fn is_anonymous(&self) -> bool {
         self.node.is_none()
     }
