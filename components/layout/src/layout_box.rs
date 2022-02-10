@@ -261,7 +261,7 @@ impl LayoutBox {
 
     pub fn margin_box_width(&self) -> f32 {
         let margin_box = self.base.box_model.borrow().margin_box();
-        self.content_size().height + margin_box.top + margin_box.bottom
+        self.content_size().width + margin_box.left + margin_box.right
     }
 
     pub fn absolute_rect(&self) -> Rect {

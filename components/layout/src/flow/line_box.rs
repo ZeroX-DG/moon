@@ -42,14 +42,14 @@ impl LineBox {
         fragment_height: f32,
         child: Rc<LayoutBox>,
     ) {
-        let mut fragment = LineFragment::new_box(
+        let box_model = child.box_model().borrow();
+        let fragment = LineFragment::new_box(
             child.clone(),
-            Point::new(self.size.width, 0.),
+            Point::new(self.size.width + box_model.margin.left, 0.),
             Size::new(fragment_width, fragment_height),
         );
-        fragment.offset.x = self.size.width;
         self.fragments.push(fragment);
-        self.size.width += fragment_width;
+        self.size.width += fragment_width + box_model.margin.right;
         self.size.height = f32::max(self.size.height, fragment_height);
     }
 }
@@ -85,7 +85,7 @@ impl LineBoxBuilder {
     pub fn add_box_fragment(&mut self, layout_box: Rc<LayoutBox>) {
         let fragment_width = layout_box.content_size().width;
         let fragment_height = layout_box.content_size().height;
-        self.break_line_if_needed(fragment_width);
+        self.break_line_if_needed(layout_box.margin_box_width());
 
         self.current_line()
             .add_box_fragment(fragment_width, fragment_height, layout_box);

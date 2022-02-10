@@ -100,7 +100,7 @@ impl BlockFormattingContext {
         let mut used_margin_right = computed_margin_right.to_px(containing_width);
 
         // 3. block-level, non-replaced elements in normal flow
-        if layout_node.is_non_replaced() {
+        if layout_node.is_block() && layout_node.is_non_replaced() {
             if !computed_width.is_auto() && box_width > containing_width {
                 if computed_margin_left.is_auto() {
                     used_margin_left = 0.0;
@@ -164,6 +164,19 @@ impl BlockFormattingContext {
                     used_margin_right = half_underflow;
                 }
             }
+        }
+
+        // 3.9 'Inline-block', non-replaced elements in normal flow
+        if layout_node.is_inline_block() && layout_node.is_non_replaced() {
+            // A computed value of 'auto' for 'margin-left' or 'margin-right' becomes a used value of '0'.
+            if computed_margin_left.is_auto() {
+                used_margin_left = 0.0;
+            }
+            if computed_margin_right.is_auto() {
+                used_margin_right = 0.0;
+            }
+
+            // TODO: calculate fit-to-shrink width
         }
 
         // apply all calculated used values

@@ -32,7 +32,6 @@ impl InlineFormattingContext {
             .sum();
 
         layout_node.set_content_height(content_height);
-        layout_node.apply_explicit_sizes();
     }
 
     fn generate_line_boxes(&mut self, layout_node: Rc<LayoutBox>) {
