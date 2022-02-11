@@ -62,6 +62,19 @@ impl LineBox {
         layout_box: Rc<LayoutBox>,
         text: String,
     ) {
+        if !self.fragments.is_empty() {
+            let last_fragment = self.fragments.last_mut().unwrap();
+
+            if let LineFragmentData::Text(last_box, ref mut content) = &mut last_fragment.data {
+                if Rc::ptr_eq(last_box, &layout_box) {
+                    content.push_str(&text);
+                    last_fragment.size.width += fragment_width;
+                    self.size.width += fragment_width;
+                    self.size.height = f32::max(self.size.height, fragment_height);
+                    return;
+                }
+            }
+        }
         let fragment = LineFragment::new_text(
             layout_box,
             text,
