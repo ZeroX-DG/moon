@@ -44,7 +44,7 @@ impl InlineFormattingContext {
                 Some(render_node) => match render_node.node.data() {
                     Some(NodeData::Text(content)) => {
                         if content.get_data().trim().is_empty() {
-                            return;
+                            continue;
                         }
                         // TODO: Support different line break types
                         let regex = Regex::new(r"\s|\t|\n").unwrap();
