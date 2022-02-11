@@ -61,12 +61,12 @@ Bold text is what I'm working on
     - [x] Flow (Block and inline)
     - [ ] Flex
     - [ ] Grid
-- [ ] :art: Rendering
+- [x] :art: Rendering
   - [x] Display list
-  - [x] **GPU rendering** (still WIP to support all drawing operations)
-  - [x] **Text rendering** (still working on layouting text nodes)
-- [ ] :earth_americas: Networking
-  - [ ] URL parsing
+  - [x] GPU rendering
+  - [x] Text rendering
+- [ ] :earth_americas: **Networking**
+  - [x] URL parsing
   - [ ] DNS resolving
   - [ ] DNS caching
   - [ ] HTTP/HTTPS
