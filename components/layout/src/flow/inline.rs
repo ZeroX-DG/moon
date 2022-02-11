@@ -52,7 +52,8 @@ impl InlineFormattingContext {
                             if word.is_empty() {
                                 continue;
                             }
-                            line_box_builder.add_text_fragment(child.clone(), word.trim().to_string());
+                            line_box_builder
+                                .add_text_fragment(child.clone(), word.trim().to_string());
                             line_box_builder.add_text_fragment(child.clone(), ' '.to_string());
                         }
                     }

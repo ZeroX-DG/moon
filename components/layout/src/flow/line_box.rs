@@ -15,7 +15,7 @@ pub struct LineFragment {
 #[derive(Debug)]
 pub enum LineFragmentData {
     Box(Rc<LayoutBox>),
-    Text(Rc<LayoutBox>, String)
+    Text(Rc<LayoutBox>, String),
 }
 
 pub struct LineBoxBuilder {
@@ -112,19 +112,17 @@ impl LineFragment {
     pub fn dump(&self, level: usize) -> String {
         let fragment_type = match &self.data {
             LineFragmentData::Box(_) => "[Box Fragment]".to_string(),
-            LineFragmentData::Text(_, content) => format!("[Text Fragment] {:?}", content)
+            LineFragmentData::Text(_, content) => format!("[Text Fragment] {:?}", content),
         };
-    
+
         let fragment_info = format!(
             "(x: {} | y: {} | w: {} | h: {})",
             self.offset.x, self.offset.y, self.size.width, self.size.height
         );
-    
+
         let mut result = format!("{}{}{}\n", "  ".repeat(level), fragment_type, fragment_info);
         match &self.data {
-            LineFragmentData::Box(node) => {
-                result.push_str(&node.dump(level + 1))
-            }
+            LineFragmentData::Box(node) => result.push_str(&node.dump(level + 1)),
             LineFragmentData::Text(_, _) => {}
         }
         result

@@ -71,12 +71,13 @@ impl<G: GfxPainter> Painter<G> {
                 }
                 LineFragmentData::Text(layout_box, content) => {
                     let render_node = layout_box.render_node().unwrap();
-                    let mut text_rect = Rect::from((containing_block.absolute_location(), fragment.size.clone()));
+                    let mut text_rect =
+                        Rect::from((containing_block.absolute_location(), fragment.size.clone()));
                     text_rect.translate(fragment.offset.x, fragment.offset.y);
-                    let text_color =
-                        color_from_value(&render_node.get_style(&Property::Color));
+                    let text_color = color_from_value(&render_node.get_style(&Property::Color));
                     let font_size = render_node.get_style(&Property::FontSize).to_absolute_px();
-                    self.gfx.fill_text(content.clone(), text_rect, text_color, font_size);
+                    self.gfx
+                        .fill_text(content.clone(), text_rect, text_color, font_size);
                 }
                 _ => {}
             }
