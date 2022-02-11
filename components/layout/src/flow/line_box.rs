@@ -1,8 +1,9 @@
 use std::rc::Rc;
 
 use shared::primitive::{Point, Size};
+use style::property::Property;
 
-use crate::layout_box::LayoutBox;
+use crate::{layout_box::LayoutBox, text::TextMeasure};
 
 #[derive(Debug)]
 pub struct LineFragment {
@@ -14,6 +15,7 @@ pub struct LineFragment {
 #[derive(Debug)]
 pub enum LineFragmentData {
     Box(Rc<LayoutBox>),
+    Text(Rc<LayoutBox>, String),
 }
 
 pub struct LineBoxBuilder {
@@ -52,6 +54,42 @@ impl LineBox {
         self.size.width += fragment_width + box_model.margin.right;
         self.size.height = f32::max(self.size.height, fragment_height);
     }
+
+    pub fn add_text_fragment(
+        &mut self,
+        fragment_width: f32,
+        fragment_height: f32,
+        layout_box: Rc<LayoutBox>,
+        text: String,
+    ) {
+        let fragment = LineFragment::new_text(
+            layout_box,
+            text,
+            Point::new(self.size.width, 0.),
+            Size::new(fragment_width, fragment_height),
+        );
+        self.fragments.push(fragment);
+        self.size.width += fragment_width;
+        self.size.height = f32::max(self.size.height, fragment_height);
+    }
+
+    pub fn dump(&self, level: usize) -> String {
+        let mut result = String::new();
+
+        let line_dimensions = format!("(w: {} | h: {})", self.size.width, self.size.height);
+
+        result.push_str(&format!(
+            "{}[LineBox]{}\n",
+            "  ".repeat(level),
+            line_dimensions
+        ));
+
+        for fragment in self.fragments.iter() {
+            result.push_str(&fragment.dump(level + 1));
+        }
+
+        result
+    }
 }
 
 impl LineFragment {
@@ -65,6 +103,29 @@ impl LineFragment {
 
     pub fn new_box(layout_box: Rc<LayoutBox>, offset: Point, size: Size) -> Self {
         Self::new(LineFragmentData::Box(layout_box), offset, size)
+    }
+
+    pub fn new_text(layout_box: Rc<LayoutBox>, content: String, offset: Point, size: Size) -> Self {
+        Self::new(LineFragmentData::Text(layout_box, content), offset, size)
+    }
+
+    pub fn dump(&self, level: usize) -> String {
+        let fragment_type = match &self.data {
+            LineFragmentData::Box(_) => "[Box Fragment]".to_string(),
+            LineFragmentData::Text(_, content) => format!("[Text Fragment] {:?}", content),
+        };
+
+        let fragment_info = format!(
+            "(x: {} | y: {} | w: {} | h: {})",
+            self.offset.x, self.offset.y, self.size.width, self.size.height
+        );
+
+        let mut result = format!("{}{}{}\n", "  ".repeat(level), fragment_type, fragment_info);
+        match &self.data {
+            LineFragmentData::Box(node) => result.push_str(&node.dump(level + 1)),
+            LineFragmentData::Text(_, _) => {}
+        }
+        result
     }
 }
 
@@ -89,6 +150,18 @@ impl LineBoxBuilder {
 
         self.current_line()
             .add_box_fragment(fragment_width, fragment_height, layout_box);
+    }
+
+    pub fn add_text_fragment(&mut self, layout_box: Rc<LayoutBox>, text: String) {
+        let render_node = layout_box.render_node().unwrap();
+        let font_size = render_node.get_style(&Property::FontSize).to_absolute_px();
+        let mut text_measurer = TextMeasure::new();
+        let text_size = text_measurer.measure(&text, font_size);
+        let fragment_width = text_size.width;
+        let fragment_height = text_size.height;
+        self.break_line_if_needed(fragment_width);
+        self.current_line()
+            .add_text_fragment(fragment_width, fragment_height, layout_box, text);
     }
 
     fn break_line_if_needed(&mut self, next_fragment_width: f32) {

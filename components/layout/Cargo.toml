@@ -12,6 +12,8 @@ dom = { version = "*", path = "../dom" }
 tree = { version = "*", path = "../tree" }
 shared = { version = "*", path = "../shared" }
 log = "*"
+glyph_brush = "0.7.3"
+regex = "1"
 
 [dev-dependencies]
 test_utils = { version = "*", path = "../test_utils" }

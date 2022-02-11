@@ -1,7 +1,5 @@
-use shared::{color::Color, primitive::rect::Rect};
+use shared::{color::Color, fonts::FALLBACK, primitive::rect::Rect};
 use wgpu_glyph::ab_glyph;
-
-const FALLBACK: &[u8] = include_bytes!("../fonts/Lato-Regular.ttf");
 
 pub struct Text {
     pub content: String,

@@ -261,7 +261,7 @@ impl Value {
             Property::BorderBottomLeftRadius => Value::BorderRadius(BorderRadius::zero()),
             Property::BorderBottomRightRadius => Value::BorderRadius(BorderRadius::zero()),
             // TODO: replace with `medium` when we support absolute size
-            Property::FontSize => Value::Length(Length::new_px(12.)),
+            Property::FontSize => Value::Length(Length::new_px(16.)),
         }
     }
 }
