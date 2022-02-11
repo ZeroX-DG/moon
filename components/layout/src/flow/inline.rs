@@ -43,17 +43,17 @@ impl InlineFormattingContext {
             match child.render_node() {
                 Some(render_node) => match render_node.node.data() {
                     Some(NodeData::Text(content)) => {
-                        if content.get_data().trim().is_empty() {
+                        let text_content = content.get_data();
+                        if text_content.trim().is_empty() {
                             continue;
                         }
                         // TODO: Support different line break types
                         let regex = Regex::new(r"\s|\t|\n").unwrap();
-                        for word in regex.split(content.get_data().as_str().trim()) {
+                        for word in regex.split(text_content.trim()) {
                             if word.is_empty() {
                                 continue;
                             }
-                            line_box_builder
-                                .add_text_fragment(child.clone(), word.trim().to_string());
+                            line_box_builder.add_text_fragment(child.clone(), word.to_string());
                             line_box_builder.add_text_fragment(child.clone(), ' '.to_string());
                         }
                     }
