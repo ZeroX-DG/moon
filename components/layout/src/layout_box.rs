@@ -373,4 +373,47 @@ impl LayoutBox {
             _ => unreachable!("Non-block box does not have line boxes"),
         }
     }
+
+    pub fn dump(&self, level: usize) -> String {
+        let mut result = String::new();
+
+        let box_type = if self.is_anonymous() {
+            format!("[Anonymous {}]", self.friendly_name())
+        } else {
+            format!("[{}]", self.friendly_name())
+        };
+
+        let dimensions = format!(
+            " (x: {} | y: {} | w: {} | h: {})",
+            self.absolute_rect().x,
+            self.absolute_rect().y,
+            self.absolute_rect().width,
+            self.absolute_rect().height,
+        );
+
+        let node_info = match &self.render_node() {
+            Some(node) => format!(" {:?}", node.node),
+            None => String::new(),
+        };
+
+        result.push_str(&format!(
+            "{}{}{}{}\n",
+            "  ".repeat(level),
+            box_type,
+            node_info,
+            dimensions
+        ));
+
+        if self.is_block() && self.children_are_inline() {
+            for line in self.lines().borrow().iter() {
+                result.push_str(&line.dump(level + 1));
+            }
+        } else {
+            for node in self.children().iter() {
+                result.push_str(&node.dump(level + 1));
+            }
+        }
+
+        return result;
+    }
 }

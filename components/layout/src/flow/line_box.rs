@@ -72,6 +72,24 @@ impl LineBox {
         self.size.width += fragment_width;
         self.size.height = f32::max(self.size.height, fragment_height);
     }
+
+    pub fn dump(&self, level: usize) -> String {
+        let mut result = String::new();
+
+        let line_dimensions = format!("(w: {} | h: {})", self.size.width, self.size.height);
+
+        result.push_str(&format!(
+            "{}[LineBox]{}\n",
+            "  ".repeat(level),
+            line_dimensions
+        ));
+
+        for fragment in self.fragments.iter() {
+            result.push_str(&fragment.dump(level + 1));
+        }
+
+        result
+    }
 }
 
 impl LineFragment {
@@ -89,6 +107,27 @@ impl LineFragment {
 
     pub fn new_text(layout_box: Rc<LayoutBox>, content: String, offset: Point, size: Size) -> Self {
         Self::new(LineFragmentData::Text(layout_box, content), offset, size)
+    }
+
+    pub fn dump(&self, level: usize) -> String {
+        let fragment_type = match &self.data {
+            LineFragmentData::Box(_) => "[Box Fragment]".to_string(),
+            LineFragmentData::Text(_, content) => format!("[Text Fragment] {:?}", content)
+        };
+    
+        let fragment_info = format!(
+            "(x: {} | y: {} | w: {} | h: {})",
+            self.offset.x, self.offset.y, self.size.width, self.size.height
+        );
+    
+        let mut result = format!("{}{}{}\n", "  ".repeat(level), fragment_type, fragment_info);
+        match &self.data {
+            LineFragmentData::Box(node) => {
+                result.push_str(&node.dump(level + 1))
+            }
+            LineFragmentData::Text(_, _) => {}
+        }
+        result
     }
 }
 
