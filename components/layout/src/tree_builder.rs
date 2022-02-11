@@ -64,7 +64,7 @@ impl TreeBuilder {
     /// children of the parent.
     fn get_parent_for_block(&mut self) -> Rc<LayoutBox> {
         while let Some(parent_box) = self.parent_stack.last() {
-            if parent_box.is_inline() {
+            if parent_box.is_inline() || !parent_box.can_has_children() {
                 self.parent_stack.pop();
             } else {
                 break;
@@ -77,7 +77,7 @@ impl TreeBuilder {
 
         let parent = self.parent_stack.last().unwrap().clone();
 
-        if parent.children_are_inline() {
+        if !parent.children().is_empty() && parent.children_are_inline() {
             let children = parent.children_mut().drain(..).collect::<Vec<_>>();
             let anonymous = Rc::new(LayoutBox::new_anonymous(BoxData::block_box()));
             establish_context(
@@ -103,6 +103,14 @@ impl TreeBuilder {
     /// then create an anonymous block-level box to wrap the inline-box in before
     /// inserting into the parent.
     fn get_parent_for_inline(&mut self) -> Rc<LayoutBox> {
+        while let Some(parent_box) = self.parent_stack.last() {
+            if !parent_box.can_has_children() {
+                self.parent_stack.pop();
+            } else {
+                break;
+            }
+        }
+
         let parent = self
             .parent_stack
             .last()
@@ -114,7 +122,7 @@ impl TreeBuilder {
         }
 
         let require_anonymous_box = match parent.children().last() {
-            Some(last_node) => !last_node.is_anonymous() || !last_node.children_are_inline(),
+            Some(last_node) => !(last_node.is_anonymous() && last_node.children_are_inline()),
             None => true,
         };
 

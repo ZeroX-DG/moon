@@ -93,8 +93,9 @@ fn fragment_to_string(
     level: usize,
     specificity: &DumpSpecificity,
 ) -> String {
-    let fragment_type = match fragment.data {
-        LineFragmentData::Box(_) => "[Box Fragment]",
+    let fragment_type = match &fragment.data {
+        LineFragmentData::Box(_) => "[Box Fragment]".to_string(),
+        LineFragmentData::Text(_, content) => format!("[Text Fragment] {:?}", content)
     };
 
     let fragment_info = format!(
@@ -107,6 +108,7 @@ fn fragment_to_string(
         LineFragmentData::Box(node) => {
             result.push_str(&layout_to_string(node.clone(), level + 1, specificity))
         }
+        LineFragmentData::Text(_, _) => {}
     }
     result
 }

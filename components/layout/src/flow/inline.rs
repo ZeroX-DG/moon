@@ -2,6 +2,7 @@ use std::rc::Rc;
 
 use crate::{box_model::BoxComponent, formatting_context::LayoutContext, layout_box::LayoutBox};
 use dom::node::NodeData;
+use regex::Regex;
 use shared::primitive::edge::Edge;
 use style::property::Property;
 
@@ -41,11 +42,25 @@ impl InlineFormattingContext {
         for child in layout_node.children().iter() {
             match child.render_node() {
                 Some(render_node) => match render_node.node.data() {
-                    Some(NodeData::Text(_)) | Some(NodeData::Comment(_)) => {}
-                    _ => {
+                    Some(NodeData::Text(content)) => {
+                        if content.get_data().trim().is_empty() {
+                            return;
+                        }
+                        // TODO: Support different line break types
+                        let regex = Regex::new(r"\s|\t|\n").unwrap();
+                        for word in regex.split(content.get_data().as_str().trim()) {
+                            if word.is_empty() {
+                                continue;
+                            }
+                            line_box_builder.add_text_fragment(child.clone(), word.trim().to_string());
+                            line_box_builder.add_text_fragment(child.clone(), ' '.to_string());
+                        }
+                    }
+                    Some(NodeData::Element(_)) => {
                         self.layout_dimension_box(child.clone());
                         line_box_builder.add_box_fragment(child.clone());
                     }
+                    _ => {}
                 },
                 _ => {
                     self.layout_dimension_box(child.clone());

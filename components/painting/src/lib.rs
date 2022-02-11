@@ -69,6 +69,15 @@ impl<G: GfxPainter> Painter<G> {
                     let corners = self.compute_border_radius_corner(layout_box.clone());
                     self.paint_background(background_rect, background_color, corners);
                 }
+                LineFragmentData::Text(layout_box, content) => {
+                    let render_node = layout_box.render_node().unwrap();
+                    let mut text_rect = Rect::from((containing_block.absolute_location(), fragment.size.clone()));
+                    text_rect.translate(fragment.offset.x, fragment.offset.y);
+                    let text_color =
+                        color_from_value(&render_node.get_style(&Property::Color));
+                    let font_size = render_node.get_style(&Property::FontSize).to_absolute_px();
+                    self.gfx.fill_text(content.clone(), text_rect, text_color, font_size);
+                }
                 _ => {}
             }
         }

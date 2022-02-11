@@ -5,7 +5,7 @@ use crate::value_processing::ValueRef;
 use crate::values::length::Length;
 use crate::values::length::LengthUnit;
 
-const BASE_FONT_SIZE: f32 = 12.; // 12px
+const BASE_FONT_SIZE: f32 = 16.; // 16px
 
 pub fn compute_font_size(value: &Value, context: &mut ComputeContext) -> ValueRef {
     match value {

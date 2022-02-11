@@ -773,9 +773,9 @@ dependencies = [
 
 [[package]]
 name = "glyph_brush"
-version = "0.7.2"
+version = "0.7.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3e3f00b8574a76fb6c50890c48da03946ca50e4372a2778737922666a2238221"
+checksum = "21932fbf719272848eec4583740d978203c6e7da4c4e203358f5b95946c97409"
 dependencies = [
  "glyph_brush_draw_cache",
  "glyph_brush_layout",
@@ -999,7 +999,9 @@ version = "0.1.0"
 dependencies = [
  "css",
  "dom",
+ "glyph_brush",
  "log",
+ "regex",
  "shared",
  "style",
  "test_utils",
