@@ -1,4 +1,3 @@
-mod gfx_painter;
 mod utils;
 
 use std::rc::Rc;
@@ -8,7 +7,7 @@ use layout::{
     layout_box::LayoutBox,
 };
 
-pub use gfx_painter::GfxPainter;
+use gfx::Gfx;
 use shared::{
     color::Color,
     primitive::{Corners, Rect, Size},
@@ -16,13 +15,13 @@ use shared::{
 use style::{property::Property, value::Value, values::color::Color as CSSColor};
 use utils::{color_from_value, is_zero, to_radii};
 
-pub struct Painter<G: GfxPainter> {
+pub struct Painter<G: Gfx> {
     gfx: G,
     root_element_use_body_background: bool,
     canvas_size: Size,
 }
 
-impl<G: GfxPainter> Painter<G> {
+impl<G: Gfx> Painter<G> {
     pub fn new(gfx: G) -> Self {
         Self {
             gfx,

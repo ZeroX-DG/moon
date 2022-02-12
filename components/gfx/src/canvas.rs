@@ -1,10 +1,10 @@
 use super::backend::{Backend, DrawRequest};
 use super::Bitmap;
+use crate::Gfx;
 use crate::painters::rect::RectPainter;
 use crate::painters::text::TextPainter;
 use async_trait::async_trait;
 use futures::task::SpawnExt;
-use painting::GfxPainter;
 use shared::color::Color;
 use shared::primitive::*;
 
@@ -202,7 +202,7 @@ impl<'a> Canvas<'a> {
 }
 
 #[async_trait(?Send)]
-impl<'a> GfxPainter for Canvas<'a> {
+impl<'a> Gfx for Canvas<'a> {
     fn fill_rect(&mut self, rect: Rect, color: Color) {
         self.rect_painter.draw_solid_rect(&rect, &color);
     }
