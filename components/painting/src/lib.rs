@@ -7,7 +7,7 @@ use layout::{
     layout_box::LayoutBox,
 };
 
-use gfx::Gfx;
+use gfx::Graphics;
 use shared::{
     color::Color,
     primitive::{Corners, Rect, Size},
@@ -15,13 +15,13 @@ use shared::{
 use style::{property::Property, value::Value, values::color::Color as CSSColor};
 use utils::{color_from_value, is_zero, to_radii};
 
-pub struct Painter<G: Gfx> {
+pub struct Painter<G: Graphics> {
     gfx: G,
     root_element_use_body_background: bool,
     canvas_size: Size,
 }
 
-impl<G: Gfx> Painter<G> {
+impl<G: Graphics> Painter<G> {
     pub fn new(gfx: G) -> Self {
         Self {
             gfx,
