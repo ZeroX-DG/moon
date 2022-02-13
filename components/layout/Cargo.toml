@@ -11,8 +11,8 @@ style = { version = "*", path = "../style" }
 dom = { version = "*", path = "../dom" }
 tree = { version = "*", path = "../tree" }
 shared = { version = "*", path = "../shared" }
+gfx = { path = "../gfx" }
 log = "*"
-glyph_brush = "0.7.3"
 regex = "1"
 
 [dev-dependencies]

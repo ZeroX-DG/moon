@@ -740,6 +740,7 @@ dependencies = [
  "async-trait",
  "bytemuck",
  "futures",
+ "glyph_brush",
  "log",
  "lyon_tessellation",
  "shared",
@@ -998,7 +999,7 @@ version = "0.1.0"
 dependencies = [
  "css",
  "dom",
- "glyph_brush",
+ "gfx",
  "log",
  "regex",
  "shared",

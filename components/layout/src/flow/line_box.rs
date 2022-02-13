@@ -2,8 +2,9 @@ use std::rc::Rc;
 
 use shared::primitive::{Point, Size};
 use style::property::Property;
+use gfx::TextMeasure;
 
-use crate::{layout_box::LayoutBox, text::TextMeasure};
+use crate::layout_box::LayoutBox;
 
 #[derive(Debug)]
 pub struct LineFragment {
