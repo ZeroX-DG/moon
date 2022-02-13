@@ -3,7 +3,7 @@ use shared::color::Color;
 use shared::primitive::*;
 
 #[async_trait(?Send)]
-pub trait GfxPainter {
+pub trait Graphics {
     fn fill_rect(&mut self, rect: Rect, color: Color);
     fn fill_rrect(&mut self, rect: RRect, color: Color);
     fn fill_text(&mut self, content: String, bounds: Rect, color: Color, size: f32);

@@ -1,9 +1,10 @@
 use std::rc::Rc;
 
+use gfx::TextMeasure;
 use shared::primitive::{Point, Size};
 use style::property::Property;
 
-use crate::{layout_box::LayoutBox, text::TextMeasure};
+use crate::layout_box::LayoutBox;
 
 #[derive(Debug)]
 pub struct LineFragment {

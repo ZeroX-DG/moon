@@ -1,4 +1,5 @@
-use shared::{color::Color, fonts::FALLBACK, primitive::rect::Rect};
+use crate::fonts::FALLBACK;
+use shared::{color::Color, primitive::rect::Rect};
 use wgpu_glyph::ab_glyph;
 
 pub struct Text {
