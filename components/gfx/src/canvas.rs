@@ -1,8 +1,8 @@
 use super::backend::{Backend, DrawRequest};
 use super::Bitmap;
-use crate::Gfx;
 use crate::painters::rect::RectPainter;
 use crate::painters::text::TextPainter;
+use crate::Gfx;
 use async_trait::async_trait;
 use futures::task::SpawnExt;
 use shared::color::Color;

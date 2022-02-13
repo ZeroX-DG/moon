@@ -1,11 +1,11 @@
 mod backend;
 mod canvas;
+mod fonts;
+mod gfx;
 mod painters;
 mod text;
-mod triangle;
-mod gfx;
 mod text_measure;
-mod fonts;
+mod triangle;
 
 pub type Bitmap = Vec<u8>;
 

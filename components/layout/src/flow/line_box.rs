@@ -1,8 +1,8 @@
 use std::rc::Rc;
 
+use gfx::TextMeasure;
 use shared::primitive::{Point, Size};
 use style::property::Property;
-use gfx::TextMeasure;
 
 use crate::layout_box::LayoutBox;
 
