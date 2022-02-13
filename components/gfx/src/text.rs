@@ -1,5 +1,6 @@
-use shared::{color::Color, fonts::FALLBACK, primitive::rect::Rect};
+use shared::{color::Color, primitive::rect::Rect};
 use wgpu_glyph::ab_glyph;
+use crate::fonts::FALLBACK;
 
 pub struct Text {
     pub content: String,

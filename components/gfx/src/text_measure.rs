@@ -1,5 +1,6 @@
 use glyph_brush::{ab_glyph::FontArc, Extra, FontId, GlyphCruncher, Section, Text};
-use shared::{fonts, primitive::Size};
+use shared::primitive::Size;
+use crate::fonts;
 
 pub struct TextMeasure {
     brush: glyph_brush::GlyphBrush<()>,

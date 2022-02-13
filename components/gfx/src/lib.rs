@@ -5,6 +5,7 @@ mod text;
 mod triangle;
 mod gfx;
 mod text_measure;
+mod fonts;
 
 pub type Bitmap = Vec<u8>;
 
