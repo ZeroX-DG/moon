@@ -1,0 +1,36 @@
+.red {
+  background-color: red;
+}
+
+.black {
+  background-color: black;
+}
+
+.box {
+  height: 20px;
+  width: 300px;
+}
+
+#a {
+  margin-bottom: 20px;
+}
+
+#b {
+  margin-top: 20px;
+}
+
+#c {
+  margin-bottom: 20px;
+}
+
+#d {
+  margin-top: -10px;
+}
+
+#e {
+  margin-bottom: -5px;
+}
+
+#f {
+  margin-top: -5px;
+}

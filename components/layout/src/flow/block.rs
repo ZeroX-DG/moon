@@ -58,6 +58,10 @@ impl BlockFormattingContext {
             }
 
             child.apply_explicit_sizes();
+            self.previous_collapsed_margin_bottom = f32::max(
+                self.previous_collapsed_margin_bottom,
+                child.box_model().borrow().margin_box().bottom
+            );
             if child.border_box_absolute().height > 0. {
                 self.last_sibling = Some(child.clone());
             }
@@ -81,22 +85,18 @@ impl BlockFormattingContext {
                 if box_model.margin_box().top < 0. && self.previous_collapsed_margin_bottom < 0. {
                     // When all margins are negative, the size of the collapsed margin is the smallest (most negative) margin.
                     let smallest_negative_margin = f32::min(self.previous_collapsed_margin_bottom, box_model.margin_box().top);
-                    self.previous_collapsed_margin_bottom = smallest_negative_margin;
                     y += smallest_negative_margin;
                 } else {
                     // When negative margins are involved, the size of the collapsed margins
                     // is the sum of the largest positive margin and the smallest (most negative) negative margin.
                     let largest_positive_margin = f32::max(self.previous_collapsed_margin_bottom, box_model.margin_box().top);
-                    let smallest_negative_margin = f32::min(self.previous_collapsed_margin_bottom, box_model.margin_box().top);
+                    let smallest_negative_margin = -f32::min(self.previous_collapsed_margin_bottom, box_model.margin_box().top);
 
-                    let final_collapsed_margin = largest_positive_margin + smallest_negative_margin;
-
-                    self.previous_collapsed_margin_bottom = final_collapsed_margin;
-                    y += final_collapsed_margin;
+                    let margin_offset = largest_positive_margin - smallest_negative_margin;
+                    y += margin_offset - box_model.margin_box().top;
                 }
             } else if self.previous_collapsed_margin_bottom > box_model.margin_box().top {
                 let final_collapsed_margin = self.previous_collapsed_margin_bottom - box_model.margin_box().top; 
-                self.previous_collapsed_margin_bottom = final_collapsed_margin;
                 y += final_collapsed_margin;
             }
         }
