@@ -6,7 +6,6 @@ use style::{property::Property, values::prelude::Position};
 pub struct BlockFormattingContext {
     layout_context: Rc<LayoutContext>,
     last_sibling: Option<Rc<LayoutBox>>,
-    previous_collapsed_margin_bottom: f32
 }
 
 impl BlockFormattingContext {
@@ -14,7 +13,6 @@ impl BlockFormattingContext {
         Self {
             layout_context,
             last_sibling: None,
-            previous_collapsed_margin_bottom: 0.
         }
     }
 
@@ -58,10 +56,7 @@ impl BlockFormattingContext {
             }
 
             child.apply_explicit_sizes();
-            self.previous_collapsed_margin_bottom = f32::max(
-                self.previous_collapsed_margin_bottom,
-                child.box_model().borrow().margin_box().bottom
-            );
+            
             if child.border_box_absolute().height > 0. {
                 self.last_sibling = Some(child.clone());
             }
@@ -75,28 +70,34 @@ impl BlockFormattingContext {
         let x = box_model.margin_box().left + box_model.offset.left;
 
         let mut y = box_model.margin_box().top + box_model.offset.top;
+
+        let mut previous_collapsed_margin_bottom = 0.;
         
         if let Some(sibling) = &self.last_sibling {
+            previous_collapsed_margin_bottom = f32::max(
+                previous_collapsed_margin_bottom,
+                sibling.box_model().borrow().margin_box().bottom
+            );
             y += sibling.offset().y
                 + sibling.content_size().height
                 + sibling.box_model().borrow().border_box().bottom;
 
-            if box_model.margin_box().top < 0. || self.previous_collapsed_margin_bottom < 0. {
-                if box_model.margin_box().top < 0. && self.previous_collapsed_margin_bottom < 0. {
+            if box_model.margin_box().top < 0. || previous_collapsed_margin_bottom < 0. {
+                if box_model.margin_box().top < 0. && previous_collapsed_margin_bottom < 0. {
                     // When all margins are negative, the size of the collapsed margin is the smallest (most negative) margin.
-                    let smallest_negative_margin = f32::min(self.previous_collapsed_margin_bottom, box_model.margin_box().top);
+                    let smallest_negative_margin = f32::min(previous_collapsed_margin_bottom, box_model.margin_box().top);
                     y += smallest_negative_margin;
                 } else {
                     // When negative margins are involved, the size of the collapsed margins
                     // is the sum of the largest positive margin and the smallest (most negative) negative margin.
-                    let largest_positive_margin = f32::max(self.previous_collapsed_margin_bottom, box_model.margin_box().top);
-                    let smallest_negative_margin = -f32::min(self.previous_collapsed_margin_bottom, box_model.margin_box().top);
+                    let largest_positive_margin = f32::max(previous_collapsed_margin_bottom, box_model.margin_box().top);
+                    let smallest_negative_margin = f32::min(previous_collapsed_margin_bottom, box_model.margin_box().top);
 
-                    let margin_offset = largest_positive_margin - smallest_negative_margin;
+                    let margin_offset = largest_positive_margin + smallest_negative_margin;
                     y += margin_offset - box_model.margin_box().top;
                 }
-            } else if self.previous_collapsed_margin_bottom > box_model.margin_box().top {
-                let final_collapsed_margin = self.previous_collapsed_margin_bottom - box_model.margin_box().top; 
+            } else if previous_collapsed_margin_bottom > box_model.margin_box().top {
+                let final_collapsed_margin = previous_collapsed_margin_bottom - box_model.margin_box().top; 
                 y += final_collapsed_margin;
             }
         }
