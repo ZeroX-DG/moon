@@ -70,6 +70,8 @@ impl Property {
             "border-bottom-left-radius" => Some(Property::BorderBottomLeftRadius),
             "border-bottom-right-radius" => Some(Property::BorderBottomRightRadius),
             "font-size" => Some(Property::FontSize),
+            "margin-block-start" => Some(Property::MarginTop),
+            "margin-block-end" => Some(Property::MarginBottom),
             _ => None,
         }
     }

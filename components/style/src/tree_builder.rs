@@ -133,29 +133,7 @@ fn compute_styles(
     let computed_values = specified_values
         .into_iter()
         .map(|(property, value)| {
-            // some properties requires layout to compute
-            let is_not_compute = match property {
-                Property::Width
-                | Property::Height
-                | Property::MarginTop
-                | Property::MarginRight
-                | Property::MarginBottom
-                | Property::MarginLeft
-                | Property::PaddingTop
-                | Property::PaddingRight
-                | Property::PaddingBottom
-                | Property::PaddingLeft
-                | Property::Top
-                | Property::Right
-                | Property::Bottom
-                | Property::Left => true,
-                _ => false,
-            };
-            let computed_value = if is_not_compute {
-                context.style_cache.get(&value)
-            } else {
-                compute(&property, &value, &mut context)
-            };
+            let computed_value = compute(&property, &value, &mut context);
             return (property.clone(), computed_value);
         })
         .collect::<HashMap<Property, ValueRef>>();

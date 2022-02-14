@@ -1,3 +1,4 @@
+use crate::computes::margin::compute_margin;
 use crate::property::Property;
 use crate::render_tree::RenderNode;
 use crate::value::Value;
@@ -169,6 +170,10 @@ pub fn compute(property: &Property, value: &Value, context: &mut ComputeContext)
     match property {
         Property::Color => compute_color(value, context),
         Property::FontSize => compute_font_size(value, context),
+        Property::MarginTop
+        | Property::MarginLeft
+        | Property::MarginRight
+        | Property::MarginBottom => compute_margin(value, context),
         _ => context.style_cache.get(value),
     }
 }
