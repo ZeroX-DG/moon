@@ -50,6 +50,9 @@ async fn main() {
             let buffer = ImageBuffer::<Rgba<u8>, _>::from_raw(width, height, bitmap).unwrap();
             buffer.save(output_path).unwrap();
         }
+        cli::Action::StartMain => {
+            main::start_main();
+        }
     }
 
     //     let html_code = include_str!("../fixtures/test_text.html");
