@@ -2,7 +2,6 @@ mod browser;
 mod browser_tab;
 
 use crate::{app::AppRuntime, ui::UI};
-use gtk::prelude::*;
 
 use browser::Browser;
 use browser_tab::BrowserTab;
@@ -45,13 +44,22 @@ impl AppState {
         self.tabs.get(self.active_tab).unwrap()
     }
 
-    pub fn set_active_tab(&mut self, index: usize) {
-        self.active_tab = index;
-        self.active_tab().paint(self.viewport.clone());
+    pub fn active_tab_mut(&mut self) -> &mut BrowserTab {
+        self.tabs.get_mut(self.active_tab).unwrap()
     }
 
-    pub fn quit(&self) {
-        self.ui.window.close();
+    pub fn set_active_tab(&mut self, index: usize) {
+        // set current active tab to not active
+        self.active_tab_mut().set_active(false);
+
+        // set new active tab to active & repaint
+        self.active_tab = index;
+        self.active_tab_mut().set_active(true);
+        self.paint_active_tab();
+    }
+
+    pub fn paint_active_tab(&self) {
+        self.active_tab().paint(self.viewport.clone());
     }
 }
 

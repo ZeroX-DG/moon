@@ -1,4 +1,8 @@
-use gtk::{Application, ApplicationWindow, Entry, HeaderBar, Image, traits::{ContainerExt, GtkWindowExt, HeaderBarExt}};
+use gtk::{Application, ApplicationWindow, Entry, HeaderBar, Image};
+use gtk::prelude::*;
+use url::parser::URLParser;
+
+use crate::app::get_app_runtime;
 
 pub struct UI {
     pub app: Application,
@@ -30,6 +34,16 @@ impl UI {
         let header_bar = HeaderBar::builder()
             .show_close_button(true)
             .build();
+
+        url_entry.connect_activate(|entry| {
+            let raw_url = entry.text().to_string();
+            get_app_runtime().update_state(move |state| {
+                let parse_url_result = URLParser::parse(&raw_url, None);
+                if let Some(url) = parse_url_result {
+                    state.active_tab_mut().goto(url);
+                }
+            });
+        });
 
         header_bar.set_custom_title(Some(&url_entry));
         window.set_titlebar(Some(&header_bar));

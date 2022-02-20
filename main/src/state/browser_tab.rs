@@ -6,13 +6,28 @@ use url::Url;
 use crate::app::get_app_runtime;
 
 pub struct BrowserTab {
-    url: Url
+    url: Url,
+    is_active: bool
 }
 
 impl BrowserTab {
     pub fn new(url: Url) -> Self {
         Self {
-            url
+            url,
+            is_active: false
+        }
+    }
+
+    pub fn set_active(&mut self, active: bool) {
+        self.is_active = active;
+    }
+
+    pub fn goto(&mut self, url: Url) {
+        self.url = url;
+        if self.is_active {
+            get_app_runtime().update_state(|state| {
+                state.paint_active_tab();
+            });
         }
     }
 
