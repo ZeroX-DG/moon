@@ -1,13 +1,17 @@
-use url::{Url, parser::URLParser};
+use url::{parser::URLParser, Url};
 
 pub struct Browser {
-    home_url: Url
+    home_url: Url,
 }
 
 impl Browser {
     pub fn new() -> Self {
         Self {
-            home_url: URLParser::parse("file:///home/zerox/Desktop/Projects/moon/fixtures/test.html", None).unwrap()
+            home_url: URLParser::parse(
+                "file:///home/zerox/Desktop/Projects/moon/fixtures/test.html",
+                None,
+            )
+            .unwrap(),
         }
     }
 
@@ -15,4 +19,3 @@ impl Browser {
         &self.home_url
     }
 }
-

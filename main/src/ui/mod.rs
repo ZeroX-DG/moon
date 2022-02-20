@@ -1,5 +1,5 @@
-use gtk::{Application, ApplicationWindow, Entry, HeaderBar, Image};
 use gtk::prelude::*;
+use gtk::{Application, ApplicationWindow, Entry, HeaderBar, Image};
 use url::parser::URLParser;
 
 use crate::app::get_app_runtime;
@@ -8,7 +8,7 @@ pub struct UI {
     pub app: Application,
     pub window: ApplicationWindow,
     pub url_entry: Entry,
-    pub content_area: Image
+    pub content_area: Image,
 }
 
 impl UI {
@@ -26,14 +26,9 @@ impl UI {
             .hexpand(true)
             .build();
 
-        let content_area = Image::builder()
-            .hexpand(true)
-            .vexpand(true)
-            .build();
+        let content_area = Image::builder().hexpand(true).vexpand(true).build();
 
-        let header_bar = HeaderBar::builder()
-            .show_close_button(true)
-            .build();
+        let header_bar = HeaderBar::builder().show_close_button(true).build();
 
         url_entry.connect_activate(|entry| {
             let raw_url = entry.text().to_string();
@@ -53,7 +48,7 @@ impl UI {
             app,
             window,
             url_entry,
-            content_area
+            content_area,
         }
     }
 }

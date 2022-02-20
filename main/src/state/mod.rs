@@ -14,7 +14,7 @@ pub struct AppState {
     pub browser: Browser,
     tabs: Vec<BrowserTab>,
     pub active_tab: usize,
-    pub viewport: Size
+    pub viewport: Size,
 }
 
 impl AppState {
@@ -25,14 +25,14 @@ impl AppState {
             browser: Browser::new(),
             tabs: Vec::new(),
             active_tab: 0,
-            viewport: Size::new(1200., 600.)
+            viewport: Size::new(1200., 600.),
         }
     }
 
     pub fn new_tab(&mut self, url: Url, active: bool) -> &BrowserTab {
         let tab = BrowserTab::new(url);
         self.tabs.push(tab);
-        
+
         if active {
             self.set_active_tab(self.tabs.len() - 1);
         }
@@ -62,4 +62,3 @@ impl AppState {
         self.active_tab().paint(self.viewport.clone());
     }
 }
-

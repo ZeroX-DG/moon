@@ -3,7 +3,7 @@ use std::str::FromStr;
 
 pub enum Action {
     RenderOnce(RenderOnceParams),
-    StartMain
+    StartMain,
 }
 
 pub struct RenderOnceParams {

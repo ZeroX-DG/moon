@@ -1,8 +1,8 @@
-use gtk::{Application, prelude::*};
+use gtk::{prelude::*, Application};
 
 mod app;
-mod ui;
 mod state;
+mod ui;
 
 pub fn start_main() {
     let app = Application::builder()
@@ -26,4 +26,3 @@ pub fn start_main() {
 
     app.run();
 }
-

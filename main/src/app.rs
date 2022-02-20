@@ -38,4 +38,3 @@ pub fn get_app_runtime() -> &'static AppRuntime {
             .expect("AppRuntime has not been initialized")
     }
 }
-

@@ -1,4 +1,8 @@
-use gtk::{gdk_pixbuf::{Colorspace, Pixbuf}, glib::Bytes, traits::ImageExt};
+use gtk::{
+    gdk_pixbuf::{Colorspace, Pixbuf},
+    glib::Bytes,
+    traits::ImageExt,
+};
 use shared::primitive::Size;
 use tokio::runtime::Runtime;
 use url::Url;
@@ -7,14 +11,14 @@ use crate::app::get_app_runtime;
 
 pub struct BrowserTab {
     url: Url,
-    is_active: bool
+    is_active: bool,
 }
 
 impl BrowserTab {
     pub fn new(url: Url) -> Self {
         Self {
             url,
-            is_active: false
+            is_active: false,
         }
     }
 
@@ -47,9 +51,9 @@ impl BrowserTab {
                 8,
                 size.width as i32,
                 size.height as i32,
-                size.width as i32 * 4
+                size.width as i32 * 4,
             );
-            
+
             get_app_runtime().update_state(move |state| {
                 state.ui.content_area.set_pixbuf(Some(&pixbuf));
             });
