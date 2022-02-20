@@ -1,9 +1,8 @@
-use browser::Browser;
-use browser_window::BrowserWindow;
 use gtk::{Application, prelude::*};
 
-mod browser;
-mod browser_window;
+mod app;
+mod ui;
+mod state;
 
 pub fn start_main() {
     let app = Application::builder()
@@ -11,10 +10,20 @@ pub fn start_main() {
         .build();
 
     app.connect_activate(|app| {
-        let browser_window = BrowserWindow::new(&app);
-        let browser = Browser::new(browser_window);
-        browser.initialize();
+        let ui = ui::UI::new(app.clone());
+        let app_runtime = app::AppRuntime::init(ui);
+
+        app_runtime.update_state(|state| {
+            state.ui.window.show_all();
+            state.ui.window.present();
+        });
+
+        app_runtime.update_state(|state| {
+            let initial_url = state.browser.home_url().clone();
+            state.new_tab(initial_url, true);
+        });
     });
+
     app.run();
 }
 
