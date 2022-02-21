@@ -3,6 +3,7 @@ use std::str::FromStr;
 
 pub enum Action {
     RenderOnce(RenderOnceParams),
+    StartMain,
 }
 
 pub struct RenderOnceParams {
@@ -30,7 +31,7 @@ pub fn get_action<'a>(matches: ArgMatches<'a>) -> Action {
         }
     }
 
-    unreachable!("Invalid action provided!");
+    Action::StartMain
 }
 
 fn parse_size(raw_size: &str) -> (u32, u32) {

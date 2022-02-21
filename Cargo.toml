@@ -23,10 +23,12 @@ members = [
   "components/document_loader",
   "components/shared",
   "render",
+  "main",
 ]
 
 [dependencies]
 render = { version = "*", path = "./render" }
+main = { version = "*", path = "./main" }
 url = { path="./components/url" }
 log = "*"
 flume = "*"

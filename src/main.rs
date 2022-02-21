@@ -3,6 +3,7 @@ mod cli;
 use image::{ImageBuffer, Rgba};
 use simplelog::*;
 use std::io::Read;
+use tokio::runtime::Runtime;
 use url::parser::URLParser;
 
 fn read_file(path: String) -> String {
@@ -15,8 +16,7 @@ fn read_file(path: String) -> String {
     return result;
 }
 
-#[tokio::main]
-async fn main() {
+fn main() {
     let config = ConfigBuilder::new()
         .add_filter_ignore_str("wgpu")
         .add_filter_ignore_str("gfx_backend_vulkan")
@@ -43,12 +43,21 @@ async fn main() {
             let absolute_path = absolute_html_path.parent().unwrap();
             let absolute_path_url = format!("file://{}/", absolute_path.to_str().unwrap());
             let base_url = URLParser::parse(&absolute_path_url, None).unwrap();
-            let bitmap = render::render_once(html_code.to_string(), base_url, viewport).await;
+
+            let rt = Runtime::new().expect("Unable to create tokio runtime");
+            let bitmap = rt.block_on(render::render_once(
+                html_code.to_string(),
+                base_url,
+                viewport,
+            ));
 
             let (width, height) = viewport;
 
             let buffer = ImageBuffer::<Rgba<u8>, _>::from_raw(width, height, bitmap).unwrap();
             buffer.save(output_path).unwrap();
+        }
+        cli::Action::StartMain => {
+            main::start_main();
         }
     }
 
