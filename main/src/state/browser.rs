@@ -1,3 +1,5 @@
+use std::path::Path;
+
 use url::{parser::URLParser, Url};
 
 pub struct Browser {
@@ -6,9 +8,14 @@ pub struct Browser {
 
 impl Browser {
     pub fn new() -> Self {
+        let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .unwrap()
+            .to_str()
+            .unwrap();
         Self {
             home_url: URLParser::parse(
-                "file:///home/zerox/Desktop/Projects/moon/fixtures/test.html",
+                &format!("file://{}/fixtures/test.html", workspace_root),
                 None,
             )
             .unwrap(),
