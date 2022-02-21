@@ -40,6 +40,9 @@ jobs:
           toolchain: stable
           override: true
 
+      - name: Install GTK
+        run: sudo apt-get install -y libgtk-3-dev
+
       - name: Run Tests
         uses: actions-rs/cargo@v1
         with:
