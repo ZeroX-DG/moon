@@ -1367,7 +1367,6 @@ dependencies = [
  "log",
  "render",
  "shared",
- "tokio",
  "url",
 ]
 
@@ -1455,7 +1454,6 @@ dependencies = [
  "render",
  "shared",
  "simplelog",
- "tokio",
  "url",
 ]
 
@@ -2031,7 +2029,6 @@ dependencies = [
  "dirs",
  "document_loader",
  "dom",
- "futures",
  "gfx",
  "html",
  "layout",
@@ -2040,6 +2037,7 @@ dependencies = [
  "serde",
  "shared",
  "style",
+ "tokio",
  "url",
 ]
 
@@ -2434,11 +2432,10 @@ dependencies = [
 
 [[package]]
 name = "tokio"
-version = "1.6.2"
+version = "1.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "aea337f72e96efe29acc234d803a5981cd9a2b6ed21655cd7fc21cfe021e8ec7"
+checksum = "2af73ac49756f3f7c01172e34a23e5d0216f6c32333757c2c61feb2bbff5a5ee"
 dependencies = [
- "autocfg",
  "num_cpus",
  "pin-project-lite",
  "tokio-macros",
@@ -2446,9 +2443,9 @@ dependencies = [
 
 [[package]]
 name = "tokio-macros"
-version = "1.2.0"
+version = "1.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c49e3df43841dafb86046472506755d8501c5615673955f6aa17181125d13c37"
+checksum = "b557f72f448c511a979e2564e55d74e6c4432fc96ff4f6241bc6bded342643b7"
 dependencies = [
  "proc-macro2",
  "quote",

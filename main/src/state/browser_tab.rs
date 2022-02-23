@@ -4,7 +4,6 @@ use gtk::{
     traits::ImageExt,
 };
 use shared::primitive::Size;
-use tokio::runtime::Runtime;
 use url::Url;
 
 use crate::app::get_app_runtime;
@@ -40,8 +39,7 @@ impl BrowserTab {
         let base_url = self.url.clone();
 
         std::thread::spawn(move || {
-            let rt = Runtime::new().unwrap();
-            let rendered_content = rt.block_on(render::render_once(html, base_url, size.clone()));
+            let rendered_content = render::render_once(html, base_url, size.clone());
             let bytes = Bytes::from_owned(rendered_content);
             let pixbuf = Pixbuf::from_bytes(
                 &bytes,

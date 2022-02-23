@@ -20,4 +20,4 @@ url = { path="../components/url" }
 dirs = "2.0.2"
 log = "*"
 serde = { version = "*", features = ["derive"] }
-futures = "*"
+tokio = { version = "1.6.2", features = ["rt", "rt-multi-thread", "macros"] }
