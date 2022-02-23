@@ -7,17 +7,15 @@ use dom::node::Node;
 use layout::dump_layout;
 use layout::formatting_context::{establish_context, FormattingContextType};
 use layout::{formatting_context::LayoutContext, layout_box::LayoutBox};
-use shared::primitive::Rect;
+use shared::primitive::{Rect, Size};
 use style::render_tree::RenderTree;
 use style::value_processing::{CSSLocation, CascadeOrigin, ContextualRule};
 use url::Url;
 
-pub type FrameSize = (u32, u32);
-
 pub struct Frame {
     document: Option<Rc<Node>>,
     layout: FrameLayout,
-    size: FrameSize,
+    size: Size,
 }
 
 pub struct FrameLayout {
@@ -36,22 +34,18 @@ impl Frame {
         Self {
             document: None,
             layout: FrameLayout::new(),
-            size: (0, 0),
+            size: Size::new(0., 0.),
         }
     }
 
-    pub fn resize(&mut self, new_size: FrameSize) {
+    pub fn resize(&mut self, new_size: Size) {
         self.size = new_size;
-        self.layout.reflow(self.size, ReflowType::LayoutOnly);
-    }
-
-    pub fn size(&self) -> FrameSize {
-        self.size.clone()
+        self.layout.reflow(&self.size, ReflowType::LayoutOnly);
     }
 
     pub fn set_document(&mut self, document: Rc<Node>) {
         self.document = Some(document.clone());
-        self.layout.reflow(self.size, ReflowType::All(document));
+        self.layout.reflow(&self.size, ReflowType::All(document));
     }
 
     pub fn load_html(&mut self, html: String, base_url: Url) {
@@ -100,7 +94,7 @@ impl FrameLayout {
         log::debug!("Finished render tree");
     }
 
-    pub fn recalculate_layout(&mut self, size: FrameSize) {
+    pub fn recalculate_layout(&mut self, size: &Size) {
         if let Some(render_tree) = &self.render_tree {
             log::debug!("Building layout tree");
             let render_tree_root = render_tree.root.clone().unwrap();
@@ -110,14 +104,12 @@ impl FrameLayout {
 
             if let Some(root) = &self.layout_tree {
                 log::debug!("Starting layout process");
-                let (width, height) = size;
-
                 let layout_context = Rc::new(LayoutContext {
                     viewport: Rect {
                         x: 0.,
                         y: 0.,
-                        width: width as f32,
-                        height: height as f32,
+                        width: size.width,
+                        height: size.height,
                     },
                 });
 
@@ -141,7 +133,7 @@ impl FrameLayout {
         }
     }
 
-    pub fn reflow(&mut self, size: FrameSize, type_: ReflowType) {
+    pub fn reflow(&mut self, size: &Size, type_: ReflowType) {
         log::debug!("Start reflowing with type: {:?}", type_);
         match &type_ {
             ReflowType::LayoutOnly => {

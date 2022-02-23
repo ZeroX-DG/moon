@@ -1,3 +1,4 @@
+use shared::primitive::Size;
 use url::Url;
 
 use super::frame::Frame;
@@ -17,7 +18,7 @@ impl Page {
         &self.main_frame
     }
 
-    pub fn resize(&mut self, size: (u32, u32)) {
+    pub fn resize(&mut self, size: Size) {
         self.main_frame.resize(size);
     }
 

@@ -30,6 +30,7 @@ members = [
 render = { version = "*", path = "./render" }
 main = { version = "*", path = "./main" }
 url = { path="./components/url" }
+shared = { path = "./components/shared" }
 log = "*"
 flume = "*"
 clap = "*"

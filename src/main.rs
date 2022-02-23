@@ -1,6 +1,7 @@
 mod cli;
 
 use image::{ImageBuffer, Rgba};
+use shared::primitive::Size;
 use simplelog::*;
 use std::io::Read;
 use tokio::runtime::Runtime;
@@ -48,7 +49,7 @@ fn main() {
             let bitmap = rt.block_on(render::render_once(
                 html_code.to_string(),
                 base_url,
-                viewport,
+                Size::from(viewport),
             ));
 
             let (width, height) = viewport;

@@ -1,4 +1,3 @@
-use super::frame::FrameSize;
 use super::page::Page;
 use gfx::{Bitmap, Canvas};
 use painting::Painter;
@@ -11,7 +10,7 @@ pub struct Renderer<'a> {
 }
 
 pub struct RendererInitializeParams {
-    pub viewport: FrameSize,
+    pub viewport: Size,
 }
 
 impl<'a> Renderer<'a> {
@@ -23,11 +22,8 @@ impl<'a> Renderer<'a> {
     }
 
     pub fn initialize(&mut self, params: RendererInitializeParams) {
-        self.page.resize(params.viewport);
-        self.painter.resize(Size::new(
-            params.viewport.0 as f32,
-            params.viewport.1 as f32,
-        ));
+        self.page.resize(params.viewport.clone());
+        self.painter.resize(params.viewport.clone());
     }
 
     pub fn load_html(&mut self, html: String, base_url: Url) {

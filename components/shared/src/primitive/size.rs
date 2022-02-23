@@ -17,3 +17,9 @@ impl Default for Size {
         Self::new(0., 0.)
     }
 }
+
+impl From<(u32, u32)> for Size {
+    fn from((width, height): (u32, u32)) -> Self {
+        Self::new(width as f32, height as f32)
+    }
+}
