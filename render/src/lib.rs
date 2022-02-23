@@ -1,5 +1,4 @@
 mod frame;
-mod loader;
 mod page;
 mod renderer;
 

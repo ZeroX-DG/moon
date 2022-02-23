@@ -1,6 +1,5 @@
 use std::rc::Rc;
 
-use super::loader::frame::FrameLoader;
 use css::cssom::css_rule::CSSRule;
 
 use dom::node::Node;
@@ -10,7 +9,6 @@ use layout::{formatting_context::LayoutContext, layout_box::LayoutBox};
 use shared::primitive::{Rect, Size};
 use style::render_tree::RenderTree;
 use style::value_processing::{CSSLocation, CascadeOrigin, ContextualRule};
-use url::Url;
 
 pub struct Frame {
     document: Option<Rc<Node>>,
@@ -46,10 +44,6 @@ impl Frame {
     pub fn set_document(&mut self, document: Rc<Node>) {
         self.document = Some(document.clone());
         self.layout.reflow(&self.size, ReflowType::All(document));
-    }
-
-    pub fn load_html(&mut self, html: String, base_url: Url) {
-        self.set_document(FrameLoader::load_html(html, base_url));
     }
 
     pub fn layout(&self) -> &FrameLayout {
