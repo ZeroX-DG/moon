@@ -3,9 +3,10 @@ mod page;
 mod renderer;
 
 use gfx::Bitmap;
-use renderer::{Renderer, RendererInitializeParams};
 use shared::primitive::Size;
 use url::Url;
+
+pub use renderer::*;
 
 pub fn version() -> &'static str {
     env!("CARGO_PKG_VERSION")

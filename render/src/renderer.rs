@@ -7,7 +7,7 @@ use url::Url;
 
 pub struct Renderer<'a> {
     painter: Painter<Canvas<'a>>,
-    page: Page,
+    pub page: Page,
 }
 
 pub struct RendererInitializeParams {
@@ -24,8 +24,12 @@ impl<'a> Renderer<'a> {
     }
 
     pub fn initialize(&mut self, params: RendererInitializeParams) {
-        self.page.resize(params.viewport.clone());
-        self.painter.resize(params.viewport.clone());
+        self.resize(params.viewport);
+    }
+
+    pub fn resize(&mut self, size: Size) {
+        self.page.resize(size.clone());
+        self.painter.resize(size.clone());
     }
 
     pub fn load_html(&mut self, html: String, base_url: Url) {

@@ -1,8 +1,6 @@
-use gtk::{
-    gdk_pixbuf::{Colorspace, Pixbuf},
-    glib::Bytes,
-    traits::ImageExt,
-};
+use std::sync::{Arc, Mutex};
+
+use crate::render_engine::RenderEngine;
 use shared::primitive::Size;
 use url::Url;
 
@@ -10,50 +8,51 @@ use crate::app::get_app_runtime;
 
 pub struct BrowserTab {
     url: Url,
-    is_active: bool,
+    is_active: Arc<Mutex<bool>>,
+    render_engine: RenderEngine,
 }
 
 impl BrowserTab {
     pub fn new(url: Url) -> Self {
+        let render_engine = RenderEngine::new();
+
+        let is_active = Arc::new(Mutex::new(false));
+        let is_active_clone = is_active.clone();
+
+        render_engine.on_new_bitmap(move |bitmap| {
+            let is_active_clone = is_active_clone.clone();
+
+            get_app_runtime().update_state(move |state| {
+                let is_tab_active = is_active_clone.lock().unwrap();
+                if *is_tab_active {
+                    state.on_active_tab_bitmap(bitmap);
+                }
+            });
+        });
+
         Self {
             url,
-            is_active: false,
+            is_active,
+            render_engine,
         }
     }
 
     pub fn set_active(&mut self, active: bool) {
-        self.is_active = active;
+        *self.is_active.lock().unwrap() = active;
+    }
+
+    pub fn resize(&self, size: Size) {
+        self.render_engine.resize(size);
     }
 
     pub fn goto(&mut self, url: Url) {
         self.url = url;
-        if self.is_active {
-            get_app_runtime().update_state(|state| {
-                state.paint_active_tab();
-            });
-        }
+        self.load();
     }
 
-    pub fn paint(&self, size: Size) {
+    pub fn load(&self) {
         let html = std::fs::read_to_string(self.url.path.as_str()).expect("Unable to read HTML");
         let base_url = self.url.clone();
-
-        std::thread::spawn(move || {
-            let rendered_content = render::render_once(html, base_url, size.clone());
-            let bytes = Bytes::from_owned(rendered_content);
-            let pixbuf = Pixbuf::from_bytes(
-                &bytes,
-                Colorspace::Rgb,
-                true,
-                8,
-                size.width as i32,
-                size.height as i32,
-                size.width as i32 * 4,
-            );
-
-            get_app_runtime().update_state(move |state| {
-                state.ui.content_area.set_pixbuf(Some(&pixbuf));
-            });
-        });
+        self.render_engine.load_html(html, base_url);
     }
 }

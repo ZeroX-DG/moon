@@ -36,6 +36,10 @@ impl Frame {
         }
     }
 
+    pub fn size(&self) -> Size {
+        self.size.clone()
+    }
+
     pub fn resize(&mut self, new_size: Size) {
         self.size = new_size;
         self.layout.reflow(&self.size, ReflowType::LayoutOnly);
