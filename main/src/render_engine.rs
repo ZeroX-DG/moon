@@ -80,4 +80,3 @@ impl RenderEngine {
         self.renderer_action_tx.send(Box::new(action)).unwrap();
     }
 }
-

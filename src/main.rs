@@ -44,11 +44,7 @@ fn main() {
             let absolute_path_url = format!("file://{}/", absolute_path.to_str().unwrap());
             let base_url = URLParser::parse(&absolute_path_url, None).unwrap();
 
-            let bitmap = render::render_once(
-                html_code.to_string(),
-                base_url,
-                Size::from(viewport),
-            );
+            let bitmap = render::render_once(html_code.to_string(), base_url, Size::from(viewport));
 
             let (width, height) = viewport;
 

@@ -1,7 +1,10 @@
 use std::rc::Rc;
 
 use document_loader::inprocess::InprocessLoader;
-use dom::{node::{Node, NodeData}, document::Document};
+use dom::{
+    document::Document,
+    node::{Node, NodeData},
+};
 use shared::primitive::Size;
 use url::Url;
 
