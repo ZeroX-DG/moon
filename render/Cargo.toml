@@ -7,17 +7,17 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-html = { version="*", path="../components/html" }
-dom = { version="*", path="../components/dom" }
-css = { version="*", path="../components/css" }
-style = { version="*", path="../components/style" }
-layout = { version="*", path="../components/layout" }
-painting = { version="*", path="../components/painting" }
+html = { version = "*", path = "../components/html" }
+dom = { version = "*", path = "../components/dom" }
+css = { version = "*", path = "../components/css" }
+style = { version = "*", path = "../components/style" }
+layout = { version = "*", path = "../components/layout" }
+painting = { version = "*", path = "../components/painting" }
 shared = { version = "*", path = "../components/shared" }
-gfx = { version="*", path="../components/gfx" }
-document_loader = { path="../components/document_loader" }
-url = { path="../components/url" }
+gfx = { version = "*", path = "../components/gfx" }
+document_loader = { path = "../components/document_loader" }
+url = { path = "../components/url" }
 dirs = "2.0.2"
 log = "*"
 serde = { version = "*", features = ["derive"] }
-futures = "*"
+tokio = { version = "1.6.2", features = ["rt", "rt-multi-thread", "macros"] }

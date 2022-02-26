@@ -10,5 +10,5 @@ gtk = "0.15.1"
 url = { path = "../components/url" }
 shared = { path = "../components/shared" }
 render = { path = "../render" }
-tokio = { version = "1.6.2", features = ["rt", "rt-multi-thread", "macros"] }
 log = "*"
+flume = { version = "0.10.11" }

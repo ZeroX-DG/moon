@@ -1,9 +1,9 @@
 mod cli;
 
 use image::{ImageBuffer, Rgba};
+use shared::primitive::Size;
 use simplelog::*;
 use std::io::Read;
-use tokio::runtime::Runtime;
 use url::parser::URLParser;
 
 fn read_file(path: String) -> String {
@@ -44,12 +44,7 @@ fn main() {
             let absolute_path_url = format!("file://{}/", absolute_path.to_str().unwrap());
             let base_url = URLParser::parse(&absolute_path_url, None).unwrap();
 
-            let rt = Runtime::new().expect("Unable to create tokio runtime");
-            let bitmap = rt.block_on(render::render_once(
-                html_code.to_string(),
-                base_url,
-                viewport,
-            ));
+            let bitmap = render::render_once(html_code.to_string(), base_url, Size::from(viewport));
 
             let (width, height) = viewport;
 

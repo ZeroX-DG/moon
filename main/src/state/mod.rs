@@ -5,6 +5,11 @@ use crate::{app::AppRuntime, ui::UI};
 
 use browser::Browser;
 use browser_tab::BrowserTab;
+use gtk::{
+    gdk_pixbuf::{Colorspace, Pixbuf},
+    glib::Bytes,
+    traits::ImageExt,
+};
 use shared::primitive::Size;
 use url::Url;
 
@@ -30,7 +35,9 @@ impl AppState {
     }
 
     pub fn new_tab(&mut self, url: Url, active: bool) -> &BrowserTab {
-        let tab = BrowserTab::new(url);
+        let tab = BrowserTab::new(url.clone());
+        tab.resize(self.viewport.clone());
+        tab.load();
         self.tabs.push(tab);
 
         if active {
@@ -38,10 +45,6 @@ impl AppState {
         }
 
         self.tabs.last().unwrap()
-    }
-
-    pub fn active_tab(&self) -> &BrowserTab {
-        self.tabs.get(self.active_tab).unwrap()
     }
 
     pub fn active_tab_mut(&mut self) -> &mut BrowserTab {
@@ -55,10 +58,19 @@ impl AppState {
         // set new active tab to active & repaint
         self.active_tab = index;
         self.active_tab_mut().set_active(true);
-        self.paint_active_tab();
     }
 
-    pub fn paint_active_tab(&self) {
-        self.active_tab().paint(self.viewport.clone());
+    pub fn on_active_tab_bitmap(&mut self, bitmap: Vec<u8>) {
+        let bytes = Bytes::from_owned(bitmap);
+        let pixbuf = Pixbuf::from_bytes(
+            &bytes,
+            Colorspace::Rgb,
+            true,
+            8,
+            self.viewport.width as i32,
+            self.viewport.height as i32,
+            self.viewport.width as i32 * 4,
+        );
+        self.ui.content_area.set_pixbuf(Some(&pixbuf));
     }
 }

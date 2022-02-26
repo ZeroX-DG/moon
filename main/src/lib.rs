@@ -1,6 +1,7 @@
 use gtk::{prelude::*, Application};
 
 mod app;
+mod render_engine;
 mod state;
 mod ui;
 

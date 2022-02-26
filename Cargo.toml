@@ -30,9 +30,9 @@ members = [
 render = { version = "*", path = "./render" }
 main = { version = "*", path = "./main" }
 url = { path="./components/url" }
+shared = { path = "./components/shared" }
 log = "*"
 flume = "*"
 clap = "*"
-tokio = { version = "1.6.2", features = ["rt", "rt-multi-thread", "macros"] }
 image = "*"
 simplelog = "0.10.0"
