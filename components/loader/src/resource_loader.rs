@@ -1,15 +1,9 @@
-use super::{DocumentLoader, LoadError, LoadRequest};
+use super::request::{LoadError, LoadRequest};
 
-pub struct InprocessLoader;
+pub struct ResourceLoader;
 
-impl InprocessLoader {
-    pub fn new() -> Self {
-        Self
-    }
-}
-
-impl DocumentLoader for InprocessLoader {
-    fn load(&mut self, request: LoadRequest) {
+impl ResourceLoader {
+    pub fn load(request: LoadRequest) {
         let load_result = match request.url.scheme.as_str() {
             "file" => std::fs::read(request.url.path.as_str())
                 .map_err(|e| LoadError::IOError(e.to_string())),

@@ -1306,7 +1306,6 @@ checksum = "7fb9b38af92608140b86b693604b9ffcc5824240a484d1ecd4795bacb2fe88f3"
 name = "loader"
 version = "0.1.0"
 dependencies = [
- "relative-path",
  "url",
 ]
 
@@ -2015,12 +2014,6 @@ name = "regex-syntax"
 version = "0.6.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "26412eb97c6b088a6997e05f69403a802a92d520de2f8e63c2b65f9e0f47c4e8"
-
-[[package]]
-name = "relative-path"
-version = "1.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a479d53d7eed831f3c92ca79c61002d5987e21417d528296832f802bca532380"
 
 [[package]]
 name = "render"
