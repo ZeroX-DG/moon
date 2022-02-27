@@ -20,7 +20,7 @@ members = [
   "components/tree",
   "components/url",
   "components/gfx",
-  "components/document_loader",
+  "components/loader",
   "components/shared",
   "render",
   "main",
@@ -29,7 +29,7 @@ members = [
 [dependencies]
 render = { version = "*", path = "./render" }
 main = { version = "*", path = "./main" }
-url = { path="./components/url" }
+url = { path = "./components/url" }
 shared = { path = "./components/shared" }
 log = "*"
 flume = "*"

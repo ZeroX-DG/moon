@@ -8,7 +8,7 @@ edition = "2018"
 
 [dependencies]
 enum_dispatch = "0.3.7"
-url = { path="../url" }
-css = { path="../css" }
-document_loader = { path="../document_loader" }
+url = { path = "../url" }
+css = { path = "../css" }
+loader = { path = "../loader" }
 log = "*"

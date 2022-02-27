@@ -1,6 +1,5 @@
 use std::rc::Rc;
 
-use document_loader::inprocess::InprocessLoader;
 use dom::{
     document::Document,
     node::{Node, NodeData},
@@ -31,7 +30,6 @@ impl Page {
 
     pub fn load_html(&mut self, html: String, base_url: Url) {
         let document = Rc::new(Node::new(NodeData::Document(Document::new())));
-        document.as_document().set_loader(InprocessLoader::new());
 
         let default_css = include_str!("./html.css");
         let tokenizer = css::tokenizer::Tokenizer::new(default_css.chars());

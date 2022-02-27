@@ -596,20 +596,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "document_loader"
-version = "0.1.0"
-dependencies = [
- "relative-path",
- "url",
-]
-
-[[package]]
 name = "dom"
 version = "0.1.0"
 dependencies = [
  "css",
- "document_loader",
  "enum_dispatch",
+ "loader",
  "log",
  "url",
 ]
@@ -1309,6 +1301,14 @@ name = "linked-hash-map"
 version = "0.5.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7fb9b38af92608140b86b693604b9ffcc5824240a484d1ecd4795bacb2fe88f3"
+
+[[package]]
+name = "loader"
+version = "0.1.0"
+dependencies = [
+ "relative-path",
+ "url",
+]
 
 [[package]]
 name = "lock_api"
@@ -2028,7 +2028,6 @@ version = "0.1.0"
 dependencies = [
  "css",
  "dirs",
- "document_loader",
  "dom",
  "gfx",
  "html",
