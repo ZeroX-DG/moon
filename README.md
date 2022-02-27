@@ -68,9 +68,7 @@ Bold text is what I'm working on
   - [x] Text rendering
 - [ ] :earth_americas: **Networking**
   - [x] URL parsing
-  - [ ] DNS resolving
-  - [ ] DNS caching
-  - [ ] HTTP/HTTPS
+  - [ ] **Fetch API**
 - [ ] :framed_picture: Media
   - [ ] :framed_picture: Image rendering
     - [ ] JPG
