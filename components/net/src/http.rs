@@ -7,16 +7,18 @@ pub enum HttpResponse {
 
 static mut HTTP_CLIENT: Option<Client> = None;
 
-pub async fn start_http_request(method: &str, url: &str) -> HttpResponse {
+fn get_http_client() -> &'static Client {
     unsafe {
         if HTTP_CLIENT.is_none() {
             HTTP_CLIENT = Some(Client::new());
         }
+        HTTP_CLIENT.as_ref().expect("Unable to obtain http client")
     }
+}
 
-    let client = unsafe { HTTP_CLIENT.as_ref().expect("Unable to obtain http client") };
-
-    let method = match method {
+pub async fn request(method: &str, url: &str) -> HttpResponse {
+    let client = get_http_client();
+    let method = match method.to_lowercase().as_str() {
         "get" => Method::GET,
         _ => return HttpResponse::Failure(format!("Unsupported method: {}", method)),
     };

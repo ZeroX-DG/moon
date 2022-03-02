@@ -25,12 +25,10 @@ impl ResourceLoader {
             "file" => {
                 std::fs::read(url.path.as_str()).map_err(|e| LoadError::IOError(e.to_string()))
             }
-            "http" | "https" => {
-                match rt.block_on(net::http::start_http_request("get", &url.as_str())) {
-                    HttpResponse::Success(bytes) => Ok(bytes),
-                    HttpResponse::Failure(err) => Err(LoadError::IOError(err)),
-                }
-            }
+            "http" | "https" => match rt.block_on(net::http::request("GET", &url.as_str())) {
+                HttpResponse::Success(bytes) => Ok(bytes),
+                HttpResponse::Failure(err) => Err(LoadError::IOError(err)),
+            },
             protocol => Err(LoadError::UnsupportedProtocol(protocol.to_string())),
         };
         load_result
