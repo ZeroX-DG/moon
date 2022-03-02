@@ -5,7 +5,6 @@ use super::ElementHooks;
 use super::ElementMethods;
 use crate::node::Node;
 use crate::node::NodeHooks;
-use loader::LoadRequest;
 use loader::ResourceLoader;
 use url::Url;
 
@@ -35,22 +34,19 @@ impl HTMLLinkElement {
     }
 
     pub fn load_stylesheet(&self, url: &Url, document: Rc<Node>) {
-        let cloned_url = url.clone();
-
         log::info!("Loading stylesheet from: {}", url);
 
-        let request = LoadRequest::new(url.clone())
-            .on_success(move |bytes| {
+        match ResourceLoader::load(url.clone()) {
+            Ok(bytes) => {
                 let css = String::from_utf8(bytes).unwrap();
                 let tokenizer = Tokenizer::new(css.chars());
                 let mut parser = Parser::<Token>::new(tokenizer.run());
                 let stylesheet = parser.parse_a_css_stylesheet();
 
                 document.as_document().append_stylesheet(stylesheet);
-            })
-            .on_error(move |e| log::error!("Unable to load CSS: {} ({})", e, cloned_url));
-
-        ResourceLoader::load(request);
+            }
+            Err(e) => log::error!("Unable to load CSS: {} ({})", e, url),
+        }
     }
 }
 

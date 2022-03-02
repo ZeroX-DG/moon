@@ -8,3 +8,5 @@ edition = "2018"
 
 [dependencies]
 url = { path = "../url" }
+net = { path = "../net" }
+tokio = { version = "1.6.2", features = ["rt", "rt-multi-thread"] }
