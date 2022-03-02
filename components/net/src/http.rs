@@ -5,8 +5,16 @@ pub enum HttpResponse {
     Failure(String),
 }
 
+static mut HTTP_CLIENT: Option<Client> = None;
+
 pub async fn start_http_request(method: &str, url: &str) -> HttpResponse {
-    let client = Client::new();
+    unsafe {
+        if HTTP_CLIENT.is_none() {
+            HTTP_CLIENT = Some(Client::new());
+        }
+    }
+
+    let client = unsafe { HTTP_CLIENT.as_ref().expect("Unable to obtain http client") };
 
     let method = match method {
         "get" => Method::GET,
