@@ -1,6 +1,5 @@
 use super::node::NodeHooks;
 use css::cssom::stylesheet::StyleSheet;
-use document_loader::DocumentLoader;
 use std::cell::RefCell;
 use std::ops::Deref;
 use std::rc::Rc;
@@ -9,7 +8,6 @@ use url::Url;
 pub struct Document {
     doctype: RefCell<Option<DocumentType>>,
     mode: RefCell<QuirksMode>,
-    loader: RefCell<Option<Rc<RefCell<dyn DocumentLoader>>>>,
     stylesheets: RefCell<Vec<Rc<StyleSheet>>>,
     base: RefCell<Option<Url>>,
 }
@@ -40,7 +38,6 @@ impl Document {
         Self {
             doctype: RefCell::new(None),
             mode: RefCell::new(QuirksMode::NoQuirks),
-            loader: RefCell::new(None),
             stylesheets: RefCell::new(Vec::new()),
             base: RefCell::new(None),
         }
@@ -56,14 +53,6 @@ impl Document {
 
     pub fn get_mode(&self) -> QuirksMode {
         self.mode.borrow().clone()
-    }
-
-    pub fn loader(&self) -> Option<Rc<RefCell<dyn DocumentLoader>>> {
-        self.loader.borrow().clone()
-    }
-
-    pub fn set_loader<L: DocumentLoader + 'static>(&self, loader: L) {
-        *self.loader.borrow_mut() = Some(Rc::new(RefCell::new(loader)));
     }
 
     pub fn append_stylesheet(&self, stylesheet: StyleSheet) {

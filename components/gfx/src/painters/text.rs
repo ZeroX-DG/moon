@@ -23,4 +23,8 @@ impl TextPainter {
     pub fn texts(&self) -> &[Text] {
         &self.texts
     }
+
+    pub fn clear(&mut self) {
+        self.texts.clear();
+    }
 }

@@ -53,6 +53,25 @@ impl Url {
             path.pop();
         }
     }
+
+    pub fn as_str(&self) -> String {
+        let mut result = String::new();
+        result.push_str(&format!("{}://", self.scheme));
+        if let Some(host) = &self.host {
+            result.push_str(&format!("{}", host));
+        }
+        if let Some(port) = self.port {
+            result.push_str(&format!(":{}", port));
+        }
+        result.push_str(&format!("/{}", self.path));
+        if let Some(fragment) = &self.fragment {
+            result.push_str(&format!("#{}", fragment));
+        }
+        if let Some(query) = &self.query {
+            result.push_str(&format!("?{}", query));
+        }
+        result
+    }
 }
 
 impl UrlPath {
@@ -95,20 +114,6 @@ impl Display for UrlPath {
 
 impl Display for Url {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}://", self.scheme)?;
-        if let Some(host) = &self.host {
-            write!(f, "{}", host)?;
-        }
-        if let Some(port) = self.port {
-            write!(f, ":{}", port)?;
-        }
-        write!(f, "/{}", self.path)?;
-        if let Some(fragment) = &self.fragment {
-            write!(f, "#{}", fragment)?;
-        }
-        if let Some(query) = &self.query {
-            write!(f, "?{}", query)?;
-        }
-        Ok(())
+        write!(f, "{}", self.as_str())
     }
 }

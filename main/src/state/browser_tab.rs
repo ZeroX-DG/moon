@@ -1,6 +1,7 @@
 use std::sync::{Arc, Mutex};
 
 use crate::render_engine::RenderEngine;
+use loader::ResourceLoader;
 use shared::primitive::Size;
 use url::Url;
 
@@ -51,8 +52,8 @@ impl BrowserTab {
     }
 
     pub fn load(&self) {
-        let html = std::fs::read_to_string(self.url.path.as_str()).expect("Unable to read HTML");
-        let base_url = self.url.clone();
-        self.render_engine.load_html(html, base_url);
+        let bytes = ResourceLoader::load(self.url.clone()).expect("Unable to load HTML");
+        let html = String::from_utf8(bytes).unwrap();
+        self.render_engine.load_html(html, self.url.clone());
     }
 }

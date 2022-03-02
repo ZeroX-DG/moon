@@ -10,5 +10,6 @@ gtk = "0.15.1"
 url = { path = "../components/url" }
 shared = { path = "../components/shared" }
 render = { path = "../render" }
+loader = { path = "../components/loader" }
 log = "*"
 flume = { version = "0.10.11" }
