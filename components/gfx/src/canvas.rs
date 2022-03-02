@@ -161,6 +161,10 @@ impl<'a> Canvas<'a> {
             .expect("Recall staging belt");
 
         self.local_pool.run_until_stalled();
+
+        // clean up for next draw
+        self.text_painter.clear();
+        self.rect_painter.clear();
     }
 
     fn get_bytes_per_row(&self) -> u32 {

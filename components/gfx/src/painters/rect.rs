@@ -23,6 +23,10 @@ impl RectPainter {
         &self.vertex_buffers
     }
 
+    pub fn clear(&mut self) {
+        self.vertex_buffers.clear();
+    }
+
     pub fn draw_solid_rect(&mut self, rect: &Rect, color: &Color) {
         let color_arr: [f32; 4] = [
             color.r.into(),
