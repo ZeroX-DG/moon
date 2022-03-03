@@ -627,12 +627,12 @@ impl<T: Tokenizing> TreeBuilder<T> {
                 return AdoptionAgencyOutcome::DoNothing;
             }
 
-            if !self.open_elements.has_element_in_scope(&fmt_element) {
+            if self.open_elements.contains_node(&fmt_element) && !self.open_elements.has_element_in_scope(&fmt_element) {
                 self.unexpected(&token);
                 return AdoptionAgencyOutcome::DoNothing;
             }
 
-            if Rc::ptr_eq(&fmt_element, &self.current_node()) {
+            if !Rc::ptr_eq(&fmt_element, &self.current_node()) {
                 self.unexpected(&token);
             }
 
@@ -652,7 +652,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
             };
 
             if furthest_block.is_none() {
-                while Rc::ptr_eq(&self.current_node(), &fmt_element) {
+                while !Rc::ptr_eq(&self.current_node(), &fmt_element) {
                     self.open_elements.pop();
                 }
                 self.open_elements.pop();
@@ -665,7 +665,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
                 for (index, el) in self.open_elements.iter().rev().enumerate() {
                     if Rc::ptr_eq(el, &fmt_element) {
                         if index < self.open_elements.len() - 1 {
-                            found_element = Some(self.open_elements.get(index + 1));
+                            found_element = Some(self.open_elements.get(index - 1));
                         }
                         break;
                     }
