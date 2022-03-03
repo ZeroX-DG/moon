@@ -209,14 +209,14 @@ impl URLParser {
                         if c == '\\' {
                             report_validation_error();
                             state = URLParseState::SpecialAuthorityIgnoreSlashes;
-                        } else if c == '/' {
-                            state = URLParseState::Authority;
-                        } else {
-                            url.host = base_clone.host;
-                            url.port = base_clone.port;
-                            state = URLParseState::Path;
-                            continue;
                         }
+                    } else if c == '/' {
+                        state = URLParseState::Authority;
+                    } else {
+                        url.host = base_clone.host;
+                        url.port = base_clone.port;
+                        state = URLParseState::Path;
+                        continue;
                     }
                 }
                 URLParseState::SpecialAuthoritySlashes => {
@@ -688,5 +688,15 @@ mod tests {
 
         assert_eq!(url.scheme, "file");
         assert_eq!(url.path, "/home/user/data/index.html");
+    }
+
+    #[test]
+    fn relative_root_with_base() {
+        let input_url = "/_folder/index.html";
+        let base_url = URLParser::parse("https://example.com/some/folder/test.md", None);
+
+        let url = URLParser::parse(input_url, base_url).unwrap();
+
+        assert_eq!(url.path, "_folder/index.html");
     }
 }
