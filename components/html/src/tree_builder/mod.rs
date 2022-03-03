@@ -627,7 +627,9 @@ impl<T: Tokenizing> TreeBuilder<T> {
                 return AdoptionAgencyOutcome::DoNothing;
             }
 
-            if self.open_elements.contains_node(&fmt_element) && !self.open_elements.has_element_in_scope(&fmt_element) {
+            if self.open_elements.contains_node(&fmt_element)
+                && !self.open_elements.has_element_in_scope(&fmt_element)
+            {
                 self.unexpected(&token);
                 return AdoptionAgencyOutcome::DoNothing;
             }
