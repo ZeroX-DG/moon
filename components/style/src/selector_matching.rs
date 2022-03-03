@@ -44,9 +44,8 @@ pub fn is_match_selector(element: Rc<Node>, selector: &Selector) -> bool {
                             current_element = parent;
                             break;
                         }
-                    } else {
-                        return false;
                     }
+                    return false;
                 },
                 Some(Combinator::NextSibling) => {
                     let sibling = get_prev_sibling(&el);
@@ -64,9 +63,8 @@ pub fn is_match_selector(element: Rc<Node>, selector: &Selector) -> bool {
                             current_element = sibling;
                             break;
                         }
-                    } else {
-                        return false;
                     }
+                    return false;
                 },
                 None => {
                     if !is_match_simple_selector_seq(&el, selector_seq) {
