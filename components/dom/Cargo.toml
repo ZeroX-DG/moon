@@ -11,4 +11,5 @@ enum_dispatch = "0.3.7"
 url = { path = "../url" }
 css = { path = "../css" }
 loader = { path = "../loader" }
+io = { path = "../io" }
 log = "*"

@@ -11,5 +11,6 @@ url = { path = "../components/url" }
 shared = { path = "../components/shared" }
 render = { path = "../render" }
 loader = { path = "../components/loader" }
+io = { path = "../components/io" }
 log = "*"
 flume = { version = "0.10.11" }
