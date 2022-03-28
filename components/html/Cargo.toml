@@ -12,7 +12,7 @@ criterion = "0.3"
 [dependencies]
 dom = { path = "../dom", version = "*" }
 phf = { version = "0.8.0", features = ["macros"] }
-io  = { path = "../io", version = "*" }
+shared = { path = "../shared" }
 log = "*"
 
 [[bench]]

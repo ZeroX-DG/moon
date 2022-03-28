@@ -4,7 +4,7 @@ use super::parser::structs::ComponentValue;
 use super::parser::Parser;
 use super::tokenizer::token::Token;
 use super::tokenizer::Tokenizer;
-use io::data_stream::DataStream;
+use shared::data_stream::DataStream;
 use structs::*;
 
 macro_rules! token_value {
