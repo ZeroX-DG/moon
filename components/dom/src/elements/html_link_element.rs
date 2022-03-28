@@ -5,8 +5,8 @@ use super::ElementHooks;
 use super::ElementMethods;
 use crate::node::Node;
 use crate::node::NodeHooks;
-use io::byte_text_stream::ByteTextStream;
 use loader::ResourceLoader;
+use shared::byte_string::ByteString;
 use url::Url;
 
 use css::parser::Parser;
@@ -39,7 +39,7 @@ impl HTMLLinkElement {
 
         match ResourceLoader::load(url.clone()) {
             Ok(bytes) => {
-                let css = ByteTextStream::new(&bytes);
+                let css = ByteString::new(&bytes);
                 let tokenizer = Tokenizer::new(css.chars());
                 let mut parser = Parser::<Token>::new(tokenizer.run());
                 let stylesheet = parser.parse_a_css_stylesheet();

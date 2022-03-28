@@ -2,7 +2,7 @@ pub mod state;
 pub mod token;
 
 use super::entities::ENTITIES;
-use io::input_stream::CharInputStream;
+use shared::input_stream::CharInputStream;
 use state::State;
 use std::collections::{HashSet, VecDeque};
 use std::env;

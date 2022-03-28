@@ -12,7 +12,6 @@ members = [
   "components/html",
   "components/dom",
   "components/css",
-  "components/io",
   "components/style",
   "components/layout",
   "components/test_utils",

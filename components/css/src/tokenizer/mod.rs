@@ -1,7 +1,7 @@
 pub mod token;
 
-use io::{data_stream::DataStream, input_stream::CharInputStream};
 use regex::Regex;
+use shared::{data_stream::DataStream, input_stream::CharInputStream};
 use std::env;
 use std::str::FromStr;
 use token::HashType;

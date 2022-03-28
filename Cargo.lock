@@ -538,8 +538,8 @@ dependencies = [
 name = "css"
 version = "0.1.0"
 dependencies = [
- "io",
  "regex",
+ "shared",
  "smallbitvec",
 ]
 
@@ -613,9 +613,9 @@ version = "0.1.0"
 dependencies = [
  "css",
  "enum_dispatch",
- "io",
  "loader",
  "log",
+ "shared",
  "url 0.1.0",
 ]
 
@@ -1290,9 +1290,9 @@ version = "0.1.0"
 dependencies = [
  "criterion",
  "dom",
- "io",
  "log",
  "phf",
+ "shared",
 ]
 
 [[package]]
@@ -1422,14 +1422,6 @@ dependencies = [
  "js-sys",
  "wasm-bindgen",
  "web-sys",
-]
-
-[[package]]
-name = "io"
-version = "0.1.0"
-dependencies = [
- "encoding",
- "log",
 ]
 
 [[package]]
@@ -1594,7 +1586,6 @@ version = "0.1.0"
 dependencies = [
  "flume",
  "gtk",
- "io",
  "loader",
  "log",
  "render",
@@ -2620,6 +2611,8 @@ dependencies = [
 name = "shared"
 version = "0.1.0"
 dependencies = [
+ "encoding",
+ "log",
  "serde",
 ]
 
@@ -3059,8 +3052,8 @@ checksum = "f7fe0bb3479651439c9112f72b6c505038574c9fbb575ed1bf3b797fa39dd564"
 name = "url"
 version = "0.1.0"
 dependencies = [
- "io",
  "regex",
+ "shared",
 ]
 
 [[package]]

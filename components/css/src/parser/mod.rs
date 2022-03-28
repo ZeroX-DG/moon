@@ -5,7 +5,7 @@ use super::cssom::style_rule::StyleRule;
 use super::cssom::stylesheet::StyleSheet;
 use super::selector::parse_selectors;
 use super::tokenizer::token::Token;
-use io::data_stream::DataStream;
+use shared::data_stream::DataStream;
 use std::env;
 use structs::*;
 

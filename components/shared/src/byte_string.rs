@@ -2,11 +2,11 @@ use std::str::Chars;
 
 use encoding::{all::UTF_8, decode};
 
-pub struct ByteTextStream {
+pub struct ByteString {
     content: String,
 }
 
-impl ByteTextStream {
+impl ByteString {
     pub fn new(bytes: &[u8]) -> Self {
         let decode_result = decode(bytes, encoding::DecoderTrap::Replace, UTF_8);
 
