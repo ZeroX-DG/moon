@@ -3,6 +3,7 @@ use std::rc::Rc;
 
 use super::ElementHooks;
 use super::ElementMethods;
+use crate::node::InsertContext;
 use crate::node::Node;
 use crate::node::NodeHooks;
 use loader::ResourceLoader;
@@ -68,7 +69,8 @@ impl ElementHooks for HTMLLinkElement {
 }
 
 impl NodeHooks for HTMLLinkElement {
-    fn on_inserted(&self, document: Rc<Node>) {
+    fn on_inserted(&self, context: InsertContext) {
+        let document = context.document;
         let href_url = &*self._raw_href.borrow();
         *self.href.borrow_mut() = URLParser::parse(href_url, document.as_document().base());
         match &*self.href.borrow() {

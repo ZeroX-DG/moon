@@ -30,10 +30,16 @@ pub enum NodeData {
     Comment(Comment),
 }
 
+pub struct InsertContext {
+    pub document: Rc<Node>,
+    pub current_node: Rc<Node>,
+    pub parent_node: Rc<Node>,
+}
+
 #[enum_dispatch]
 pub trait NodeHooks {
     #[allow(unused_variables)]
-    fn on_inserted(&self, document: Rc<Node>) {}
+    fn on_inserted(&self, context: InsertContext) {}
 }
 
 impl core::fmt::Debug for Node {
@@ -47,8 +53,8 @@ impl core::fmt::Debug for Node {
 }
 
 impl NodeData {
-    pub fn handle_on_inserted(&self, document: Rc<Node>) {
-        self.on_inserted(document);
+    pub fn handle_on_inserted(&self, context: InsertContext) {
+        self.on_inserted(context);
     }
 }
 
@@ -221,7 +227,12 @@ impl Node {
         parent.last_child.replace(Some(child.clone()));
         let document = child.owner_document().clone().unwrap();
         if let Some(data) = &child.data {
-            data.handle_on_inserted(document);
+            let context = InsertContext {
+                document,
+                current_node: child.clone(),
+                parent_node: parent,
+            };
+            data.handle_on_inserted(context);
         }
     }
 

@@ -1,6 +1,4 @@
-use std::rc::Rc;
-
-use crate::node::Node;
+use crate::node::InsertContext;
 
 use super::node::NodeHooks;
 use enum_dispatch::enum_dispatch;
@@ -54,7 +52,7 @@ impl ElementData {
         self.on_attribute_change(attr, value);
     }
 
-    pub fn handle_on_inserted(&self, document: Rc<Node>) {
-        self.on_inserted(document);
+    pub fn handle_on_inserted(&self, context: InsertContext) {
+        self.on_inserted(context);
     }
 }
