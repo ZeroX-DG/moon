@@ -62,14 +62,15 @@ impl Document {
     }
 
     pub fn remove_stylesheet(&self, stylesheet: &Rc<StyleSheet>) {
-        let maybe_index = self.stylesheets
+        let maybe_index = self
+            .stylesheets
             .borrow()
             .iter()
             .rposition(|sheet| Rc::ptr_eq(sheet, stylesheet));
 
         if let Some(index) = maybe_index {
             self.stylesheets.borrow_mut().remove(index);
-        }   
+        }
     }
 
     pub fn stylesheets(&self) -> Vec<Rc<StyleSheet>> {

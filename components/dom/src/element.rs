@@ -1,4 +1,4 @@
-use crate::node::{InsertContext, ChildrenUpdateContext};
+use crate::node::{ChildrenUpdateContext, InsertContext};
 
 use super::dom_token_list::DOMTokenList;
 use super::elements::{ElementData, ElementMethods};

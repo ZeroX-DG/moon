@@ -3,8 +3,8 @@ use std::rc::Rc;
 
 use css::cssom::stylesheet::StyleSheet;
 use css::parser::Parser;
-use css::tokenizer::Tokenizer;
 use css::tokenizer::token::Token;
+use css::tokenizer::Tokenizer;
 
 use super::ElementHooks;
 use super::ElementMethods;
@@ -19,7 +19,7 @@ pub struct HTMLStyleElement {
 impl HTMLStyleElement {
     pub fn empty() -> Self {
         Self {
-            stylesheet: RefCell::new(None)
+            stylesheet: RefCell::new(None),
         }
     }
 }

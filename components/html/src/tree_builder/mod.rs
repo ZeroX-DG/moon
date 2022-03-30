@@ -261,7 +261,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
             is_fragment_case: false,
             context_element: None,
             text_insertion_node: None,
-            text_insertion_string_data: String::new()
+            text_insertion_string_data: String::new(),
         }
     }
 
@@ -438,7 +438,10 @@ impl<T: Tokenizing> TreeBuilder<T> {
         }
     }
 
-    fn get_node_for_text_insertion(&mut self, insert_position: AdjustedInsertionLocation) -> Rc<Node> {
+    fn get_node_for_text_insertion(
+        &mut self,
+        insert_position: AdjustedInsertionLocation,
+    ) -> Rc<Node> {
         match &insert_position {
             AdjustedInsertionLocation::LastChild(parent) => {
                 if let Some(last_child) = parent.last_child() {
@@ -491,14 +494,20 @@ impl<T: Tokenizing> TreeBuilder<T> {
         }
         if let Some(node) = &self.text_insertion_node {
             let text_node = node.as_text();
-            text_node.character_data.set_data(&self.text_insertion_string_data);
+            text_node
+                .character_data
+                .set_data(&self.text_insertion_string_data);
 
             let parent = node.parent().unwrap();
             let context = ChildrenUpdateContext {
                 document: parent.owner_document().unwrap(),
                 current_node: node.clone(),
             };
-            parent.data().as_ref().unwrap().handle_on_children_updated(context);
+            parent
+                .data()
+                .as_ref()
+                .unwrap()
+                .handle_on_children_updated(context);
 
             self.text_insertion_string_data.clear();
         }
