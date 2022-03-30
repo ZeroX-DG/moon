@@ -1,4 +1,4 @@
-use crate::node::InsertContext;
+use crate::node::{InsertContext, ChildrenUpdateContext};
 
 use super::dom_token_list::DOMTokenList;
 use super::elements::{ElementData, ElementMethods};
@@ -62,6 +62,10 @@ impl NodeHooks for Element {
     fn on_inserted(&self, context: InsertContext) {
         self.handle_on_inserted(context);
     }
+
+    fn on_children_updated(&self, context: ChildrenUpdateContext) {
+        self.handle_on_children_updated(context);
+    }
 }
 
 impl Element {
@@ -111,5 +115,9 @@ impl Element {
 
     pub fn handle_on_inserted(&self, context: InsertContext) {
         self.data.handle_on_inserted(context);
+    }
+
+    pub fn handle_on_children_updated(&self, context: ChildrenUpdateContext) {
+        self.data.handle_on_children_updated(context);
     }
 }

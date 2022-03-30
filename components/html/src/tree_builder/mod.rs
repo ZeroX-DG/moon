@@ -10,6 +10,7 @@ use crate::tokenizer::Tokenizing;
 use dom::comment::Comment;
 use dom::document::{Document, DocumentType, QuirksMode};
 use dom::element::Element;
+use dom::node::ChildrenUpdateContext;
 use dom::node::{Node, NodeData};
 use dom::text::Text;
 use insert_mode::InsertMode;
@@ -439,14 +440,30 @@ impl<T: Tokenizing> TreeBuilder<T> {
                 if let Some(last_child) = parent.last_child() {
                     if let Some(text) = last_child.as_text_opt() {
                         text.character_data.append_data(&ch.to_string());
+                        if let Some(data) = &parent.data() {
+                            let document = parent.owner_document().unwrap();
+                            let context = ChildrenUpdateContext {
+                                document,
+                                current_node: parent.clone(),
+                            };
+                            data.handle_on_children_updated(context);
+                        }
                         return;
                     }
                 }
             }
-            AdjustedInsertionLocation::BeforeSibling(_, sibling) => {
+            AdjustedInsertionLocation::BeforeSibling(parent, sibling) => {
                 if let Some(prev_sibling) = sibling.prev_sibling() {
                     if let Some(text) = prev_sibling.as_text_opt() {
                         text.character_data.append_data(&ch.to_string());
+                        if let Some(data) = &parent.data() {
+                            let document = parent.owner_document().unwrap();
+                            let context = ChildrenUpdateContext {
+                                document,
+                                current_node: parent.clone(),
+                            };
+                            data.handle_on_children_updated(context);
+                        }
                         return;
                     }
                 }

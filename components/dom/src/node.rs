@@ -36,10 +36,17 @@ pub struct InsertContext {
     pub parent_node: Rc<Node>,
 }
 
+pub struct ChildrenUpdateContext {
+    pub document: Rc<Node>,
+    pub current_node: Rc<Node>,
+}
+
 #[enum_dispatch]
 pub trait NodeHooks {
     #[allow(unused_variables)]
     fn on_inserted(&self, context: InsertContext) {}
+    #[allow(unused_variables)]
+    fn on_children_updated(&self, context: ChildrenUpdateContext) {}
 }
 
 impl core::fmt::Debug for Node {
@@ -55,6 +62,10 @@ impl core::fmt::Debug for Node {
 impl NodeData {
     pub fn handle_on_inserted(&self, context: InsertContext) {
         self.on_inserted(context);
+    }
+
+    pub fn handle_on_children_updated(&self, context: ChildrenUpdateContext) {
+        self.on_children_updated(context);
     }
 }
 
@@ -228,11 +239,19 @@ impl Node {
         let document = child.owner_document().clone().unwrap();
         if let Some(data) = &child.data {
             let context = InsertContext {
-                document,
+                document: document.clone(),
                 current_node: child.clone(),
-                parent_node: parent,
+                parent_node: parent.clone(),
             };
             data.handle_on_inserted(context);
+        }
+
+        if let Some(data) = &parent.data {
+            let context = ChildrenUpdateContext {
+                document,
+                current_node: parent.clone(),
+            };
+            data.handle_on_children_updated(context);
         }
     }
 

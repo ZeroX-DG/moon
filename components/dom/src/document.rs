@@ -55,8 +55,21 @@ impl Document {
         self.mode.borrow().clone()
     }
 
-    pub fn append_stylesheet(&self, stylesheet: StyleSheet) {
-        self.stylesheets.borrow_mut().push(Rc::new(stylesheet));
+    pub fn append_stylesheet(&self, stylesheet: StyleSheet) -> Rc<StyleSheet> {
+        let stylesheet_ptr = Rc::new(stylesheet);
+        self.stylesheets.borrow_mut().push(stylesheet_ptr.clone());
+        stylesheet_ptr
+    }
+
+    pub fn remove_stylesheet(&self, stylesheet: &Rc<StyleSheet>) {
+        let maybe_index = self.stylesheets
+            .borrow()
+            .iter()
+            .rposition(|sheet| Rc::ptr_eq(sheet, stylesheet));
+
+        if let Some(index) = maybe_index {
+            self.stylesheets.borrow_mut().remove(index);
+        }   
     }
 
     pub fn stylesheets(&self) -> Vec<Rc<StyleSheet>> {
