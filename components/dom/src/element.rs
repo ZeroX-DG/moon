@@ -1,4 +1,4 @@
-use crate::node::Node;
+use crate::node::{ChildrenUpdateContext, InsertContext};
 
 use super::dom_token_list::DOMTokenList;
 use super::elements::{ElementData, ElementMethods};
@@ -6,7 +6,6 @@ use super::node::NodeHooks;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::ops::{Deref, DerefMut};
-use std::rc::Rc;
 
 #[derive(Clone)]
 pub struct AttributeMap(HashMap<String, String>);
@@ -60,8 +59,12 @@ impl core::fmt::Debug for Element {
 }
 
 impl NodeHooks for Element {
-    fn on_inserted(&self, document: Rc<Node>) {
-        self.handle_on_inserted(document);
+    fn on_inserted(&self, context: InsertContext) {
+        self.handle_on_inserted(context);
+    }
+
+    fn on_children_updated(&self, context: ChildrenUpdateContext) {
+        self.handle_on_children_updated(context);
     }
 }
 
@@ -110,7 +113,11 @@ impl Element {
         self.id.borrow().clone()
     }
 
-    pub fn handle_on_inserted(&self, document: Rc<Node>) {
-        self.data.handle_on_inserted(document);
+    pub fn handle_on_inserted(&self, context: InsertContext) {
+        self.data.handle_on_inserted(context);
+    }
+
+    pub fn handle_on_children_updated(&self, context: ChildrenUpdateContext) {
+        self.data.handle_on_children_updated(context);
     }
 }

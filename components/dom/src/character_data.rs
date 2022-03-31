@@ -19,4 +19,8 @@ impl CharacterData {
     pub fn append_data(&self, data: &str) {
         self.data.borrow_mut().push_str(data);
     }
+
+    pub fn set_data(&self, data: &str) {
+        self.data.replace(data.to_string());
+    }
 }

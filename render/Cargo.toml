@@ -11,6 +11,7 @@ html = { version = "*", path = "../components/html" }
 dom = { version = "*", path = "../components/dom" }
 css = { version = "*", path = "../components/css" }
 style = { version = "*", path = "../components/style" }
+style_types = { path = "../components/style_types" }
 layout = { version = "*", path = "../components/layout" }
 painting = { version = "*", path = "../components/painting" }
 shared = { version = "*", path = "../components/shared" }

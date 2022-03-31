@@ -30,10 +30,23 @@ pub enum NodeData {
     Comment(Comment),
 }
 
+pub struct InsertContext {
+    pub document: Rc<Node>,
+    pub current_node: Rc<Node>,
+    pub parent_node: Rc<Node>,
+}
+
+pub struct ChildrenUpdateContext {
+    pub document: Rc<Node>,
+    pub current_node: Rc<Node>,
+}
+
 #[enum_dispatch]
 pub trait NodeHooks {
     #[allow(unused_variables)]
-    fn on_inserted(&self, document: Rc<Node>) {}
+    fn on_inserted(&self, context: InsertContext) {}
+    #[allow(unused_variables)]
+    fn on_children_updated(&self, context: ChildrenUpdateContext) {}
 }
 
 impl core::fmt::Debug for Node {
@@ -47,8 +60,12 @@ impl core::fmt::Debug for Node {
 }
 
 impl NodeData {
-    pub fn handle_on_inserted(&self, document: Rc<Node>) {
-        self.on_inserted(document);
+    pub fn handle_on_inserted(&self, context: InsertContext) {
+        self.on_inserted(context);
+    }
+
+    pub fn handle_on_children_updated(&self, context: ChildrenUpdateContext) {
+        self.on_children_updated(context);
     }
 }
 
@@ -221,7 +238,20 @@ impl Node {
         parent.last_child.replace(Some(child.clone()));
         let document = child.owner_document().clone().unwrap();
         if let Some(data) = &child.data {
-            data.handle_on_inserted(document);
+            let context = InsertContext {
+                document: document.clone(),
+                current_node: child.clone(),
+                parent_node: parent.clone(),
+            };
+            data.handle_on_inserted(context);
+        }
+
+        if let Some(data) = &parent.data {
+            let context = ChildrenUpdateContext {
+                document,
+                current_node: parent.clone(),
+            };
+            data.handle_on_children_updated(context);
         }
     }
 

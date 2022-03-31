@@ -4,10 +4,11 @@ use crate::value_processing::{compute, ComputeContext, Properties, StyleCache};
 use crate::values::display::{Display, DisplayBox};
 use dom::node::Node;
 use strum::IntoEnumIterator;
+use style_types::ContextualRule;
 
 use super::inheritable::INHERITABLES;
 use super::render_tree::{RenderNode, RenderTree};
-use super::value_processing::{apply_styles, ContextualRule, ValueRef};
+use super::value_processing::{apply_styles, ValueRef};
 use std::collections::HashMap;
 use std::rc::{Rc, Weak};
 
@@ -144,7 +145,6 @@ fn compute_styles(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::value_processing::{CSSLocation, CascadeOrigin};
     use crate::values::border_style::BorderStyle;
     use crate::values::border_width::BorderWidth;
     use crate::values::color::Color;
@@ -153,6 +153,7 @@ mod tests {
     use crate::values::number::Number;
     use css::cssom::css_rule::CSSRule;
     use std::rc::Rc;
+    use style_types::{CSSLocation, CascadeOrigin};
     use test_utils::css::parse_stylesheet;
     use test_utils::dom_creator::*;
 
@@ -187,7 +188,7 @@ mod tests {
             .iter()
             .map(|rule| match rule {
                 CSSRule::Style(style) => ContextualRule {
-                    inner: style,
+                    inner: style.clone(),
                     location: CSSLocation::Embedded,
                     origin: CascadeOrigin::User,
                 },
@@ -242,7 +243,7 @@ mod tests {
             .iter()
             .map(|rule| match rule {
                 CSSRule::Style(style) => ContextualRule {
-                    inner: style,
+                    inner: style.clone(),
                     location: CSSLocation::Embedded,
                     origin: CascadeOrigin::User,
                 },
@@ -299,7 +300,7 @@ mod tests {
             .iter()
             .map(|rule| match rule {
                 CSSRule::Style(style) => ContextualRule {
-                    inner: style,
+                    inner: style.clone(),
                     location: CSSLocation::Embedded,
                     origin: CascadeOrigin::User,
                 },
@@ -376,7 +377,7 @@ mod tests {
             .iter()
             .map(|rule| match rule {
                 CSSRule::Style(style) => ContextualRule {
-                    inner: style,
+                    inner: style.clone(),
                     location: CSSLocation::Embedded,
                     origin: CascadeOrigin::User,
                 },
@@ -441,7 +442,7 @@ mod tests {
             .iter()
             .map(|rule| match rule {
                 CSSRule::Style(style) => ContextualRule {
-                    inner: style,
+                    inner: style.clone(),
                     location: CSSLocation::Embedded,
                     origin: CascadeOrigin::User,
                 },
@@ -487,7 +488,7 @@ mod tests {
             .iter()
             .map(|rule| match rule {
                 CSSRule::Style(style) => ContextualRule {
-                    inner: style,
+                    inner: style.clone(),
                     location: CSSLocation::Embedded,
                     origin: CascadeOrigin::User,
                 },
@@ -544,7 +545,7 @@ mod tests {
             .iter()
             .map(|rule| match rule {
                 CSSRule::Style(style) => ContextualRule {
-                    inner: style,
+                    inner: style.clone(),
                     location: CSSLocation::Embedded,
                     origin: CascadeOrigin::User,
                 },

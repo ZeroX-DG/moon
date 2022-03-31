@@ -616,6 +616,7 @@ dependencies = [
  "loader",
  "log",
  "shared",
+ "style_types",
  "url 0.1.0",
 ]
 
@@ -1490,6 +1491,7 @@ dependencies = [
  "regex",
  "shared",
  "style",
+ "style_types",
  "test_utils",
  "tree",
 ]
@@ -2370,6 +2372,7 @@ dependencies = [
  "serde",
  "shared",
  "style",
+ "style_types",
  "tokio",
  "url 0.1.0",
 ]
@@ -2742,8 +2745,16 @@ dependencies = [
  "shared",
  "strum",
  "strum_macros",
+ "style_types",
  "test_utils",
  "tree",
+]
+
+[[package]]
+name = "style_types"
+version = "0.1.0"
+dependencies = [
+ "css",
 ]
 
 [[package]]

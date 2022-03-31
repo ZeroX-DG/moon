@@ -27,7 +27,8 @@ pub fn create_element(document: Weak<Node>, tag_name: &str) -> Rc<Node> {
         "body" => Body > HTMLBodyElement,
         "div" => Div > HTMLDivElement,
         "a" => Anchor > HTMLAnchorElement,
-        "link" => Link > HTMLLinkElement
+        "link" => Link > HTMLLinkElement,
+        "style" => Style > HTMLStyleElement
     });
 
     node.set_document(document);

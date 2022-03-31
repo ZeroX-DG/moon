@@ -3,10 +3,12 @@ use std::rc::Rc;
 
 use super::ElementHooks;
 use super::ElementMethods;
+use crate::node::InsertContext;
 use crate::node::Node;
 use crate::node::NodeHooks;
 use loader::ResourceLoader;
 use shared::byte_string::ByteString;
+use style_types::ContextualStyleSheet;
 use url::Url;
 
 use css::parser::Parser;
@@ -44,6 +46,12 @@ impl HTMLLinkElement {
                 let mut parser = Parser::<Token>::new(tokenizer.run());
                 let stylesheet = parser.parse_a_css_stylesheet();
 
+                let stylesheet = ContextualStyleSheet::new(
+                    stylesheet,
+                    style_types::CascadeOrigin::Author,
+                    style_types::CSSLocation::External,
+                );
+
                 document.as_document().append_stylesheet(stylesheet);
             }
             Err(e) => log::error!("Unable to load CSS: {} ({})", e, url),
@@ -68,7 +76,8 @@ impl ElementHooks for HTMLLinkElement {
 }
 
 impl NodeHooks for HTMLLinkElement {
-    fn on_inserted(&self, document: Rc<Node>) {
+    fn on_inserted(&self, context: InsertContext) {
+        let document = context.document;
         let href_url = &*self._raw_href.borrow();
         *self.href.borrow_mut() = URLParser::parse(href_url, document.as_document().base());
         match &*self.href.borrow() {

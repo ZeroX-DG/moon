@@ -1,14 +1,11 @@
 use std::rc::Rc;
 
-use css::cssom::css_rule::CSSRule;
-
 use dom::node::Node;
 use layout::dump_layout;
 use layout::formatting_context::{establish_context, FormattingContextType};
 use layout::{formatting_context::LayoutContext, layout_box::LayoutBox};
 use shared::primitive::{Rect, Size};
 use style::render_tree::RenderTree;
-use style::value_processing::{CSSLocation, CascadeOrigin, ContextualRule};
 
 pub struct Frame {
     document: Option<Rc<Node>>,
@@ -69,25 +66,12 @@ impl FrameLayout {
 
     pub fn recalculate_styles(&mut self, document_node: Rc<Node>) {
         let document = document_node.as_document();
-        let stylesheets = document.stylesheets();
-        // TODO: cache this step so we don't have to flat map on every reflow
-        let contextual_rules: Vec<ContextualRule> = stylesheets
-            .iter()
-            .flat_map(|stylesheet| {
-                stylesheet.iter().map(|rule| match rule {
-                    CSSRule::Style(style) => ContextualRule {
-                        inner: style,
-                        location: CSSLocation::Embedded,
-                        origin: CascadeOrigin::User,
-                    },
-                })
-            })
-            .collect();
+        let style_rules = document.style_rules();
 
         log::debug!("Building render tree");
         self.render_tree = Some(style::tree_builder::TreeBuilder::build(
             document_node,
-            &contextual_rules,
+            &style_rules,
         ));
         log::debug!("Finished render tree");
     }

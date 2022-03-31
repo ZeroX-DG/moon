@@ -1,9 +1,8 @@
 use std::cell::RefCell;
-use std::rc::Rc;
 
 use super::ElementHooks;
 use super::ElementMethods;
-use crate::node::Node;
+use crate::node::InsertContext;
 use crate::node::NodeHooks;
 use url::parser::URLParser;
 use url::Url;
@@ -32,7 +31,8 @@ impl ElementHooks for HTMLAnchorElement {
 }
 
 impl NodeHooks for HTMLAnchorElement {
-    fn on_inserted(&self, document: Rc<Node>) {
+    fn on_inserted(&self, context: InsertContext) {
+        let document = context.document;
         let base = document.as_document().base();
         *self.href.borrow_mut() = URLParser::parse(&self._raw_href.borrow(), base);
     }

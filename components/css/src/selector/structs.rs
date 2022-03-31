@@ -2,10 +2,10 @@ use std::cmp::{Ord, Ordering};
 
 pub type SelectorData = Vec<(SimpleSelectorSequence, Option<Combinator>)>;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Selector(SelectorData);
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Combinator {
     Descendant,
     Child,
@@ -13,10 +13,10 @@ pub enum Combinator {
     SubsequentSibling,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct SimpleSelectorSequence(Vec<SimpleSelector>);
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum SimpleSelectorType {
     Type,
     Universal,
@@ -26,7 +26,7 @@ pub enum SimpleSelectorType {
     Pseudo,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct SimpleSelector {
     type_: SimpleSelectorType,
     value: Option<String>,

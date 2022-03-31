@@ -4,7 +4,6 @@ use crate::render_tree::RenderNode;
 use crate::value::Value;
 
 use super::selector_matching::is_match_selectors;
-use css::cssom::style_rule::StyleRule;
 use css::parser::structs::ComponentValue;
 use css::parser::structs::Declaration;
 use css::selector::structs::Specificity;
@@ -16,6 +15,9 @@ use std::collections::{HashMap, HashSet};
 use std::ops::Deref;
 use std::rc::Rc;
 use std::rc::Weak;
+use style_types::CSSLocation;
+use style_types::CascadeOrigin;
+use style_types::ContextualRule;
 
 use super::expand::prelude::*;
 
@@ -35,34 +37,6 @@ pub struct PropertyDeclaration {
     pub origin: CascadeOrigin,
     pub location: CSSLocation,
     pub specificity: Specificity,
-}
-
-/// Location of the CSS applied
-#[derive(Debug, Clone, Eq, PartialEq)]
-pub enum CSSLocation {
-    /// Inline CSS (in HTML tags)
-    Inline,
-    /// Embedded CSS (in HTML style tag)
-    Embedded,
-    /// External CSS (in external css file)
-    External,
-}
-
-/// Cascade origin
-/// https://www.w3.org/TR/css-cascade-4/#origin
-#[derive(Debug, Clone, Eq, PartialEq)]
-pub enum CascadeOrigin {
-    Author,
-    User,
-    UserAgent,
-}
-
-/// Style rule with context for cascading
-#[derive(Debug)]
-pub struct ContextualRule<'a> {
-    pub inner: &'a StyleRule,
-    pub origin: CascadeOrigin,
-    pub location: CSSLocation,
 }
 
 /// Context for computing values

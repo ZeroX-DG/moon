@@ -10,6 +10,7 @@ use crate::tokenizer::Tokenizing;
 use dom::comment::Comment;
 use dom::document::{Document, DocumentType, QuirksMode};
 use dom::element::Element;
+use dom::node::ChildrenUpdateContext;
 use dom::node::{Node, NodeData};
 use dom::text::Text;
 use insert_mode::InsertMode;
@@ -100,6 +101,12 @@ pub struct TreeBuilder<T: Tokenizing> {
 
     /// Context element for fragment html
     context_element: Option<Rc<Node>>,
+
+    /// Current node for text insertion
+    text_insertion_node: Option<Rc<Node>>,
+
+    /// Current string that hold the text for the text node data
+    text_insertion_string_data: String,
 }
 
 /// The adjusted location to insert a node as mentioned the specs
@@ -253,6 +260,8 @@ impl<T: Tokenizing> TreeBuilder<T> {
             table_character_tokens: Vec::new(),
             is_fragment_case: false,
             context_element: None,
+            text_insertion_node: None,
+            text_insertion_string_data: String::new(),
         }
     }
 
@@ -274,6 +283,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
                 break;
             }
         }
+        self.flush_text_insertion();
         return self.document;
     }
 
@@ -429,32 +439,79 @@ impl<T: Tokenizing> TreeBuilder<T> {
         }
     }
 
-    fn insert_character(&mut self, ch: char) {
-        let insert_position = self.get_appropriate_place_for_inserting_a_node(None);
-        if insert_position.parent().as_document_opt().is_some() {
-            return;
-        }
+    fn get_node_for_text_insertion(
+        &mut self,
+        insert_position: AdjustedInsertionLocation,
+    ) -> Rc<Node> {
         match &insert_position {
             AdjustedInsertionLocation::LastChild(parent) => {
                 if let Some(last_child) = parent.last_child() {
-                    if let Some(text) = last_child.as_text_opt() {
-                        text.character_data.append_data(&ch.to_string());
-                        return;
+                    if last_child.as_text_opt().is_some() {
+                        return last_child;
                     }
                 }
             }
             AdjustedInsertionLocation::BeforeSibling(_, sibling) => {
                 if let Some(prev_sibling) = sibling.prev_sibling() {
-                    if let Some(text) = prev_sibling.as_text_opt() {
-                        text.character_data.append_data(&ch.to_string());
-                        return;
+                    if prev_sibling.as_text_opt().is_some() {
+                        return prev_sibling;
                     }
                 }
             }
         }
-        let text = Rc::new(Node::new(NodeData::Text(Text::new(ch.to_string()))));
+        let text = Rc::new(Node::new(NodeData::Text(Text::new(String::new()))));
         text.set_document(Rc::downgrade(&self.document));
-        self.insert_at(insert_position, text);
+        self.insert_at(insert_position, text.clone());
+        return text;
+    }
+
+    fn insert_character(&mut self, ch: char) {
+        let insert_position = self.get_appropriate_place_for_inserting_a_node(None);
+        if insert_position.parent().as_document_opt().is_some() {
+            return;
+        }
+
+        let text_insertion_node = self.get_node_for_text_insertion(insert_position);
+
+        match &self.text_insertion_node {
+            Some(node) if Rc::ptr_eq(node, &text_insertion_node) => {
+                self.text_insertion_string_data.push(ch);
+            }
+            None => {
+                self.text_insertion_node = Some(text_insertion_node);
+                self.text_insertion_string_data.push(ch);
+            }
+            _ => {
+                self.flush_text_insertion();
+                self.text_insertion_node = Some(text_insertion_node);
+                self.text_insertion_string_data.push(ch);
+            }
+        }
+    }
+
+    fn flush_text_insertion(&mut self) {
+        if self.text_insertion_string_data.is_empty() {
+            return;
+        }
+        if let Some(node) = &self.text_insertion_node {
+            let text_node = node.as_text();
+            text_node
+                .character_data
+                .set_data(&self.text_insertion_string_data);
+
+            let parent = node.parent().unwrap();
+            let context = ChildrenUpdateContext {
+                document: parent.owner_document().unwrap(),
+                current_node: node.clone(),
+            };
+            parent
+                .data()
+                .as_ref()
+                .unwrap()
+                .handle_on_children_updated(context);
+
+            self.text_insertion_string_data.clear();
+        }
     }
 
     fn insert_comment(&mut self, data: String) {
@@ -2302,6 +2359,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
 
         if token.is_end_tag() && token.tag_name() == "script" {
             // TODO: support script tag
+            self.flush_text_insertion();
         }
 
         if token.is_end_tag() {

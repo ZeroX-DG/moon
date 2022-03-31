@@ -1,14 +1,16 @@
 use super::node::NodeHooks;
-use css::cssom::stylesheet::StyleSheet;
+use css::cssom::css_rule::CSSRule;
 use std::cell::RefCell;
 use std::ops::Deref;
-use std::rc::Rc;
+use std::rc::{Rc, Weak};
+use style_types::{ContextualRule, ContextualStyleSheet};
 use url::Url;
 
 pub struct Document {
     doctype: RefCell<Option<DocumentType>>,
     mode: RefCell<QuirksMode>,
-    stylesheets: RefCell<Vec<Rc<StyleSheet>>>,
+    stylesheets: RefCell<Vec<Rc<ContextualStyleSheet>>>,
+    cached_style_rules: RefCell<Vec<(Weak<ContextualStyleSheet>, Vec<ContextualRule>)>>,
     base: RefCell<Option<Url>>,
 }
 
@@ -39,6 +41,7 @@ impl Document {
             doctype: RefCell::new(None),
             mode: RefCell::new(QuirksMode::NoQuirks),
             stylesheets: RefCell::new(Vec::new()),
+            cached_style_rules: RefCell::new(Vec::new()),
             base: RefCell::new(None),
         }
     }
@@ -55,12 +58,84 @@ impl Document {
         self.mode.borrow().clone()
     }
 
-    pub fn append_stylesheet(&self, stylesheet: StyleSheet) {
-        self.stylesheets.borrow_mut().push(Rc::new(stylesheet));
+    pub fn append_stylesheet(&self, stylesheet: ContextualStyleSheet) -> Rc<ContextualStyleSheet> {
+        let stylesheet_ptr = Rc::new(stylesheet);
+        self.stylesheets.borrow_mut().push(stylesheet_ptr.clone());
+        stylesheet_ptr
     }
 
-    pub fn stylesheets(&self) -> Vec<Rc<StyleSheet>> {
-        self.stylesheets.borrow().deref().to_vec()
+    pub fn remove_stylesheet(&self, stylesheet: &Rc<ContextualStyleSheet>) {
+        let maybe_index = self
+            .stylesheets
+            .borrow()
+            .iter()
+            .rposition(|sheet| Rc::ptr_eq(sheet, stylesheet));
+
+        if let Some(index) = maybe_index {
+            self.stylesheets.borrow_mut().remove(index);
+        }
+    }
+
+    pub fn style_rules(&self) -> Vec<ContextualRule> {
+        self.gabarge_collect_values();
+
+        let mut append_rules = Vec::new();
+
+        for stylesheet in self.stylesheets.borrow().iter() {
+            let mut is_cached = false;
+            for (cached_sheet, _) in self.cached_style_rules.borrow().iter() {
+                if cached_sheet.as_ptr() == Rc::as_ptr(stylesheet) {
+                    is_cached = true;
+                    break;
+                }
+            }
+
+            if is_cached {
+                continue;
+            }
+
+            let rules = stylesheet
+                .inner
+                .iter()
+                .map(move |rule| match rule {
+                    CSSRule::Style(style) => ContextualRule {
+                        inner: style.clone(),
+                        location: stylesheet.location.clone(),
+                        origin: stylesheet.origin.clone(),
+                    },
+                })
+                .collect();
+
+            append_rules.push((Rc::downgrade(stylesheet), rules));
+        }
+
+        {
+            let mut cached_style_rules = self.cached_style_rules.borrow_mut();
+            for rules in append_rules {
+                cached_style_rules.push(rules);
+            }
+        }
+
+        self.cached_style_rules
+            .borrow()
+            .iter()
+            .flat_map(|(_, rules)| rules)
+            .cloned()
+            .collect()
+    }
+
+    fn gabarge_collect_values(&self) {
+        let mut indexes_to_remove = Vec::new();
+        for (index, (stylesheet, _)) in self.cached_style_rules.borrow().iter().enumerate() {
+            if stylesheet.upgrade().is_none() {
+                indexes_to_remove.push(index);
+            }
+        }
+
+        let mut cached_style_rules = self.cached_style_rules.borrow_mut();
+        for index in indexes_to_remove {
+            cached_style_rules.remove(index);
+        }
     }
 
     pub fn base(&self) -> Option<Url> {
