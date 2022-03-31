@@ -283,6 +283,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
                 break;
             }
         }
+        self.flush_text_insertion();
         return self.document;
     }
 
@@ -2358,6 +2359,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
 
         if token.is_end_tag() && token.tag_name() == "script" {
             // TODO: support script tag
+            self.flush_text_insertion();
         }
 
         if token.is_end_tag() {
