@@ -4,10 +4,11 @@ use crate::value_processing::{compute, ComputeContext, Properties, StyleCache};
 use crate::values::display::{Display, DisplayBox};
 use dom::node::Node;
 use strum::IntoEnumIterator;
+use style_types::ContextualRule;
 
 use super::inheritable::INHERITABLES;
 use super::render_tree::{RenderNode, RenderTree};
-use super::value_processing::{apply_styles, ContextualRule, ValueRef};
+use super::value_processing::{apply_styles, ValueRef};
 use std::collections::HashMap;
 use std::rc::{Rc, Weak};
 
@@ -144,7 +145,6 @@ fn compute_styles(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::value_processing::{CSSLocation, CascadeOrigin};
     use crate::values::border_style::BorderStyle;
     use crate::values::border_width::BorderWidth;
     use crate::values::color::Color;
@@ -152,6 +152,7 @@ mod tests {
     use crate::values::length::{Length, LengthUnit};
     use crate::values::number::Number;
     use css::cssom::css_rule::CSSRule;
+    use style_types::{CSSLocation, CascadeOrigin};
     use std::rc::Rc;
     use test_utils::css::parse_stylesheet;
     use test_utils::dom_creator::*;

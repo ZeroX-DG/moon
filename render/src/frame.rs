@@ -8,7 +8,7 @@ use layout::formatting_context::{establish_context, FormattingContextType};
 use layout::{formatting_context::LayoutContext, layout_box::LayoutBox};
 use shared::primitive::{Rect, Size};
 use style::render_tree::RenderTree;
-use style::value_processing::{CSSLocation, CascadeOrigin, ContextualRule};
+use style_types::{ContextualRule, CSSLocation, CascadeOrigin};
 
 pub struct Frame {
     document: Option<Rc<Node>>,
