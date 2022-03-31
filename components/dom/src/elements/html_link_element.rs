@@ -8,6 +8,7 @@ use crate::node::Node;
 use crate::node::NodeHooks;
 use loader::ResourceLoader;
 use shared::byte_string::ByteString;
+use style_types::ContextualStyleSheet;
 use url::Url;
 
 use css::parser::Parser;
@@ -44,6 +45,12 @@ impl HTMLLinkElement {
                 let tokenizer = Tokenizer::new(css.chars());
                 let mut parser = Parser::<Token>::new(tokenizer.run());
                 let stylesheet = parser.parse_a_css_stylesheet();
+
+                let stylesheet = ContextualStyleSheet::new(
+                    stylesheet,
+                    style_types::CascadeOrigin::Author,
+                    style_types::CSSLocation::External,
+                );
 
                 document.as_document().append_stylesheet(stylesheet);
             }

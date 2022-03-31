@@ -1,5 +1,6 @@
 use super::node::NodeHooks;
-use css::cssom::stylesheet::StyleSheet;
+use css::cssom::css_rule::CSSRule;
+use style_types::{ContextualStyleSheet, ContextualRule};
 use std::cell::RefCell;
 use std::ops::Deref;
 use std::rc::Rc;
@@ -8,7 +9,7 @@ use url::Url;
 pub struct Document {
     doctype: RefCell<Option<DocumentType>>,
     mode: RefCell<QuirksMode>,
-    stylesheets: RefCell<Vec<Rc<StyleSheet>>>,
+    stylesheets: RefCell<Vec<Rc<ContextualStyleSheet>>>,
     base: RefCell<Option<Url>>,
 }
 
@@ -55,13 +56,13 @@ impl Document {
         self.mode.borrow().clone()
     }
 
-    pub fn append_stylesheet(&self, stylesheet: StyleSheet) -> Rc<StyleSheet> {
+    pub fn append_stylesheet(&self, stylesheet: ContextualStyleSheet) -> Rc<ContextualStyleSheet> {
         let stylesheet_ptr = Rc::new(stylesheet);
         self.stylesheets.borrow_mut().push(stylesheet_ptr.clone());
         stylesheet_ptr
     }
 
-    pub fn remove_stylesheet(&self, stylesheet: &Rc<StyleSheet>) {
+    pub fn remove_stylesheet(&self, stylesheet: &Rc<ContextualStyleSheet>) {
         let maybe_index = self
             .stylesheets
             .borrow()
@@ -73,8 +74,19 @@ impl Document {
         }
     }
 
-    pub fn stylesheets(&self) -> Vec<Rc<StyleSheet>> {
-        self.stylesheets.borrow().deref().to_vec()
+    pub fn style_rules<'a>(&self) -> Vec<ContextualRule> {
+        self.stylesheets.borrow()
+            .iter()
+            .flat_map(|stylesheet| {
+                stylesheet.inner.iter().map(move |rule| match rule {
+                    CSSRule::Style(style) => ContextualRule {
+                        inner: style.clone(),
+                        location: stylesheet.location.clone(),
+                        origin: stylesheet.origin.clone(),
+                    },
+                })
+            })
+            .collect()
     }
 
     pub fn base(&self) -> Option<Url> {

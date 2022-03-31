@@ -188,7 +188,7 @@ mod tests {
             .iter()
             .map(|rule| match rule {
                 CSSRule::Style(style) => ContextualRule {
-                    inner: style,
+                    inner: style.clone(),
                     location: CSSLocation::Embedded,
                     origin: CascadeOrigin::User,
                 },
@@ -243,7 +243,7 @@ mod tests {
             .iter()
             .map(|rule| match rule {
                 CSSRule::Style(style) => ContextualRule {
-                    inner: style,
+                    inner: style.clone(),
                     location: CSSLocation::Embedded,
                     origin: CascadeOrigin::User,
                 },
@@ -300,7 +300,7 @@ mod tests {
             .iter()
             .map(|rule| match rule {
                 CSSRule::Style(style) => ContextualRule {
-                    inner: style,
+                    inner: style.clone(),
                     location: CSSLocation::Embedded,
                     origin: CascadeOrigin::User,
                 },
@@ -377,7 +377,7 @@ mod tests {
             .iter()
             .map(|rule| match rule {
                 CSSRule::Style(style) => ContextualRule {
-                    inner: style,
+                    inner: style.clone(),
                     location: CSSLocation::Embedded,
                     origin: CascadeOrigin::User,
                 },
@@ -442,7 +442,7 @@ mod tests {
             .iter()
             .map(|rule| match rule {
                 CSSRule::Style(style) => ContextualRule {
-                    inner: style,
+                    inner: style.clone(),
                     location: CSSLocation::Embedded,
                     origin: CascadeOrigin::User,
                 },
@@ -488,7 +488,7 @@ mod tests {
             .iter()
             .map(|rule| match rule {
                 CSSRule::Style(style) => ContextualRule {
-                    inner: style,
+                    inner: style.clone(),
                     location: CSSLocation::Embedded,
                     origin: CascadeOrigin::User,
                 },
@@ -545,7 +545,7 @@ mod tests {
             .iter()
             .map(|rule| match rule {
                 CSSRule::Style(style) => ContextualRule {
-                    inner: style,
+                    inner: style.clone(),
                     location: CSSLocation::Embedded,
                     origin: CascadeOrigin::User,
                 },

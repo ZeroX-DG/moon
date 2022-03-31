@@ -5,6 +5,7 @@ use dom::{
     node::{Node, NodeData},
 };
 use shared::primitive::Size;
+use style_types::{ContextualStyleSheet, CSSLocation, CascadeOrigin};
 use url::Url;
 
 use super::frame::Frame;
@@ -35,6 +36,11 @@ impl Page {
         let tokenizer = css::tokenizer::Tokenizer::new(default_css.chars());
         let mut parser = css::parser::Parser::<css::tokenizer::token::Token>::new(tokenizer.run());
         let stylesheet = parser.parse_a_css_stylesheet();
+        let stylesheet = ContextualStyleSheet::new(
+            stylesheet,
+            CascadeOrigin::UserAgent,
+            CSSLocation::External,
+        );
         document.as_document().append_stylesheet(stylesheet);
 
         log::debug!("Base URL: {}", base_url);

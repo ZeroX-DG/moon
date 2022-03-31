@@ -1,4 +1,4 @@
-use css::cssom::style_rule::StyleRule;
+use css::cssom::{style_rule::StyleRule, stylesheet::StyleSheet, css_rule::CSSRule};
 
 /// Location of the CSS applied
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -22,8 +22,26 @@ pub enum CascadeOrigin {
 
 /// Style rule with context for cascading
 #[derive(Debug)]
-pub struct ContextualRule<'a> {
-    pub inner: &'a StyleRule,
+pub struct ContextualRule {
+    pub inner: StyleRule,
     pub origin: CascadeOrigin,
     pub location: CSSLocation,
+}
+
+/// Stylesheet with context for cascading
+#[derive(Debug)]
+pub struct ContextualStyleSheet {
+    pub inner: StyleSheet,
+    pub origin: CascadeOrigin,
+    pub location: CSSLocation,
+}
+
+impl ContextualStyleSheet {
+    pub fn new(inner: StyleSheet, origin: CascadeOrigin, location: CSSLocation) -> Self {
+        Self {
+            inner,
+            origin,
+            location,
+        }
+    }
 }

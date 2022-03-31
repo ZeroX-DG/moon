@@ -616,6 +616,7 @@ dependencies = [
  "loader",
  "log",
  "shared",
+ "style_types",
  "url 0.1.0",
 ]
 

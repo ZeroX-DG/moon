@@ -22,7 +22,7 @@ pub fn build_tree(dom: Rc<Node>, css: &str) -> Rc<LayoutBox> {
         .iter()
         .map(|rule| match rule {
             CSSRule::Style(style) => ContextualRule {
-                inner: style,
+                inner: style.clone(),
                 location: CSSLocation::Embedded,
                 origin: CascadeOrigin::User,
             },

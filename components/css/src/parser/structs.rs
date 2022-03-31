@@ -50,7 +50,7 @@ pub struct AtRule {
 
 /// Declaration
 /// https://www.w3.org/TR/css-syntax-3/#declaration
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Declaration {
     pub name: String,
     pub value: Vec<ComponentValue>,

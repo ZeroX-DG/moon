@@ -1,10 +1,10 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use css::cssom::stylesheet::StyleSheet;
 use css::parser::Parser;
 use css::tokenizer::token::Token;
 use css::tokenizer::Tokenizer;
+use style_types::ContextualStyleSheet;
 
 use super::ElementHooks;
 use super::ElementMethods;
@@ -13,7 +13,7 @@ use crate::node::NodeHooks;
 
 #[derive(Debug)]
 pub struct HTMLStyleElement {
-    stylesheet: RefCell<Option<Rc<StyleSheet>>>,
+    stylesheet: RefCell<Option<Rc<ContextualStyleSheet>>>,
 }
 
 impl HTMLStyleElement {
@@ -33,6 +33,12 @@ impl NodeHooks for HTMLStyleElement {
         let tokenizer = Tokenizer::new(css.chars());
         let mut parser = Parser::<Token>::new(tokenizer.run());
         let stylesheet = parser.parse_a_css_stylesheet();
+
+        let stylesheet = ContextualStyleSheet::new(
+            stylesheet,
+            style_types::CascadeOrigin::Author,
+            style_types::CSSLocation::Embedded,
+        );
 
         if let Some(sheet) = &*self.stylesheet.borrow() {
             document.remove_stylesheet(sheet);
