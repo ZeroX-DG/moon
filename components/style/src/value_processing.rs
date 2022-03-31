@@ -9,15 +9,15 @@ use css::parser::structs::Declaration;
 use css::selector::structs::Specificity;
 use css::tokenizer::token::Token;
 use dom::node::Node;
-use style_types::CSSLocation;
-use style_types::CascadeOrigin;
-use style_types::ContextualRule;
 use std::borrow::Borrow;
 use std::cmp::{Ord, Ordering};
 use std::collections::{HashMap, HashSet};
 use std::ops::Deref;
 use std::rc::Rc;
 use std::rc::Weak;
+use style_types::CSSLocation;
+use style_types::CascadeOrigin;
+use style_types::ContextualRule;
 
 use super::expand::prelude::*;
 

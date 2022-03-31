@@ -1,9 +1,9 @@
 use super::node::NodeHooks;
 use css::cssom::css_rule::CSSRule;
-use style_types::{ContextualStyleSheet, ContextualRule};
 use std::cell::RefCell;
 use std::ops::Deref;
 use std::rc::{Rc, Weak};
+use style_types::{ContextualRule, ContextualStyleSheet};
 use url::Url;
 
 pub struct Document {
@@ -94,13 +94,17 @@ impl Document {
                 continue;
             }
 
-            let rules = stylesheet.inner.iter().map(move |rule| match rule {
-                CSSRule::Style(style) => ContextualRule {
-                    inner: style.clone(),
-                    location: stylesheet.location.clone(),
-                    origin: stylesheet.origin.clone(),
-                },
-            }).collect();
+            let rules = stylesheet
+                .inner
+                .iter()
+                .map(move |rule| match rule {
+                    CSSRule::Style(style) => ContextualRule {
+                        inner: style.clone(),
+                        location: stylesheet.location.clone(),
+                        origin: stylesheet.origin.clone(),
+                    },
+                })
+                .collect();
 
             append_rules.push((Rc::downgrade(stylesheet), rules));
         }
@@ -112,7 +116,12 @@ impl Document {
             }
         }
 
-        self.cached_style_rules.borrow().iter().flat_map(|(_, rules)| rules).cloned().collect()
+        self.cached_style_rules
+            .borrow()
+            .iter()
+            .flat_map(|(_, rules)| rules)
+            .cloned()
+            .collect()
     }
 
     fn gabarge_collect_values(&self) {

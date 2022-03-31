@@ -152,8 +152,8 @@ mod tests {
     use crate::values::length::{Length, LengthUnit};
     use crate::values::number::Number;
     use css::cssom::css_rule::CSSRule;
-    use style_types::{CSSLocation, CascadeOrigin};
     use std::rc::Rc;
+    use style_types::{CSSLocation, CascadeOrigin};
     use test_utils::css::parse_stylesheet;
     use test_utils::dom_creator::*;
 
