@@ -1,6 +1,7 @@
 use crate::computes::border_radius::compute_border_radius;
 use crate::computes::border_width::compute_border_width;
 use crate::computes::margin::compute_margin;
+use crate::computes::padding::compute_padding;
 use crate::property::Property;
 use crate::render_tree::RenderNode;
 use crate::value::Value;
@@ -147,6 +148,8 @@ pub fn apply_styles(node: &Rc<Node>, rules: &[ContextualRule]) -> Properties {
 
 /// Resolve specified values to computed values
 pub fn compute(property: &Property, value: &Value, context: &mut ComputeContext) -> ValueRef {
+    // TODO: Some of these compute functions is quite similar. For example: compute_margin & compute_padding.
+    // We should optimize this by computing base on value instead of property.
     match property {
         Property::Color => compute_color(value, context),
         Property::FontSize => compute_font_size(value, context),
@@ -162,6 +165,10 @@ pub fn compute(property: &Property, value: &Value, context: &mut ComputeContext)
         | Property::BorderTopRightRadius
         | Property::BorderBottomLeftRadius
         | Property::BorderBottomRightRadius => compute_border_radius(value, context),
+        Property::PaddingTop
+        | Property::PaddingLeft
+        | Property::PaddingRight
+        | Property::PaddingBottom => compute_padding(value, context),
         _ => context.style_cache.get(value),
     }
 }
