@@ -3,7 +3,7 @@ use style::{value::Value, values::prelude::BorderRadius};
 
 pub fn is_zero(value: &Value) -> bool {
     match value {
-        Value::Length(l) => l.to_px() == 0.0,
+        Value::Length(l) => *l.value == 0.0,
         Value::Percentage(p) => *p.0 == 0.0,
         _ => false,
     }

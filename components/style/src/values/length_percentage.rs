@@ -12,15 +12,15 @@ pub enum LengthPercentage {
 impl LengthPercentage {
     pub fn is_zero(&self) -> bool {
         match self {
-            LengthPercentage::Length(l) => l.to_px() == 0.0,
+            LengthPercentage::Length(l) => *l.value == 0.0,
             LengthPercentage::Percentage(p) => *p.0 == 0.0,
         }
     }
 
-    pub fn to_px(&self, containing: f32) -> f32 {
+    pub fn to_px(&self, relative_to: f32) -> f32 {
         match self {
-            LengthPercentage::Length(l) => l.to_px(),
-            LengthPercentage::Percentage(p) => p.to_px(containing),
+            LengthPercentage::Length(l) => l.to_px(relative_to),
+            LengthPercentage::Percentage(p) => p.to_px(relative_to),
         }
     }
 
