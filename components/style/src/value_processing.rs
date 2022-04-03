@@ -1,3 +1,4 @@
+use crate::computes::border_radius::compute_border_radius;
 use crate::computes::border_width::compute_border_width;
 use crate::computes::margin::compute_margin;
 use crate::property::Property;
@@ -157,6 +158,10 @@ pub fn compute(property: &Property, value: &Value, context: &mut ComputeContext)
         | Property::BorderLeftWidth
         | Property::BorderBottomWidth
         | Property::BorderRightWidth => compute_border_width(property, value, context),
+        Property::BorderTopLeftRadius
+        | Property::BorderTopRightRadius
+        | Property::BorderBottomLeftRadius
+        | Property::BorderBottomRightRadius => compute_border_radius(value, context),
         _ => context.style_cache.get(value),
     }
 }

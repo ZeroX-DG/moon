@@ -19,7 +19,7 @@ pub fn compute_font_size(value: &Value, context: &mut ComputeContext) -> ValueRe
                     }
                     BASE_FONT_SIZE
                 })
-                .unwrap();
+                .unwrap_or(BASE_FONT_SIZE);
             let value = Value::Length(Length::new_px(percentage.to_px(parent_font_size)));
             context.style_cache.get(&value)
         }

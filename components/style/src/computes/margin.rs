@@ -22,7 +22,7 @@ pub fn compute_margin(value: &Value, context: &mut ComputeContext) -> ValueRef {
                     }
                     BASE_FONT_SIZE
                 })
-                .unwrap();
+                .unwrap_or(BASE_FONT_SIZE);
             let value = Value::Length(Length::new_px(value.0 * parent_font_size));
             context.style_cache.get(&value)
         }
