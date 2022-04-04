@@ -19,7 +19,7 @@ pub struct LayoutContext {
     pub viewport: Rect,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum FormattingContextType {
     BlockFormattingContext,
     InlineFormattingContext,
@@ -52,11 +52,15 @@ pub fn establish_context(
         context_type,
         establish_by: RefCell::new(Some(Rc::downgrade(&establish_by))),
     });
-    establish_by
+    use_context(context.clone(), establish_by);
+    context
+}
+
+fn use_context(context: Rc<FormattingContext>, node: Rc<LayoutBox>) {
+    node
         .base
         .formatting_context
-        .replace(Some(context.clone()));
-    context
+        .replace(Some(context));
 }
 
 fn get_formatting_context_type(layout_node: Rc<LayoutBox>) -> FormattingContextType {
@@ -89,5 +93,24 @@ fn get_formatting_context_type(layout_node: Rc<LayoutBox>) -> FormattingContextT
 }
 
 pub fn establish_context_for(node: Rc<LayoutBox>) {
-    establish_context(get_formatting_context_type(node.clone()), node);
+    let node_context_type = get_formatting_context_type(node.clone());
+
+    let mut reuse_context = false;
+
+    if let Some(parent) = node.parent() {
+        let parent_context = parent.formatting_context();
+        if parent_context.context_type == node_context_type {
+            use_context(parent_context, node.clone());
+            reuse_context = true;
+        }
+    }
+
+    if !reuse_context {
+        establish_context(node_context_type, node.clone());
+    }
+    
+
+    for child in node.children().iter() {
+        establish_context_for(child.clone());
+    }
 }

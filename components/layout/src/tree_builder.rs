@@ -47,7 +47,6 @@ impl TreeBuilder {
             self.build_layout_tree(child.clone());
         }
         self.parent_stack.pop();
-        establish_context_for(layout_box.clone());
     }
 
     /// Get a parent for an block-level box
