@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use crate::{box_model::BoxComponent, formatting_context::LayoutContext, layout_box::LayoutBox};
+use crate::{box_model::BoxComponent, formatting_context::{LayoutContext, BaseFormattingContext, FormattingContext}, layout_box::LayoutBox};
 use dom::node::NodeData;
 use regex::Regex;
 use shared::primitive::edge::Edge;
@@ -8,22 +8,19 @@ use style::property::Property;
 
 use super::line_box::LineBoxBuilder;
 
+#[derive(Debug)]
 pub struct InlineFormattingContext {
-    layout_context: Rc<LayoutContext>,
+    base: BaseFormattingContext
 }
 
-impl InlineFormattingContext {
-    pub fn new(layout_context: Rc<LayoutContext>) -> Self {
-        Self { layout_context }
-    }
-
-    pub fn run(&mut self, layout_node: Rc<LayoutBox>) {
+impl FormattingContext for InlineFormattingContext {
+    fn run(&self, context: &LayoutContext, layout_node: Rc<LayoutBox>) {
         if !layout_node.is_block() {
             log::debug!("Attempt to run IFC on non-block box");
             return;
         }
 
-        self.generate_line_boxes(layout_node.clone());
+        self.generate_line_boxes(context, layout_node.clone());
 
         let content_height: f32 = layout_node
             .lines()
@@ -35,7 +32,19 @@ impl InlineFormattingContext {
         layout_node.set_content_height(content_height);
     }
 
-    fn generate_line_boxes(&mut self, layout_node: Rc<LayoutBox>) {
+    fn base(&self) -> &BaseFormattingContext {
+        &self.base
+    }
+}
+
+impl InlineFormattingContext {
+    pub fn new(base: BaseFormattingContext) -> Self {
+        Self {
+            base
+        }
+    }
+
+    fn generate_line_boxes(&self, context: &LayoutContext, layout_node: Rc<LayoutBox>) {
         let mut line_box_builder = LineBoxBuilder::new(layout_node.clone());
         layout_node.lines().borrow_mut().clear();
 
@@ -58,13 +67,13 @@ impl InlineFormattingContext {
                         }
                     }
                     Some(NodeData::Element(_)) => {
-                        self.layout_dimension_box(child.clone());
+                        self.layout_dimension_box(context, child.clone());
                         line_box_builder.add_box_fragment(child.clone());
                     }
                     _ => {}
                 },
                 _ => {
-                    self.layout_dimension_box(child.clone());
+                    self.layout_dimension_box(context, child.clone());
                     line_box_builder.add_box_fragment(child.clone());
                 }
             }
@@ -72,18 +81,18 @@ impl InlineFormattingContext {
         *layout_node.lines().borrow_mut() = line_box_builder.finish();
     }
 
-    fn layout_dimension_box(&mut self, layout_node: Rc<LayoutBox>) {
+    fn layout_dimension_box(&self, context: &LayoutContext, layout_node: Rc<LayoutBox>) {
         self.calculate_width_for_element(layout_node.clone());
 
         layout_node
             .formatting_context()
-            .run(self.layout_context.clone(), layout_node.clone());
+            .run(context, layout_node.clone());
 
         self.apply_vertical_spacing(layout_node.clone());
         layout_node.apply_explicit_sizes();
     }
 
-    fn calculate_width_for_element(&mut self, layout_node: Rc<LayoutBox>) {
+    fn calculate_width_for_element(&self, layout_node: Rc<LayoutBox>) {
         let containing_block = layout_node.containing_block().content_size();
 
         let render_node = match layout_node.render_node() {
@@ -125,7 +134,7 @@ impl InlineFormattingContext {
         box_model.set(BoxComponent::Margin, Edge::Right, used_margin_right);
     }
 
-    fn apply_vertical_spacing(&mut self, layout_node: Rc<LayoutBox>) {
+    fn apply_vertical_spacing(&self, layout_node: Rc<LayoutBox>) {
         let containing_block = layout_node.containing_block().content_size();
 
         let render_node = layout_node.render_node();

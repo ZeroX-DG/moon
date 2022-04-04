@@ -86,14 +86,14 @@ impl FrameLayout {
 
             if let Some(root) = &self.layout_tree {
                 log::debug!("Starting layout process");
-                let layout_context = Rc::new(LayoutContext {
+                let layout_context = LayoutContext {
                     viewport: Rect {
                         x: 0.,
                         y: 0.,
                         width: size.width,
                         height: size.height,
                     },
-                });
+                };
 
                 let initial_block_box = Rc::new(LayoutBox::new_anonymous(
                     layout::layout_box::BoxData::block_box(),
@@ -106,7 +106,7 @@ impl FrameLayout {
                 );
                 initial_block_box
                     .formatting_context()
-                    .run(layout_context.clone(), initial_block_box.clone());
+                    .run(&layout_context, initial_block_box.clone());
                 log::debug!("Finished layout process");
                 dump_layout!(root.clone());
             } else {

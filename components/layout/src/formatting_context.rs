@@ -1,6 +1,6 @@
 use std::{
     cell::RefCell,
-    rc::{Rc, Weak},
+    rc::{Rc, Weak}, fmt::Debug,
 };
 
 use shared::primitive::*;
@@ -19,44 +19,41 @@ pub struct LayoutContext {
     pub viewport: Rect,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum FormattingContextType {
     BlockFormattingContext,
     InlineFormattingContext,
 }
 
 #[derive(Debug)]
-pub struct FormattingContext {
+pub struct BaseFormattingContext {
     pub context_type: FormattingContextType,
     pub establish_by: RefCell<Option<Weak<LayoutBox>>>,
 }
 
-impl FormattingContext {
-    pub fn run(&self, context: Rc<LayoutContext>, node: Rc<LayoutBox>) {
-        match self.context_type {
-            FormattingContextType::BlockFormattingContext => {
-                BlockFormattingContext::new(context.clone()).run(node)
-            }
-            FormattingContextType::InlineFormattingContext => {
-                InlineFormattingContext::new(context.clone()).run(node)
-            }
-        };
-    }
+pub trait FormattingContext: Debug {
+    fn base(&self) -> &BaseFormattingContext;
+    fn run(&self, context: &LayoutContext, node: Rc<LayoutBox>);
 }
+
 
 pub fn establish_context(
     context_type: FormattingContextType,
     establish_by: Rc<LayoutBox>,
-) -> Rc<FormattingContext> {
-    let context = Rc::new(FormattingContext {
-        context_type,
+) -> Rc<dyn FormattingContext> {
+    let base_context = BaseFormattingContext {
+        context_type: context_type.clone(),
         establish_by: RefCell::new(Some(Rc::downgrade(&establish_by))),
-    });
+    };
+    let context: Rc<dyn FormattingContext> = match context_type {
+        FormattingContextType::BlockFormattingContext => Rc::new(BlockFormattingContext::new(base_context)),
+        FormattingContextType::InlineFormattingContext => Rc::new(InlineFormattingContext::new(base_context))
+    };
     use_context(context.clone(), establish_by);
     context
 }
 
-fn use_context(context: Rc<FormattingContext>, node: Rc<LayoutBox>) {
+fn use_context(context: Rc<dyn FormattingContext>, node: Rc<LayoutBox>) {
     node
         .base
         .formatting_context
@@ -99,7 +96,7 @@ pub fn establish_context_for(node: Rc<LayoutBox>) {
 
     if let Some(parent) = node.parent() {
         let parent_context = parent.formatting_context();
-        if parent_context.context_type == node_context_type {
+        if parent_context.base().context_type == node_context_type {
             use_context(parent_context, node.clone());
             reuse_context = true;
         }
