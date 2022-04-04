@@ -202,7 +202,7 @@ impl LayoutBox {
         }
     }
 
-    pub fn can_has_children(&self) -> bool {
+    pub fn can_have_children(&self) -> bool {
         match self.data {
             BoxData::InlineContents(InlineContents::TextRun) => false,
             _ => true,

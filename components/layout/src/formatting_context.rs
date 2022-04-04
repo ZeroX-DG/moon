@@ -34,6 +34,21 @@ pub struct BaseFormattingContext {
 pub trait FormattingContext: Debug {
     fn base(&self) -> &BaseFormattingContext;
     fn run(&self, context: &LayoutContext, node: Rc<LayoutBox>);
+    fn layout_inside(&self, context: &LayoutContext, node: Rc<LayoutBox>) -> Option<Rc<dyn FormattingContext>> {
+        if !node.can_have_children() {
+            return None;
+        }
+
+        let independent_formatting_context = create_independent_formatting_context_if_needed(node.clone());
+
+        if let Some(formatting_context) = &independent_formatting_context {
+            formatting_context.run(context, node.clone());
+        } else {
+            self.run(context, node.clone());
+        }
+
+        independent_formatting_context
+    }
 }
 
 
@@ -89,25 +104,28 @@ fn get_formatting_context_type(layout_node: Rc<LayoutBox>) -> FormattingContextT
     }
 }
 
-pub fn establish_context_for(node: Rc<LayoutBox>) {
-    let node_context_type = get_formatting_context_type(node.clone());
-
-    let mut reuse_context = false;
-
-    if let Some(parent) = node.parent() {
-        let parent_context = parent.formatting_context();
-        if parent_context.base().context_type == node_context_type {
-            use_context(parent_context, node.clone());
-            reuse_context = true;
-        }
+pub fn create_independent_formatting_context_if_needed(node: Rc<LayoutBox>) -> Option<Rc<dyn FormattingContext>> {
+    if !node.can_have_children() {
+        return None;
     }
 
-    if !reuse_context {
-        establish_context(node_context_type, node.clone());
-    }
-    
+    let formatting_context_type = get_formatting_context_type(node.clone());
 
-    for child in node.children().iter() {
-        establish_context_for(child.clone());
+    if let FormattingContextType::BlockFormattingContext = formatting_context_type {
+        let base_context = BaseFormattingContext {
+            context_type: formatting_context_type,
+            establish_by: RefCell::new(Some(Rc::downgrade(&node))),
+        };
+        return Some(Rc::new(BlockFormattingContext::new(base_context)));
     }
+
+    if node.children_are_inline() {
+        let base_context = BaseFormattingContext {
+            context_type: FormattingContextType::InlineFormattingContext,
+            establish_by: RefCell::new(Some(Rc::downgrade(&node))),
+        };
+        return Some(Rc::new(InlineFormattingContext::new(base_context)));
+    }
+
+    return None;
 }

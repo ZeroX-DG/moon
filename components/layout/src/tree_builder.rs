@@ -1,5 +1,5 @@
 use crate::{
-    formatting_context::{establish_context, establish_context_for, FormattingContextType},
+    formatting_context::{establish_context, FormattingContextType},
     layout_box::{BoxData, LayoutBox},
 };
 use std::rc::Rc;
@@ -24,7 +24,6 @@ impl TreeBuilder {
             self.build_layout_tree(child.clone());
         }
         self.parent_stack.pop();
-        establish_context_for(root_box.clone());
 
         root_box
     }
@@ -63,7 +62,7 @@ impl TreeBuilder {
     /// children of the parent.
     fn get_parent_for_block(&mut self) -> Rc<LayoutBox> {
         while let Some(parent_box) = self.parent_stack.last() {
-            if parent_box.is_inline() || !parent_box.can_has_children() {
+            if parent_box.is_inline() || !parent_box.can_have_children() {
                 self.parent_stack.pop();
             } else {
                 break;
@@ -103,7 +102,7 @@ impl TreeBuilder {
     /// inserting into the parent.
     fn get_parent_for_inline(&mut self) -> Rc<LayoutBox> {
         while let Some(parent_box) = self.parent_stack.last() {
-            if !parent_box.can_has_children() {
+            if !parent_box.can_have_children() {
                 self.parent_stack.pop();
             } else {
                 break;

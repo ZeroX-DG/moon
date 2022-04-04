@@ -84,9 +84,7 @@ impl InlineFormattingContext {
     fn layout_dimension_box(&self, context: &LayoutContext, layout_node: Rc<LayoutBox>) {
         self.calculate_width_for_element(layout_node.clone());
 
-        layout_node
-            .formatting_context()
-            .run(context, layout_node.clone());
+        self.layout_inside(context, layout_node.clone());
 
         self.apply_vertical_spacing(layout_node.clone());
         layout_node.apply_explicit_sizes();
