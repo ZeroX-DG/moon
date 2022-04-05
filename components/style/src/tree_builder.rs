@@ -146,7 +146,6 @@ fn compute_styles(
 mod tests {
     use super::*;
     use crate::values::border_style::BorderStyle;
-    use crate::values::border_width::BorderWidth;
     use crate::values::color::Color;
     use crate::values::display::Display;
     use crate::values::length::{Length, LengthUnit};

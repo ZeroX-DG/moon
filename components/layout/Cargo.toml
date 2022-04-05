@@ -10,7 +10,6 @@ edition = "2018"
 style = { version = "*", path = "../style" }
 style_types = { path = "../style_types" }
 dom = { version = "*", path = "../dom" }
-tree = { version = "*", path = "../tree" }
 shared = { version = "*", path = "../shared" }
 gfx = { path = "../gfx" }
 log = "*"
