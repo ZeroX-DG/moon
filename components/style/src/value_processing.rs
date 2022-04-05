@@ -105,7 +105,10 @@ impl ValueRef {
 
     pub fn to_absolute_px(&self) -> f32 {
         match self.borrow() {
-            Value::Length(Length { value, unit: LengthUnit::Px }) => **value,
+            Value::Length(Length {
+                value,
+                unit: LengthUnit::Px,
+            }) => **value,
             _ => unimplemented!("Calling to_absolute_px for unsupported value"),
         }
     }

@@ -1,12 +1,19 @@
-use crate::{box_model::BoxComponent, formatting_context::{LayoutContext, BaseFormattingContext, FormattingContext, create_independent_formatting_context_if_needed}, layout_box::LayoutBox};
+use crate::{
+    box_model::BoxComponent,
+    formatting_context::{
+        create_independent_formatting_context_if_needed, BaseFormattingContext, FormattingContext,
+        LayoutContext,
+    },
+    layout_box::LayoutBox,
+};
 use shared::primitive::edge::Edge;
-use std::{rc::Rc, cell::RefCell};
+use std::{cell::RefCell, rc::Rc};
 use style::{property::Property, values::prelude::Position};
 
 #[derive(Debug)]
 pub struct BlockFormattingContext {
     last_sibling: RefCell<Option<Rc<LayoutBox>>>,
-    base: BaseFormattingContext
+    base: BaseFormattingContext,
 }
 
 impl FormattingContext for BlockFormattingContext {
@@ -27,7 +34,7 @@ impl BlockFormattingContext {
     pub fn new(base: BaseFormattingContext) -> Self {
         Self {
             last_sibling: RefCell::new(None),
-            base
+            base,
         }
     }
 
@@ -51,7 +58,9 @@ impl BlockFormattingContext {
             self.compute_width(child.clone());
             self.place_box_in_flow(child.clone());
 
-            if let Some(independent_formatting_context) = create_independent_formatting_context_if_needed(child.clone()) {
+            if let Some(independent_formatting_context) =
+                create_independent_formatting_context_if_needed(child.clone())
+            {
                 independent_formatting_context.run(context, child.clone());
             } else {
                 self.layout_block_level_children(context, child.clone());

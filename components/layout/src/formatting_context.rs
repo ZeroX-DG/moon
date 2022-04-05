@@ -1,6 +1,7 @@
 use std::{
     cell::RefCell,
-    rc::{Rc, Weak}, fmt::Debug,
+    fmt::Debug,
+    rc::{Rc, Weak},
 };
 
 use shared::primitive::*;
@@ -34,12 +35,17 @@ pub struct BaseFormattingContext {
 pub trait FormattingContext: Debug {
     fn base(&self) -> &BaseFormattingContext;
     fn run(&self, context: &LayoutContext, node: Rc<LayoutBox>);
-    fn layout_inside(&self, context: &LayoutContext, node: Rc<LayoutBox>) -> Option<Rc<dyn FormattingContext>> {
+    fn layout_inside(
+        &self,
+        context: &LayoutContext,
+        node: Rc<LayoutBox>,
+    ) -> Option<Rc<dyn FormattingContext>> {
         if !node.can_have_children() {
             return None;
         }
 
-        let independent_formatting_context = create_independent_formatting_context_if_needed(node.clone());
+        let independent_formatting_context =
+            create_independent_formatting_context_if_needed(node.clone());
 
         if let Some(formatting_context) = &independent_formatting_context {
             formatting_context.run(context, node.clone());
@@ -51,7 +57,6 @@ pub trait FormattingContext: Debug {
     }
 }
 
-
 pub fn establish_context(
     context_type: FormattingContextType,
     establish_by: Rc<LayoutBox>,
@@ -61,18 +66,19 @@ pub fn establish_context(
         establish_by: RefCell::new(Some(Rc::downgrade(&establish_by))),
     };
     let context: Rc<dyn FormattingContext> = match context_type {
-        FormattingContextType::BlockFormattingContext => Rc::new(BlockFormattingContext::new(base_context)),
-        FormattingContextType::InlineFormattingContext => Rc::new(InlineFormattingContext::new(base_context))
+        FormattingContextType::BlockFormattingContext => {
+            Rc::new(BlockFormattingContext::new(base_context))
+        }
+        FormattingContextType::InlineFormattingContext => {
+            Rc::new(InlineFormattingContext::new(base_context))
+        }
     };
     use_context(context.clone(), establish_by);
     context
 }
 
 fn use_context(context: Rc<dyn FormattingContext>, node: Rc<LayoutBox>) {
-    node
-        .base
-        .formatting_context
-        .replace(Some(context));
+    node.base.formatting_context.replace(Some(context));
 }
 
 fn get_formatting_context_type(layout_node: Rc<LayoutBox>) -> FormattingContextType {
@@ -104,7 +110,9 @@ fn get_formatting_context_type(layout_node: Rc<LayoutBox>) -> FormattingContextT
     }
 }
 
-pub fn create_independent_formatting_context_if_needed(node: Rc<LayoutBox>) -> Option<Rc<dyn FormattingContext>> {
+pub fn create_independent_formatting_context_if_needed(
+    node: Rc<LayoutBox>,
+) -> Option<Rc<dyn FormattingContext>> {
     if !node.can_have_children() {
         return None;
     }

@@ -23,13 +23,21 @@ pub fn compute_border_radius(value: &Value, context: &mut ComputeContext) -> Val
                 })
                 .unwrap_or(BASE_FONT_SIZE);
 
-            let hr_value = if let LengthPercentage::Length(Length { value, unit: LengthUnit::Em }) = hr {
+            let hr_value = if let LengthPercentage::Length(Length {
+                value,
+                unit: LengthUnit::Em,
+            }) = hr
+            {
                 LengthPercentage::Length(Length::new_px(value.0 * parent_font_size))
             } else {
                 hr.clone()
             };
 
-            let vr_value = if let LengthPercentage::Length(Length { value, unit: LengthUnit::Em }) = vr {
+            let vr_value = if let LengthPercentage::Length(Length {
+                value,
+                unit: LengthUnit::Em,
+            }) = vr
+            {
                 LengthPercentage::Length(Length::new_px(value.0 * parent_font_size))
             } else {
                 vr.clone()

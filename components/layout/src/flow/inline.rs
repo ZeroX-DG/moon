@@ -1,6 +1,10 @@
 use std::rc::Rc;
 
-use crate::{box_model::BoxComponent, formatting_context::{LayoutContext, BaseFormattingContext, FormattingContext}, layout_box::LayoutBox};
+use crate::{
+    box_model::BoxComponent,
+    formatting_context::{BaseFormattingContext, FormattingContext, LayoutContext},
+    layout_box::LayoutBox,
+};
 use dom::node::NodeData;
 use regex::Regex;
 use shared::primitive::edge::Edge;
@@ -10,7 +14,7 @@ use super::line_box::LineBoxBuilder;
 
 #[derive(Debug)]
 pub struct InlineFormattingContext {
-    base: BaseFormattingContext
+    base: BaseFormattingContext,
 }
 
 impl FormattingContext for InlineFormattingContext {
@@ -39,9 +43,7 @@ impl FormattingContext for InlineFormattingContext {
 
 impl InlineFormattingContext {
     pub fn new(base: BaseFormattingContext) -> Self {
-        Self {
-            base
-        }
+        Self { base }
     }
 
     fn generate_line_boxes(&self, context: &LayoutContext, layout_node: Rc<LayoutBox>) {
