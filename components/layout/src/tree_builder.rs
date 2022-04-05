@@ -1,9 +1,10 @@
+use style::render_tree::RenderNodePtr;
+
 use crate::{
     formatting_context::{establish_context, FormattingContextType},
     layout_box::{BoxData, LayoutBox},
 };
 use std::rc::Rc;
-use style::render_tree::RenderNode;
 
 pub struct TreeBuilder {
     parent_stack: Vec<Rc<LayoutBox>>,
@@ -16,19 +17,19 @@ impl TreeBuilder {
         }
     }
 
-    pub fn build(mut self, root: Rc<RenderNode>) -> Rc<LayoutBox> {
+    pub fn build(mut self, root: RenderNodePtr) -> Rc<LayoutBox> {
         let root_box = Rc::new(LayoutBox::new(root.clone()));
 
         self.parent_stack.push(root_box.clone());
-        for child in root.children.borrow().iter() {
-            self.build_layout_tree(child.clone());
-        }
+        root.for_each_child(|child| {
+            self.build_layout_tree(RenderNodePtr(child));
+        });
         self.parent_stack.pop();
 
         root_box
     }
 
-    fn build_layout_tree(&mut self, node: Rc<RenderNode>) {
+    fn build_layout_tree(&mut self, node: RenderNodePtr) {
         let layout_box = Rc::new(LayoutBox::new(node.clone()));
 
         let parent = if layout_box.is_inline() {
@@ -42,9 +43,9 @@ impl TreeBuilder {
         let box_ref = parent.children().last().unwrap().clone();
 
         self.parent_stack.push(box_ref);
-        for child in node.children.borrow().iter() {
-            self.build_layout_tree(child.clone());
-        }
+        node.for_each_child(|child| {
+            self.build_layout_tree(RenderNodePtr(child));
+        });
         self.parent_stack.pop();
     }
 

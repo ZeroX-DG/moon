@@ -14,12 +14,12 @@ use css::parser::structs::Declaration;
 use css::selector::structs::Specificity;
 use css::tokenizer::token::Token;
 use dom::node::NodePtr;
+use shared::tree_node::WeakTreeNode;
 use std::borrow::Borrow;
 use std::cmp::{Ord, Ordering};
 use std::collections::{HashMap, HashSet};
 use std::ops::Deref;
 use std::rc::Rc;
-use std::rc::Weak;
 use style_types::CSSLocation;
 use style_types::CascadeOrigin;
 use style_types::ContextualRule;
@@ -46,7 +46,7 @@ pub struct PropertyDeclaration {
 
 /// Context for computing values
 pub struct ComputeContext<'a> {
-    pub parent: Option<Weak<RenderNode>>,
+    pub parent: Option<WeakTreeNode<RenderNode>>,
     pub properties: HashMap<Property, Value>,
     pub style_cache: &'a mut StyleCache,
 }

@@ -69,24 +69,26 @@ impl Clone for NodePtr {
 impl TreeNodeHooks<Node> for Node {
     fn on_inserted(&self, current: TreeNode<Node>, parent: TreeNode<Node>) {
         if let Some(data) = &self.data {
-            let document = self.owner_document().unwrap();
-            let context = InsertContext {
-                document: NodePtr(document),
-                current_node: NodePtr(current),
-                parent_node: NodePtr(parent),
-            };
-            data.handle_on_inserted(context);
+            if let Some(document) = self.owner_document() {
+                let context = InsertContext {
+                    document: NodePtr(document),
+                    current_node: NodePtr(current),
+                    parent_node: NodePtr(parent),
+                };
+                data.handle_on_inserted(context);
+            }
         }
     }
 
     fn on_children_updated(&self, current: TreeNode<Node>) {
         if let Some(data) = &self.data {
-            let document = self.owner_document().unwrap();
-            let context = ChildrenUpdateContext {
-                document: NodePtr(document),
-                current_node: NodePtr(current),
-            };
-            data.handle_on_children_updated(context);
+            if let Some(document) = self.owner_document() {
+                let context = ChildrenUpdateContext {
+                    document: NodePtr(document),
+                    current_node: NodePtr(current),
+                };
+                data.handle_on_children_updated(context);
+            }
         }
     }
 }

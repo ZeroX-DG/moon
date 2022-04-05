@@ -7,7 +7,7 @@ use std::{
 use shared::primitive::{Point, Rect, Size};
 use style::{
     property::Property,
-    render_tree::RenderNode,
+    render_tree::RenderNodePtr,
     value::Value,
     values::{
         display::Display,
@@ -47,7 +47,7 @@ impl BaseBox {
 pub struct LayoutBox {
     pub base: BaseBox,
     pub data: BoxData,
-    pub node: Option<Rc<RenderNode>>,
+    pub node: Option<RenderNodePtr>,
 }
 
 #[derive(Debug)]
@@ -81,7 +81,7 @@ impl BoxData {
 }
 
 impl LayoutBox {
-    pub fn new(render_node: Rc<RenderNode>) -> Self {
+    pub fn new(render_node: RenderNodePtr) -> Self {
         let box_data = {
             if render_node.node.is_text() {
                 BoxData::InlineContents(InlineContents::TextRun)
@@ -319,7 +319,7 @@ impl LayoutBox {
         self.absolute_rect().add_outer_edges(&padding_box)
     }
 
-    pub fn render_node(&self) -> Option<Rc<RenderNode>> {
+    pub fn render_node(&self) -> Option<RenderNodePtr> {
         self.node.clone()
     }
 

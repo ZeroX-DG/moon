@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use dom::node::Node;
+use dom::node::NodePtr;
 use layout::dump_layout;
 use layout::formatting_context::{establish_context, FormattingContextType};
 use layout::{formatting_context::LayoutContext, layout_box::LayoutBox};
@@ -8,7 +8,7 @@ use shared::primitive::{Rect, Size};
 use style::render_tree::RenderTree;
 
 pub struct Frame {
-    document: Option<Rc<Node>>,
+    document: Option<NodePtr>,
     layout: FrameLayout,
     size: Size,
 }
@@ -20,7 +20,7 @@ pub struct FrameLayout {
 
 #[derive(Debug)]
 pub enum ReflowType {
-    All(Rc<Node>),
+    All(NodePtr),
     LayoutOnly,
 }
 
@@ -42,7 +42,7 @@ impl Frame {
         self.layout.reflow(&self.size, ReflowType::LayoutOnly);
     }
 
-    pub fn set_document(&mut self, document: Rc<Node>) {
+    pub fn set_document(&mut self, document: NodePtr) {
         self.document = Some(document.clone());
         self.layout.reflow(&self.size, ReflowType::All(document));
     }
@@ -64,7 +64,7 @@ impl FrameLayout {
         self.layout_tree.clone()
     }
 
-    pub fn recalculate_styles(&mut self, document_node: Rc<Node>) {
+    pub fn recalculate_styles(&mut self, document_node: NodePtr) {
         let document = document_node.as_document();
         let style_rules = document.style_rules();
 

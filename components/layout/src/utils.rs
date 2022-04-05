@@ -1,7 +1,7 @@
 use std::rc::Rc;
 
 use css::cssom::css_rule::CSSRule;
-use dom::node::Node;
+use dom::node::NodePtr;
 use style_types::{CSSLocation, CascadeOrigin, ContextualRule};
 use test_utils::css::parse_stylesheet;
 
@@ -15,7 +15,7 @@ span, a {
     display: inline;
 }"#;
 
-pub fn build_tree(dom: Rc<Node>, css: &str) -> Rc<LayoutBox> {
+pub fn build_tree(dom: NodePtr, css: &str) -> Rc<LayoutBox> {
     let stylesheet = parse_stylesheet(css);
 
     let rules = stylesheet

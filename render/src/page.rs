@@ -1,10 +1,8 @@
-use std::rc::Rc;
-
 use dom::{
     document::Document,
-    node::{Node, NodeData},
+    node::{Node, NodeData, NodePtr},
 };
-use shared::primitive::Size;
+use shared::{primitive::Size, tree_node::TreeNode};
 use style_types::{CSSLocation, CascadeOrigin, ContextualStyleSheet};
 use url::Url;
 
@@ -30,7 +28,7 @@ impl Page {
     }
 
     pub fn load_html(&mut self, html: String, base_url: Url) {
-        let document = Rc::new(Node::new(NodeData::Document(Document::new())));
+        let document = NodePtr(TreeNode::new(Node::new(NodeData::Document(Document::new()))));
 
         let default_css = include_str!("./html.css");
         let tokenizer = css::tokenizer::Tokenizer::new(default_css.chars());

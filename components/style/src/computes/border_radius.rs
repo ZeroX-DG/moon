@@ -1,4 +1,5 @@
 use crate::property::Property;
+use crate::render_tree::RenderNodePtr;
 use crate::value::Value;
 use crate::value_processing::ComputeContext;
 use crate::value_processing::ValueRef;
@@ -17,7 +18,7 @@ pub fn compute_border_radius(value: &Value, context: &mut ComputeContext) -> Val
                 .as_ref()
                 .map(|parent| {
                     if let Some(p) = parent.upgrade() {
-                        return p.get_style(&Property::FontSize).to_absolute_px();
+                        return RenderNodePtr(p).get_style(&Property::FontSize).to_absolute_px();
                     }
                     BASE_FONT_SIZE
                 })

@@ -118,6 +118,32 @@ impl<T: TreeNodeHooks<T> + Debug> TreeNode<T> {
         });
     }
 
+    pub fn set_children(&self, children: &[TreeNode<T>]) {
+        if children.is_empty() {
+            return;
+        }
+
+        if children.len() == 1 {
+            self.first_child.replace(Some(children.first().unwrap().clone()));
+            self.last_child.replace(Some(children.first().unwrap().clone()));
+            children[0].parent_node.replace(Some(WeakTreeNode::from(self)));
+            return;
+        }
+
+        self.first_child.replace(Some(children.first().unwrap().clone()));
+        for window in children.windows(2) {
+            match window {
+                [a, b] => {
+                    a.parent_node.replace(Some(WeakTreeNode::from(self)));
+                    a.next_sibling.replace(Some(b.clone()));
+                    b.prev_sibling.replace(Some(WeakTreeNode::from(a)));
+                }
+                _ => {}
+            }
+        }
+        self.last_child.replace(Some(children.last().unwrap().clone()));
+    }
+
     /// Append a child node to a parent node
     ///
     /// **Ensure that:**

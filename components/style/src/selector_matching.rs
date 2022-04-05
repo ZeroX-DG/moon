@@ -118,12 +118,12 @@ mod tests {
     use css::tokenizer::token::Token;
     use css::tokenizer::Tokenizer;
     use dom::create_element;
-    use dom::node::Node;
+    use shared::tree_node::WeakTreeNode;
     use test_utils::dom_creator::document;
 
     #[test]
     fn match_simple_type() {
-        let element = create_element(Rc::downgrade(&document()), "h1");
+        let element = create_element(WeakTreeNode::from(&document().0), "h1");
         let css = "h1 { color: red; }";
 
         let tokenizer = Tokenizer::new(css.chars());
@@ -143,7 +143,7 @@ mod tests {
 
     #[test]
     fn match_simple_id() {
-        let element_node = create_element(Rc::downgrade(&document()), "h1");
+        let element_node = create_element(WeakTreeNode::from(&document().0), "h1");
         element_node.as_element().set_attribute("id", "button");
         let css = "h1#button { color: red; }";
 
@@ -165,9 +165,9 @@ mod tests {
     #[test]
     fn match_simple_decendant() {
         let doc = document();
-        let parent = create_element(Rc::downgrade(&doc), "h1");
-        let child = create_element(Rc::downgrade(&doc), "button");
-        Node::append_child(parent.clone(), child.clone());
+        let parent = create_element(WeakTreeNode::from(&doc.0), "h1");
+        let child = create_element(WeakTreeNode::from(&doc.0), "button");
+        parent.append_child(child.0.clone());
 
         let css = "h1 button { color: red; }";
 
@@ -189,9 +189,9 @@ mod tests {
     #[test]
     fn match_simple_child() {
         let doc = document();
-        let parent = create_element(Rc::downgrade(&doc), "h1");
-        let child = create_element(Rc::downgrade(&doc), "button");
-        Node::append_child(parent.clone(), child.clone());
+        let parent = create_element(WeakTreeNode::from(&doc.0), "h1");
+        let child = create_element(WeakTreeNode::from(&doc.0), "button");
+        parent.append_child(child.0.clone());
 
         let css = "h1 > button { color: red; }";
 
@@ -213,9 +213,9 @@ mod tests {
     #[test]
     fn match_invalid_child() {
         let doc = document();
-        let parent = create_element(Rc::downgrade(&doc), "h1");
-        let child = create_element(Rc::downgrade(&doc), "button");
-        Node::append_child(parent.clone(), child.clone());
+        let parent = create_element(WeakTreeNode::from(&doc.0), "h1");
+        let child = create_element(WeakTreeNode::from(&doc.0), "button");
+        parent.append_child(child.0.clone());
 
         let css = "button > h1 { color: red; }";
 
@@ -237,9 +237,9 @@ mod tests {
     #[test]
     fn match_invalid_id() {
         let doc = document();
-        let parent = create_element(Rc::downgrade(&doc), "h1");
-        let child = create_element(Rc::downgrade(&doc), "button");
-        Node::append_child(parent.clone(), child.clone());
+        let parent = create_element(WeakTreeNode::from(&doc.0), "h1");
+        let child = create_element(WeakTreeNode::from(&doc.0), "button");
+        parent.append_child(child.0.clone());
 
         let css = "h1#name > button { color: red; }";
 
@@ -261,9 +261,9 @@ mod tests {
     #[test]
     fn match_group_of_types() {
         let doc = document();
-        let parent = create_element(Rc::downgrade(&doc), "h1");
-        let child = create_element(Rc::downgrade(&doc), "button");
-        Node::append_child(parent.clone(), child.clone());
+        let parent = create_element(WeakTreeNode::from(&doc.0), "h1");
+        let child = create_element(WeakTreeNode::from(&doc.0), "button");
+        parent.append_child(child.0.clone());
 
         let css = "h1, button { color: red; }";
 
