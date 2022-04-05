@@ -57,10 +57,11 @@ impl Length {
         }
     }
 
-    pub fn to_px(&self) -> f32 {
+    pub fn to_px(&self, relative_to: f32) -> f32 {
         match self.unit {
             LengthUnit::Px => *self.value,
-            _ => unreachable!("Calling to_px on non-px length"),
+            LengthUnit::Em => *self.value * relative_to,
+            _ => unimplemented!("Unsupported length unit"),
         }
     }
 }

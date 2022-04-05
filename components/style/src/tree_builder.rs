@@ -329,19 +329,19 @@ mod tests {
         );
         assert_eq!(
             parent_styles.get(&Property::BorderTopWidth),
-            Some(&ValueRef(Rc::new(Value::BorderWidth(BorderWidth::Medium))))
+            Some(&ValueRef(Rc::new(Value::Length(Length::zero()))))
         );
         assert_eq!(
             parent_styles.get(&Property::BorderRightWidth),
-            Some(&ValueRef(Rc::new(Value::BorderWidth(BorderWidth::Medium))))
+            Some(&ValueRef(Rc::new(Value::Length(Length::zero()))))
         );
         assert_eq!(
             parent_styles.get(&Property::BorderBottomWidth),
-            Some(&ValueRef(Rc::new(Value::BorderWidth(BorderWidth::Medium))))
+            Some(&ValueRef(Rc::new(Value::Length(Length::zero()))))
         );
         assert_eq!(
             parent_styles.get(&Property::BorderLeftWidth),
-            Some(&ValueRef(Rc::new(Value::BorderWidth(BorderWidth::Medium))))
+            Some(&ValueRef(Rc::new(Value::Length(Length::zero()))))
         );
         assert_eq!(
             parent_styles.get(&Property::BorderTopStyle),

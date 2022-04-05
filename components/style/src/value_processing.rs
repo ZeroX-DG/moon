@@ -1,7 +1,12 @@
+use crate::computes::border_radius::compute_border_radius;
+use crate::computes::border_width::compute_border_width;
 use crate::computes::margin::compute_margin;
+use crate::computes::padding::compute_padding;
 use crate::property::Property;
 use crate::render_tree::RenderNode;
 use crate::value::Value;
+use crate::values::length::Length;
+use crate::values::length::LengthUnit;
 
 use super::selector_matching::is_match_selectors;
 use css::parser::structs::ComponentValue;
@@ -90,16 +95,21 @@ impl ValueRef {
 
     pub fn to_px(&self, relative_to: f32) -> f32 {
         match self.borrow() {
-            Value::Length(l) => l.to_px(),
+            Value::Length(l) => l.to_px(relative_to),
             Value::Percentage(p) => p.to_px(relative_to),
-            _ => 0.0,
+            Value::BorderWidth(w) => w.to_px(),
+            Value::Auto => 0.,
+            _ => unreachable!("Invalid call to_px on invalid value: {:?}", self),
         }
     }
 
     pub fn to_absolute_px(&self) -> f32 {
         match self.borrow() {
-            Value::Length(l) => l.to_px(),
-            _ => 0.0,
+            Value::Length(Length {
+                value,
+                unit: LengthUnit::Px,
+            }) => **value,
+            _ => unimplemented!("Calling to_absolute_px for unsupported value"),
         }
     }
 
@@ -141,6 +151,8 @@ pub fn apply_styles(node: &Rc<Node>, rules: &[ContextualRule]) -> Properties {
 
 /// Resolve specified values to computed values
 pub fn compute(property: &Property, value: &Value, context: &mut ComputeContext) -> ValueRef {
+    // TODO: Some of these compute functions is quite similar. For example: compute_margin & compute_padding.
+    // We should optimize this by computing base on value instead of property.
     match property {
         Property::Color => compute_color(value, context),
         Property::FontSize => compute_font_size(value, context),
@@ -148,6 +160,18 @@ pub fn compute(property: &Property, value: &Value, context: &mut ComputeContext)
         | Property::MarginLeft
         | Property::MarginRight
         | Property::MarginBottom => compute_margin(value, context),
+        Property::BorderTopWidth
+        | Property::BorderLeftWidth
+        | Property::BorderBottomWidth
+        | Property::BorderRightWidth => compute_border_width(property, value, context),
+        Property::BorderTopLeftRadius
+        | Property::BorderTopRightRadius
+        | Property::BorderBottomLeftRadius
+        | Property::BorderBottomRightRadius => compute_border_radius(value, context),
+        Property::PaddingTop
+        | Property::PaddingLeft
+        | Property::PaddingRight
+        | Property::PaddingBottom => compute_padding(value, context),
         _ => context.style_cache.get(value),
     }
 }

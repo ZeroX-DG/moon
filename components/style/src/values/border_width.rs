@@ -20,4 +20,12 @@ impl BorderWidth {
             _ => None,
         }
     }
+
+    pub fn to_px(&self) -> f32 {
+        match &self {
+            BorderWidth::Thin => 1.,
+            BorderWidth::Medium => 3.,
+            BorderWidth::Thick => 5.,
+        }
+    }
 }

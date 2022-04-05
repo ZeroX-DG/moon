@@ -7,7 +7,7 @@ use crate::values::length::LengthUnit;
 
 const BASE_FONT_SIZE: f32 = 16.; // 16px
 
-pub fn compute_margin(value: &Value, context: &mut ComputeContext) -> ValueRef {
+pub fn compute_padding(value: &Value, context: &mut ComputeContext) -> ValueRef {
     match value {
         Value::Length(Length {
             value,

@@ -15,18 +15,12 @@ pub fn compute_font_size(value: &Value, context: &mut ComputeContext) -> ValueRe
                 .as_ref()
                 .map(|parent| {
                     if let Some(p) = parent.upgrade() {
-                        return Some(p.get_style(&Property::FontSize).to_absolute_px());
+                        return p.get_style(&Property::FontSize).to_absolute_px();
                     }
-                    None
+                    BASE_FONT_SIZE
                 })
-                .unwrap_or_default();
-            let value = parent_font_size
-                .map(|font_size| Value::Length(Length::new_px(percentage.to_px(font_size))))
-                // TODO: investigate what will happen if we set percentage in font-size for
-                // HTML element
-                .unwrap_or(Value::Length(Length::new_px(
-                    percentage.to_px(BASE_FONT_SIZE),
-                )));
+                .unwrap_or(BASE_FONT_SIZE);
+            let value = Value::Length(Length::new_px(percentage.to_px(parent_font_size)));
             context.style_cache.get(&value)
         }
         Value::Length(Length {
@@ -42,16 +36,12 @@ pub fn compute_font_size(value: &Value, context: &mut ComputeContext) -> ValueRe
                 .as_ref()
                 .map(|parent| {
                     if let Some(p) = parent.upgrade() {
-                        return Some(p.get_style(&Property::FontSize).to_absolute_px());
+                        return p.get_style(&Property::FontSize).to_absolute_px();
                     }
-                    None
+                    BASE_FONT_SIZE
                 })
                 .unwrap_or_default();
-            let value = parent_font_size
-                .map(|font_size| Value::Length(Length::new_px(value.0 * font_size)))
-                // TODO: investigate what will happen if we set percentage in font-size for
-                // HTML element
-                .unwrap_or(Value::Length(Length::new_px(value.0 * BASE_FONT_SIZE)));
+            let value = Value::Length(Length::new_px(value.0 * parent_font_size));
             context.style_cache.get(&value)
         }
         _ => unreachable!("Invalid value provided for font-size"),

@@ -25,12 +25,12 @@ pub struct BaseBox {
     pub content_size: RefCell<Size>,
     pub children: RefCell<Vec<Rc<LayoutBox>>>,
     pub containing_block: RefCell<Option<Weak<LayoutBox>>>,
-    pub formatting_context: RefCell<Option<Rc<FormattingContext>>>,
+    pub formatting_context: RefCell<Option<Rc<dyn FormattingContext>>>,
     pub parent: RefCell<Option<Weak<LayoutBox>>>,
 }
 
 impl BaseBox {
-    pub fn new(context: Option<Rc<FormattingContext>>) -> Self {
+    pub fn new(context: Option<Rc<dyn FormattingContext>>) -> Self {
         Self {
             box_model: Default::default(),
             offset: Default::default(),
@@ -202,7 +202,7 @@ impl LayoutBox {
         }
     }
 
-    pub fn can_has_children(&self) -> bool {
+    pub fn can_have_children(&self) -> bool {
         match self.data {
             BoxData::InlineContents(InlineContents::TextRun) => false,
             _ => true,
@@ -331,7 +331,7 @@ impl LayoutBox {
         }
     }
 
-    pub fn formatting_context(&self) -> Rc<FormattingContext> {
+    pub fn formatting_context(&self) -> Rc<dyn FormattingContext> {
         self.base
             .formatting_context
             .borrow()
