@@ -3,7 +3,7 @@ use std::{
     rc::Rc,
 };
 
-use dom::node::Node;
+use dom::node::NodePtr;
 
 #[derive(Debug)]
 pub struct ListOfActiveFormattingElements {
@@ -12,7 +12,7 @@ pub struct ListOfActiveFormattingElements {
 
 #[derive(Debug)]
 pub enum Entry {
-    Element(Rc<Node>),
+    Element(NodePtr),
     Marker,
 }
 
@@ -36,7 +36,7 @@ impl ListOfActiveFormattingElements {
         }
     }
 
-    pub fn get_element_after_last_marker(&self, element: &str) -> Option<Rc<Node>> {
+    pub fn get_element_after_last_marker(&self, element: &str) -> Option<NodePtr> {
         for entry in self.entries.iter().rev() {
             if let Entry::Marker = entry {
                 return None;
@@ -50,7 +50,7 @@ impl ListOfActiveFormattingElements {
         None
     }
 
-    pub fn remove_element(&mut self, element: &Rc<Node>) {
+    pub fn remove_element(&mut self, element: &NodePtr) {
         let remove_index = self
             .entries
             .iter()
@@ -66,7 +66,7 @@ impl ListOfActiveFormattingElements {
         self.entries.remove(remove_index);
     }
 
-    pub fn contains_node(&self, node: &Rc<Node>) -> bool {
+    pub fn contains_node(&self, node: &NodePtr) -> bool {
         self.entries
             .iter()
             .rfind(|entry| {
@@ -80,7 +80,7 @@ impl ListOfActiveFormattingElements {
             .is_some()
     }
 
-    pub fn get_index_of_node(&self, node: &Rc<Node>) -> Option<usize> {
+    pub fn get_index_of_node(&self, node: &NodePtr) -> Option<usize> {
         self.entries.iter().rposition(|entry| {
             if let Entry::Element(el) = entry {
                 if Rc::ptr_eq(el, node) {

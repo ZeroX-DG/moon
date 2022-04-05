@@ -9,3 +9,4 @@ edition = "2018"
 [dependencies]
 dom = { version = "*", path = "../dom" }
 css = { version = "*", path = "../css" }
+shared = { version = "*", path = "../shared" }

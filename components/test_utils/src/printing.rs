@@ -1,8 +1,6 @@
-use std::rc::Rc;
+use dom::node::NodePtr;
 
-use dom::node::Node;
-
-pub fn print_dom_tree(root: Rc<Node>, level: usize) {
+pub fn print_dom_tree(root: NodePtr, level: usize) {
     let child_nodes = root.child_nodes();
     println!(
         "{}{:#?}({} child)",
@@ -11,6 +9,6 @@ pub fn print_dom_tree(root: Rc<Node>, level: usize) {
         child_nodes.length()
     );
     for node in child_nodes {
-        print_dom_tree(node, level + 1);
+        print_dom_tree(NodePtr(node), level + 1);
     }
 }

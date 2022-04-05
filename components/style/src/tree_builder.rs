@@ -2,7 +2,7 @@ use crate::property::Property;
 use crate::value::Value;
 use crate::value_processing::{compute, ComputeContext, Properties, StyleCache};
 use crate::values::display::{Display, DisplayBox};
-use dom::node::Node;
+use dom::node::NodePtr;
 use strum::IntoEnumIterator;
 use style_types::ContextualRule;
 
@@ -15,7 +15,7 @@ use std::rc::{Rc, Weak};
 pub struct TreeBuilder;
 
 impl TreeBuilder {
-    pub fn build(node: Rc<Node>, rules: &[ContextualRule]) -> RenderTree {
+    pub fn build(node: NodePtr, rules: &[ContextualRule]) -> RenderTree {
         let mut style_cache = StyleCache::new();
         let render_root = if node.is_document() {
             // the first child is HTML tag
@@ -34,7 +34,7 @@ impl TreeBuilder {
 }
 
 fn build_from_node(
-    node: Rc<Node>,
+    node: NodePtr,
     rules: &[ContextualRule],
     parent: Option<Weak<RenderNode>>,
     cache: &mut StyleCache,

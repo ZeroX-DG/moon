@@ -1,18 +1,18 @@
-use std::{rc::{Rc, Weak}, cell::RefCell, ops::Deref};
+use std::{rc::{Rc, Weak}, cell::RefCell, ops::Deref, fmt::Debug};
 
-pub struct TreeNode<T: TreeNodeHooks<T>>(Rc<Node<T>>);
-pub struct WeakTreeNode<T: TreeNodeHooks<T>>(Weak<Node<T>>);
+pub struct TreeNode<T: TreeNodeHooks<T> + Debug>(Rc<Node<T>>);
+pub struct WeakTreeNode<T: TreeNodeHooks<T> + Debug>(Weak<Node<T>>);
 
 pub type NullableWeakNode<T> = Option<WeakTreeNode<T>>;
 pub type NullableNode<T> = Option<TreeNode<T>>;
 
 #[allow(unused_variables)]
-pub trait TreeNodeHooks<T: TreeNodeHooks<T>> {
+pub trait TreeNodeHooks<T: TreeNodeHooks<T> + Debug> {
     fn on_inserted(&self, current: TreeNode<T>, parent: TreeNode<T>) {}
     fn on_children_updated(&self, current: TreeNode<T>) {}
 }
 
-pub struct Node<T: TreeNodeHooks<T>> {
+pub struct Node<T: TreeNodeHooks<T> + Debug> {
     data: T,
     parent_node: RefCell<NullableWeakNode<T>>,
     first_child: RefCell<NullableNode<T>>,
@@ -21,7 +21,7 @@ pub struct Node<T: TreeNodeHooks<T>> {
     prev_sibling: RefCell<NullableWeakNode<T>>,
 }
 
-impl<T: TreeNodeHooks<T>> Node<T> {
+impl<T: TreeNodeHooks<T> + Debug> Node<T> {
     pub fn new(data: T) -> Self {
         Self {
             parent_node: RefCell::new(None),
@@ -34,7 +34,7 @@ impl<T: TreeNodeHooks<T>> Node<T> {
     }
 }
 
-impl<T: TreeNodeHooks<T>> TreeNode<T> {
+impl<T: TreeNodeHooks<T> + Debug> TreeNode<T> {
     pub fn new(data: T) -> Self {
         Self(Rc::new(Node::new(data)))
     }
@@ -96,9 +96,9 @@ impl<T: TreeNodeHooks<T>> TreeNode<T> {
         self.next_sibling.replace(None);
     }
 
-    pub fn for_each_child<F>(&self, callback: F)
+    pub fn for_each_child<F>(&self, mut callback: F)
     where
-        F: Fn(TreeNode<T>)
+        F: FnMut(TreeNode<T>)
     {
         let mut maybe_child = self.first_child();
         while let Some(child) = maybe_child  {
@@ -187,52 +187,64 @@ impl<T: TreeNodeHooks<T>> TreeNode<T> {
     }
 }
 
-impl<T: TreeNodeHooks<T>> Deref for Node<T> {
+impl<T: TreeNodeHooks<T> + Debug> WeakTreeNode<T> {
+    pub fn upgrade(&self) -> Option<TreeNode<T>> {
+        self.0.upgrade().map(|rc| TreeNode::from(rc))
+    }
+}
+
+impl<T: TreeNodeHooks<T> + Debug> Deref for Node<T> {
     type Target = T;
     fn deref(&self) -> &Self::Target {
         &self.data
     }
 }
 
-impl<T: TreeNodeHooks<T>> Deref for TreeNode<T> {
+impl<T: TreeNodeHooks<T> + Debug> Deref for TreeNode<T> {
     type Target = Rc<Node<T>>;
     fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
 
-impl<T: TreeNodeHooks<T>> Clone for TreeNode<T> {
+impl<T: TreeNodeHooks<T> + Debug> Clone for TreeNode<T> {
     fn clone(&self) -> Self {
         TreeNode(self.0.clone())
     }
 }
 
-impl<T: TreeNodeHooks<T>> Deref for WeakTreeNode<T> {
+impl<T: TreeNodeHooks<T> + Debug> Deref for WeakTreeNode<T> {
     type Target = Weak<Node<T>>;
     fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
 
-impl<T: TreeNodeHooks<T>> Clone for WeakTreeNode<T> {
+impl<T: TreeNodeHooks<T> + Debug> Clone for WeakTreeNode<T> {
     fn clone(&self) -> Self {
         WeakTreeNode(self.0.clone())
     }
 }
 
-impl<T: TreeNodeHooks<T>> From<Rc<Node<T>>> for TreeNode<T> {
+impl<T: TreeNodeHooks<T> + Debug> From<Rc<Node<T>>> for TreeNode<T> {
     fn from(rc: Rc<Node<T>>) -> Self {
         TreeNode(rc)
     }
 }
 
-impl<T: TreeNodeHooks<T>> From<TreeNode<T>> for WeakTreeNode<T> {
+impl<T: TreeNodeHooks<T> + Debug> Debug for TreeNode<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self.data)
+    }
+}
+
+impl<T: TreeNodeHooks<T> + Debug> From<TreeNode<T>> for WeakTreeNode<T> {
     fn from(rc: TreeNode<T>) -> Self {
         WeakTreeNode(Rc::downgrade(&rc))
     }
 }
 
-impl<T: TreeNodeHooks<T>> From<&TreeNode<T>> for WeakTreeNode<T> {
+impl<T: TreeNodeHooks<T> + Debug> From<&TreeNode<T>> for WeakTreeNode<T> {
     fn from(rc: &TreeNode<T>) -> Self {
         WeakTreeNode(Rc::downgrade(rc))
     }
@@ -242,6 +254,7 @@ impl<T: TreeNodeHooks<T>> From<&TreeNode<T>> for WeakTreeNode<T> {
 mod test {
     use super::*;
 
+    #[derive(Debug)]
     pub struct TestNode;
     impl TreeNodeHooks<TestNode> for TestNode {}
 

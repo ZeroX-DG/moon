@@ -13,7 +13,7 @@ use css::parser::structs::ComponentValue;
 use css::parser::structs::Declaration;
 use css::selector::structs::Specificity;
 use css::tokenizer::token::Token;
-use dom::node::Node;
+use dom::node::NodePtr;
 use std::borrow::Borrow;
 use std::cmp::{Ord, Ordering};
 use std::collections::{HashMap, HashSet};
@@ -135,7 +135,7 @@ impl Deref for ValueRef {
 }
 
 /// Apply a list of style rules for a node
-pub fn apply_styles(node: &Rc<Node>, rules: &[ContextualRule]) -> Properties {
+pub fn apply_styles(node: &NodePtr, rules: &[ContextualRule]) -> Properties {
     // https://www.w3.org/TR/css3-cascade/#value-stages
     // Step 1
     let mut declared_values = collect_declared_values(&node, rules);
@@ -205,7 +205,7 @@ fn get_expander_shorthand_property(
 
 /// Collect declared values for each property
 /// found in each style rule
-fn collect_declared_values(node: &Rc<Node>, rules: &[ContextualRule]) -> DeclaredValuesMap {
+fn collect_declared_values(node: &NodePtr, rules: &[ContextualRule]) -> DeclaredValuesMap {
     let mut result: DeclaredValuesMap = HashMap::new();
 
     if !node.is_element() {

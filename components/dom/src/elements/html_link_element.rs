@@ -1,11 +1,10 @@
 use std::cell::RefCell;
-use std::rc::Rc;
 
 use super::ElementHooks;
 use super::ElementMethods;
 use crate::node::InsertContext;
-use crate::node::Node;
 use crate::node::NodeHooks;
+use crate::node::NodePtr;
 use loader::ResourceLoader;
 use shared::byte_string::ByteString;
 use style_types::ContextualStyleSheet;
@@ -36,7 +35,7 @@ impl HTMLLinkElement {
         }
     }
 
-    pub fn load_stylesheet(&self, url: &Url, document: Rc<Node>) {
+    pub fn load_stylesheet(&self, url: &Url, document: NodePtr) {
         log::info!("Loading stylesheet from: {}", url);
 
         match ResourceLoader::load(url.clone()) {

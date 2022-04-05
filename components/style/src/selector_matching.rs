@@ -1,29 +1,27 @@
-use std::rc::Rc;
-
 use css::selector::structs::*;
-use dom::{element::Element, node::Node};
+use dom::{element::Element, node::NodePtr};
 
-fn get_parent(el: &Rc<Node>) -> Option<Rc<Node>> {
+fn get_parent(el: &NodePtr) -> Option<NodePtr> {
     let parent = el.parent();
     if let Some(p) = parent {
         if p.is_element() {
-            return Some(p);
+            return Some(NodePtr(p));
         }
     }
     None
 }
 
-fn get_prev_sibling(el: &Rc<Node>) -> Option<Rc<Node>> {
-    el.prev_sibling()
+fn get_prev_sibling(el: &NodePtr) -> Option<NodePtr> {
+    el.prev_sibling().map(|node| NodePtr(node))
 }
 
-pub fn is_match_selectors(element: &Rc<Node>, selectors: &Vec<Selector>) -> bool {
+pub fn is_match_selectors(element: &NodePtr, selectors: &Vec<Selector>) -> bool {
     selectors
         .iter()
         .any(|selector| is_match_selector(element.clone(), selector))
 }
 
-pub fn is_match_selector(element: Rc<Node>, selector: &Selector) -> bool {
+pub fn is_match_selector(element: NodePtr, selector: &Selector) -> bool {
     let mut current_element = Some(element);
     for (selector_seq, combinator) in selector.values().iter().rev() {
         if let Some(el) = current_element.clone() {
@@ -79,7 +77,7 @@ pub fn is_match_selector(element: Rc<Node>, selector: &Selector) -> bool {
     true
 }
 
-fn is_match_simple_selector_seq(element: &Rc<Node>, sequence: &SimpleSelectorSequence) -> bool {
+fn is_match_simple_selector_seq(element: &NodePtr, sequence: &SimpleSelectorSequence) -> bool {
     let element = element.as_element();
     sequence
         .values()

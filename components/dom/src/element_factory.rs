@@ -1,7 +1,7 @@
-use std::rc::{Rc, Weak};
+use shared::tree_node::{WeakTreeNode, TreeNode};
 
 use crate::element::Element;
-use crate::node::{Node, NodeData};
+use crate::node::{Node, NodeData, NodePtr};
 
 use super::elements::*;
 
@@ -19,7 +19,7 @@ macro_rules! translate {
     }
 }
 
-pub fn create_element(document: Weak<Node>, tag_name: &str) -> Rc<Node> {
+pub fn create_element(document: WeakTreeNode<Node>, tag_name: &str) -> NodePtr {
     let node = translate!(tag_name, {
         "html" => Html > HTMLHtmlElement,
         "head" => Head > HTMLHeadElement,
@@ -32,5 +32,5 @@ pub fn create_element(document: Weak<Node>, tag_name: &str) -> Rc<Node> {
     });
 
     node.set_document(document);
-    Rc::new(node)
+    NodePtr(TreeNode::new(node))
 }
