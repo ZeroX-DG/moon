@@ -1,9 +1,6 @@
-use std::rc::Rc;
-
 use crate::{
     box_model::BoxComponent,
-    formatting_context::{BaseFormattingContext, FormattingContext, LayoutContext},
-    layout_box::LayoutBox,
+    formatting_context::{BaseFormattingContext, FormattingContext, LayoutContext}, layout_box::LayoutBoxPtr,
 };
 use dom::node::NodeData;
 use regex::Regex;
@@ -18,7 +15,7 @@ pub struct InlineFormattingContext {
 }
 
 impl FormattingContext for InlineFormattingContext {
-    fn run(&self, context: &LayoutContext, layout_node: Rc<LayoutBox>) {
+    fn run(&self, context: &LayoutContext, layout_node: LayoutBoxPtr) {
         if !layout_node.is_block() {
             log::debug!("Attempt to run IFC on non-block box");
             return;
@@ -46,17 +43,18 @@ impl InlineFormattingContext {
         Self { base }
     }
 
-    fn generate_line_boxes(&self, context: &LayoutContext, layout_node: Rc<LayoutBox>) {
+    fn generate_line_boxes(&self, context: &LayoutContext, layout_node: LayoutBoxPtr) {
         let mut line_box_builder = LineBoxBuilder::new(layout_node.clone());
         layout_node.lines().borrow_mut().clear();
 
-        for child in layout_node.children().iter() {
+        layout_node.for_each_child(|child| {
+            let child = LayoutBoxPtr(child);
             match child.render_node() {
                 Some(render_node) => match render_node.node.data() {
                     Some(NodeData::Text(content)) => {
                         let text_content = content.get_data();
                         if text_content.trim().is_empty() {
-                            continue;
+                            return;
                         }
                         // TODO: Support different line break types
                         let regex = Regex::new(r"\s|\t|\n").unwrap();
@@ -79,11 +77,11 @@ impl InlineFormattingContext {
                     line_box_builder.add_box_fragment(child.clone());
                 }
             }
-        }
+        });
         *layout_node.lines().borrow_mut() = line_box_builder.finish();
     }
 
-    fn layout_dimension_box(&self, context: &LayoutContext, layout_node: Rc<LayoutBox>) {
+    fn layout_dimension_box(&self, context: &LayoutContext, layout_node: LayoutBoxPtr) {
         self.calculate_width_for_element(layout_node.clone());
 
         self.layout_inside(context, layout_node.clone());
@@ -92,8 +90,8 @@ impl InlineFormattingContext {
         layout_node.apply_explicit_sizes();
     }
 
-    fn calculate_width_for_element(&self, layout_node: Rc<LayoutBox>) {
-        let containing_block = layout_node.containing_block().content_size();
+    fn calculate_width_for_element(&self, layout_node: LayoutBoxPtr) {
+        let containing_block = layout_node.containing_block().unwrap().content_size();
 
         let render_node = match layout_node.render_node() {
             Some(node) => node.clone(),
@@ -128,17 +126,17 @@ impl InlineFormattingContext {
         }
 
         // apply all calculated used values
-        let mut box_model = layout_node.base.box_model.borrow_mut();
+        let mut box_model = layout_node.box_model.borrow_mut();
         layout_node.set_content_width(used_width);
         box_model.set(BoxComponent::Margin, Edge::Left, used_margin_left);
         box_model.set(BoxComponent::Margin, Edge::Right, used_margin_right);
     }
 
-    fn apply_vertical_spacing(&self, layout_node: Rc<LayoutBox>) {
-        let containing_block = layout_node.containing_block().content_size();
+    fn apply_vertical_spacing(&self, layout_node: LayoutBoxPtr) {
+        let containing_block = layout_node.containing_block().unwrap().content_size();
 
         let render_node = layout_node.render_node();
-        let mut box_model = layout_node.base.box_model.borrow_mut();
+        let mut box_model = layout_node.box_model.borrow_mut();
 
         if let Some(render_node) = render_node {
             let margin_top = render_node

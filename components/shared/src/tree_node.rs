@@ -56,7 +56,7 @@ impl<T: TreeNodeHooks<T> + Debug> TreeNode<T> {
 
     /// Previous sibling of the node
     pub fn prev_sibling(&self) -> NullableNode<T> {
-        match self.0.prev_sibling.borrow().deref() {
+        match self.prev_sibling.borrow().deref() {
             Some(node) => node.upgrade().map(|rc| TreeNode::from(rc)),
             _ => None,
         }
@@ -64,7 +64,7 @@ impl<T: TreeNodeHooks<T> + Debug> TreeNode<T> {
 
     /// Parent of the node
     pub fn parent(&self) -> NullableNode<T> {
-        match self.0.parent_node.borrow().deref() {
+        match self.parent_node.borrow().deref() {
             Some(node) => node.upgrade().map(|rc| TreeNode::from(rc)),
             _ => None,
         }
@@ -107,41 +107,52 @@ impl<T: TreeNodeHooks<T> + Debug> TreeNode<T> {
         }
     }
 
+    pub fn find_first_ancestor<F>(&self, callback: F) -> Option<TreeNode<T>>
+    where
+        F: Fn(TreeNode<T>) -> bool
+    {
+        let mut parent = self.parent();
+        while let Some(node) = parent {
+            if !callback(node.clone()) {
+                parent = node.parent();
+                continue;
+            }
+
+            return Some(node);
+        }
+        return None;
+    }
+
+    pub fn iterate_children(&self) -> ChildrenIterator<T> {
+        ChildrenIterator::new(self.clone())
+    }
+
+    pub fn has_no_child(&self) -> bool {
+        self.first_child().is_none()
+    }
+
+    pub fn children_count(&self) -> usize {
+        self.iterate_children().count()
+    }
+
+    pub fn nth_child(&self, n: usize) -> Option<TreeNode<T>> {
+        self.iterate_children().nth(n)
+    }
+
     /// Transfer parent of nodes
     pub fn transfer_children_to_node(&self, new_parent: TreeNode<T>) {
-        new_parent.for_each_child(|child| child.detach());
         new_parent.first_child.replace(self.first_child());
         new_parent.last_child.replace(self.last_child());
-
-        new_parent.for_each_child(|child| {
-            child.parent_node.replace(Some(WeakTreeNode::from(new_parent.clone())));
-        });
+        self.first_child.replace(None);
+        self.last_child.replace(None);
     }
 
     pub fn set_children(&self, children: &[TreeNode<T>]) {
-        if children.is_empty() {
-            return;
+        self.first_child.replace(None);
+        self.last_child.replace(None);
+        for child in children {
+            self.append_child(child.clone());
         }
-
-        if children.len() == 1 {
-            self.first_child.replace(Some(children.first().unwrap().clone()));
-            self.last_child.replace(Some(children.first().unwrap().clone()));
-            children[0].parent_node.replace(Some(WeakTreeNode::from(self)));
-            return;
-        }
-
-        self.first_child.replace(Some(children.first().unwrap().clone()));
-        for window in children.windows(2) {
-            match window {
-                [a, b] => {
-                    a.parent_node.replace(Some(WeakTreeNode::from(self)));
-                    a.next_sibling.replace(Some(b.clone()));
-                    b.prev_sibling.replace(Some(WeakTreeNode::from(a)));
-                }
-                _ => {}
-            }
-        }
-        self.last_child.replace(Some(children.last().unwrap().clone()));
     }
 
     /// Append a child node to a parent node
@@ -153,6 +164,10 @@ impl<T: TreeNodeHooks<T> + Debug> TreeNode<T> {
     /// 4. The next-to-last child of the parent next sibling is the child if the parent has more
     ///    than 1 child
     pub fn append_child(&self, child: TreeNode<T>) {
+        if self.find_first_ancestor(|p| Rc::ptr_eq(&child, &p)).is_some() {
+            panic!("Cannot append parent: {:?}", child);
+        }
+
         // detach from parent
         child.detach();
 
@@ -186,6 +201,9 @@ impl<T: TreeNodeHooks<T> + Debug> TreeNode<T> {
     /// 6. The previous sibling of the inserted node is the node before the reference node
     /// 7. The parent of the inserted child is the parent
     pub fn insert_before(&self, child: TreeNode<T>, ref_child: Option<TreeNode<T>>) {
+        if self.find_first_ancestor(|p| Rc::ptr_eq(&child, &p)).is_some() {
+            panic!("Cannot append parent: {:?}", child);
+        }
         child.detach();
         if let Some(ref_child) = ref_child {
             // set parent of inserted node to be this parent
@@ -252,6 +270,12 @@ impl<T: TreeNodeHooks<T> + Debug> Clone for WeakTreeNode<T> {
     }
 }
 
+impl<T: TreeNodeHooks<T> + Debug> Debug for WeakTreeNode<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "WeakTreeNode")
+    }
+}
+
 impl<T: TreeNodeHooks<T> + Debug> From<Rc<Node<T>>> for TreeNode<T> {
     fn from(rc: Rc<Node<T>>) -> Self {
         TreeNode(rc)
@@ -273,6 +297,34 @@ impl<T: TreeNodeHooks<T> + Debug> From<TreeNode<T>> for WeakTreeNode<T> {
 impl<T: TreeNodeHooks<T> + Debug> From<&TreeNode<T>> for WeakTreeNode<T> {
     fn from(rc: &TreeNode<T>) -> Self {
         WeakTreeNode(Rc::downgrade(rc))
+    }
+}
+
+pub struct ChildrenIterator<T: TreeNodeHooks<T> + Debug> {
+    current_node: Option<TreeNode<T>>
+}
+
+impl<T: TreeNodeHooks<T> + Debug> ChildrenIterator<T> {
+    pub fn new(parent: TreeNode<T>) -> Self {
+        Self {
+            current_node: parent.first_child()
+        }
+    }
+}
+
+impl<T: TreeNodeHooks<T> + Debug> Iterator for ChildrenIterator<T> {
+    type Item = TreeNode<T>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let current = self.current_node.clone();
+        let next = current
+            .clone()
+            .map(|node| node.next_sibling())
+            .flatten();
+
+        self.current_node = next;
+
+        return current;
     }
 }
 
@@ -379,5 +431,56 @@ mod test {
         assert_node_eq(parent.first_child(), None);
         assert_node_eq(new_parent.first_child(), Some(child.clone()));
         assert_node_eq(child.parent(), Some(new_parent.clone()));
+    }
+
+    #[test]
+    fn for_each_child() {
+        let parent = TreeNode::new(TestNode);
+        let child1 = TreeNode::new(TestNode);
+        let child2 = TreeNode::new(TestNode);
+        let child3 = TreeNode::new(TestNode);
+
+        parent.append_child(child1.clone());
+        parent.append_child(child2.clone());
+        parent.append_child(child3.clone());
+
+        let mut count = 0;
+
+        parent.for_each_child(|child| {
+            println!("Child: {:p}", child.as_ref());
+            count += 1;
+        });
+
+        assert_eq!(count, 3);
+    }
+
+    #[test]
+    fn transfer_children() {
+        let parent = TreeNode::new(TestNode);
+        let new_parent = TreeNode::new(TestNode);
+        let child1 = TreeNode::new(TestNode);
+        let child2 = TreeNode::new(TestNode);
+        let child3 = TreeNode::new(TestNode);
+        let sub_child1 = TreeNode::new(TestNode);
+        let sub_child2 = TreeNode::new(TestNode);
+        let sub_child3 = TreeNode::new(TestNode);
+
+        parent.append_child(child1.clone());
+        parent.append_child(child2.clone());
+        parent.append_child(child3.clone());
+
+        child3.append_child(sub_child1.clone());
+        child3.append_child(sub_child2.clone());
+        child3.append_child(sub_child3.clone());
+
+        assert_eq!(parent.children_count(), 3);
+        assert_eq!(new_parent.children_count(), 0);
+        assert_eq!(child3.children_count(), 3);
+
+        parent.transfer_children_to_node(new_parent.clone());
+
+        assert_eq!(parent.children_count(), 0);
+        assert_eq!(new_parent.children_count(), 3);
+        assert_eq!(child3.children_count(), 3);
     }
 }

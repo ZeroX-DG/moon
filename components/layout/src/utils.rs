@@ -1,11 +1,9 @@
-use std::rc::Rc;
-
 use css::cssom::css_rule::CSSRule;
 use dom::node::NodePtr;
 use style_types::{CSSLocation, CascadeOrigin, ContextualRule};
 use test_utils::css::parse_stylesheet;
 
-use crate::layout_box::LayoutBox;
+use crate::layout_box::LayoutBoxPtr;
 
 pub const SHARED_CSS: &str = r#"
 p, div {
@@ -15,7 +13,7 @@ span, a {
     display: inline;
 }"#;
 
-pub fn build_tree(dom: NodePtr, css: &str) -> Rc<LayoutBox> {
+pub fn build_tree(dom: NodePtr, css: &str) -> LayoutBoxPtr {
     let stylesheet = parse_stylesheet(css);
 
     let rules = stylesheet

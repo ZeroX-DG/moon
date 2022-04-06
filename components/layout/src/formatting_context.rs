@@ -1,10 +1,10 @@
 use std::{
     cell::RefCell,
     fmt::Debug,
-    rc::{Rc, Weak},
+    rc::Rc,
 };
 
-use shared::primitive::*;
+use shared::{primitive::*, tree_node::WeakTreeNode};
 use style::{
     property::Property,
     value::Value,
@@ -13,7 +13,7 @@ use style::{
 
 use crate::{
     flow::{block::BlockFormattingContext, inline::InlineFormattingContext},
-    layout_box::LayoutBox,
+    layout_box::{LayoutBox, LayoutBoxPtr},
 };
 
 pub struct LayoutContext {
@@ -29,16 +29,16 @@ pub enum FormattingContextType {
 #[derive(Debug)]
 pub struct BaseFormattingContext {
     pub context_type: FormattingContextType,
-    pub establish_by: RefCell<Option<Weak<LayoutBox>>>,
+    pub establish_by: RefCell<Option<WeakTreeNode<LayoutBox>>>,
 }
 
 pub trait FormattingContext: Debug {
     fn base(&self) -> &BaseFormattingContext;
-    fn run(&self, context: &LayoutContext, node: Rc<LayoutBox>);
+    fn run(&self, context: &LayoutContext, node: LayoutBoxPtr);
     fn layout_inside(
         &self,
         context: &LayoutContext,
-        node: Rc<LayoutBox>,
+        node: LayoutBoxPtr,
     ) -> Option<Rc<dyn FormattingContext>> {
         if !node.can_have_children() {
             return None;
@@ -59,11 +59,11 @@ pub trait FormattingContext: Debug {
 
 pub fn establish_context(
     context_type: FormattingContextType,
-    establish_by: Rc<LayoutBox>,
+    establish_by: LayoutBoxPtr,
 ) -> Rc<dyn FormattingContext> {
     let base_context = BaseFormattingContext {
         context_type: context_type.clone(),
-        establish_by: RefCell::new(Some(Rc::downgrade(&establish_by))),
+        establish_by: RefCell::new(Some(WeakTreeNode::from(&establish_by.0))),
     };
     let context: Rc<dyn FormattingContext> = match context_type {
         FormattingContextType::BlockFormattingContext => {
@@ -77,11 +77,11 @@ pub fn establish_context(
     context
 }
 
-fn use_context(context: Rc<dyn FormattingContext>, node: Rc<LayoutBox>) {
-    node.base.formatting_context.replace(Some(context));
+fn use_context(context: Rc<dyn FormattingContext>, node: LayoutBoxPtr) {
+    node.formatting_context.replace(Some(context));
 }
 
-fn get_formatting_context_type(layout_node: Rc<LayoutBox>) -> FormattingContextType {
+fn get_formatting_context_type(layout_node: LayoutBoxPtr) -> FormattingContextType {
     if layout_node.is_anonymous() {
         if layout_node.children_are_inline() {
             return FormattingContextType::InlineFormattingContext;
@@ -111,7 +111,7 @@ fn get_formatting_context_type(layout_node: Rc<LayoutBox>) -> FormattingContextT
 }
 
 pub fn create_independent_formatting_context_if_needed(
-    node: Rc<LayoutBox>,
+    node: LayoutBoxPtr,
 ) -> Option<Rc<dyn FormattingContext>> {
     if !node.can_have_children() {
         return None;
@@ -122,7 +122,7 @@ pub fn create_independent_formatting_context_if_needed(
     if let FormattingContextType::BlockFormattingContext = formatting_context_type {
         let base_context = BaseFormattingContext {
             context_type: formatting_context_type,
-            establish_by: RefCell::new(Some(Rc::downgrade(&node))),
+            establish_by: RefCell::new(Some(WeakTreeNode::from(&node.0))),
         };
         return Some(Rc::new(BlockFormattingContext::new(base_context)));
     }
@@ -130,7 +130,7 @@ pub fn create_independent_formatting_context_if_needed(
     if node.children_are_inline() {
         let base_context = BaseFormattingContext {
             context_type: FormattingContextType::InlineFormattingContext,
-            establish_by: RefCell::new(Some(Rc::downgrade(&node))),
+            establish_by: RefCell::new(Some(WeakTreeNode::from(&node.0))),
         };
         return Some(Rc::new(InlineFormattingContext::new(base_context)));
     }
