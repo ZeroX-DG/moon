@@ -1,10 +1,7 @@
 use shared::tree_node::TreeNode;
 use style::render_tree::RenderNodePtr;
 
-use crate::{
-    formatting_context::{establish_context, FormattingContextType},
-    layout_box::{BoxData, LayoutBox, LayoutBoxPtr},
-};
+use crate::layout_box::{BoxData, LayoutBox, LayoutBoxPtr};
 
 pub struct TreeBuilder {
     parent_stack: Vec<LayoutBoxPtr>,
@@ -76,10 +73,6 @@ impl TreeBuilder {
 
         if !parent.has_no_child() && parent.children_are_inline() {
             let anonymous = TreeNode::new(LayoutBox::new_anonymous(BoxData::block_box()));
-            establish_context(
-                FormattingContextType::BlockFormattingContext,
-                LayoutBoxPtr(anonymous.clone()),
-            );
 
             parent.transfer_children_to_node(anonymous.clone());
             parent.append_child(anonymous);
@@ -124,10 +117,6 @@ impl TreeBuilder {
 
         if require_anonymous_box {
             let anonymous = TreeNode::new(LayoutBox::new_anonymous(BoxData::block_box()));
-            establish_context(
-                FormattingContextType::InlineFormattingContext,
-                LayoutBoxPtr(anonymous.clone()),
-            );
             parent.append_child(anonymous);
         }
 
