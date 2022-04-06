@@ -1493,7 +1493,6 @@ dependencies = [
  "style",
  "style_types",
  "test_utils",
- "tree",
 ]
 
 [[package]]
@@ -2747,7 +2746,6 @@ dependencies = [
  "strum_macros",
  "style_types",
  "test_utils",
- "tree",
 ]
 
 [[package]]
@@ -2810,6 +2808,7 @@ version = "0.1.0"
 dependencies = [
  "css",
  "dom",
+ "shared",
 ]
 
 [[package]]
@@ -2982,10 +2981,6 @@ checksum = "03cfcb51380632a72d3111cb8d3447a8d908e577d31beeac006f836383d29a23"
 dependencies = [
  "lazy_static",
 ]
-
-[[package]]
-name = "tree"
-version = "0.1.0"
 
 [[package]]
 name = "try-lock"

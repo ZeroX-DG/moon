@@ -9,7 +9,6 @@ edition = "2018"
 [dependencies]
 css = { version = "*", path = "../css" }
 dom = { version = "*", path = "../dom" }
-tree = { version = "*", path = "../tree" }
 shared = { version = "*", path = "../shared" }
 style_types = { path = "../style_types" }
 lazy_static = { version = "1.4.0" }

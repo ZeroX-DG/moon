@@ -4,7 +4,7 @@ use gfx::TextMeasure;
 use shared::primitive::{Point, Size};
 use style::property::Property;
 
-use crate::layout_box::LayoutBox;
+use crate::layout_box::LayoutBoxPtr;
 
 #[derive(Debug)]
 pub struct LineFragment {
@@ -15,13 +15,13 @@ pub struct LineFragment {
 
 #[derive(Debug)]
 pub enum LineFragmentData {
-    Box(Rc<LayoutBox>),
-    Text(Rc<LayoutBox>, String),
+    Box(LayoutBoxPtr),
+    Text(LayoutBoxPtr, String),
 }
 
 pub struct LineBoxBuilder {
     line_boxes: Vec<LineBox>,
-    parent: Rc<LayoutBox>,
+    parent: LayoutBoxPtr,
     current_offset_y: f32,
 }
 
@@ -43,7 +43,7 @@ impl LineBox {
         &mut self,
         fragment_width: f32,
         fragment_height: f32,
-        child: Rc<LayoutBox>,
+        child: LayoutBoxPtr,
     ) {
         let box_model = child.box_model().borrow();
         let fragment = LineFragment::new_box(
@@ -60,7 +60,7 @@ impl LineBox {
         &mut self,
         fragment_width: f32,
         fragment_height: f32,
-        layout_box: Rc<LayoutBox>,
+        layout_box: LayoutBoxPtr,
         text: String,
     ) {
         if !self.fragments.is_empty() {
@@ -115,11 +115,11 @@ impl LineFragment {
         self.offset = offset;
     }
 
-    pub fn new_box(layout_box: Rc<LayoutBox>, offset: Point, size: Size) -> Self {
+    pub fn new_box(layout_box: LayoutBoxPtr, offset: Point, size: Size) -> Self {
         Self::new(LineFragmentData::Box(layout_box), offset, size)
     }
 
-    pub fn new_text(layout_box: Rc<LayoutBox>, content: String, offset: Point, size: Size) -> Self {
+    pub fn new_text(layout_box: LayoutBoxPtr, content: String, offset: Point, size: Size) -> Self {
         Self::new(LineFragmentData::Text(layout_box, content), offset, size)
     }
 
@@ -144,7 +144,7 @@ impl LineFragment {
 }
 
 impl LineBoxBuilder {
-    pub fn new(parent: Rc<LayoutBox>) -> Self {
+    pub fn new(parent: LayoutBoxPtr) -> Self {
         Self {
             line_boxes: Vec::new(),
             parent,
@@ -157,7 +157,7 @@ impl LineBoxBuilder {
         self.line_boxes
     }
 
-    pub fn add_box_fragment(&mut self, layout_box: Rc<LayoutBox>) {
+    pub fn add_box_fragment(&mut self, layout_box: LayoutBoxPtr) {
         let fragment_width = layout_box.content_size().width;
         let fragment_height = layout_box.content_size().height;
         self.break_line_if_needed(layout_box.margin_box_width());
@@ -166,7 +166,7 @@ impl LineBoxBuilder {
             .add_box_fragment(fragment_width, fragment_height, layout_box);
     }
 
-    pub fn add_text_fragment(&mut self, layout_box: Rc<LayoutBox>, text: String) {
+    pub fn add_text_fragment(&mut self, layout_box: LayoutBoxPtr, text: String) {
         let render_node = layout_box.render_node().unwrap();
         let font_size = render_node.get_style(&Property::FontSize).to_absolute_px();
         let mut text_measurer = TextMeasure::new();

@@ -1,13 +1,12 @@
-use std::{
-    cell::{Ref, RefCell, RefMut},
-    fmt::Debug,
-    rc::{Rc, Weak},
-};
+use std::{cell::RefCell, fmt::Debug, ops::Deref, rc::Rc};
 
-use shared::primitive::{Point, Rect, Size};
+use shared::{
+    primitive::{Point, Rect, Size},
+    tree_node::{TreeNode, TreeNodeHooks},
+};
 use style::{
     property::Property,
-    render_tree::RenderNode,
+    render_tree::RenderNodePtr,
     value::Value,
     values::{
         display::Display,
@@ -16,38 +15,40 @@ use style::{
     },
 };
 
-use crate::{box_model::BoxModel, flow::line_box::LineBox, formatting_context::FormattingContext};
-
-#[derive(Debug)]
-pub struct BaseBox {
-    pub box_model: RefCell<BoxModel>,
-    pub offset: RefCell<Point>,
-    pub content_size: RefCell<Size>,
-    pub children: RefCell<Vec<Rc<LayoutBox>>>,
-    pub containing_block: RefCell<Option<Weak<LayoutBox>>>,
-    pub formatting_context: RefCell<Option<Rc<dyn FormattingContext>>>,
-    pub parent: RefCell<Option<Weak<LayoutBox>>>,
-}
-
-impl BaseBox {
-    pub fn new(context: Option<Rc<dyn FormattingContext>>) -> Self {
-        Self {
-            box_model: Default::default(),
-            offset: Default::default(),
-            content_size: Default::default(),
-            children: RefCell::new(Vec::new()),
-            containing_block: RefCell::new(None),
-            formatting_context: RefCell::new(context),
-            parent: RefCell::new(None),
-        }
-    }
-}
+use crate::{
+    box_model::BoxModel,
+    flow::line_box::LineBox,
+    formatting_context::{FormattingContext, FormattingContextType},
+};
 
 #[derive(Debug)]
 pub struct LayoutBox {
-    pub base: BaseBox,
     pub data: BoxData,
-    pub node: Option<Rc<RenderNode>>,
+    pub node: Option<RenderNodePtr>,
+    pub box_model: RefCell<BoxModel>,
+    pub offset: RefCell<Point>,
+    pub content_size: RefCell<Size>,
+    pub formatting_context: RefCell<Option<Rc<dyn FormattingContext>>>,
+}
+
+pub struct LayoutBoxPtr(pub TreeNode<LayoutBox>);
+
+impl TreeNodeHooks<LayoutBox> for LayoutBox {}
+impl Debug for LayoutBoxPtr {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self.0)
+    }
+}
+impl Deref for LayoutBoxPtr {
+    type Target = TreeNode<LayoutBox>;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+impl Clone for LayoutBoxPtr {
+    fn clone(&self) -> Self {
+        LayoutBoxPtr(self.0.clone())
+    }
 }
 
 #[derive(Debug)]
@@ -81,7 +82,7 @@ impl BoxData {
 }
 
 impl LayoutBox {
-    pub fn new(render_node: Rc<RenderNode>) -> Self {
+    pub fn new(render_node: RenderNodePtr) -> Self {
         let box_data = {
             if render_node.node.is_text() {
                 BoxData::InlineContents(InlineContents::TextRun)
@@ -106,7 +107,10 @@ impl LayoutBox {
         };
 
         Self {
-            base: BaseBox::new(None),
+            box_model: Default::default(),
+            offset: Default::default(),
+            content_size: Default::default(),
+            formatting_context: RefCell::new(None),
             data: box_data,
             node: Some(render_node),
         }
@@ -114,12 +118,17 @@ impl LayoutBox {
 
     pub fn new_anonymous(data: BoxData) -> Self {
         Self {
-            base: BaseBox::new(None),
+            box_model: Default::default(),
+            offset: Default::default(),
+            content_size: Default::default(),
+            formatting_context: RefCell::new(None),
             data,
             node: None,
         }
     }
+}
 
+impl LayoutBoxPtr {
     pub fn is_root_element(&self) -> bool {
         match &self.node {
             Some(node) => match node.node.as_element_opt() {
@@ -144,62 +153,49 @@ impl LayoutBox {
         self.node.is_none()
     }
 
-    pub fn parent(&self) -> Option<Rc<LayoutBox>> {
-        match self.base.parent.borrow().clone() {
-            Some(parent) => parent.upgrade(),
-            _ => None,
-        }
-    }
-
-    pub fn children(&self) -> Ref<Vec<Rc<LayoutBox>>> {
-        self.base.children.borrow()
-    }
-
-    pub fn children_mut(&self) -> RefMut<Vec<Rc<LayoutBox>>> {
-        self.base.children.borrow_mut()
-    }
-
-    pub fn set_children(parent: Rc<LayoutBox>, children: Vec<Rc<LayoutBox>>) {
-        children
-            .iter()
-            .for_each(|child| child.set_parent(parent.clone()));
-        parent.base.children.replace(children);
-    }
-
     pub fn children_are_inline(&self) -> bool {
-        self.base
-            .children
-            .borrow()
-            .iter()
-            .all(|child| child.is_inline())
+        self.iterate_children()
+            .all(|child| LayoutBoxPtr(child).is_inline())
     }
 
-    pub fn set_parent(&self, parent: Rc<LayoutBox>) {
-        self.base.parent.replace(Some(Rc::downgrade(&parent)));
-        // TODO: re-calculate containing block instead of doing this.
-        self.set_containing_block(parent);
+    pub fn is_block_container(&self) -> bool {
+        let is_block = !self.children_are_inline();
+        let is_inline_block = self.children_are_inline()
+            && match self.formatting_context.borrow().deref() {
+                Some(context) => {
+                    context.base().context_type == FormattingContextType::InlineFormattingContext
+                }
+                _ => false,
+            };
+
+        is_block || is_inline_block
     }
 
-    pub fn set_containing_block(&self, containing_block: Rc<LayoutBox>) {
-        self.base
-            .containing_block
-            .replace(Some(Rc::downgrade(&containing_block)));
-    }
-
-    pub fn containing_block(&self) -> Rc<LayoutBox> {
-        match self.base.containing_block.borrow().clone() {
-            Some(containing_block) => containing_block
-                .upgrade()
-                .expect("Unable to obtain containing block"),
-            _ => panic!("No containing block has been set. This should not happen!"),
+    pub fn containing_block(&self) -> Option<LayoutBoxPtr> {
+        if self.is_positioned(Position::Static) || self.is_positioned(Position::Relative) {
+            return self
+                .find_first_ancestor(|parent| {
+                    let parent = LayoutBoxPtr(parent);
+                    parent.is_block_container() || parent.formatting_context.borrow().is_some()
+                })
+                .map(|node| LayoutBoxPtr(node));
         }
-    }
 
-    pub fn containing_block_opt(&self) -> Option<Rc<LayoutBox>> {
-        match self.base.containing_block.borrow().clone() {
-            Some(containing_block) => containing_block.upgrade(),
-            _ => None,
+        if self.is_positioned(Position::Absolute) {
+            return self
+                .find_first_ancestor(|parent| !LayoutBoxPtr(parent).is_positioned(Position::Static))
+                .map(|node| LayoutBoxPtr(node));
         }
+
+        if self.is_positioned(Position::Fixed) {
+            return self
+                .find_first_ancestor(|parent| parent.parent().is_none())
+                .map(|node| LayoutBoxPtr(node));
+        }
+
+        return self
+            .find_first_ancestor(|parent| LayoutBoxPtr(parent).is_block_container())
+            .map(|node| LayoutBoxPtr(node));
     }
 
     pub fn can_have_children(&self) -> bool {
@@ -257,48 +253,48 @@ impl LayoutBox {
     }
 
     pub fn box_model(&self) -> &RefCell<BoxModel> {
-        &self.base.box_model
+        &self.box_model
     }
 
     pub fn content_size(&self) -> Size {
-        self.base.content_size.borrow().clone()
+        self.content_size.borrow().clone()
     }
 
     pub fn set_content_width(&self, width: f32) {
-        self.base.content_size.borrow_mut().width = width;
+        self.content_size.borrow_mut().width = width;
     }
 
     pub fn set_content_height(&self, height: f32) {
-        self.base.content_size.borrow_mut().height = height;
+        self.content_size.borrow_mut().height = height;
     }
 
     pub fn set_offset(&self, x: f32, y: f32) {
-        self.base.offset.borrow_mut().x = x;
-        self.base.offset.borrow_mut().y = y;
+        self.offset.borrow_mut().x = x;
+        self.offset.borrow_mut().y = y;
     }
 
     pub fn offset(&self) -> Point {
-        self.base.offset.borrow().clone()
+        self.offset.borrow().clone()
     }
 
     pub fn margin_box_height(&self) -> f32 {
-        let margin_box = self.base.box_model.borrow().margin_box();
+        let margin_box = self.box_model.borrow().margin_box();
         self.content_size().height + margin_box.top + margin_box.bottom
     }
 
     pub fn margin_box_width(&self) -> f32 {
-        let margin_box = self.base.box_model.borrow().margin_box();
+        let margin_box = self.box_model.borrow().margin_box();
         self.content_size().width + margin_box.left + margin_box.right
     }
 
     pub fn absolute_rect(&self) -> Rect {
         let mut rect = Rect::from((self.offset(), self.content_size()));
 
-        let mut containing_block = self.containing_block_opt();
+        let mut containing_block = self.containing_block();
 
         while let Some(block) = containing_block {
             rect.translate(block.offset().x, block.offset().y);
-            containing_block = block.containing_block_opt();
+            containing_block = block.containing_block();
         }
 
         rect
@@ -310,16 +306,16 @@ impl LayoutBox {
     }
 
     pub fn border_box_absolute(&self) -> Rect {
-        let border_box = self.base.box_model.borrow().border_box();
+        let border_box = self.box_model.borrow().border_box();
         self.padding_box_absolute().add_outer_edges(&border_box)
     }
 
     pub fn padding_box_absolute(&self) -> Rect {
-        let padding_box = self.base.box_model.borrow().padding_box();
+        let padding_box = self.box_model.borrow().padding_box();
         self.absolute_rect().add_outer_edges(&padding_box)
     }
 
-    pub fn render_node(&self) -> Option<Rc<RenderNode>> {
+    pub fn render_node(&self) -> Option<RenderNodePtr> {
         self.node.clone()
     }
 
@@ -332,15 +328,14 @@ impl LayoutBox {
     }
 
     pub fn formatting_context(&self) -> Rc<dyn FormattingContext> {
-        self.base
-            .formatting_context
+        self.formatting_context
             .borrow()
             .clone()
             .expect("No layout context! This should not happen!")
     }
 
     pub fn apply_explicit_sizes(&self) {
-        let containing_block = self.containing_block().content_size();
+        let containing_block = self.containing_block().unwrap().content_size();
 
         if self.is_inline() && !self.is_inline_block() {
             return;
@@ -360,11 +355,6 @@ impl LayoutBox {
                 self.set_content_height(used_height);
             }
         }
-    }
-
-    pub fn add_child(parent: Rc<LayoutBox>, child: Rc<LayoutBox>) {
-        parent.children_mut().push(child.clone());
-        child.set_parent(parent);
     }
 
     pub fn lines(&self) -> &RefCell<Vec<LineBox>> {
@@ -409,9 +399,9 @@ impl LayoutBox {
                 result.push_str(&line.dump(level + 1));
             }
         } else {
-            for node in self.children().iter() {
-                result.push_str(&node.dump(level + 1));
-            }
+            self.for_each_child(|node| {
+                result.push_str(&LayoutBoxPtr(node).dump(level + 1));
+            });
         }
 
         return result;

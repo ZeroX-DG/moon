@@ -1,10 +1,8 @@
 mod utils;
 
-use std::rc::Rc;
-
 use layout::{
     flow::line_box::{LineBox, LineFragmentData},
-    layout_box::LayoutBox,
+    layout_box::LayoutBoxPtr,
 };
 
 use gfx::Graphics;
@@ -40,7 +38,7 @@ impl<G: Graphics> Painter<G> {
         result
     }
 
-    pub fn paint(&mut self, layout_box: Rc<LayoutBox>) {
+    pub fn paint(&mut self, layout_box: LayoutBoxPtr) {
         self.paint_box_background(layout_box.clone());
 
         if layout_box.children_are_inline() {
@@ -50,12 +48,12 @@ impl<G: Graphics> Painter<G> {
             return;
         }
 
-        for child in layout_box.children().iter() {
-            self.paint(child.clone());
-        }
+        layout_box.for_each_child(|child| {
+            self.paint(LayoutBoxPtr(child));
+        })
     }
 
-    fn paint_line(&mut self, containing_block: Rc<LayoutBox>, line: &LineBox) {
+    fn paint_line(&mut self, containing_block: LayoutBoxPtr, line: &LineBox) {
         for fragment in &line.fragments {
             match &fragment.data {
                 LineFragmentData::Box(layout_box) if !layout_box.is_anonymous() => {
@@ -83,7 +81,7 @@ impl<G: Graphics> Painter<G> {
         }
     }
 
-    fn paint_box_background(&mut self, layout_box: Rc<LayoutBox>) {
+    fn paint_box_background(&mut self, layout_box: LayoutBoxPtr) {
         if layout_box.is_anonymous() {
             return;
         }
@@ -127,7 +125,7 @@ impl<G: Graphics> Painter<G> {
         }
     }
 
-    fn compute_border_radius_corner(&self, layout_box: Rc<LayoutBox>) -> Option<Corners> {
+    fn compute_border_radius_corner(&self, layout_box: LayoutBoxPtr) -> Option<Corners> {
         if layout_box.is_anonymous() {
             return None;
         }

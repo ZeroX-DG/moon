@@ -1,8 +1,10 @@
 use crate::property::Property;
+use crate::render_tree::RenderNodePtr;
 use crate::value::Value;
 use crate::value_processing::{compute, ComputeContext, Properties, StyleCache};
 use crate::values::display::{Display, DisplayBox};
-use dom::node::Node;
+use dom::node::NodePtr;
+use shared::tree_node::{TreeNode, WeakTreeNode};
 use strum::IntoEnumIterator;
 use style_types::ContextualRule;
 
@@ -10,16 +12,15 @@ use super::inheritable::INHERITABLES;
 use super::render_tree::{RenderNode, RenderTree};
 use super::value_processing::{apply_styles, ValueRef};
 use std::collections::HashMap;
-use std::rc::{Rc, Weak};
 
 pub struct TreeBuilder;
 
 impl TreeBuilder {
-    pub fn build(node: Rc<Node>, rules: &[ContextualRule]) -> RenderTree {
+    pub fn build(node: NodePtr, rules: &[ContextualRule]) -> RenderTree {
         let mut style_cache = StyleCache::new();
         let render_root = if node.is_document() {
             // the first child is HTML tag
-            node.first_child()
+            node.first_child().map(|n| NodePtr(n))
         } else {
             Some(node)
         };
@@ -34,11 +35,11 @@ impl TreeBuilder {
 }
 
 fn build_from_node(
-    node: Rc<Node>,
+    node: NodePtr,
     rules: &[ContextualRule],
-    parent: Option<Weak<RenderNode>>,
+    parent: Option<WeakTreeNode<RenderNode>>,
     cache: &mut StyleCache,
-) -> Option<Rc<RenderNode>> {
+) -> Option<RenderNodePtr> {
     let properties = if node.is_text() {
         HashMap::new()
     } else {
@@ -54,35 +55,43 @@ fn build_from_node(
         }
     }
 
-    let render_node = Rc::new(RenderNode {
+    let render_node = TreeNode::new(RenderNode {
         node: node.clone(),
         properties: compute_styles(properties, parent.clone(), cache),
-        parent_render_node: parent,
-        children: Default::default(),
     });
 
-    render_node.children.replace(
-        node.child_nodes()
+    render_node.set_children(
+        &node
+            .child_nodes()
             .into_iter() // this is fine because we clone the node when iterate
             .filter_map(|child| {
-                build_from_node(child, &rules, Some(Rc::downgrade(&render_node)), cache)
+                build_from_node(
+                    NodePtr(child),
+                    &rules,
+                    Some(WeakTreeNode::from(&render_node)),
+                    cache,
+                )
+                .map(|n| n.0)
             })
-            .collect(),
+            .collect::<Vec<TreeNode<RenderNode>>>(),
     );
 
-    Some(render_node)
+    Some(RenderNodePtr(render_node))
 }
 
 fn compute_styles(
     properties: Properties,
-    parent: Option<Weak<RenderNode>>,
+    parent: Option<WeakTreeNode<RenderNode>>,
     cache: &mut StyleCache,
 ) -> HashMap<Property, ValueRef> {
     // get inherit value for a property
     let inherit = |property: Property| {
         if let Some(parent) = &parent {
             if let Some(p) = parent.upgrade() {
-                return (property.clone(), (**p.get_style(&property)).clone());
+                return (
+                    property.clone(),
+                    (**RenderNodePtr(p).get_style(&property)).clone(),
+                );
             }
         }
         // if there's no parent
@@ -146,7 +155,6 @@ fn compute_styles(
 mod tests {
     use super::*;
     use crate::values::border_style::BorderStyle;
-    use crate::values::border_width::BorderWidth;
     use crate::values::color::Color;
     use crate::values::display::Display;
     use crate::values::length::{Length, LengthUnit};
@@ -209,7 +217,7 @@ mod tests {
             )))))
         );
 
-        let child_inner = render_tree_inner.children.borrow()[0].clone();
+        let child_inner = render_tree_inner.first_child().unwrap();
         let child_styles = &child_inner.properties;
         assert_eq!(
             child_styles.get(&Property::Color),
@@ -463,7 +471,7 @@ mod tests {
             )))))
         );
 
-        let child_inner = render_tree_inner.children.borrow()[0].clone();
+        let child_inner = render_tree_inner.first_child().unwrap();
         let child_styles = &child_inner.properties;
 
         assert_eq!(

@@ -1,26 +1,26 @@
-use std::rc::Rc;
-
-use dom::node::Node;
+use dom::node::NodePtr;
 use layout::dump_layout;
 use layout::formatting_context::{establish_context, FormattingContextType};
+use layout::layout_box::LayoutBoxPtr;
 use layout::{formatting_context::LayoutContext, layout_box::LayoutBox};
 use shared::primitive::{Rect, Size};
+use shared::tree_node::TreeNode;
 use style::render_tree::RenderTree;
 
 pub struct Frame {
-    document: Option<Rc<Node>>,
+    document: Option<NodePtr>,
     layout: FrameLayout,
     size: Size,
 }
 
 pub struct FrameLayout {
-    layout_tree: Option<Rc<LayoutBox>>,
+    layout_tree: Option<LayoutBoxPtr>,
     render_tree: Option<RenderTree>,
 }
 
 #[derive(Debug)]
 pub enum ReflowType {
-    All(Rc<Node>),
+    All(NodePtr),
     LayoutOnly,
 }
 
@@ -42,7 +42,7 @@ impl Frame {
         self.layout.reflow(&self.size, ReflowType::LayoutOnly);
     }
 
-    pub fn set_document(&mut self, document: Rc<Node>) {
+    pub fn set_document(&mut self, document: NodePtr) {
         self.document = Some(document.clone());
         self.layout.reflow(&self.size, ReflowType::All(document));
     }
@@ -60,11 +60,11 @@ impl FrameLayout {
         }
     }
 
-    pub fn layout_tree(&self) -> Option<Rc<LayoutBox>> {
+    pub fn layout_tree(&self) -> Option<LayoutBoxPtr> {
         self.layout_tree.clone()
     }
 
-    pub fn recalculate_styles(&mut self, document_node: Rc<Node>) {
+    pub fn recalculate_styles(&mut self, document_node: NodePtr) {
         let document = document_node.as_document();
         let style_rules = document.style_rules();
 
@@ -95,10 +95,10 @@ impl FrameLayout {
                     },
                 };
 
-                let initial_block_box = Rc::new(LayoutBox::new_anonymous(
+                let initial_block_box = LayoutBoxPtr(TreeNode::new(LayoutBox::new_anonymous(
                     layout::layout_box::BoxData::block_box(),
-                ));
-                LayoutBox::add_child(initial_block_box.clone(), root.clone());
+                )));
+                initial_block_box.append_child(root.0.clone());
 
                 establish_context(
                     FormattingContextType::BlockFormattingContext,

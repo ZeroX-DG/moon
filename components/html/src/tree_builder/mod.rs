@@ -11,6 +11,7 @@ use dom::comment::Comment;
 use dom::document::{Document, DocumentType, QuirksMode};
 use dom::element::Element;
 use dom::node::ChildrenUpdateContext;
+use dom::node::NodePtr;
 use dom::node::{Node, NodeData};
 use dom::text::Text;
 use insert_mode::InsertMode;
@@ -18,6 +19,8 @@ use list_of_active_formatting_elements::Entry;
 use list_of_active_formatting_elements::ListOfActiveFormattingElements;
 use open_element_types::is_special_element;
 use phf::phf_map;
+use shared::tree_node::TreeNode;
+use shared::tree_node::WeakTreeNode;
 use stack_of_open_elements::StackOfOpenElements;
 use std::env;
 use std::rc::Rc;
@@ -70,16 +73,16 @@ pub struct TreeBuilder<T: Tokenizing> {
     original_insert_mode: Option<InsertMode>,
 
     /// The result document
-    document: Rc<Node>,
+    document: NodePtr,
 
     /// Enable or disable foster parenting
     foster_parenting: bool,
 
     /// Element pointer to head element
-    head_pointer: Option<Rc<Node>>,
+    head_pointer: Option<NodePtr>,
 
     /// Element pointer to last open form element
-    form_pointer: Option<Rc<Node>>,
+    form_pointer: Option<NodePtr>,
 
     /// Is scripting enable?
     scripting: bool,
@@ -100,10 +103,10 @@ pub struct TreeBuilder<T: Tokenizing> {
     is_fragment_case: bool,
 
     /// Context element for fragment html
-    context_element: Option<Rc<Node>>,
+    context_element: Option<NodePtr>,
 
     /// Current node for text insertion
-    text_insertion_node: Option<Rc<Node>>,
+    text_insertion_node: Option<NodePtr>,
 
     /// Current string that hold the text for the text node data
     text_insertion_string_data: String,
@@ -111,12 +114,12 @@ pub struct TreeBuilder<T: Tokenizing> {
 
 /// The adjusted location to insert a node as mentioned the specs
 pub enum AdjustedInsertionLocation {
-    LastChild(Rc<Node>),
-    BeforeSibling(Rc<Node>, Rc<Node>),
+    LastChild(NodePtr),
+    BeforeSibling(NodePtr, NodePtr),
 }
 
 impl AdjustedInsertionLocation {
-    pub fn parent(&self) -> &Rc<Node> {
+    pub fn parent(&self) -> &NodePtr {
         match self {
             AdjustedInsertionLocation::LastChild(parent) => parent,
             AdjustedInsertionLocation::BeforeSibling(parent, _) => parent,
@@ -242,7 +245,7 @@ fn adjust_foreign_attributes(token: &mut Token) {
 }
 
 impl<T: Tokenizing> TreeBuilder<T> {
-    pub fn new(tokenizer: T, document: Rc<Node>) -> Self {
+    pub fn new(tokenizer: T, document: NodePtr) -> Self {
         Self {
             tokenizer,
             open_elements: StackOfOpenElements::new(),
@@ -268,12 +271,14 @@ impl<T: Tokenizing> TreeBuilder<T> {
     /// Create a HTML tree builder with default document & no loader.
     /// This should only be used for testing
     pub fn default(tokenizer: T) -> Self {
-        let document = Rc::new(Node::new(NodeData::Document(Document::new())));
+        let document = NodePtr(TreeNode::new(Node::new(
+            NodeData::Document(Document::new()),
+        )));
         Self::new(tokenizer, document)
     }
 
     /// Start the main loop for parsing DOM tree
-    pub fn run(mut self) -> Rc<Node> {
+    pub fn run(mut self) -> NodePtr {
         loop {
             let token = self.tokenizer.next_token();
 
@@ -314,7 +319,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
     }
 
     /// Get the current parsing document
-    pub fn get_document(&self) -> Rc<Node> {
+    pub fn get_document(&self) -> NodePtr {
         self.document.clone()
     }
 
@@ -342,7 +347,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
         self.should_stop = true;
     }
 
-    fn create_element(&self, tag_token: Token) -> Rc<Node> {
+    fn create_element(&self, tag_token: Token) -> NodePtr {
         let (tag_name, attributes) = if let Token::Tag {
             tag_name,
             attributes,
@@ -353,7 +358,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
         } else {
             ("".to_string(), Vec::new())
         };
-        let element_ref = dom::create_element(Rc::downgrade(&self.document), &tag_name);
+        let element_ref = dom::create_element(WeakTreeNode::from(&self.document.0), &tag_name);
         for attribute in attributes {
             element_ref
                 .as_element()
@@ -362,7 +367,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
         element_ref
     }
 
-    fn create_element_from_tag_name(&self, tag_name: &str) -> Rc<Node> {
+    fn create_element_from_tag_name(&self, tag_name: &str) -> NodePtr {
         self.create_element(Token::Tag {
             tag_name: tag_name.to_owned(),
             self_closing: false,
@@ -374,7 +379,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
 
     fn get_appropriate_place_for_inserting_a_node(
         &self,
-        target: Option<Rc<Node>>,
+        target: Option<NodePtr>,
     ) -> AdjustedInsertionLocation {
         let target = target.unwrap_or(self.open_elements.current_node().unwrap());
 
@@ -401,7 +406,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
                 } else {
                     if let Some((table, table_index)) = last_table {
                         if let Some(table_parent) = table.parent() {
-                            AdjustedInsertionLocation::LastChild(table_parent)
+                            AdjustedInsertionLocation::LastChild(NodePtr(table_parent))
                         } else {
                             let previous_element = self.open_elements.get(table_index - 1);
                             AdjustedInsertionLocation::LastChild(previous_element)
@@ -419,7 +424,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
         return adjusted_location;
     }
 
-    fn insert_html_element(&mut self, token: Token) -> Rc<Node> {
+    fn insert_html_element(&mut self, token: Token) -> NodePtr {
         let insert_position = self.get_appropriate_place_for_inserting_a_node(None);
         let element = self.create_element(token);
         let return_ref = element.clone();
@@ -430,11 +435,11 @@ impl<T: Tokenizing> TreeBuilder<T> {
         return_ref
     }
 
-    fn insert_at(&mut self, location: AdjustedInsertionLocation, child: Rc<Node>) {
+    fn insert_at(&mut self, location: AdjustedInsertionLocation, child: NodePtr) {
         match location {
-            AdjustedInsertionLocation::LastChild(parent) => Node::append_child(parent, child),
+            AdjustedInsertionLocation::LastChild(parent) => parent.append_child(child.0),
             AdjustedInsertionLocation::BeforeSibling(parent, sibling) => {
-                Node::insert_before(parent, child, Some(sibling))
+                parent.insert_before(child.0, Some(sibling.0))
             }
         }
     }
@@ -442,25 +447,27 @@ impl<T: Tokenizing> TreeBuilder<T> {
     fn get_node_for_text_insertion(
         &mut self,
         insert_position: AdjustedInsertionLocation,
-    ) -> Rc<Node> {
+    ) -> NodePtr {
         match &insert_position {
             AdjustedInsertionLocation::LastChild(parent) => {
                 if let Some(last_child) = parent.last_child() {
                     if last_child.as_text_opt().is_some() {
-                        return last_child;
+                        return NodePtr(last_child);
                     }
                 }
             }
             AdjustedInsertionLocation::BeforeSibling(_, sibling) => {
                 if let Some(prev_sibling) = sibling.prev_sibling() {
                     if prev_sibling.as_text_opt().is_some() {
-                        return prev_sibling;
+                        return NodePtr(prev_sibling);
                     }
                 }
             }
         }
-        let text = Rc::new(Node::new(NodeData::Text(Text::new(String::new()))));
-        text.set_document(Rc::downgrade(&self.document));
+        let text = NodePtr(TreeNode::new(Node::new(NodeData::Text(Text::new(
+            String::new(),
+        )))));
+        text.set_document(WeakTreeNode::from(&self.document.0));
         self.insert_at(insert_position, text.clone());
         return text;
     }
@@ -501,7 +508,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
 
             let parent = node.parent().unwrap();
             let context = ChildrenUpdateContext {
-                document: parent.owner_document().unwrap(),
+                document: NodePtr(parent.owner_document().unwrap()),
                 current_node: node.clone(),
             };
             parent
@@ -516,9 +523,9 @@ impl<T: Tokenizing> TreeBuilder<T> {
 
     fn insert_comment(&mut self, data: String) {
         let insert_position = self.get_appropriate_place_for_inserting_a_node(None);
-        let comment = Rc::new(Node::new(NodeData::Comment(Comment::new(data))));
-        comment.set_document(Rc::downgrade(&self.document));
-        self.insert_at(insert_position, comment);
+        let comment = TreeNode::new(Node::new(NodeData::Comment(Comment::new(data))));
+        comment.set_document(WeakTreeNode::from(&self.document.0));
+        self.insert_at(insert_position, NodePtr(comment));
     }
 
     fn handle_text_only_element(&mut self, token: Token, algorithm: TextOnlyElementParsingAlgo) {
@@ -803,7 +810,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
                     bookmark = node_formatting_index + 1;
                 }
 
-                Node::append_child(node.clone(), last_node.clone());
+                node.append_child(last_node.0);
                 last_node = node;
             }
 
@@ -825,8 +832,8 @@ impl<T: Tokenizing> TreeBuilder<T> {
                     .collect(),
             });
 
-            Node::reparent_nodes_in_node(furthest_block.clone(), new_element.clone());
-            Node::append_child(furthest_block.clone(), new_element.clone());
+            furthest_block.transfer_children_to_node(new_element.0.clone());
+            furthest_block.append_child(new_element.0.clone());
 
             self.active_formatting_elements.remove_element(&fmt_element);
             self.active_formatting_elements[bookmark] = Entry::Element(new_element.clone());
@@ -891,7 +898,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
         }
     }
 
-    fn current_node(&self) -> Rc<Node> {
+    fn current_node(&self) -> NodePtr {
         self.open_elements.current_node().unwrap()
     }
 
@@ -983,9 +990,9 @@ impl<T: Tokenizing> TreeBuilder<T> {
         }
 
         if let Token::Comment(data) = token {
-            let comment = Rc::new(Node::new(NodeData::Comment(Comment::new(data))));
-            comment.set_document(Rc::downgrade(&self.document));
-            Node::append_child(self.document.clone(), comment);
+            let comment = TreeNode::new(Node::new(NodeData::Comment(Comment::new(data))));
+            comment.set_document(WeakTreeNode::from(&self.document.0));
+            self.document.append_child(comment);
             return;
         }
 
@@ -1031,7 +1038,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
     fn handle_before_html(&mut self, token: Token) {
         fn anything_else<T: Tokenizing>(this: &mut TreeBuilder<T>, token: Token) {
             let element = this.create_element_from_tag_name("html");
-            Node::append_child(this.document.clone(), element.clone());
+            this.document.append_child(element.0.clone());
             this.open_elements.push(element.clone());
             // TODO: Implement additional steps in specs
             this.switch_to(InsertMode::BeforeHead);
@@ -1044,14 +1051,14 @@ impl<T: Tokenizing> TreeBuilder<T> {
         }
 
         if let Token::Comment(data) = token {
-            let comment = Rc::new(Node::new(NodeData::Comment(Comment::new(data))));
-            Node::append_child(self.document.clone(), comment);
+            let comment = TreeNode::new(Node::new(NodeData::Comment(Comment::new(data))));
+            self.document.append_child(comment);
             return;
         }
 
         if token.is_start_tag() && token.tag_name() == "html" {
             let element = self.create_element(token);
-            Node::append_child(self.document.clone(), element.clone());
+            self.document.append_child(element.0.clone());
             self.open_elements.push(element.clone());
             // TODO: implement additional steps in specs
             self.switch_to(InsertMode::BeforeHead);
@@ -1559,7 +1566,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
             }
 
             let second_element = self.open_elements.get(1);
-            Node::detach(second_element);
+            second_element.detach();
 
             while self.current_node().as_element().tag_name() != "html" {
                 self.open_elements.pop();
@@ -2648,9 +2655,9 @@ impl<T: Tokenizing> TreeBuilder<T> {
         }
 
         if let Token::Comment(data) = token {
-            let comment = Rc::new(Node::new(NodeData::Comment(Comment::new(data))));
+            let comment = TreeNode::new(Node::new(NodeData::Comment(Comment::new(data))));
             let html_el = self.open_elements.get(0);
-            Node::append_child(html_el, comment);
+            html_el.append_child(comment);
             return;
         }
 
@@ -2683,8 +2690,8 @@ impl<T: Tokenizing> TreeBuilder<T> {
 
     fn handle_after_after_body(&mut self, token: Token) {
         if let Token::Comment(data) = token {
-            let comment = Rc::new(Node::new(NodeData::Comment(Comment::new(data))));
-            Node::append_child(self.document.clone(), comment);
+            let comment = TreeNode::new(Node::new(NodeData::Comment(Comment::new(data))));
+            self.document.append_child(comment);
             return;
         }
 
@@ -3298,7 +3305,7 @@ mod test {
         let body = html.last_child().unwrap();
         let div = body.first_child().unwrap();
 
-        assert_eq!(div.child_nodes().length(), 3);
+        assert_eq!(NodePtr(div).child_nodes().length(), 3);
     }
 
     #[test]
@@ -3317,6 +3324,9 @@ mod test {
             a.as_element().attributes().borrow().get_str("href"),
             "http://google.com".to_string()
         );
-        assert_eq!(a.child_text_content(), "This is a link".to_string());
+        assert_eq!(
+            NodePtr(a).child_text_content(),
+            "This is a link".to_string()
+        );
     }
 }

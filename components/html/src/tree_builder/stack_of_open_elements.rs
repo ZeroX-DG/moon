@@ -1,4 +1,4 @@
-use dom::node::Node;
+use dom::node::NodePtr;
 
 use super::Element;
 use std::{
@@ -11,10 +11,10 @@ const BASE_LIST: [&str; 9] = [
 ];
 
 #[derive(Debug)]
-pub struct StackOfOpenElements(pub Vec<Rc<Node>>);
+pub struct StackOfOpenElements(pub Vec<NodePtr>);
 
 impl Deref for StackOfOpenElements {
-    type Target = Vec<Rc<Node>>;
+    type Target = Vec<NodePtr>;
     fn deref(&self) -> &Self::Target {
         &self.0
     }
@@ -31,18 +31,18 @@ impl StackOfOpenElements {
         Self(Vec::new())
     }
 
-    pub fn current_node(&self) -> Option<Rc<Node>> {
+    pub fn current_node(&self) -> Option<NodePtr> {
         if let Some(node) = self.0.last() {
             return Some(node.clone());
         }
         None
     }
 
-    pub fn get(&self, index: usize) -> Rc<Node> {
+    pub fn get(&self, index: usize) -> NodePtr {
         return self.0[index].clone();
     }
 
-    pub fn last_element_with_tag_name(&self, tag_name: &str) -> Option<(&Rc<Node>, usize)> {
+    pub fn last_element_with_tag_name(&self, tag_name: &str) -> Option<(&NodePtr, usize)> {
         for (i, node) in self.0.iter().rev().enumerate() {
             let element = node.as_element();
             if element.tag_name() == tag_name {
@@ -93,7 +93,7 @@ impl StackOfOpenElements {
 
     pub fn remove_first_matching<F>(&mut self, test: F)
     where
-        F: Fn(&Rc<Node>) -> bool,
+        F: Fn(&NodePtr) -> bool,
     {
         for (i, node) in self.0.iter().rev().enumerate() {
             if test(node) {
@@ -105,7 +105,7 @@ impl StackOfOpenElements {
 
     pub fn any<F>(&self, test: F) -> bool
     where
-        F: Fn(&Rc<Node>) -> bool,
+        F: Fn(&NodePtr) -> bool,
     {
         self.0.iter().any(test)
     }
@@ -159,7 +159,7 @@ impl StackOfOpenElements {
         return self.has_element_name_in_specific_scope(target, list);
     }
 
-    pub fn has_element_in_specific_scope(&self, target: &Rc<Node>, list: Vec<&str>) -> bool {
+    pub fn has_element_in_specific_scope(&self, target: &NodePtr, list: Vec<&str>) -> bool {
         for node in self.0.iter().rev() {
             if Rc::ptr_eq(node, target) {
                 return true;
@@ -174,7 +174,7 @@ impl StackOfOpenElements {
         return false;
     }
 
-    pub fn has_element_in_scope(&self, target: &Rc<Node>) -> bool {
+    pub fn has_element_in_scope(&self, target: &NodePtr) -> bool {
         self.has_element_in_specific_scope(target, BASE_LIST.to_vec())
     }
 
@@ -188,7 +188,7 @@ impl StackOfOpenElements {
         })
     }
 
-    pub fn contains_node(&self, node: &Rc<Node>) -> bool {
+    pub fn contains_node(&self, node: &NodePtr) -> bool {
         self.any(|fnode| Rc::ptr_eq(fnode, node))
     }
 

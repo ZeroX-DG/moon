@@ -17,7 +17,6 @@ members = [
   "components/layout",
   "components/test_utils",
   "components/painting",
-  "components/tree",
   "components/url",
   "components/gfx",
   "components/net",

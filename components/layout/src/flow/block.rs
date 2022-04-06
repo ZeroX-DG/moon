@@ -4,20 +4,20 @@ use crate::{
         create_independent_formatting_context_if_needed, BaseFormattingContext, FormattingContext,
         LayoutContext,
     },
-    layout_box::LayoutBox,
+    layout_box::LayoutBoxPtr,
 };
 use shared::primitive::edge::Edge;
-use std::{cell::RefCell, rc::Rc};
+use std::cell::RefCell;
 use style::{property::Property, values::prelude::Position};
 
 #[derive(Debug)]
 pub struct BlockFormattingContext {
-    last_sibling: RefCell<Option<Rc<LayoutBox>>>,
+    last_sibling: RefCell<Option<LayoutBoxPtr>>,
     base: BaseFormattingContext,
 }
 
 impl FormattingContext for BlockFormattingContext {
-    fn run(&self, context: &LayoutContext, layout_node: Rc<LayoutBox>) {
+    fn run(&self, context: &LayoutContext, layout_node: LayoutBoxPtr) {
         if layout_node.is_block() && layout_node.parent().is_none() {
             self.layout_initial_block_box(context, layout_node);
             return;
@@ -38,7 +38,7 @@ impl BlockFormattingContext {
         }
     }
 
-    fn layout_initial_block_box(&self, context: &LayoutContext, layout_node: Rc<LayoutBox>) {
+    fn layout_initial_block_box(&self, context: &LayoutContext, layout_node: LayoutBoxPtr) {
         // Initial containing block has the dimensions of the viewport
         let width = context.viewport.width;
         let height = context.viewport.height;
@@ -50,10 +50,11 @@ impl BlockFormattingContext {
         self.layout_block_level_children(context, layout_node);
     }
 
-    fn layout_block_level_children(&self, context: &LayoutContext, layout_node: Rc<LayoutBox>) {
-        for child in layout_node.children().iter() {
+    fn layout_block_level_children(&self, context: &LayoutContext, layout_node: LayoutBoxPtr) {
+        layout_node.for_each_child(|child| {
+            let child = LayoutBoxPtr(child);
             if child.is_positioned(Position::Absolute) {
-                continue;
+                return;
             }
             self.compute_width(child.clone());
             self.place_box_in_flow(child.clone());
@@ -75,10 +76,10 @@ impl BlockFormattingContext {
             if child.border_box_absolute().height > 0. {
                 self.last_sibling.replace(Some(child.clone()));
             }
-        }
+        });
     }
 
-    fn place_box_in_flow(&self, layout_node: Rc<LayoutBox>) {
+    fn place_box_in_flow(&self, layout_node: LayoutBoxPtr) {
         self.apply_vertical_box_model_values(layout_node.clone());
 
         let box_model = layout_node.box_model().borrow();
@@ -124,8 +125,8 @@ impl BlockFormattingContext {
         layout_node.set_offset(x, y);
     }
 
-    fn compute_width(&self, layout_node: Rc<LayoutBox>) {
-        let containing_block = layout_node.containing_block().content_size();
+    fn compute_width(&self, layout_node: LayoutBoxPtr) {
+        let containing_block = layout_node.containing_block().unwrap().content_size();
 
         let render_node = match layout_node.render_node() {
             Some(node) => node.clone(),
@@ -234,7 +235,7 @@ impl BlockFormattingContext {
         }
 
         // apply all calculated used values
-        let mut box_model = layout_node.base.box_model.borrow_mut();
+        let mut box_model = layout_node.box_model.borrow_mut();
 
         layout_node.set_content_width(used_width);
         box_model.set(BoxComponent::Margin, Edge::Left, used_margin_left);
@@ -261,13 +262,13 @@ impl BlockFormattingContext {
         );
     }
 
-    fn apply_vertical_box_model_values(&self, layout_node: Rc<LayoutBox>) {
+    fn apply_vertical_box_model_values(&self, layout_node: LayoutBoxPtr) {
         if layout_node.is_anonymous() {
             return;
         }
 
         let render_node = layout_node.render_node().unwrap();
-        let containing_block = layout_node.containing_block().content_size();
+        let containing_block = layout_node.containing_block().unwrap().content_size();
         let margin_top = render_node
             .get_style(&Property::MarginTop)
             .to_px(containing_block.width);
@@ -289,7 +290,7 @@ impl BlockFormattingContext {
             .get_style(&Property::BorderBottomWidth)
             .to_px(containing_block.width);
 
-        let mut box_model = layout_node.base.box_model.borrow_mut();
+        let mut box_model = layout_node.box_model.borrow_mut();
         box_model.set(BoxComponent::Margin, Edge::Top, margin_top);
         box_model.set(BoxComponent::Margin, Edge::Bottom, margin_bottom);
         box_model.set(BoxComponent::Padding, Edge::Top, padding_top);
@@ -298,17 +299,17 @@ impl BlockFormattingContext {
         box_model.set(BoxComponent::Border, Edge::Bottom, border_bottom);
     }
 
-    fn compute_height(&self, layout_node: Rc<LayoutBox>) {
+    fn compute_height(&self, layout_node: LayoutBoxPtr) {
         let height = self.compute_box_height(layout_node.clone());
         layout_node.set_content_height(height);
     }
 
-    fn compute_box_height(&self, layout_node: Rc<LayoutBox>) -> f32 {
+    fn compute_box_height(&self, layout_node: LayoutBoxPtr) -> f32 {
         if layout_node.is_anonymous() {
             return self.compute_auto_height(layout_node);
         }
 
-        let containing_block = layout_node.containing_block().content_size();
+        let containing_block = layout_node.containing_block().unwrap().content_size();
         let computed_height = layout_node
             .render_node()
             .unwrap()
@@ -321,21 +322,20 @@ impl BlockFormattingContext {
         }
     }
 
-    fn compute_auto_height(&self, layout_node: Rc<LayoutBox>) -> f32 {
-        layout_node
-            .children()
-            .iter()
-            .fold(0.0, |acc, child| acc + child.margin_box_height())
+    fn compute_auto_height(&self, layout_node: LayoutBoxPtr) -> f32 {
+        layout_node.iterate_children().fold(0.0, |acc, child| {
+            acc + LayoutBoxPtr(child).margin_box_height()
+        })
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use crate::formatting_context::{establish_context, FormattingContextType, LayoutContext};
-    use crate::layout_box::BoxData;
+    use crate::layout_box::{BoxData, LayoutBox, LayoutBoxPtr};
     use crate::utils::*;
     use shared::primitive::*;
+    use shared::tree_node::TreeNode;
     use test_utils::dom_creator::*;
 
     #[test]
@@ -373,12 +373,14 @@ mod tests {
             },
         };
 
-        let initial_block_box = Rc::new(LayoutBox::new_anonymous(BoxData::block_box()));
+        let initial_block_box = LayoutBoxPtr(TreeNode::new(LayoutBox::new_anonymous(
+            BoxData::block_box(),
+        )));
         establish_context(
             FormattingContextType::BlockFormattingContext,
             initial_block_box.clone(),
         );
-        LayoutBox::add_child(initial_block_box.clone(), root.clone());
+        initial_block_box.append_child(root.0.clone());
 
         initial_block_box
             .formatting_context()

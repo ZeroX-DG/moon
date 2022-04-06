@@ -1,17 +1,20 @@
-use std::rc::Rc;
-
 use css::selector::parse_selector_str;
 use css::selector::structs::*;
 use dom::create_element;
 use dom::document::Document;
+use dom::node::NodePtr;
 use dom::node::{Node, NodeData};
 use dom::text::Text;
+use shared::tree_node::TreeNode;
+use shared::tree_node::WeakTreeNode;
 
-pub fn document() -> Rc<Node> {
-    Rc::new(Node::new(NodeData::Document(Document::new())))
+pub fn document() -> NodePtr {
+    NodePtr(TreeNode::new(Node::new(
+        NodeData::Document(Document::new()),
+    )))
 }
 
-pub fn element(selector: &str, doc: Rc<Node>, children: Vec<Rc<Node>>) -> Rc<Node> {
+pub fn element(selector: &str, doc: NodePtr, children: Vec<NodePtr>) -> NodePtr {
     let selector =
         parse_selector_str(selector).expect("Unable to parse selector in test_utils#element");
 
@@ -30,7 +33,7 @@ pub fn element(selector: &str, doc: Rc<Node>, children: Vec<Rc<Node>>) -> Rc<Nod
         .clone()
         .unwrap();
 
-    let node = create_element(Rc::downgrade(&doc), &tag_name);
+    let node = create_element(WeakTreeNode::from(&doc.0), &tag_name);
     let mut classes = Vec::new();
 
     for part in selector_parts {
@@ -52,15 +55,15 @@ pub fn element(selector: &str, doc: Rc<Node>, children: Vec<Rc<Node>>) -> Rc<Nod
     }
 
     for child in children {
-        Node::append_child(node.clone(), child.clone());
+        node.append_child(child.0.clone());
     }
     node
 }
 
 pub fn create_elemt_recursively() {}
 
-pub fn text(value: &str, doc: Rc<Node>) -> Rc<Node> {
-    let text_node = Rc::new(Node::new(NodeData::Text(Text::new(value.to_string()))));
-    text_node.set_document(Rc::downgrade(&doc));
-    text_node
+pub fn text(value: &str, doc: NodePtr) -> NodePtr {
+    let text_node = TreeNode::new(Node::new(NodeData::Text(Text::new(value.to_string()))));
+    text_node.set_document(WeakTreeNode::from(&doc.0));
+    NodePtr(text_node)
 }
