@@ -1,4 +1,4 @@
-use shared::tree_node::{WeakTreeNode, TreeNode};
+use shared::tree_node::{TreeNode, WeakTreeNode};
 
 use crate::element::Element;
 use crate::node::{Node, NodeData, NodePtr};

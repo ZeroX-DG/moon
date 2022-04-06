@@ -4,7 +4,7 @@ use crate::value::Value;
 use crate::value_processing::{compute, ComputeContext, Properties, StyleCache};
 use crate::values::display::{Display, DisplayBox};
 use dom::node::NodePtr;
-use shared::tree_node::{WeakTreeNode, TreeNode};
+use shared::tree_node::{TreeNode, WeakTreeNode};
 use strum::IntoEnumIterator;
 use style_types::ContextualRule;
 
@@ -61,10 +61,17 @@ fn build_from_node(
     });
 
     render_node.set_children(
-        &node.child_nodes()
+        &node
+            .child_nodes()
             .into_iter() // this is fine because we clone the node when iterate
             .filter_map(|child| {
-                build_from_node(NodePtr(child), &rules, Some(WeakTreeNode::from(&render_node)), cache).map(|n| n.0)
+                build_from_node(
+                    NodePtr(child),
+                    &rules,
+                    Some(WeakTreeNode::from(&render_node)),
+                    cache,
+                )
+                .map(|n| n.0)
             })
             .collect::<Vec<TreeNode<RenderNode>>>(),
     );
@@ -81,7 +88,10 @@ fn compute_styles(
     let inherit = |property: Property| {
         if let Some(parent) = &parent {
             if let Some(p) = parent.upgrade() {
-                return (property.clone(), (**RenderNodePtr(p).get_style(&property)).clone());
+                return (
+                    property.clone(),
+                    (**RenderNodePtr(p).get_style(&property)).clone(),
+                );
             }
         }
         // if there's no parent

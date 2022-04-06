@@ -4,11 +4,7 @@ use super::inheritable::INHERITABLES;
 use super::value_processing::ValueRef;
 use dom::node::NodePtr;
 use shared::tree_node::{TreeNode, TreeNodeHooks};
-use std::{
-    collections::HashMap,
-    fmt::Debug,
-    ops::Deref,
-};
+use std::{collections::HashMap, fmt::Debug, ops::Deref};
 
 pub struct RenderNodePtr(pub TreeNode<RenderNode>);
 

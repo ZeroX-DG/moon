@@ -1,6 +1,7 @@
 use crate::{
     box_model::BoxComponent,
-    formatting_context::{BaseFormattingContext, FormattingContext, LayoutContext}, layout_box::LayoutBoxPtr,
+    formatting_context::{BaseFormattingContext, FormattingContext, LayoutContext},
+    layout_box::LayoutBoxPtr,
 };
 use dom::node::NodeData;
 use regex::Regex;

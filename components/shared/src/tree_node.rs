@@ -1,4 +1,9 @@
-use std::{rc::{Rc, Weak}, cell::RefCell, ops::Deref, fmt::Debug};
+use std::{
+    cell::RefCell,
+    fmt::Debug,
+    ops::Deref,
+    rc::{Rc, Weak},
+};
 
 pub struct TreeNode<T: TreeNodeHooks<T> + Debug>(Rc<Node<T>>);
 pub struct WeakTreeNode<T: TreeNodeHooks<T> + Debug>(Weak<Node<T>>);
@@ -98,10 +103,10 @@ impl<T: TreeNodeHooks<T> + Debug> TreeNode<T> {
 
     pub fn for_each_child<F>(&self, mut callback: F)
     where
-        F: FnMut(TreeNode<T>)
+        F: FnMut(TreeNode<T>),
     {
         let mut maybe_child = self.first_child();
-        while let Some(child) = maybe_child  {
+        while let Some(child) = maybe_child {
             callback(child.clone());
             maybe_child = child.next_sibling();
         }
@@ -109,7 +114,7 @@ impl<T: TreeNodeHooks<T> + Debug> TreeNode<T> {
 
     pub fn find_first_ancestor<F>(&self, callback: F) -> Option<TreeNode<T>>
     where
-        F: Fn(TreeNode<T>) -> bool
+        F: Fn(TreeNode<T>) -> bool,
     {
         let mut parent = self.parent();
         while let Some(node) = parent {
@@ -164,7 +169,10 @@ impl<T: TreeNodeHooks<T> + Debug> TreeNode<T> {
     /// 4. The next-to-last child of the parent next sibling is the child if the parent has more
     ///    than 1 child
     pub fn append_child(&self, child: TreeNode<T>) {
-        if self.find_first_ancestor(|p| Rc::ptr_eq(&child, &p)).is_some() {
+        if self
+            .find_first_ancestor(|p| Rc::ptr_eq(&child, &p))
+            .is_some()
+        {
             panic!("Cannot append parent: {:?}", child);
         }
 
@@ -173,7 +181,9 @@ impl<T: TreeNodeHooks<T> + Debug> TreeNode<T> {
 
         if let Some(last_child) = self.last_child() {
             last_child.next_sibling.replace(Some(child.clone()));
-            child.prev_sibling.replace(Some(WeakTreeNode::from(last_child)));
+            child
+                .prev_sibling
+                .replace(Some(WeakTreeNode::from(last_child)));
         }
 
         child.parent_node.replace(Some(WeakTreeNode::from(self)));
@@ -201,7 +211,10 @@ impl<T: TreeNodeHooks<T> + Debug> TreeNode<T> {
     /// 6. The previous sibling of the inserted node is the node before the reference node
     /// 7. The parent of the inserted child is the parent
     pub fn insert_before(&self, child: TreeNode<T>, ref_child: Option<TreeNode<T>>) {
-        if self.find_first_ancestor(|p| Rc::ptr_eq(&child, &p)).is_some() {
+        if self
+            .find_first_ancestor(|p| Rc::ptr_eq(&child, &p))
+            .is_some()
+        {
             panic!("Cannot append parent: {:?}", child);
         }
         child.detach();
@@ -223,7 +236,9 @@ impl<T: TreeNodeHooks<T> + Debug> TreeNode<T> {
             }
 
             // set inserted child to be new previous sibling of ref child
-            ref_child.prev_sibling.replace(Some(WeakTreeNode::from(child.clone())));
+            ref_child
+                .prev_sibling
+                .replace(Some(WeakTreeNode::from(child.clone())));
             child.next_sibling.replace(Some(ref_child));
         } else {
             self.append_child(child);
@@ -301,13 +316,13 @@ impl<T: TreeNodeHooks<T> + Debug> From<&TreeNode<T>> for WeakTreeNode<T> {
 }
 
 pub struct ChildrenIterator<T: TreeNodeHooks<T> + Debug> {
-    current_node: Option<TreeNode<T>>
+    current_node: Option<TreeNode<T>>,
 }
 
 impl<T: TreeNodeHooks<T> + Debug> ChildrenIterator<T> {
     pub fn new(parent: TreeNode<T>) -> Self {
         Self {
-            current_node: parent.first_child()
+            current_node: parent.first_child(),
         }
     }
 }
@@ -317,10 +332,7 @@ impl<T: TreeNodeHooks<T> + Debug> Iterator for ChildrenIterator<T> {
 
     fn next(&mut self) -> Option<Self::Item> {
         let current = self.current_node.clone();
-        let next = current
-            .clone()
-            .map(|node| node.next_sibling())
-            .flatten();
+        let next = current.clone().map(|node| node.next_sibling()).flatten();
 
         self.current_node = next;
 

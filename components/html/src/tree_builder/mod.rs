@@ -271,7 +271,9 @@ impl<T: Tokenizing> TreeBuilder<T> {
     /// Create a HTML tree builder with default document & no loader.
     /// This should only be used for testing
     pub fn default(tokenizer: T) -> Self {
-        let document = NodePtr(TreeNode::new(Node::new(NodeData::Document(Document::new()))));
+        let document = NodePtr(TreeNode::new(Node::new(
+            NodeData::Document(Document::new()),
+        )));
         Self::new(tokenizer, document)
     }
 
@@ -462,7 +464,9 @@ impl<T: Tokenizing> TreeBuilder<T> {
                 }
             }
         }
-        let text = NodePtr(TreeNode::new(Node::new(NodeData::Text(Text::new(String::new())))));
+        let text = NodePtr(TreeNode::new(Node::new(NodeData::Text(Text::new(
+            String::new(),
+        )))));
         text.set_document(WeakTreeNode::from(&self.document.0));
         self.insert_at(insert_position, text.clone());
         return text;
@@ -3320,6 +3324,9 @@ mod test {
             a.as_element().attributes().borrow().get_str("href"),
             "http://google.com".to_string()
         );
-        assert_eq!(NodePtr(a).child_text_content(), "This is a link".to_string());
+        assert_eq!(
+            NodePtr(a).child_text_content(),
+            "This is a link".to_string()
+        );
     }
 }

@@ -323,9 +323,9 @@ impl BlockFormattingContext {
     }
 
     fn compute_auto_height(&self, layout_node: LayoutBoxPtr) -> f32 {
-        layout_node
-            .iterate_children()
-            .fold(0.0, |acc, child| acc + LayoutBoxPtr(child).margin_box_height())
+        layout_node.iterate_children().fold(0.0, |acc, child| {
+            acc + LayoutBoxPtr(child).margin_box_height()
+        })
     }
 }
 
@@ -373,7 +373,9 @@ mod tests {
             },
         };
 
-        let initial_block_box = LayoutBoxPtr(TreeNode::new(LayoutBox::new_anonymous(BoxData::block_box())));
+        let initial_block_box = LayoutBoxPtr(TreeNode::new(LayoutBox::new_anonymous(
+            BoxData::block_box(),
+        )));
         establish_context(
             FormattingContextType::BlockFormattingContext,
             initial_block_box.clone(),

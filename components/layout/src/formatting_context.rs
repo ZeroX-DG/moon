@@ -1,8 +1,4 @@
-use std::{
-    cell::RefCell,
-    fmt::Debug,
-    rc::Rc,
-};
+use std::{cell::RefCell, fmt::Debug, rc::Rc};
 
 use shared::{primitive::*, tree_node::WeakTreeNode};
 use style::{

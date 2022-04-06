@@ -1,10 +1,9 @@
-use std::{
-    cell::RefCell,
-    fmt::Debug,
-    rc::Rc, ops::Deref,
-};
+use std::{cell::RefCell, fmt::Debug, ops::Deref, rc::Rc};
 
-use shared::{primitive::{Point, Rect, Size}, tree_node::{TreeNodeHooks, TreeNode}};
+use shared::{
+    primitive::{Point, Rect, Size},
+    tree_node::{TreeNode, TreeNodeHooks},
+};
 use style::{
     property::Property,
     render_tree::RenderNodePtr,
@@ -16,7 +15,11 @@ use style::{
     },
 };
 
-use crate::{box_model::BoxModel, flow::line_box::LineBox, formatting_context::{FormattingContext, FormattingContextType}};
+use crate::{
+    box_model::BoxModel,
+    flow::line_box::LineBox,
+    formatting_context::{FormattingContext, FormattingContextType},
+};
 
 #[derive(Debug)]
 pub struct LayoutBox {
@@ -151,15 +154,19 @@ impl LayoutBoxPtr {
     }
 
     pub fn children_are_inline(&self) -> bool {
-        self.iterate_children().all(|child| LayoutBoxPtr(child).is_inline())
+        self.iterate_children()
+            .all(|child| LayoutBoxPtr(child).is_inline())
     }
 
     pub fn is_block_container(&self) -> bool {
         let is_block = !self.children_are_inline();
-        let is_inline_block = self.children_are_inline() && match self.formatting_context.borrow().deref() {
-            Some(context) => context.base().context_type == FormattingContextType::InlineFormattingContext,
-            _ => false
-        };
+        let is_inline_block = self.children_are_inline()
+            && match self.formatting_context.borrow().deref() {
+                Some(context) => {
+                    context.base().context_type == FormattingContextType::InlineFormattingContext
+                }
+                _ => false,
+            };
 
         is_block || is_inline_block
     }
@@ -176,9 +183,7 @@ impl LayoutBoxPtr {
 
         if self.is_positioned(Position::Absolute) {
             return self
-                .find_first_ancestor(|parent| {
-                    !LayoutBoxPtr(parent).is_positioned(Position::Static)
-                })
+                .find_first_ancestor(|parent| !LayoutBoxPtr(parent).is_positioned(Position::Static))
                 .map(|node| LayoutBoxPtr(node));
         }
 
@@ -323,8 +328,7 @@ impl LayoutBoxPtr {
     }
 
     pub fn formatting_context(&self) -> Rc<dyn FormattingContext> {
-        self
-            .formatting_context
+        self.formatting_context
             .borrow()
             .clone()
             .expect("No layout context! This should not happen!")

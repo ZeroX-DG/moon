@@ -6,7 +6,7 @@ use super::element::Element;
 use super::elements::ElementData;
 use super::text::Text;
 use enum_dispatch::enum_dispatch;
-use shared::tree_node::{WeakTreeNode, TreeNodeHooks, TreeNode};
+use shared::tree_node::{TreeNode, TreeNodeHooks, WeakTreeNode};
 use std::cell::RefCell;
 use std::ops::Deref;
 

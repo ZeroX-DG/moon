@@ -19,7 +19,9 @@ pub fn compute_padding(value: &Value, context: &mut ComputeContext) -> ValueRef 
                 .as_ref()
                 .map(|parent| {
                     if let Some(p) = parent.upgrade() {
-                        return RenderNodePtr(p).get_style(&Property::FontSize).to_absolute_px();
+                        return RenderNodePtr(p)
+                            .get_style(&Property::FontSize)
+                            .to_absolute_px();
                     }
                     BASE_FONT_SIZE
                 })

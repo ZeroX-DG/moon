@@ -1,7 +1,10 @@
 use shared::tree_node::TreeNode;
 use style::render_tree::RenderNodePtr;
 
-use crate::{layout_box::{BoxData, LayoutBox, LayoutBoxPtr}, formatting_context::{FormattingContextType, establish_context}};
+use crate::{
+    formatting_context::{establish_context, FormattingContextType},
+    layout_box::{BoxData, LayoutBox, LayoutBoxPtr},
+};
 
 pub struct TreeBuilder {
     parent_stack: Vec<LayoutBoxPtr>,
@@ -134,7 +137,7 @@ impl TreeBuilder {
 
 #[cfg(test)]
 mod tests {
-    use crate::{utils::*, layout_box::LayoutBoxPtr};
+    use crate::{layout_box::LayoutBoxPtr, utils::*};
     use test_utils::dom_creator::*;
 
     #[test]

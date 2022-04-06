@@ -9,7 +9,9 @@ use shared::tree_node::TreeNode;
 use shared::tree_node::WeakTreeNode;
 
 pub fn document() -> NodePtr {
-    NodePtr(TreeNode::new(Node::new(NodeData::Document(Document::new()))))
+    NodePtr(TreeNode::new(Node::new(
+        NodeData::Document(Document::new()),
+    )))
 }
 
 pub fn element(selector: &str, doc: NodePtr, children: Vec<NodePtr>) -> NodePtr {

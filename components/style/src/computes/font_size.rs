@@ -16,7 +16,9 @@ pub fn compute_font_size(value: &Value, context: &mut ComputeContext) -> ValueRe
                 .as_ref()
                 .map(|parent| {
                     if let Some(p) = parent.upgrade() {
-                        return RenderNodePtr(p).get_style(&Property::FontSize).to_absolute_px();
+                        return RenderNodePtr(p)
+                            .get_style(&Property::FontSize)
+                            .to_absolute_px();
                     }
                     BASE_FONT_SIZE
                 })
@@ -37,7 +39,9 @@ pub fn compute_font_size(value: &Value, context: &mut ComputeContext) -> ValueRe
                 .as_ref()
                 .map(|parent| {
                     if let Some(p) = parent.upgrade() {
-                        return RenderNodePtr(p).get_style(&Property::FontSize).to_absolute_px();
+                        return RenderNodePtr(p)
+                            .get_style(&Property::FontSize)
+                            .to_absolute_px();
                     }
                     BASE_FONT_SIZE
                 })

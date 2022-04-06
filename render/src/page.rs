@@ -28,7 +28,9 @@ impl Page {
     }
 
     pub fn load_html(&mut self, html: String, base_url: Url) {
-        let document = NodePtr(TreeNode::new(Node::new(NodeData::Document(Document::new()))));
+        let document = NodePtr(TreeNode::new(Node::new(
+            NodeData::Document(Document::new()),
+        )));
 
         let default_css = include_str!("./html.css");
         let tokenizer = css::tokenizer::Tokenizer::new(default_css.chars());
