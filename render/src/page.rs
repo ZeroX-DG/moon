@@ -8,6 +8,8 @@ use url::Url;
 
 use super::frame::Frame;
 
+const USER_AGENT_STYLES: &str = include_str!("./html.css");
+
 pub struct Page {
     main_frame: Frame,
 }
@@ -32,8 +34,7 @@ impl Page {
             NodeData::Document(Document::new()),
         )));
 
-        let default_css = include_str!("./html.css");
-        let tokenizer = css::tokenizer::Tokenizer::new(default_css.chars());
+        let tokenizer = css::tokenizer::Tokenizer::new(USER_AGENT_STYLES.chars());
         let mut parser = css::parser::Parser::<css::tokenizer::token::Token>::new(tokenizer.run());
         let stylesheet = parser.parse_a_css_stylesheet();
         let stylesheet =
