@@ -316,13 +316,17 @@ impl<T: TreeNodeHooks<T> + Debug> From<&TreeNode<T>> for WeakTreeNode<T> {
 }
 
 pub struct ChildrenIterator<T: TreeNodeHooks<T> + Debug> {
+    parent: TreeNode<T>,
     current_node: Option<TreeNode<T>>,
+    first_iter: bool,
 }
 
 impl<T: TreeNodeHooks<T> + Debug> ChildrenIterator<T> {
     pub fn new(parent: TreeNode<T>) -> Self {
         Self {
-            current_node: parent.first_child(),
+            parent,
+            current_node: None,
+            first_iter: true,
         }
     }
 }
@@ -331,8 +335,27 @@ impl<T: TreeNodeHooks<T> + Debug> Iterator for ChildrenIterator<T> {
     type Item = TreeNode<T>;
 
     fn next(&mut self) -> Option<Self::Item> {
+        if self.first_iter {
+            self.current_node = self.parent.first_child();
+            self.first_iter = false;
+        }
         let current = self.current_node.clone();
         let next = current.clone().map(|node| node.next_sibling()).flatten();
+
+        self.current_node = next;
+
+        return current;
+    }
+}
+
+impl<T: TreeNodeHooks<T> + Debug> DoubleEndedIterator for ChildrenIterator<T> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        if self.first_iter {
+            self.current_node = self.parent.last_child();
+            self.first_iter = false;
+        }
+        let current = self.current_node.clone();
+        let next = current.clone().map(|node| node.prev_sibling()).flatten();
 
         self.current_node = next;
 

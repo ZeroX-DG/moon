@@ -10,6 +10,38 @@ use style::property::Property;
 
 use super::line_box::LineBoxBuilder;
 
+pub struct InlineBoxIterator {
+    stack: Vec<LayoutBoxPtr>,
+}
+
+impl InlineBoxIterator {
+    pub fn new(parent: LayoutBoxPtr) -> Self {
+        Self {
+            stack: parent
+                .iterate_children()
+                .rev()
+                .map(|child| LayoutBoxPtr(child))
+                .collect(),
+        }
+    }
+}
+
+impl Iterator for InlineBoxIterator {
+    type Item = LayoutBoxPtr;
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.stack.is_empty() {
+            return None;
+        }
+        let ptr = self.stack.pop().unwrap();
+
+        for child in ptr.iterate_children().rev() {
+            self.stack.push(LayoutBoxPtr(child));
+        }
+
+        return Some(ptr);
+    }
+}
+
 #[derive(Debug)]
 pub struct InlineFormattingContext {
     base: BaseFormattingContext,
@@ -48,8 +80,9 @@ impl InlineFormattingContext {
         let mut line_box_builder = LineBoxBuilder::new(layout_node.clone());
         layout_node.lines().borrow_mut().clear();
 
-        layout_node.for_each_child(|child| {
-            let child = LayoutBoxPtr(child);
+        let inline_child_iter = InlineBoxIterator::new(layout_node.clone());
+
+        for child in inline_child_iter {
             match child.render_node() {
                 Some(render_node) => match render_node.node.data() {
                     Some(NodeData::Text(content)) => {
@@ -78,7 +111,7 @@ impl InlineFormattingContext {
                     line_box_builder.add_box_fragment(child.clone());
                 }
             }
-        });
+        }
         *layout_node.lines().borrow_mut() = line_box_builder.finish();
     }
 

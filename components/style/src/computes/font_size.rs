@@ -27,10 +27,6 @@ pub fn compute_font_size(value: &Value, context: &mut ComputeContext) -> ValueRe
             context.style_cache.get(&value)
         }
         Value::Length(Length {
-            value: _,
-            unit: LengthUnit::Px,
-        }) => context.style_cache.get(value),
-        Value::Length(Length {
             value,
             unit: LengthUnit::Em,
         }) => {
@@ -49,6 +45,6 @@ pub fn compute_font_size(value: &Value, context: &mut ComputeContext) -> ValueRe
             let value = Value::Length(Length::new_px(value.0 * parent_font_size));
             context.style_cache.get(&value)
         }
-        _ => unreachable!("Invalid value provided for font-size"),
+        _ => context.style_cache.get(&value),
     }
 }
