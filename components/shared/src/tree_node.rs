@@ -318,7 +318,7 @@ impl<T: TreeNodeHooks<T> + Debug> From<&TreeNode<T>> for WeakTreeNode<T> {
 pub struct ChildrenIterator<T: TreeNodeHooks<T> + Debug> {
     parent: TreeNode<T>,
     current_node: Option<TreeNode<T>>,
-    first_iter: bool
+    first_iter: bool,
 }
 
 impl<T: TreeNodeHooks<T> + Debug> ChildrenIterator<T> {
@@ -326,7 +326,7 @@ impl<T: TreeNodeHooks<T> + Debug> ChildrenIterator<T> {
         Self {
             parent,
             current_node: None,
-            first_iter: true
+            first_iter: true,
         }
     }
 }

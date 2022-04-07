@@ -11,13 +11,17 @@ use style::property::Property;
 use super::line_box::LineBoxBuilder;
 
 pub struct InlineBoxIterator {
-    stack: Vec<LayoutBoxPtr>
+    stack: Vec<LayoutBoxPtr>,
 }
 
 impl InlineBoxIterator {
     pub fn new(parent: LayoutBoxPtr) -> Self {
         Self {
-            stack: parent.iterate_children().rev().map(|child| LayoutBoxPtr(child)).collect()
+            stack: parent
+                .iterate_children()
+                .rev()
+                .map(|child| LayoutBoxPtr(child))
+                .collect(),
         }
     }
 }
