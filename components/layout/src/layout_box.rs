@@ -328,10 +328,11 @@ impl LayoutBoxPtr {
     }
 
     pub fn formatting_context(&self) -> Rc<dyn FormattingContext> {
-        self.formatting_context
-            .borrow()
-            .clone()
-            .expect("No layout context! This should not happen!")
+        self.formatting_context.borrow().clone().unwrap_or_else(|| {
+            self.parent()
+                .map(|parent| LayoutBoxPtr(parent).formatting_context())
+                .expect("Unable to obtain formatting context")
+        })
     }
 
     pub fn apply_explicit_sizes(&self) {
