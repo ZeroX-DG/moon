@@ -1,5 +1,8 @@
 use shared::{color::Color, primitive::Radii};
-use style::{value::Value, values::prelude::BorderRadius};
+use style::{
+    value::Value,
+    values::prelude::{BorderRadius, LengthPercentage},
+};
 
 pub fn is_zero(value: &Value) -> bool {
     match value {
@@ -21,9 +24,21 @@ pub fn color_from_value(color: &Value) -> Color {
     }
 }
 
-pub fn to_radii(value: &Value, width: f32) -> Radii {
+pub fn to_radii(value: &Value, width: f32, font_size: f32) -> Radii {
+    let (h, v) = match value {
+        Value::BorderRadius(BorderRadius(hr, vr)) => (
+            resolve_length_percentage(hr, width, font_size),
+            resolve_length_percentage(vr, width, font_size),
+        ),
+        _ => (0., 0.),
+    };
+
+    Radii::new(h, v)
+}
+
+fn resolve_length_percentage(value: &LengthPercentage, width: f32, font_size: f32) -> f32 {
     match value {
-        Value::BorderRadius(BorderRadius(hr, vr)) => Radii::new(hr.to_px(width), vr.to_px(width)),
-        _ => Radii::new(0.0, 0.0),
+        LengthPercentage::Length(l) => l.resolve(font_size),
+        LengthPercentage::Percentage(p) => p.to_px(width),
     }
 }

@@ -12,6 +12,7 @@ impl Eq for Length {}
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum LengthUnit {
+    Rem,
     Em,
     Ex,
     In,
@@ -25,6 +26,7 @@ pub enum LengthUnit {
 impl LengthUnit {
     pub fn from_str(unit: &str) -> Option<Self> {
         match unit {
+            "rem" => Some(LengthUnit::Rem),
             "em" => Some(LengthUnit::Em),
             "ex" => Some(LengthUnit::Ex),
             "in" => Some(LengthUnit::In),
@@ -57,11 +59,18 @@ impl Length {
         }
     }
 
-    pub fn to_px(&self, relative_to: f32) -> f32 {
+    pub fn to_px(&self) -> f32 {
         match self.unit {
             LengthUnit::Px => *self.value,
-            LengthUnit::Em => *self.value * relative_to,
-            _ => unimplemented!("Unsupported length unit"),
+            _ => unreachable!("Calling to_px on non-px length unit"),
+        }
+    }
+
+    pub fn resolve(&self, font_size: f32) -> f32 {
+        match self.unit {
+            LengthUnit::Px => *self.value,
+            LengthUnit::Em | LengthUnit::Rem => *self.value * font_size,
+            _ => unimplemented!("Calling resolve on unsupported length unit"),
         }
     }
 }

@@ -46,6 +46,7 @@ pub struct PropertyDeclaration {
 
 /// Context for computing values
 pub struct ComputeContext<'a> {
+    pub root: Option<WeakTreeNode<RenderNode>>,
     pub parent: Option<WeakTreeNode<RenderNode>>,
     pub properties: HashMap<Property, Value>,
     pub style_cache: &'a mut StyleCache,
@@ -95,7 +96,7 @@ impl ValueRef {
 
     pub fn to_px(&self, relative_to: f32) -> f32 {
         match self.borrow() {
-            Value::Length(l) => l.to_px(relative_to),
+            Value::Length(l) => l.to_px(),
             Value::Percentage(p) => p.to_px(relative_to),
             Value::BorderWidth(w) => w.to_px(),
             Value::Auto => 0.,

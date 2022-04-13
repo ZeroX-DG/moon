@@ -146,10 +146,20 @@ impl<G: Graphics> Painter<G> {
 
         let border_box = layout_box.border_box_absolute();
 
-        let tl = to_radii(border_top_left_radius.inner(), border_box.width);
-        let tr = to_radii(border_top_right_radius.inner(), border_box.width);
-        let bl = to_radii(border_bottom_left_radius.inner(), border_box.width);
-        let br = to_radii(border_bottom_right_radius.inner(), border_box.width);
+        let font_size = render_node.get_style(&Property::FontSize).to_absolute_px();
+
+        let tl = to_radii(border_top_left_radius.inner(), border_box.width, font_size);
+        let tr = to_radii(border_top_right_radius.inner(), border_box.width, font_size);
+        let bl = to_radii(
+            border_bottom_left_radius.inner(),
+            border_box.width,
+            font_size,
+        );
+        let br = to_radii(
+            border_bottom_right_radius.inner(),
+            border_box.width,
+            font_size,
+        );
 
         Some(Corners::new(tl, tr, bl, br))
     }
