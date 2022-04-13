@@ -45,6 +45,25 @@ pub fn compute_font_size(value: &Value, context: &mut ComputeContext) -> ValueRe
             let value = Value::Length(Length::new_px(value.0 * parent_font_size));
             context.style_cache.get(&value)
         }
+        Value::Length(Length {
+            value,
+            unit: LengthUnit::Rem,
+        }) => {
+            let root_font_size = context
+                .root
+                .as_ref()
+                .map(|root| {
+                    if let Some(root) = root.upgrade() {
+                        return RenderNodePtr(root)
+                            .get_style(&Property::FontSize)
+                            .to_absolute_px();
+                    }
+                    BASE_FONT_SIZE
+                })
+                .unwrap_or(BASE_FONT_SIZE);
+            let value = Value::Length(Length::new_px(value.0 * root_font_size));
+            context.style_cache.get(&value)
+        }
         _ => context.style_cache.get(&value),
     }
 }

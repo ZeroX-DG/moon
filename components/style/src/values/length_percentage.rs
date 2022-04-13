@@ -19,7 +19,7 @@ impl LengthPercentage {
 
     pub fn to_px(&self, relative_to: f32) -> f32 {
         match self {
-            LengthPercentage::Length(l) => l.to_px(relative_to),
+            LengthPercentage::Length(l) => l.to_px(),
             LengthPercentage::Percentage(p) => p.to_px(relative_to),
         }
     }

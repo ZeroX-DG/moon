@@ -26,7 +26,7 @@ impl TreeBuilder {
         };
 
         let root = match render_root {
-            Some(node) => build_from_node(node, rules, None, &mut style_cache),
+            Some(node) => build_from_node(node, rules, None, None, &mut style_cache),
             None => None,
         };
 
@@ -38,6 +38,7 @@ fn build_from_node(
     node: NodePtr,
     rules: &[ContextualRule],
     parent: Option<WeakTreeNode<RenderNode>>,
+    root: Option<WeakTreeNode<RenderNode>>,
     cache: &mut StyleCache,
 ) -> Option<RenderNodePtr> {
     let properties = if node.is_text() {
@@ -57,8 +58,16 @@ fn build_from_node(
 
     let render_node = TreeNode::new(RenderNode {
         node: node.clone(),
-        properties: compute_styles(properties, parent.clone(), cache),
+        properties: compute_styles(properties, parent.clone(), root.clone(), cache),
     });
+
+    let root = match root {
+        Some(node) => Some(node),
+        None => match node.as_element_opt() {
+            Some(element) if element.tag_name() == "html" => Some(WeakTreeNode::from(render_node.clone())),
+            _ => unreachable!("The first node of the document should be HTML element"),
+        }
+    };
 
     render_node.set_children(
         &node
@@ -69,6 +78,7 @@ fn build_from_node(
                     NodePtr(child),
                     &rules,
                     Some(WeakTreeNode::from(&render_node)),
+                    root.clone(),
                     cache,
                 )
                 .map(|n| n.0)
@@ -82,6 +92,7 @@ fn build_from_node(
 fn compute_styles(
     properties: Properties,
     parent: Option<WeakTreeNode<RenderNode>>,
+    root: Option<WeakTreeNode<RenderNode>>,
     cache: &mut StyleCache,
 ) -> HashMap<Property, ValueRef> {
     // get inherit value for a property
@@ -136,6 +147,7 @@ fn compute_styles(
     // TODO: Might be an expensive clone when we support all properties
     let temp_specified = specified_values.clone();
     let mut context = ComputeContext {
+        root,
         parent,
         properties: temp_specified,
         style_cache: cache,
