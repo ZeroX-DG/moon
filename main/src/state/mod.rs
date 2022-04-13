@@ -8,7 +8,6 @@ use browser_tab::BrowserTab;
 use gtk::{
     gdk_pixbuf::{Colorspace, Pixbuf},
     glib::Bytes,
-    traits::ImageExt,
 };
 use shared::primitive::Size;
 use url::Url;
@@ -71,6 +70,6 @@ impl AppState {
             self.viewport.height as i32,
             self.viewport.width as i32 * 4,
         );
-        self.ui.content_area.set_pixbuf(Some(&pixbuf));
+        self.ui.set_content_pixbuf(pixbuf);
     }
 }

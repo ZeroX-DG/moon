@@ -1,15 +1,20 @@
 mod primary_bar;
 
-use gtk::{prelude::*, Orientation};
-use gtk::{Application, ApplicationWindow, Image};
+use std::cell::RefCell;
+use std::rc::Rc;
+
+use gtk::gdk_pixbuf::Pixbuf;
+use gtk::{prelude::*, DrawingArea, Orientation};
+use gtk::{Application, ApplicationWindow};
 
 use self::primary_bar::PrimaryBar;
 
 pub struct UI {
     pub app: Application,
     pub window: ApplicationWindow,
-    pub content_area: Image,
+    pub content_area: DrawingArea,
     pub primary_bar: PrimaryBar,
+    web_content: Rc<RefCell<Option<Pixbuf>>>,
 }
 
 impl UI {
@@ -21,7 +26,21 @@ impl UI {
             .default_height(600)
             .build();
 
-        let content_area = Image::builder().hexpand(true).vexpand(true).build();
+        let content_area = DrawingArea::builder().hexpand(true).vexpand(true).build();
+
+        let web_content: Rc<RefCell<Option<Pixbuf>>> = Rc::new(RefCell::new(None));
+
+        let web_content_clone = web_content.clone();
+
+        content_area.connect_draw(move |_, context| {
+            if let Some(pixbuf) = &*web_content_clone.borrow() {
+                context.set_source_pixbuf(pixbuf, 0., 0.);
+                context.paint().unwrap();
+                return Inhibit(false);
+            }
+
+            Inhibit(true)
+        });
 
         let container = gtk::Box::builder()
             .orientation(Orientation::Vertical)
@@ -36,6 +55,12 @@ impl UI {
             window,
             content_area,
             primary_bar,
+            web_content,
         }
+    }
+
+    pub fn set_content_pixbuf(&mut self, content: Pixbuf) {
+        self.web_content.borrow_mut().replace(content);
+        self.content_area.queue_draw();
     }
 }
