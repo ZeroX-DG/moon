@@ -1,5 +1,8 @@
 use shared::{color::Color, primitive::Radii};
-use style::{value::Value, values::prelude::{BorderRadius, LengthPercentage}};
+use style::{
+    value::Value,
+    values::prelude::{BorderRadius, LengthPercentage},
+};
 
 pub fn is_zero(value: &Value) -> bool {
     match value {

@@ -64,9 +64,11 @@ fn build_from_node(
     let root = match root {
         Some(node) => Some(node),
         None => match node.as_element_opt() {
-            Some(element) if element.tag_name() == "html" => Some(WeakTreeNode::from(render_node.clone())),
+            Some(element) if element.tag_name() == "html" => {
+                Some(WeakTreeNode::from(render_node.clone()))
+            }
             _ => unreachable!("The first node of the document should be HTML element"),
-        }
+        },
     };
 
     render_node.set_children(
