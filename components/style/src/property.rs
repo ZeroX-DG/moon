@@ -72,7 +72,10 @@ impl Property {
             "font-size" => Some(Property::FontSize),
             "margin-block-start" => Some(Property::MarginTop),
             "margin-block-end" => Some(Property::MarginBottom),
-            _ => None,
+            _ => {
+                log::debug!("Unsupported CSS property: {}", property);
+                None
+            }
         }
     }
 }

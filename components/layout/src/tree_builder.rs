@@ -57,19 +57,11 @@ impl TreeBuilder {
     /// formatting context of parent to block and insert the box as a direct
     /// children of the parent.
     fn get_parent_for_block(&mut self) -> LayoutBoxPtr {
-        while let Some(parent_box) = self.parent_stack.last() {
-            if parent_box.is_inline() || !parent_box.can_have_children() {
-                self.parent_stack.pop();
-            } else {
-                break;
-            }
-        }
-
-        if self.parent_stack.last().is_none() {
-            panic!("Can't find block parent for block box");
-        }
-
-        let parent = self.parent_stack.last().unwrap().clone();
+        let parent = self
+            .parent_stack
+            .iter()
+            .rfind(|parent_box| !parent_box.is_inline() && parent_box.can_have_children())
+            .expect("No parent in stack");
 
         if !parent.has_no_child() && parent.children_are_inline() {
             let anonymous = TreeNode::new(LayoutBox::new_anonymous(BoxData::block_box()));
@@ -78,7 +70,7 @@ impl TreeBuilder {
             parent.append_child(anonymous);
         }
 
-        parent
+        parent.clone()
     }
 
     /// Get a parent for an inline-level box
@@ -92,14 +84,6 @@ impl TreeBuilder {
     /// then create an anonymous block-level box to wrap the inline-box in before
     /// inserting into the parent.
     fn get_parent_for_inline(&mut self) -> LayoutBoxPtr {
-        while let Some(parent_box) = self.parent_stack.last() {
-            if !parent_box.can_have_children() {
-                self.parent_stack.pop();
-            } else {
-                break;
-            }
-        }
-
         let parent = self
             .parent_stack
             .last()
