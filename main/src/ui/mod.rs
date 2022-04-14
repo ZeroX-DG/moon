@@ -2,10 +2,16 @@ mod primary_bar;
 
 use std::cell::RefCell;
 use std::rc::Rc;
+use std::sync::{Arc, Mutex};
+use std::time::Duration;
 
 use gtk::gdk_pixbuf::Pixbuf;
 use gtk::{prelude::*, DrawingArea, Orientation};
 use gtk::{Application, ApplicationWindow};
+use shared::primitive::Size;
+
+use crate::app::get_app_runtime;
+use crate::delayed_task::DelayedTask;
 
 use self::primary_bar::PrimaryBar;
 
@@ -14,7 +20,7 @@ pub struct UI {
     pub window: ApplicationWindow,
     pub content_area: DrawingArea,
     pub primary_bar: PrimaryBar,
-    web_content: Rc<RefCell<Option<Pixbuf>>>,
+    web_content: Rc<RefCell<Option<Pixbuf>>>
 }
 
 impl UI {
@@ -42,6 +48,22 @@ impl UI {
             Inhibit(true)
         });
 
+        let debouncer: Arc<Mutex<Option<DelayedTask>>> = Arc::new(Mutex::new(None));
+
+        content_area.connect_size_allocate(move |_, _| {
+            if let Some(task) = &*debouncer.lock().unwrap() {
+                task.clear();
+            }
+            debouncer.lock().unwrap().replace(DelayedTask::new(Duration::from_millis(200), || {
+                get_app_runtime().update_state(|state| {
+                    let width = state.ui.content_area.allocated_width();
+                    let height = state.ui.content_area.allocated_width();
+                    let new_size = Size::new(width as f32, height as f32);
+                    state.active_tab_mut().resize(new_size);
+                });
+            }));
+        });
+
         let container = gtk::Box::builder()
             .orientation(Orientation::Vertical)
             .build();
@@ -55,7 +77,7 @@ impl UI {
             window,
             content_area,
             primary_bar,
-            web_content,
+            web_content
         }
     }
 

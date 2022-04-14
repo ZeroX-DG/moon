@@ -4,6 +4,7 @@ mod app;
 mod render_engine;
 mod state;
 mod ui;
+mod delayed_task;
 
 pub fn start_main() {
     let app = Application::builder()
