@@ -7,7 +7,8 @@ use browser::Browser;
 use browser_tab::BrowserTab;
 use gtk::{
     gdk_pixbuf::{Colorspace, Pixbuf},
-    glib::Bytes, traits::WidgetExt,
+    glib::Bytes,
+    traits::WidgetExt,
 };
 use shared::primitive::Size;
 use url::Url;
@@ -35,7 +36,7 @@ impl AppState {
         let tab = BrowserTab::new(url.clone());
         let viewport = Size::new(
             self.ui.content_area.allocated_width() as f32,
-            self.ui.content_area.allocated_height() as f32
+            self.ui.content_area.allocated_height() as f32,
         );
         tab.resize(viewport);
         tab.load();

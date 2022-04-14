@@ -1,7 +1,10 @@
-use std::{time::Duration, sync::{Arc, Mutex}};
+use std::{
+    sync::{Arc, Mutex},
+    time::Duration,
+};
 
 pub struct DelayedTask {
-    should_run: Arc<Mutex<bool>>
+    should_run: Arc<Mutex<bool>>,
 }
 
 impl DelayedTask {
@@ -15,9 +18,7 @@ impl DelayedTask {
             }
             callback();
         });
-        Self {
-            should_run,
-        }
+        Self { should_run }
     }
 
     pub fn clear(&self) {
