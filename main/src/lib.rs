@@ -1,6 +1,7 @@
 use gtk::{prelude::*, Application};
 
 mod app;
+mod delayed_task;
 mod render_engine;
 mod state;
 mod ui;

@@ -57,6 +57,7 @@ impl RenderEngine {
     pub fn resize(&self, size: Size) {
         self.update(|renderer| {
             renderer.resize(size);
+            renderer.paint();
             true
         });
     }

@@ -42,7 +42,7 @@ impl<'a> Renderer<'a> {
         rt.block_on(self.painter.output())
     }
 
-    fn paint(&mut self) {
+    pub fn paint(&mut self) {
         let main_frame = self.page.main_frame();
 
         if let Some(layout_root) = main_frame.layout().layout_tree() {
