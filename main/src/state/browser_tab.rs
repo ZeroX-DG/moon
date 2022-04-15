@@ -36,7 +36,7 @@ impl BrowserTab {
         render_engine.on_new_title(move |title| {
             let is_active_clone = is_active_clone.clone();
             let title_clone = title.clone();
-            
+
             get_app_runtime().update_state(move |state| {
                 let is_tab_active = is_active_clone.lock().unwrap();
                 if *is_tab_active {

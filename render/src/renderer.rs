@@ -9,7 +9,7 @@ pub struct Renderer<'a> {
     painter: Painter<Canvas<'a>>,
     pub page: Page,
 
-    new_title_handler: Option<Box<dyn Fn(String)>>
+    new_title_handler: Option<Box<dyn Fn(String)>>,
 }
 
 pub struct RendererInitializeParams {
@@ -22,7 +22,7 @@ impl<'a> Renderer<'a> {
         Self {
             painter: Painter::new(rt.block_on(Canvas::new())),
             page: Page::new(),
-            new_title_handler: None
+            new_title_handler: None,
         }
     }
 

@@ -1,6 +1,6 @@
 use std::sync::{Arc, Mutex};
 
-use flume::{bounded, Sender, RecvError};
+use flume::{bounded, RecvError, Sender};
 use shared::primitive::Size;
 use url::Url;
 
@@ -10,7 +10,7 @@ type Bitmap = Vec<u8>;
 
 pub enum RenderEngineData {
     Bitmap(Bitmap),
-    Title(String)
+    Title(String),
 }
 
 pub struct RenderEngine {
@@ -34,37 +34,52 @@ impl RenderEngine {
             });
 
             renderer.on_new_title(move |title| {
-                render_action_tx.send(RenderEngineData::Title(title)).unwrap();
+                render_action_tx
+                    .send(RenderEngineData::Title(title))
+                    .unwrap();
             });
 
             loop {
                 flume::Selector::new()
-                    .recv(&kernel_action_rx, |action: Result<Box<dyn FnOnce(&mut Renderer) -> bool + Send>, RecvError>| match action {
-                        Ok(action) => {
-                            let require_redraw = action(&mut renderer);
-                            if require_redraw {
-                                let bitmap = renderer.output();
-                                window_action_tx.send(RenderEngineData::Bitmap(bitmap)).unwrap();
+                    .recv(
+                        &kernel_action_rx,
+                        |action: Result<
+                            Box<dyn FnOnce(&mut Renderer) -> bool + Send>,
+                            RecvError,
+                        >| match action {
+                            Ok(action) => {
+                                let require_redraw = action(&mut renderer);
+                                if require_redraw {
+                                    let bitmap = renderer.output();
+                                    window_action_tx
+                                        .send(RenderEngineData::Bitmap(bitmap))
+                                        .unwrap();
+                                }
                             }
-                        }
-                        Err(_) => {
-                            panic!("Error while receiving renderer action");
-                        }
-                    })
-                    .recv(&render_action_rx, |data: Result<RenderEngineData, RecvError>| match data {
-                        Ok(data) => {
-                            window_action_tx.send(data).unwrap();
-                        }
-                        Err(_) => {
-                            panic!("Error while receiving renderer action");
-                        }
-                    })
+                            Err(_) => {
+                                panic!("Error while receiving renderer action");
+                            }
+                        },
+                    )
+                    .recv(
+                        &render_action_rx,
+                        |data: Result<RenderEngineData, RecvError>| match data {
+                            Ok(data) => {
+                                window_action_tx.send(data).unwrap();
+                            }
+                            Err(_) => {
+                                panic!("Error while receiving renderer action");
+                            }
+                        },
+                    )
                     .wait();
             }
         });
 
-        let new_bitmap_handler: Arc<Mutex<Option<Box<dyn Fn(Bitmap) + Send>>>> = Arc::new(Mutex::new(None));
-        let new_title_handler: Arc<Mutex<Option<Box<dyn Fn(String) + Send>>>> = Arc::new(Mutex::new(None));
+        let new_bitmap_handler: Arc<Mutex<Option<Box<dyn Fn(Bitmap) + Send>>>> =
+            Arc::new(Mutex::new(None));
+        let new_title_handler: Arc<Mutex<Option<Box<dyn Fn(String) + Send>>>> =
+            Arc::new(Mutex::new(None));
 
         let new_bitmap_handler_clone = new_bitmap_handler.clone();
         let new_title_handler_clone = new_title_handler.clone();
@@ -91,7 +106,7 @@ impl RenderEngine {
         Self {
             kernel_action_tx,
             new_bitmap_handler,
-            new_title_handler
+            new_title_handler,
         }
     }
 
@@ -111,11 +126,17 @@ impl RenderEngine {
     }
 
     pub fn on_new_bitmap(&mut self, handler: impl Fn(Bitmap) + Send + 'static) {
-        self.new_bitmap_handler.lock().unwrap().replace(Box::new(handler));
+        self.new_bitmap_handler
+            .lock()
+            .unwrap()
+            .replace(Box::new(handler));
     }
 
     pub fn on_new_title(&self, handler: impl Fn(String) + Send + 'static) {
-        self.new_title_handler.lock().unwrap().replace(Box::new(handler));
+        self.new_title_handler
+            .lock()
+            .unwrap()
+            .replace(Box::new(handler));
     }
 
     fn update(&self, action: impl FnOnce(&mut Renderer) -> bool + 'static + Send) {
