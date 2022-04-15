@@ -16,10 +16,10 @@ pub struct BrowserTab {
 
 impl BrowserTab {
     pub fn new(url: Url) -> Self {
-        let render_engine = RenderEngine::new();
+        let mut render_engine = RenderEngine::new();
 
         let is_active = Arc::new(Mutex::new(false));
-        let is_active_clone = is_active.clone();
+        let mut is_active_clone = is_active.clone();
 
         render_engine.on_new_bitmap(move |bitmap| {
             let is_active_clone = is_active_clone.clone();
@@ -28,6 +28,19 @@ impl BrowserTab {
                 let is_tab_active = is_active_clone.lock().unwrap();
                 if *is_tab_active {
                     state.on_active_tab_bitmap(bitmap);
+                }
+            });
+        });
+
+        is_active_clone = is_active.clone();
+        render_engine.on_new_title(move |title| {
+            let is_active_clone = is_active_clone.clone();
+            let title_clone = title.clone();
+            
+            get_app_runtime().update_state(move |state| {
+                let is_tab_active = is_active_clone.lock().unwrap();
+                if *is_tab_active {
+                    state.ui.set_title(&title_clone);
                 }
             });
         });

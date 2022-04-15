@@ -1,4 +1,6 @@
-use flume::{bounded, Receiver, Sender};
+use std::sync::{Arc, Mutex};
+
+use flume::{bounded, Sender, RecvError};
 use shared::primitive::Size;
 use url::Url;
 
@@ -6,17 +8,24 @@ use render::{Renderer, RendererInitializeParams};
 
 type Bitmap = Vec<u8>;
 
+pub enum RenderEngineData {
+    Bitmap(Bitmap),
+    Title(String)
+}
+
 pub struct RenderEngine {
-    renderer_action_tx: Sender<Box<dyn FnOnce(&mut Renderer) -> bool + Send>>,
-    bitmap_rx: Receiver<Bitmap>,
+    kernel_action_tx: Sender<Box<dyn FnOnce(&mut Renderer) -> bool + Send>>,
+    new_bitmap_handler: Arc<Mutex<Option<Box<dyn Fn(Bitmap) + Send>>>>,
+    new_title_handler: Arc<Mutex<Option<Box<dyn Fn(String) + Send>>>>,
 }
 
 impl RenderEngine {
     pub fn new() -> Self {
-        let (renderer_action_tx, renderer_action_rx) =
+        let (kernel_action_tx, kernel_action_rx) =
             bounded::<Box<dyn FnOnce(&mut Renderer) -> bool + Send>>(1);
 
-        let (bitmap_tx, bitmap_rx) = bounded::<Bitmap>(1);
+        let (window_action_tx, window_action_rx) = bounded::<RenderEngineData>(1);
+        let (render_action_tx, render_action_rx) = bounded::<RenderEngineData>(1);
 
         let _ = std::thread::spawn(move || {
             let mut renderer = Renderer::new();
@@ -24,26 +33,65 @@ impl RenderEngine {
                 viewport: Size::new(1., 1.),
             });
 
+            renderer.on_new_title(move |title| {
+                render_action_tx.send(RenderEngineData::Title(title)).unwrap();
+            });
+
             loop {
-                match renderer_action_rx.recv() {
-                    Ok(action) => {
-                        let require_redraw = action(&mut renderer);
-                        if require_redraw {
-                            let bitmap = renderer.output();
-                            bitmap_tx.send(bitmap).unwrap();
+                flume::Selector::new()
+                    .recv(&kernel_action_rx, |action: Result<Box<dyn FnOnce(&mut Renderer) -> bool + Send>, RecvError>| match action {
+                        Ok(action) => {
+                            let require_redraw = action(&mut renderer);
+                            if require_redraw {
+                                let bitmap = renderer.output();
+                                window_action_tx.send(RenderEngineData::Bitmap(bitmap)).unwrap();
+                            }
                         }
+                        Err(_) => {
+                            panic!("Error while receiving renderer action");
+                        }
+                    })
+                    .recv(&render_action_rx, |data: Result<RenderEngineData, RecvError>| match data {
+                        Ok(data) => {
+                            window_action_tx.send(data).unwrap();
+                        }
+                        Err(_) => {
+                            panic!("Error while receiving renderer action");
+                        }
+                    })
+                    .wait();
+            }
+        });
+
+        let new_bitmap_handler: Arc<Mutex<Option<Box<dyn Fn(Bitmap) + Send>>>> = Arc::new(Mutex::new(None));
+        let new_title_handler: Arc<Mutex<Option<Box<dyn Fn(String) + Send>>>> = Arc::new(Mutex::new(None));
+
+        let new_bitmap_handler_clone = new_bitmap_handler.clone();
+        let new_title_handler_clone = new_title_handler.clone();
+
+        let _ = std::thread::spawn(move || loop {
+            match window_action_rx.recv() {
+                Ok(RenderEngineData::Bitmap(bitmap)) => {
+                    if let Some(handler) = &*new_bitmap_handler_clone.lock().unwrap() {
+                        handler(bitmap);
                     }
-                    Err(_) => {
-                        log::error!("Error while receiving renderer action");
-                        break;
+                }
+                Ok(RenderEngineData::Title(title)) => {
+                    if let Some(handler) = &*new_title_handler_clone.lock().unwrap() {
+                        handler(title);
                     }
+                }
+                _ => {
+                    log::error!("Error while receiving bitmap");
+                    break;
                 }
             }
         });
 
         Self {
-            renderer_action_tx,
-            bitmap_rx,
+            kernel_action_tx,
+            new_bitmap_handler,
+            new_title_handler
         }
     }
 
@@ -62,22 +110,15 @@ impl RenderEngine {
         });
     }
 
-    pub fn on_new_bitmap(&self, handler: impl Fn(Bitmap) + Send + 'static) {
-        let receiver = self.bitmap_rx.clone();
-        let _ = std::thread::spawn(move || loop {
-            match receiver.recv() {
-                Ok(bitmap) => {
-                    handler(bitmap);
-                }
-                _ => {
-                    log::error!("Error while receiving bitmap");
-                    break;
-                }
-            }
-        });
+    pub fn on_new_bitmap(&mut self, handler: impl Fn(Bitmap) + Send + 'static) {
+        self.new_bitmap_handler.lock().unwrap().replace(Box::new(handler));
+    }
+
+    pub fn on_new_title(&self, handler: impl Fn(String) + Send + 'static) {
+        self.new_title_handler.lock().unwrap().replace(Box::new(handler));
     }
 
     fn update(&self, action: impl FnOnce(&mut Renderer) -> bool + 'static + Send) {
-        self.renderer_action_tx.send(Box::new(action)).unwrap();
+        self.kernel_action_tx.send(Box::new(action)).unwrap();
     }
 }

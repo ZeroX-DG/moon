@@ -84,6 +84,10 @@ impl UI {
         }
     }
 
+    pub fn set_title(&mut self, title: &str) {
+        self.window.set_title(title);
+    }
+
     pub fn set_content_pixbuf(&mut self, content: Pixbuf) {
         self.web_content.borrow_mut().replace(content);
         self.content_area.queue_draw();
