@@ -7,6 +7,7 @@ use style_types::{ContextualRule, ContextualStyleSheet};
 use url::Url;
 
 pub struct Document {
+    title: RefCell<String>,
     doctype: RefCell<Option<DocumentType>>,
     mode: RefCell<QuirksMode>,
     stylesheets: RefCell<Vec<Rc<ContextualStyleSheet>>>,
@@ -38,6 +39,7 @@ impl NodeHooks for Document {}
 impl Document {
     pub fn new() -> Self {
         Self {
+            title: RefCell::new(String::new()),
             doctype: RefCell::new(None),
             mode: RefCell::new(QuirksMode::NoQuirks),
             stylesheets: RefCell::new(Vec::new()),
@@ -56,6 +58,14 @@ impl Document {
 
     pub fn get_mode(&self) -> QuirksMode {
         self.mode.borrow().clone()
+    }
+
+    pub fn set_title(&self, title: String) {
+        *self.title.borrow_mut() = title.clone();
+    }
+
+    pub fn title(&self) -> String {
+        self.title.borrow().deref().clone()
     }
 
     pub fn append_stylesheet(&self, stylesheet: ContextualStyleSheet) -> Rc<ContextualStyleSheet> {

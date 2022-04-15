@@ -47,6 +47,10 @@ impl Frame {
         self.layout.reflow(&self.size, ReflowType::All(document));
     }
 
+    pub fn document(&self) -> NodePtr {
+        self.document.clone().expect("No document available")
+    }
+
     pub fn layout(&self) -> &FrameLayout {
         &self.layout
     }
