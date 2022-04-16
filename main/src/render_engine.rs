@@ -25,7 +25,6 @@ impl RenderEngine {
             bounded::<Box<dyn FnOnce(&mut Renderer) -> bool + Send>>(1);
 
         let (window_action_tx, window_action_rx) = bounded::<RenderEngineData>(1);
-        let (render_action_tx, render_action_rx) = bounded::<RenderEngineData>(1);
 
         let _ = std::thread::spawn(move || {
             let mut renderer = Renderer::new();
@@ -33,8 +32,10 @@ impl RenderEngine {
                 viewport: Size::new(1., 1.),
             });
 
+            let window_action_tx_clone = window_action_tx.clone();
+
             renderer.on_new_title(move |title| {
-                render_action_tx
+                window_action_tx_clone
                     .send(RenderEngineData::Title(title))
                     .unwrap();
             });
@@ -55,17 +56,6 @@ impl RenderEngine {
                                         .send(RenderEngineData::Bitmap(bitmap))
                                         .unwrap();
                                 }
-                            }
-                            Err(_) => {
-                                panic!("Error while receiving renderer action");
-                            }
-                        },
-                    )
-                    .recv(
-                        &render_action_rx,
-                        |data: Result<RenderEngineData, RecvError>| match data {
-                            Ok(data) => {
-                                window_action_tx.send(data).unwrap();
                             }
                             Err(_) => {
                                 panic!("Error while receiving renderer action");
