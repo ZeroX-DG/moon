@@ -1,7 +1,3 @@
-use crate::computes::border_radius::compute_border_radius;
-use crate::computes::border_width::compute_border_width;
-use crate::computes::margin::compute_margin;
-use crate::computes::padding::compute_padding;
 use crate::property::Property;
 use crate::render_tree::RenderNode;
 use crate::value::Value;
@@ -25,10 +21,6 @@ use style_types::CascadeOrigin;
 use style_types::ContextualRule;
 
 use super::expand::prelude::*;
-
-// computes
-use super::computes::color::compute_color;
-use super::computes::font_size::compute_font_size;
 
 type DeclaredValuesMap = HashMap<Property, Vec<PropertyDeclaration>>;
 
@@ -110,7 +102,7 @@ impl ValueRef {
                 value,
                 unit: LengthUnit::Px,
             }) => **value,
-            _ => unimplemented!("Calling to_absolute_px for unsupported value"),
+            _ => unreachable!("Calling to_absolute_px for unsupported value"),
         }
     }
 
@@ -148,33 +140,6 @@ pub fn apply_styles(node: &NodePtr, rules: &[ContextualRule]) -> Properties {
         .collect::<Properties>();
 
     cascade_values
-}
-
-/// Resolve specified values to computed values
-pub fn compute(property: &Property, value: &Value, context: &mut ComputeContext) -> ValueRef {
-    // TODO: Some of these compute functions is quite similar. For example: compute_margin & compute_padding.
-    // We should optimize this by computing base on value instead of property.
-    match property {
-        Property::Color => compute_color(value, context),
-        Property::FontSize => compute_font_size(value, context),
-        Property::MarginTop
-        | Property::MarginLeft
-        | Property::MarginRight
-        | Property::MarginBottom => compute_margin(value, context),
-        Property::BorderTopWidth
-        | Property::BorderLeftWidth
-        | Property::BorderBottomWidth
-        | Property::BorderRightWidth => compute_border_width(property, value, context),
-        Property::BorderTopLeftRadius
-        | Property::BorderTopRightRadius
-        | Property::BorderBottomLeftRadius
-        | Property::BorderBottomRightRadius => compute_border_radius(value, context),
-        Property::PaddingTop
-        | Property::PaddingLeft
-        | Property::PaddingRight
-        | Property::PaddingBottom => compute_padding(value, context),
-        _ => context.style_cache.get(value),
-    }
 }
 
 /// Cascade sort the property declarations

@@ -1,3 +1,9 @@
+use crate::property::Property;
+use crate::render_tree::RenderNodePtr;
+use crate::value::Value;
+use crate::value_processing::ComputeContext;
+use crate::value_processing::ValueRef;
+
 use super::number::Number;
 use css::parser::structs::ComponentValue;
 use css::parser::structs::Function;
@@ -250,5 +256,20 @@ impl Color {
 
     pub fn black() -> Self {
         Color::Rgba(0.0.into(), 0.0.into(), 0.0.into(), 255.0.into())
+    }
+
+    pub fn compute(&self, _: &Property, context: &mut ComputeContext) -> ValueRef {
+        match self {
+            Color::CurrentColor => {
+                if let Some(parent) = &context.parent {
+                    if let Some(p) = parent.upgrade() {
+                        return RenderNodePtr(p).get_style(&Property::Color);
+                    }
+                }
+                let value = Value::initial(&Property::Color);
+                context.style_cache.get(&value)
+            }
+            _ => context.style_cache.get(&Value::Color(self.clone())),
+        }
     }
 }

@@ -1,3 +1,7 @@
+use crate::property::Property;
+use crate::value::Value;
+use crate::value_processing::{ComputeContext, ValueRef};
+
 use super::prelude::{Length, LengthPercentage};
 use css::parser::structs::ComponentValue;
 use css::tokenizer::token::Token;
@@ -48,5 +52,17 @@ impl BorderRadius {
             LengthPercentage::Length(Length::zero()),
             LengthPercentage::Length(Length::zero()),
         )
+    }
+
+    pub fn compute(&self, property: &Property, context: &mut ComputeContext) -> ValueRef {
+        match self {
+            BorderRadius(hr, vr) => {
+                let value = Value::BorderRadius(BorderRadius(
+                    hr.compute(property, context),
+                    vr.compute(property, context),
+                ));
+                context.style_cache.get(&value)
+            }
+        }
     }
 }

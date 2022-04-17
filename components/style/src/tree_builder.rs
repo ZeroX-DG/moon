@@ -1,7 +1,7 @@
 use crate::property::Property;
 use crate::render_tree::RenderNodePtr;
 use crate::value::Value;
-use crate::value_processing::{compute, ComputeContext, Properties, StyleCache};
+use crate::value_processing::{ComputeContext, Properties, StyleCache};
 use crate::values::display::{Display, DisplayBox};
 use dom::node::NodePtr;
 use shared::tree_node::{TreeNode, WeakTreeNode};
@@ -152,7 +152,7 @@ fn compute_styles(
     let computed_values = specified_values
         .into_iter()
         .map(|(property, value)| {
-            let computed_value = compute(&property, &value, &mut context);
+            let computed_value = value.compute(&property, &mut context);
             return (property.clone(), computed_value);
         })
         .collect::<HashMap<Property, ValueRef>>();
