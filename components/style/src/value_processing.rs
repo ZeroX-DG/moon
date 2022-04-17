@@ -142,34 +142,6 @@ pub fn apply_styles(node: &NodePtr, rules: &[ContextualRule]) -> Properties {
     cascade_values
 }
 
-/// Resolve specified values to computed values
-// pub fn compute(property: &Property, value: &Value, context: &mut ComputeContext) -> ValueRef {
-//     // TODO: Some of these compute functions is quite similar. For example: compute_margin & compute_padding.
-//     // We should optimize this by computing base on value instead of property.
-//     return value.compute(property, context);
-//     // match property {
-//     //     Property::Color => compute_color(value, context),
-//     //     Property::FontSize => compute_font_size(value, context),
-//     //     Property::MarginTop
-//     //     | Property::MarginLeft
-//     //     | Property::MarginRight
-//     //     | Property::MarginBottom => compute_margin(value, context),
-//     //     Property::BorderTopWidth
-//     //     | Property::BorderLeftWidth
-//     //     | Property::BorderBottomWidth
-//     //     | Property::BorderRightWidth => compute_border_width(property, value, context),
-//     //     Property::BorderTopLeftRadius
-//     //     | Property::BorderTopRightRadius
-//     //     | Property::BorderBottomLeftRadius
-//     //     | Property::BorderBottomRightRadius => compute_border_radius(value, context),
-//     //     Property::PaddingTop
-//     //     | Property::PaddingLeft
-//     //     | Property::PaddingRight
-//     //     | Property::PaddingBottom => compute_padding(value, context),
-//     //     _ => context.style_cache.get(value),
-//     // }
-// }
-
 /// Cascade sort the property declarations
 /// for a property and get the wining value
 fn cascade(declared_values: &mut Vec<PropertyDeclaration>) -> Option<Value> {
