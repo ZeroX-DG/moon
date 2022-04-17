@@ -1,6 +1,9 @@
 use css::{parser::structs::ComponentValue, tokenizer::token::Token};
 
-use crate::property::Property;
+use crate::{
+    property::Property,
+    value_processing::{ComputeContext, ValueRef},
+};
 
 use super::values::prelude::*;
 
@@ -262,6 +265,17 @@ impl Value {
             Property::BorderBottomRightRadius => Value::BorderRadius(BorderRadius::zero()),
             // TODO: replace with `medium` when we support absolute size
             Property::FontSize => Value::Length(Length::new_px(16.)),
+        }
+    }
+
+    pub fn compute(&self, property: &Property, context: &mut ComputeContext) -> ValueRef {
+        match self {
+            Value::Color(color) => color.compute(property, context),
+            Value::BorderRadius(border_radius) => border_radius.compute(property, context),
+            Value::BorderWidth(border_width) => border_width.compute(property, context),
+            Value::Length(length) => length.compute(property, context),
+            Value::Percentage(percentage) => percentage.compute(property, context),
+            _ => context.style_cache.get(&self),
         }
     }
 }
