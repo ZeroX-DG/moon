@@ -20,8 +20,8 @@ To fit with the "make from scratch" spirit, I'll limit the use of external libra
 
 Currently, the browser is able to render block & inline layout! I'm working on supporting other types of layout & better text-rendering. Here's a comparison with Firefox rendering. (Moon is on the left, Firefox is on the right).
 
-<p align="center"><img src="./resources/firefox_compare.png" /></p>
-<p align="center"><img src="./resources/text_rendering.png" /></p>
+<p align="center"><img src="./documentation/firefox_compare.png" /></p>
+<p align="center"><img src="./documentation/text_rendering.png" /></p>
 
 ## Wanna try it out?
 
