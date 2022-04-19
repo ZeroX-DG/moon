@@ -21,6 +21,8 @@ Here are the steps to try it out if you are interested:
 1. Clone the repository.
 2. Run `cargo run` and wait for the code to compile & execute.
 
+Check out the [Getting Started Guide](./documentation/getting-started.md) for more advanced stuff.
+
 ## Screenshots
 
 <p align="center">
