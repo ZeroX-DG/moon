@@ -65,6 +65,7 @@ pub enum Value {
     Position(Position),
     Direction(Direction),
     BorderRadius(BorderRadius),
+    TextAlign(TextAlign),
     Auto,
     Inherit,
     Initial,
@@ -222,6 +223,10 @@ impl Value {
                 Length | Percentage | Auto | Inherit | Initial | Unset;
                 tokens
             ),
+            Property::TextAlign => parse_value!(
+                TextAlign | Inherit;
+                tokens
+            ),
         }
     }
 
@@ -265,6 +270,7 @@ impl Value {
             Property::BorderBottomRightRadius => Value::BorderRadius(BorderRadius::zero()),
             // TODO: replace with `medium` when we support absolute size
             Property::FontSize => Value::Length(Length::new_px(16.)),
+            Property::TextAlign => Value::TextAlign(TextAlign::Left),
         }
     }
 

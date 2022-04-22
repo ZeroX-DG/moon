@@ -25,7 +25,7 @@ pub enum FormattingContextType {
 #[derive(Debug)]
 pub struct BaseFormattingContext {
     pub context_type: FormattingContextType,
-    pub establish_by: RefCell<Option<WeakTreeNode<LayoutBox>>>,
+    pub establish_by: RefCell<WeakTreeNode<LayoutBox>>,
 }
 
 pub trait FormattingContext: Debug {
@@ -59,7 +59,7 @@ pub fn establish_context(
 ) -> Rc<dyn FormattingContext> {
     let base_context = BaseFormattingContext {
         context_type: context_type.clone(),
-        establish_by: RefCell::new(Some(WeakTreeNode::from(&establish_by.0))),
+        establish_by: RefCell::new(WeakTreeNode::from(&establish_by.0)),
     };
     let context: Rc<dyn FormattingContext> = match context_type {
         FormattingContextType::BlockFormattingContext => {
@@ -118,7 +118,7 @@ pub fn create_independent_formatting_context_if_needed(
     if let FormattingContextType::BlockFormattingContext = formatting_context_type {
         let base_context = BaseFormattingContext {
             context_type: formatting_context_type,
-            establish_by: RefCell::new(Some(WeakTreeNode::from(&node.0))),
+            establish_by: RefCell::new(WeakTreeNode::from(&node.0)),
         };
         return Some(Rc::new(BlockFormattingContext::new(base_context)));
     }
@@ -126,7 +126,7 @@ pub fn create_independent_formatting_context_if_needed(
     if node.children_are_inline() {
         let base_context = BaseFormattingContext {
             context_type: FormattingContextType::InlineFormattingContext,
-            establish_by: RefCell::new(Some(WeakTreeNode::from(&node.0))),
+            establish_by: RefCell::new(WeakTreeNode::from(&node.0)),
         };
         return Some(Rc::new(InlineFormattingContext::new(base_context)));
     }
