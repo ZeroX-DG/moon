@@ -10,6 +10,7 @@ pub mod length_percentage;
 pub mod number;
 pub mod percentage;
 pub mod position;
+pub mod text_align;
 
 // Let this pub because in the future we may want to use this in other places.
 // Just maybe....
@@ -25,4 +26,5 @@ pub mod prelude {
     pub use super::length_percentage::LengthPercentage;
     pub use super::percentage::Percentage;
     pub use super::position::Position;
+    pub use super::text_align::TextAlign;
 }

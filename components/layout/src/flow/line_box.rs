@@ -2,7 +2,7 @@ use std::rc::Rc;
 
 use gfx::TextMeasure;
 use shared::primitive::{Point, Size};
-use style::property::Property;
+use style::{property::Property, value::Value, values::prelude::TextAlign};
 
 use crate::layout_box::LayoutBoxPtr;
 
@@ -208,8 +208,27 @@ impl LineBoxBuilder {
 
         let last_line = self.line_boxes.last_mut().unwrap();
 
+        let mut x_offset = last_line
+            .fragments
+            .iter()
+            .map(|fragment| fragment.offset.x)
+            .fold(f32::INFINITY, |a, b| a.min(b));
+
+        let remaining_space = self.parent.content_size().width - last_line.size.width;
+
+        if let Some(render_node) = self.parent.render_node() {
+            match render_node.get_style(&Property::TextAlign).inner() {
+                Value::TextAlign(TextAlign::Center) => {
+                    x_offset += remaining_space / 2.;
+                }
+                _ => {}
+            }
+        }
+
         for fragment in &mut last_line.fragments {
-            fragment.set_offset(Point::new(fragment.offset.x, self.current_offset_y));
+            let mut used_offset = Point::new(fragment.offset.x, self.current_offset_y);
+            used_offset.translate(x_offset, 0.);
+            fragment.set_offset(used_offset);
         }
     }
 
