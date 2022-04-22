@@ -208,7 +208,11 @@ impl LineBoxBuilder {
 
         let last_line = self.line_boxes.last_mut().unwrap();
 
-        let mut x_offset = last_line.fragments.iter().map(|fragment| fragment.offset.x).fold(f32::INFINITY, |a, b| a.min(b));
+        let mut x_offset = last_line
+            .fragments
+            .iter()
+            .map(|fragment| fragment.offset.x)
+            .fold(f32::INFINITY, |a, b| a.min(b));
 
         let remaining_space = self.parent.content_size().width - last_line.size.width;
 

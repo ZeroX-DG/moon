@@ -40,7 +40,7 @@ pub enum Property {
     Bottom,
     Direction,
     FontSize,
-    TextAlign
+    TextAlign,
 }
 
 impl Property {

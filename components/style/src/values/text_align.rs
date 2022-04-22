@@ -6,7 +6,7 @@ pub enum TextAlign {
     Left,
     Center,
     Right,
-    Justify
+    Justify,
 }
 
 impl TextAlign {
