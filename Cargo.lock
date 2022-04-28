@@ -2739,11 +2739,8 @@ version = "0.1.0"
 dependencies = [
  "css",
  "dom",
- "lazy_static",
  "log",
  "shared",
- "strum",
- "strum_macros",
  "style_types",
  "test_utils",
 ]
@@ -2753,6 +2750,10 @@ name = "style_types"
 version = "0.1.0"
 dependencies = [
  "css",
+ "log",
+ "shared",
+ "strum",
+ "strum_macros",
 ]
 
 [[package]]

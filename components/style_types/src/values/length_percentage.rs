@@ -1,8 +1,5 @@
 use css::parser::structs::ComponentValue;
 
-use crate::property::Property;
-use crate::value_processing::ComputeContext;
-
 use super::length::Length;
 use super::percentage::Percentage;
 
@@ -34,15 +31,6 @@ impl LengthPercentage {
                 Some(p) => Some(Self::Percentage(p)),
                 None => None,
             },
-        }
-    }
-
-    pub fn compute(&self, property: &Property, context: &mut ComputeContext) -> Self {
-        match self {
-            LengthPercentage::Length(length) => {
-                LengthPercentage::Length(length.compute_value(property, context))
-            }
-            _ => self.clone(),
         }
     }
 }
