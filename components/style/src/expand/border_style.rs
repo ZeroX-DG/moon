@@ -1,7 +1,6 @@
 use super::ExpandOutput;
-use crate::property::Property;
-use crate::value::Value;
 use css::parser::structs::ComponentValue;
+use style_types::{Property, Value};
 
 pub fn expand_border_style(values: &[&[ComponentValue]]) -> ExpandOutput {
     if values.len() == 1 {

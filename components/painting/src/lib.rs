@@ -10,7 +10,7 @@ use shared::{
     color::Color,
     primitive::{Corners, Rect, Size},
 };
-use style::{property::Property, value::Value, values::color::Color as CSSColor};
+use style_types::{Property, Value, values::color::Color as CSSColor};
 use utils::{color_from_value, is_zero, to_radii};
 
 pub struct Painter<G: Graphics> {
@@ -57,22 +57,22 @@ impl<G: Graphics> Painter<G> {
         for fragment in &line.fragments {
             match &fragment.data {
                 LineFragmentData::Box(layout_box) if !layout_box.is_anonymous() => {
-                    let render_node = layout_box.render_node().unwrap();
+                    let node = layout_box.node().unwrap();
                     let mut background_rect =
                         Rect::from((containing_block.absolute_location(), fragment.size.clone()));
                     background_rect.translate(fragment.offset.x, fragment.offset.y);
                     let background_color =
-                        color_from_value(&render_node.get_style(&Property::BackgroundColor));
+                        color_from_value(&node.get_style(&Property::BackgroundColor));
                     let corners = self.compute_border_radius_corner(layout_box.clone());
                     self.paint_background(background_rect, background_color, corners);
                 }
                 LineFragmentData::Text(layout_box, content) => {
-                    let render_node = layout_box.render_node().unwrap();
+                    let node = layout_box.node().unwrap();
                     let mut text_rect =
                         Rect::from((containing_block.absolute_location(), fragment.size.clone()));
                     text_rect.translate(fragment.offset.x, fragment.offset.y);
-                    let text_color = color_from_value(&render_node.get_style(&Property::Color));
-                    let font_size = render_node.get_style(&Property::FontSize).to_absolute_px();
+                    let text_color = color_from_value(&node.get_style(&Property::Color));
+                    let font_size = node.get_style(&Property::FontSize).to_absolute_px();
                     self.gfx
                         .fill_text(content.clone(), text_rect, text_color, font_size);
                 }
@@ -86,13 +86,13 @@ impl<G: Graphics> Painter<G> {
             return;
         }
 
-        let render_node = layout_box.render_node().unwrap();
+        let node = layout_box.node().unwrap();
         let mut background_rect = layout_box.padding_box_absolute();
-        let background_color = color_from_value(&render_node.get_style(&Property::BackgroundColor));
+        let background_color = color_from_value(&node.get_style(&Property::BackgroundColor));
 
         if layout_box.is_root_element() {
             self.root_element_use_body_background = {
-                match render_node.get_style(&Property::BackgroundColor).inner() {
+                match node.get_style(&Property::BackgroundColor) {
                     Value::Color(CSSColor::Transparent) => true,
                     _ => false,
                 }
@@ -129,16 +129,16 @@ impl<G: Graphics> Painter<G> {
         if layout_box.is_anonymous() {
             return None;
         }
-        let render_node = layout_box.render_node().unwrap();
-        let border_top_left_radius = render_node.get_style(&Property::BorderTopLeftRadius);
-        let border_bottom_left_radius = render_node.get_style(&Property::BorderBottomLeftRadius);
-        let border_top_right_radius = render_node.get_style(&Property::BorderTopRightRadius);
-        let border_bottom_right_radius = render_node.get_style(&Property::BorderBottomRightRadius);
+        let node = layout_box.node().unwrap();
+        let border_top_left_radius = node.get_style(&Property::BorderTopLeftRadius);
+        let border_bottom_left_radius = node.get_style(&Property::BorderBottomLeftRadius);
+        let border_top_right_radius = node.get_style(&Property::BorderTopRightRadius);
+        let border_bottom_right_radius = node.get_style(&Property::BorderBottomRightRadius);
 
-        let has_no_border_radius = is_zero(border_top_left_radius.inner())
-            && is_zero(border_bottom_left_radius.inner())
-            && is_zero(border_top_right_radius.inner())
-            && is_zero(border_bottom_right_radius.inner());
+        let has_no_border_radius = is_zero(&border_top_left_radius)
+            && is_zero(&border_bottom_left_radius)
+            && is_zero(&border_top_right_radius)
+            && is_zero(&border_bottom_right_radius);
 
         if has_no_border_radius {
             return None;
@@ -146,17 +146,17 @@ impl<G: Graphics> Painter<G> {
 
         let border_box = layout_box.border_box_absolute();
 
-        let font_size = render_node.get_style(&Property::FontSize).to_absolute_px();
+        let font_size = node.get_style(&Property::FontSize).to_absolute_px();
 
-        let tl = to_radii(border_top_left_radius.inner(), border_box.width, font_size);
-        let tr = to_radii(border_top_right_radius.inner(), border_box.width, font_size);
+        let tl = to_radii(&border_top_left_radius, border_box.width, font_size);
+        let tr = to_radii(&border_top_right_radius, border_box.width, font_size);
         let bl = to_radii(
-            border_bottom_left_radius.inner(),
+            &border_bottom_left_radius,
             border_box.width,
             font_size,
         );
         let br = to_radii(
-            border_bottom_right_radius.inner(),
+            &border_bottom_right_radius,
             border_box.width,
             font_size,
         );

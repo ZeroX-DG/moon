@@ -1,6 +1,6 @@
 use css::{parser::structs::ComponentValue, tokenizer::token::Token};
 
-use crate::property::Property;
+use crate::{property::Property, values::length::LengthUnit};
 
 use super::values::prelude::*;
 
@@ -268,6 +268,33 @@ impl Value {
             // TODO: replace with `medium` when we support absolute size
             Property::FontSize => Value::Length(Length::new_px(16.)),
             Property::TextAlign => Value::TextAlign(TextAlign::Left),
+        }
+    }
+
+    pub fn is_auto(&self) -> bool {
+        match self {
+            Value::Auto => true,
+            _ => false
+        }
+    }
+
+    pub fn to_px(&self, relative_to: f32) -> f32 {
+        match self {
+            Value::Length(l) => l.to_px(),
+            Value::Percentage(p) => p.to_px(relative_to),
+            Value::BorderWidth(w) => w.to_px(),
+            Value::Auto => 0.,
+            _ => unreachable!("Invalid call to_px on invalid value: {:?}", self),
+        }
+    }
+
+    pub fn to_absolute_px(&self) -> f32 {
+        match self {
+            Value::Length(Length {
+                value,
+                unit: LengthUnit::Px,
+            }) => **value,
+            _ => unreachable!("Calling to_absolute_px for unsupported value"),
         }
     }
 }

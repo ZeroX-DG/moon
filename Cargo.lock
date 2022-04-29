@@ -1919,7 +1919,7 @@ dependencies = [
  "log",
  "serde",
  "shared",
- "style",
+ "style_types",
 ]
 
 [[package]]

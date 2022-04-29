@@ -1,6 +1,6 @@
 use shared::{color::Color, primitive::Radii};
-use style::{
-    value::Value,
+use style_types::{
+    Value,
     values::prelude::{BorderRadius, LengthPercentage},
 };
 

@@ -1,21 +1,13 @@
-use crate::property::Property;
-use crate::render_tree::RenderNode;
-use crate::value::Value;
-use crate::values::length::Length;
-use crate::values::length::LengthUnit;
-
 use super::selector_matching::is_match_selectors;
 use css::parser::structs::ComponentValue;
 use css::parser::structs::Declaration;
 use css::selector::structs::Specificity;
 use css::tokenizer::token::Token;
 use dom::node::NodePtr;
-use shared::tree_node::WeakTreeNode;
-use std::borrow::Borrow;
+use style_types::Property;
+use style_types::Value;
 use std::cmp::{Ord, Ordering};
-use std::collections::{HashMap, HashSet};
-use std::ops::Deref;
-use std::rc::Rc;
+use std::collections::HashMap;
 use style_types::CSSLocation;
 use style_types::CascadeOrigin;
 use style_types::ContextualRule;
@@ -24,7 +16,7 @@ use super::expand::prelude::*;
 
 type DeclaredValuesMap = HashMap<Property, Vec<PropertyDeclaration>>;
 
-pub type Properties = HashMap<Property, Option<Value>>;
+pub type Properties = HashMap<Property, Value>;
 
 /// CSS property declaration for cascading
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -36,99 +28,7 @@ pub struct PropertyDeclaration {
     pub specificity: Specificity,
 }
 
-/// Context for computing values
-pub struct ComputeContext<'a> {
-    pub root: Option<WeakTreeNode<RenderNode>>,
-    pub parent: Option<WeakTreeNode<RenderNode>>,
-    pub properties: HashMap<Property, Value>,
-    pub style_cache: &'a mut StyleCache,
-}
-
-#[derive(Debug)]
-pub struct StyleCache(HashSet<ValueRef>);
-
-impl StyleCache {
-    pub fn new() -> Self {
-        Self(HashSet::new())
-    }
-
-    pub fn get(&mut self, value: &Value) -> ValueRef {
-        if !self.0.contains(value) {
-            self.0.insert(ValueRef::new(value.clone()));
-        }
-        self.0.get(value).unwrap().clone()
-    }
-}
-
-// TODO: drop the value from cache when rc is dropped to 1
-#[derive(Debug, Hash, PartialEq, Eq)]
-pub struct ValueRef(pub Rc<Value>);
-
-impl Borrow<Value> for ValueRef {
-    fn borrow(&self) -> &Value {
-        self.0.borrow()
-    }
-}
-
-impl ValueRef {
-    pub fn new(value: Value) -> Self {
-        Self(Rc::new(value))
-    }
-
-    pub fn inner(&self) -> &Value {
-        self.borrow()
-    }
-
-    pub fn is_auto(&self) -> bool {
-        match self.borrow() {
-            Value::Auto => true,
-            _ => false,
-        }
-    }
-
-    pub fn to_px(&self, relative_to: f32) -> f32 {
-        match self.borrow() {
-            Value::Length(l) => l.to_px(),
-            Value::Percentage(p) => p.to_px(relative_to),
-            Value::BorderWidth(w) => w.to_px(),
-            Value::Auto => 0.,
-            _ => unreachable!("Invalid call to_px on invalid value: {:?}", self),
-        }
-    }
-
-    pub fn to_absolute_px(&self) -> f32 {
-        match self.borrow() {
-            Value::Length(Length {
-                value,
-                unit: LengthUnit::Px,
-            }) => **value,
-            _ => unreachable!("Calling to_absolute_px for unsupported value"),
-        }
-    }
-
-    pub fn map<T, F>(&self, map_fn: F) -> T
-    where
-        F: FnOnce(&Value) -> T,
-    {
-        map_fn(self.inner())
-    }
-}
-
-impl Clone for ValueRef {
-    fn clone(&self) -> Self {
-        ValueRef(self.0.clone())
-    }
-}
-
-impl Deref for ValueRef {
-    type Target = Rc<Value>;
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-/// Apply a list of style rules for a node
-pub fn apply_styles(node: &NodePtr, rules: &[ContextualRule]) -> Properties {
+pub fn collect_cascaded_values(node: &NodePtr, rules: &[ContextualRule]) -> Properties {
     // https://www.w3.org/TR/css3-cascade/#value-stages
     // Step 1
     let mut declared_values = collect_declared_values(&node, rules);
@@ -144,13 +44,9 @@ pub fn apply_styles(node: &NodePtr, rules: &[ContextualRule]) -> Properties {
 
 /// Cascade sort the property declarations
 /// for a property and get the wining value
-fn cascade(declared_values: &mut Vec<PropertyDeclaration>) -> Option<Value> {
+fn cascade(declared_values: &mut Vec<PropertyDeclaration>) -> Value {
     declared_values.sort();
-
-    match declared_values.last() {
-        Some(declaration) => Some(declaration.value.clone()),
-        _ => None,
-    }
+    declared_values.last().unwrap().value.clone()
 }
 
 /// Get a short-hand property expander
@@ -321,10 +217,9 @@ fn cmp_cascade_origin(a: &PropertyDeclaration, b: &PropertyDeclaration) -> Order
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::values::color::Color;
-    use crate::values::prelude::Percentage;
     use css::parser::structs::ComponentValue;
     use css::tokenizer::token::Token;
+    use style_types::values::prelude::{Color, Percentage};
 
     #[test]
     fn cascade_simple() {
@@ -355,7 +250,7 @@ mod tests {
         let mut declared = vec![a.clone(), b.clone(), c.clone()];
 
         let win = cascade(&mut declared);
-        assert_eq!(win, Some(c.value));
+        assert_eq!(win, c.value);
     }
 
     #[test]
@@ -402,6 +297,6 @@ mod tests {
         let mut declared = vec![b.clone(), a.clone()];
 
         let win = cascade(&mut declared);
-        assert_eq!(win, Some(b.value));
+        assert_eq!(win, b.value);
     }
 }

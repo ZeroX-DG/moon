@@ -7,7 +7,9 @@ use super::elements::ElementData;
 use super::text::Text;
 use enum_dispatch::enum_dispatch;
 use shared::tree_node::{TreeNode, TreeNodeHooks, WeakTreeNode};
-use std::cell::RefCell;
+use style_types::{Property, Value};
+use std::cell::{Ref, RefCell};
+use std::collections::HashMap;
 use std::ops::Deref;
 
 pub struct NodePtr(pub TreeNode<Node>);
@@ -15,6 +17,7 @@ pub struct NodePtr(pub TreeNode<Node>);
 pub struct Node {
     owner_document: RefCell<Option<WeakTreeNode<Node>>>,
     data: Option<NodeData>,
+    computed_styles: RefCell<HashMap<Property, Value>>
 }
 
 #[enum_dispatch(NodeHooks)]
@@ -163,6 +166,7 @@ impl Node {
         Self {
             owner_document: RefCell::new(None),
             data: None,
+            computed_styles: RefCell::new(HashMap::new()),
         }
     }
 
@@ -241,5 +245,17 @@ impl Node {
 
     pub fn data(&self) -> &Option<NodeData> {
         &self.data
+    }
+
+    pub fn set_computed_styles(&self, computed_styles: HashMap<Property, Value>) {
+        *self.computed_styles.borrow_mut() = computed_styles;
+    }
+
+    pub fn computed_styles(&self) -> Ref<HashMap<Property, Value>> {
+        self.computed_styles.borrow()
+    }
+
+    pub fn get_style(&self, property: &Property) -> Value {
+        self.computed_styles().get(property).expect(&format!("Unavailable style for :{:?}", property)).clone()
     }
 }

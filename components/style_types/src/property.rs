@@ -1,3 +1,4 @@
+use strum::IntoEnumIterator;
 use strum_macros::*;
 
 /// CSS property name
@@ -78,6 +79,18 @@ impl Property {
                 log::debug!("Unsupported CSS property: {}", property);
                 None
             }
+        }
+    }
+
+    pub fn all() -> Box<dyn Iterator<Item=Self>> {
+        Box::new(Property::iter())
+    }
+
+    pub fn inheritable(&self) -> bool {
+        match self {
+            Self::FontSize => true,
+            Self::Color => true,
+            _ => false
         }
     }
 }

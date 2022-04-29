@@ -5,7 +5,7 @@ use layout::layout_box::LayoutBoxPtr;
 use layout::{formatting_context::LayoutContext, layout_box::LayoutBox};
 use shared::primitive::{Rect, Size};
 use shared::tree_node::TreeNode;
-use style::render_tree::RenderTree;
+use style_types::ContextualRule;
 
 pub struct Frame {
     document: Option<NodePtr>,
@@ -15,13 +15,6 @@ pub struct Frame {
 
 pub struct FrameLayout {
     layout_tree: Option<LayoutBoxPtr>,
-    render_tree: Option<RenderTree>,
-}
-
-#[derive(Debug)]
-pub enum ReflowType {
-    All(NodePtr),
-    LayoutOnly,
 }
 
 impl Frame {
@@ -39,12 +32,15 @@ impl Frame {
 
     pub fn resize(&mut self, new_size: Size) {
         self.size = new_size;
-        self.layout.reflow(&self.size, ReflowType::LayoutOnly);
+
+        if self.document.is_some() {
+            self.layout.reflow(&self.size, self.document(), false);
+        }
     }
 
     pub fn set_document(&mut self, document: NodePtr) {
         self.document = Some(document.clone());
-        self.layout.reflow(&self.size, ReflowType::All(document));
+        self.layout.reflow(&self.size, document, true);
     }
 
     pub fn document(&self) -> NodePtr {
@@ -60,7 +56,6 @@ impl FrameLayout {
     pub fn new() -> Self {
         Self {
             layout_tree: None,
-            render_tree: None,
         }
     }
 
@@ -72,64 +67,64 @@ impl FrameLayout {
         let document = document_node.as_document();
         let style_rules = document.style_rules();
 
-        log::debug!("Building render tree");
-        self.render_tree = Some(style::tree_builder::TreeBuilder::build(
-            document_node,
-            &style_rules,
-        ));
-        log::debug!("Finished render tree");
+        log::debug!("Begin calculating styles");
+
+        fn compute_styles(element: NodePtr, style_rules: &[ContextualRule]) {
+            let computed_styles = style::compute::compute_styles(element.clone(), &style_rules);
+            element.set_computed_styles(computed_styles);
+
+            element.for_each_child(|child| compute_styles(NodePtr(child), style_rules))
+        }
+
+        compute_styles(document_node, &style_rules);
+
+        log::debug!("Finished calculating styles");
     }
 
-    pub fn recalculate_layout(&mut self, size: &Size) {
-        if let Some(render_tree) = &self.render_tree {
-            log::debug!("Building layout tree");
-            let render_tree_root = render_tree.root.clone().unwrap();
-            self.layout_tree =
-                Some(layout::tree_builder::TreeBuilder::new().build(render_tree_root));
-            log::debug!("Finished layout tree");
+    pub fn recalculate_layout(&mut self, document_node: NodePtr, size: &Size) {
+        log::debug!("Building layout tree");
+        self.layout_tree =
+            Some(layout::tree_builder::TreeBuilder::new().build(document_node));
+        log::debug!("Finished layout tree");
 
-            if let Some(root) = &self.layout_tree {
-                log::debug!("Starting layout process");
-                let layout_context = LayoutContext {
-                    viewport: Rect {
-                        x: 0.,
-                        y: 0.,
-                        width: size.width,
-                        height: size.height,
-                    },
-                };
+        if let Some(root) = &self.layout_tree {
+            log::debug!("Starting layout process");
+            let layout_context = LayoutContext {
+                viewport: Rect {
+                    x: 0.,
+                    y: 0.,
+                    width: size.width,
+                    height: size.height,
+                },
+            };
 
-                let initial_block_box = LayoutBoxPtr(TreeNode::new(LayoutBox::new_anonymous(
-                    layout::layout_box::BoxData::block_box(),
-                )));
-                initial_block_box.append_child(root.0.clone());
+            let initial_block_box = LayoutBoxPtr(TreeNode::new(LayoutBox::new_anonymous(
+                layout::layout_box::BoxData::block_box(),
+            )));
+            initial_block_box.append_child(root.0.clone());
 
-                establish_context(
-                    FormattingContextType::BlockFormattingContext,
-                    initial_block_box.clone(),
-                );
-                initial_block_box
-                    .formatting_context()
-                    .run(&layout_context, initial_block_box.clone());
-                log::debug!("Finished layout process");
-                dump_layout!(root.clone());
-            } else {
-                log::info!("Empty layout tree. Skipping layout process");
-            }
+            establish_context(
+                FormattingContextType::BlockFormattingContext,
+                initial_block_box.clone(),
+            );
+            initial_block_box
+                .formatting_context()
+                .run(&layout_context, initial_block_box.clone());
+            log::debug!("Finished layout process");
+            dump_layout!(root.clone());
+        } else {
+            log::info!("Empty layout tree. Skipping layout process");
         }
     }
 
-    pub fn reflow(&mut self, size: &Size, type_: ReflowType) {
-        log::debug!("Start reflowing with type: {:?}", type_);
-        match &type_ {
-            ReflowType::LayoutOnly => {
-                self.recalculate_layout(size);
-            }
-            ReflowType::All(document) => {
-                self.recalculate_styles(document.clone());
-                self.recalculate_layout(size);
-            }
+    pub fn reflow(&mut self, size: &Size, document: NodePtr, recalculate_style: bool) {
+        log::debug!("Begin reflowing");
+
+        if recalculate_style {
+            self.recalculate_styles(document.clone());
         }
-        log::debug!("Finished reflowing with type: {:?}", type_);
+        self.recalculate_layout(document, size);
+
+        log::debug!("Finished reflowing");
     }
 }

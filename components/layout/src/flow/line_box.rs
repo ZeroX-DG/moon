@@ -2,7 +2,7 @@ use std::rc::Rc;
 
 use gfx::TextMeasure;
 use shared::primitive::{Point, Size};
-use style::{property::Property, value::Value, values::prelude::TextAlign};
+use style_types::{Property, Value, values::prelude::TextAlign};
 
 use crate::layout_box::LayoutBoxPtr;
 
@@ -167,8 +167,8 @@ impl LineBoxBuilder {
     }
 
     pub fn add_text_fragment(&mut self, layout_box: LayoutBoxPtr, text: String) {
-        let render_node = layout_box.render_node().unwrap();
-        let font_size = render_node.get_style(&Property::FontSize).to_absolute_px();
+        let node = layout_box.node().unwrap();
+        let font_size = node.get_style(&Property::FontSize).to_absolute_px();
         let mut text_measurer = TextMeasure::new();
         let text_size = text_measurer.measure(&text, font_size);
         let fragment_width = text_size.width;
@@ -216,8 +216,8 @@ impl LineBoxBuilder {
 
         let remaining_space = self.parent.content_size().width - last_line.size.width;
 
-        if let Some(render_node) = self.parent.render_node() {
-            match render_node.get_style(&Property::TextAlign).inner() {
+        if let Some(node) = self.parent.node() {
+            match node.get_style(&Property::TextAlign) {
                 Value::TextAlign(TextAlign::Center) => {
                     x_offset += remaining_space / 2.;
                 }

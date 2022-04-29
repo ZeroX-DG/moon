@@ -8,7 +8,7 @@ use crate::{
 };
 use shared::primitive::edge::Edge;
 use std::cell::RefCell;
-use style::{property::Property, values::prelude::Position};
+use style_types::{Property, values::prelude::Position};
 
 #[derive(Debug)]
 pub struct BlockFormattingContext {
@@ -128,18 +128,18 @@ impl BlockFormattingContext {
     fn compute_width(&self, layout_node: LayoutBoxPtr) {
         let containing_block = layout_node.containing_block().unwrap().content_size();
 
-        let render_node = match layout_node.render_node() {
+        let node = match layout_node.node() {
             Some(node) => node.clone(),
             _ => return,
         };
 
-        let computed_width = render_node.get_style(&Property::Width);
-        let computed_margin_left = render_node.get_style(&Property::MarginLeft);
-        let computed_margin_right = render_node.get_style(&Property::MarginRight);
-        let computed_border_left = render_node.get_style(&Property::BorderLeftWidth);
-        let computed_border_right = render_node.get_style(&Property::BorderRightWidth);
-        let computed_padding_left = render_node.get_style(&Property::PaddingLeft);
-        let computed_padding_right = render_node.get_style(&Property::PaddingRight);
+        let computed_width = node.get_style(&Property::Width);
+        let computed_margin_left = node.get_style(&Property::MarginLeft);
+        let computed_margin_right = node.get_style(&Property::MarginRight);
+        let computed_border_left = node.get_style(&Property::BorderLeftWidth);
+        let computed_border_right = node.get_style(&Property::BorderRightWidth);
+        let computed_padding_left = node.get_style(&Property::PaddingLeft);
+        let computed_padding_right = node.get_style(&Property::PaddingRight);
         let containing_width = containing_block.width;
 
         let box_width = computed_margin_left.to_px(containing_width)
@@ -267,26 +267,26 @@ impl BlockFormattingContext {
             return;
         }
 
-        let render_node = layout_node.render_node().unwrap();
+        let node = layout_node.node().unwrap();
         let containing_block = layout_node.containing_block().unwrap().content_size();
-        let margin_top = render_node
+        let margin_top = node
             .get_style(&Property::MarginTop)
             .to_px(containing_block.width);
-        let margin_bottom = render_node
+        let margin_bottom = node
             .get_style(&Property::MarginBottom)
             .to_px(containing_block.width);
 
-        let padding_top = render_node
+        let padding_top = node
             .get_style(&Property::PaddingTop)
             .to_px(containing_block.width);
-        let padding_bottom = render_node
+        let padding_bottom = node
             .get_style(&Property::PaddingBottom)
             .to_px(containing_block.width);
 
-        let border_top = render_node
+        let border_top = node
             .get_style(&Property::BorderTopWidth)
             .to_px(containing_block.width);
-        let border_bottom = render_node
+        let border_bottom = node
             .get_style(&Property::BorderBottomWidth)
             .to_px(containing_block.width);
 
@@ -311,7 +311,7 @@ impl BlockFormattingContext {
 
         let containing_block = layout_node.containing_block().unwrap().content_size();
         let computed_height = layout_node
-            .render_node()
+            .node()
             .unwrap()
             .get_style(&Property::Height);
 
