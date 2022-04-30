@@ -1,15 +1,15 @@
 use std::collections::HashMap;
 
 use dom::node::NodePtr;
-use style_types::{ContextualRule, Property, Value, values::{length::LengthUnit, prelude::{Color, Length, Percentage}}};
+use style_types::{ContextualRule, Property, Value, values::{length::LengthUnit, prelude::{Color, Length, Percentage, BorderStyle}}};
 
 use crate::cascade::collect_cascaded_values;
 
 pub fn compute_styles(node: NodePtr, rules: &[ContextualRule]) -> HashMap<Property, Value> {
     let mut styles = collect_cascaded_values(&node, rules);
 
-    compute_absolute_values(&node, &mut styles);
     compute_default_values(&node, &mut styles);
+    compute_absolute_values(&node, &mut styles);
     styles
 }
 
@@ -54,6 +54,24 @@ fn compute_absolute_values(node: &NodePtr, styles: &mut HashMap<Property, Value>
                     updates.push((property.clone(), color));
                 }
                 _ => {}
+            }
+            Value::BorderWidth(_) => {
+                let border_style = match &property {
+                    Property::BorderTopWidth => Property::BorderTopStyle,
+                    Property::BorderLeftWidth => Property::BorderLeftStyle,
+                    Property::BorderBottomWidth => Property::BorderBottomStyle,
+                    Property::BorderRightWidth => Property::BorderRightStyle,
+                    _ => unreachable!(),
+                };
+
+                let border_style = styles.get(&border_style).unwrap();
+                match border_style {
+                    Value::BorderStyle(BorderStyle::None) | Value::BorderStyle(BorderStyle::Hidden) => {
+                        let value = Value::Length(Length::zero());
+                        updates.push((property.clone(), value));
+                    }
+                    _ => {}
+                }
             }
             _ => {}
         }

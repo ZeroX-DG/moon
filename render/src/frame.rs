@@ -83,8 +83,7 @@ impl FrameLayout {
 
     pub fn recalculate_layout(&mut self, document_node: NodePtr, size: &Size) {
         log::debug!("Building layout tree");
-        self.layout_tree =
-            Some(layout::tree_builder::TreeBuilder::new().build(document_node));
+        self.layout_tree = layout::tree_builder::TreeBuilder::new().build(document_node);
         log::debug!("Finished layout tree");
 
         if let Some(root) = &self.layout_tree {

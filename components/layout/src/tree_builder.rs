@@ -15,16 +15,26 @@ impl TreeBuilder {
         }
     }
 
-    pub fn build(mut self, root: NodePtr) -> LayoutBoxPtr {
-        let root_box = LayoutBoxPtr(TreeNode::new(LayoutBox::new(root.clone())));
+    pub fn build(mut self, root: NodePtr) -> Option<LayoutBoxPtr> {
+        let root_node = if root.is_document() {
+            // the first child is HTML tag
+            root.first_child().map(|n| NodePtr(n))
+        } else {
+            Some(root)
+        };
 
-        self.parent_stack.push(root_box.clone());
-        root.for_each_child(|child| {
-            self.build_layout_tree(NodePtr(child));
-        });
-        self.parent_stack.pop();
+        if let Some(root_node) = root_node {
+            let root_box = LayoutBoxPtr(TreeNode::new(LayoutBox::new(root_node.clone())));
 
-        root_box
+            self.parent_stack.push(root_box.clone());
+            root_node.for_each_child(|child| {
+                self.build_layout_tree(NodePtr(child));
+            });
+            self.parent_stack.pop();
+
+            return Some(root_box);
+        }
+        None
     }
 
     fn build_layout_tree(&mut self, node: NodePtr) {

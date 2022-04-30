@@ -86,8 +86,6 @@ impl LayoutBox {
         let box_data = {
             if node.is_text() {
                 BoxData::InlineContents(InlineContents::TextRun)
-            } else if node.is_document() {
-                BoxData::block_box()
             } else {
                 match node.get_style(&Property::Display) {
                     Value::Display(d) => match d {

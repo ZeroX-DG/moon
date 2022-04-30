@@ -14,6 +14,8 @@ span, a {
 }"#;
 
 pub fn build_tree(dom: NodePtr, css: &str) -> LayoutBoxPtr {
+    let document = dom.owner_document().unwrap();
+    document.append_child(dom.0.clone());
     let stylesheet = parse_stylesheet(css);
 
     let rules = stylesheet
@@ -27,6 +29,13 @@ pub fn build_tree(dom: NodePtr, css: &str) -> LayoutBoxPtr {
         })
         .collect::<Vec<ContextualRule>>();
 
-    let render_tree = style::tree_builder::TreeBuilder::build(dom.clone(), &rules);
-    crate::tree_builder::TreeBuilder::new().build(render_tree.root.unwrap())
+    fn compute_styles(element: NodePtr, style_rules: &[ContextualRule]) {
+        let computed_styles = style::compute::compute_styles(element.clone(), &style_rules);
+        element.set_computed_styles(computed_styles);
+
+        element.for_each_child(|child| compute_styles(NodePtr(child), style_rules))
+    }
+
+    compute_styles(NodePtr(document), &rules);
+    crate::tree_builder::TreeBuilder::new().build(dom).unwrap()
 }
