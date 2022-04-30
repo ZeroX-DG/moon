@@ -54,9 +54,7 @@ impl Frame {
 
 impl FrameLayout {
     pub fn new() -> Self {
-        Self {
-            layout_tree: None,
-        }
+        Self { layout_tree: None }
     }
 
     pub fn layout_tree(&self) -> Option<LayoutBoxPtr> {

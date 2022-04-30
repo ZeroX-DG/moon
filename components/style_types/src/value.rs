@@ -274,7 +274,7 @@ impl Value {
     pub fn is_auto(&self) -> bool {
         match self {
             Value::Auto => true,
-            _ => false
+            _ => false,
         }
     }
 

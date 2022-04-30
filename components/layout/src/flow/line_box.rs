@@ -2,7 +2,7 @@ use std::rc::Rc;
 
 use gfx::TextMeasure;
 use shared::primitive::{Point, Size};
-use style_types::{Property, Value, values::prelude::TextAlign};
+use style_types::{values::prelude::TextAlign, Property, Value};
 
 use crate::layout_box::LayoutBoxPtr;
 

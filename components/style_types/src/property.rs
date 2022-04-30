@@ -82,7 +82,7 @@ impl Property {
         }
     }
 
-    pub fn all() -> Box<dyn Iterator<Item=Self>> {
+    pub fn all() -> Box<dyn Iterator<Item = Self>> {
         Box::new(Property::iter())
     }
 
@@ -90,7 +90,7 @@ impl Property {
         match self {
             Self::FontSize => true,
             Self::Color => true,
-            _ => false
+            _ => false,
         }
     }
 }

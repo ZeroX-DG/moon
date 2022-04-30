@@ -8,7 +8,7 @@ use crate::{
 };
 use shared::primitive::edge::Edge;
 use std::cell::RefCell;
-use style_types::{Property, values::prelude::Position};
+use style_types::{values::prelude::Position, Property};
 
 #[derive(Debug)]
 pub struct BlockFormattingContext {
@@ -310,10 +310,7 @@ impl BlockFormattingContext {
         }
 
         let containing_block = layout_node.containing_block().unwrap().content_size();
-        let computed_height = layout_node
-            .node()
-            .unwrap()
-            .get_style(&Property::Height);
+        let computed_height = layout_node.node().unwrap().get_style(&Property::Height);
 
         if computed_height.is_auto() {
             self.compute_auto_height(layout_node)

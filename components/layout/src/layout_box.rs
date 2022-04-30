@@ -6,13 +6,12 @@ use shared::{
     tree_node::{TreeNode, TreeNodeHooks},
 };
 use style_types::{
-    Property,
-    Value,
     values::{
         display::Display,
         display::{InnerDisplayType, OuterDisplayType},
         prelude::Position,
     },
+    Property, Value,
 };
 
 use crate::{

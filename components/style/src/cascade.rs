@@ -4,13 +4,13 @@ use css::parser::structs::Declaration;
 use css::selector::structs::Specificity;
 use css::tokenizer::token::Token;
 use dom::node::NodePtr;
-use style_types::Property;
-use style_types::Value;
 use std::cmp::{Ord, Ordering};
 use std::collections::HashMap;
 use style_types::CSSLocation;
 use style_types::CascadeOrigin;
 use style_types::ContextualRule;
+use style_types::Property;
+use style_types::Value;
 
 use super::expand::prelude::*;
 

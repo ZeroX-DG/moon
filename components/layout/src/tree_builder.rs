@@ -1,6 +1,9 @@
 use dom::node::NodePtr;
 use shared::tree_node::TreeNode;
-use style_types::{Value, values::{display::DisplayBox, prelude::Display}};
+use style_types::{
+    values::{display::DisplayBox, prelude::Display},
+    Value,
+};
 
 use crate::layout_box::{BoxData, LayoutBox, LayoutBoxPtr};
 
@@ -38,7 +41,9 @@ impl TreeBuilder {
     }
 
     fn build_layout_tree(&mut self, node: NodePtr) {
-        if let Value::Display(Display::Box(DisplayBox::None)) = node.get_style(&style_types::Property::Display) {
+        if let Value::Display(Display::Box(DisplayBox::None)) =
+            node.get_style(&style_types::Property::Display)
+        {
             return;
         }
         let layout_box = TreeNode::new(LayoutBox::new(node.clone()));

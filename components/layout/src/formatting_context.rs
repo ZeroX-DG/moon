@@ -2,9 +2,8 @@ use std::{cell::RefCell, fmt::Debug, rc::Rc};
 
 use shared::{primitive::*, tree_node::WeakTreeNode};
 use style_types::{
-    Property,
-    Value,
     values::{display::InnerDisplayType, prelude::Display},
+    Property, Value,
 };
 
 use crate::{

@@ -7,17 +7,17 @@ use super::elements::ElementData;
 use super::text::Text;
 use enum_dispatch::enum_dispatch;
 use shared::tree_node::{TreeNode, TreeNodeHooks, WeakTreeNode};
-use style_types::{Property, Value};
 use std::cell::{Ref, RefCell};
 use std::collections::HashMap;
 use std::ops::Deref;
+use style_types::{Property, Value};
 
 pub struct NodePtr(pub TreeNode<Node>);
 
 pub struct Node {
     owner_document: RefCell<Option<WeakTreeNode<Node>>>,
     data: Option<NodeData>,
-    computed_styles: RefCell<HashMap<Property, Value>>
+    computed_styles: RefCell<HashMap<Property, Value>>,
 }
 
 #[enum_dispatch(NodeHooks)]
@@ -256,6 +256,9 @@ impl Node {
     }
 
     pub fn get_style(&self, property: &Property) -> Value {
-        self.computed_styles().get(property).expect(&format!("Unavailable style for :{:?}", property)).clone()
+        self.computed_styles()
+            .get(property)
+            .expect(&format!("Unavailable style for :{:?}", property))
+            .clone()
     }
 }

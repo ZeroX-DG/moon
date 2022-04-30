@@ -10,7 +10,7 @@ use shared::{
     color::Color,
     primitive::{Corners, Rect, Size},
 };
-use style_types::{Property, Value, values::color::Color as CSSColor};
+use style_types::{values::color::Color as CSSColor, Property, Value};
 use utils::{color_from_value, is_zero, to_radii};
 
 pub struct Painter<G: Graphics> {
@@ -150,16 +150,8 @@ impl<G: Graphics> Painter<G> {
 
         let tl = to_radii(&border_top_left_radius, border_box.width, font_size);
         let tr = to_radii(&border_top_right_radius, border_box.width, font_size);
-        let bl = to_radii(
-            &border_bottom_left_radius,
-            border_box.width,
-            font_size,
-        );
-        let br = to_radii(
-            &border_bottom_right_radius,
-            border_box.width,
-            font_size,
-        );
+        let bl = to_radii(&border_bottom_left_radius, border_box.width, font_size);
+        let br = to_radii(&border_bottom_right_radius, border_box.width, font_size);
 
         Some(Corners::new(tl, tr, bl, br))
     }
