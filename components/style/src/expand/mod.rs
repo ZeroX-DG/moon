@@ -1,5 +1,4 @@
-use crate::property::Property;
-use crate::value::Value;
+use style_types::{Property, Value};
 
 pub type ExpandOutput = Option<Vec<(Property, Option<Value>)>>;
 

@@ -1,10 +1,9 @@
 use std::{cell::RefCell, fmt::Debug, rc::Rc};
 
 use shared::{primitive::*, tree_node::WeakTreeNode};
-use style::{
-    property::Property,
-    value::Value,
+use style_types::{
     values::{display::InnerDisplayType, prelude::Display},
+    Property, Value,
 };
 
 use crate::{
@@ -85,11 +84,11 @@ fn get_formatting_context_type(layout_node: LayoutBoxPtr) -> FormattingContextTy
         return FormattingContextType::BlockFormattingContext;
     }
 
-    let node = layout_node.render_node().unwrap();
+    let node = layout_node.node().unwrap();
 
     let display = node.get_style(&Property::Display);
-    let inner_display = match display.inner() {
-        Value::Display(Display::Full(_, inner)) => inner,
+    let inner_display = match display {
+        Value::Display(Display::Full(_, ref inner)) => inner,
         _ => unreachable!(),
     };
 

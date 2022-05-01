@@ -1,7 +1,7 @@
 use shared::{color::Color, primitive::Radii};
-use style::{
-    value::Value,
+use style_types::{
     values::prelude::{BorderRadius, LengthPercentage},
+    Value,
 };
 
 pub fn is_zero(value: &Value) -> bool {

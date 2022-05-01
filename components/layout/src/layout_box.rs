@@ -1,18 +1,17 @@
 use std::{cell::RefCell, fmt::Debug, ops::Deref, rc::Rc};
 
+use dom::node::NodePtr;
 use shared::{
     primitive::{Point, Rect, Size},
     tree_node::{TreeNode, TreeNodeHooks},
 };
-use style::{
-    property::Property,
-    render_tree::RenderNodePtr,
-    value::Value,
+use style_types::{
     values::{
         display::Display,
         display::{InnerDisplayType, OuterDisplayType},
         prelude::Position,
     },
+    Property, Value,
 };
 
 use crate::{
@@ -24,7 +23,7 @@ use crate::{
 #[derive(Debug)]
 pub struct LayoutBox {
     pub data: BoxData,
-    pub node: Option<RenderNodePtr>,
+    pub node: Option<NodePtr>,
     pub box_model: RefCell<BoxModel>,
     pub offset: RefCell<Point>,
     pub content_size: RefCell<Size>,
@@ -82,14 +81,14 @@ impl BoxData {
 }
 
 impl LayoutBox {
-    pub fn new(render_node: RenderNodePtr) -> Self {
+    pub fn new(node: NodePtr) -> Self {
         let box_data = {
-            if render_node.node.is_text() {
+            if node.is_text() {
                 BoxData::InlineContents(InlineContents::TextRun)
             } else {
-                match render_node.get_style(&Property::Display).inner() {
+                match node.get_style(&Property::Display) {
                     Value::Display(d) => match d {
-                        Display::Full(outer, inner) => match (outer, inner) {
+                        Display::Full(ref outer, ref inner) => match (outer, inner) {
                             (OuterDisplayType::Block, InnerDisplayType::Flow) => {
                                 BoxData::block_box()
                             }
@@ -112,7 +111,7 @@ impl LayoutBox {
             content_size: Default::default(),
             formatting_context: RefCell::new(None),
             data: box_data,
-            node: Some(render_node),
+            node: Some(node),
         }
     }
 
@@ -131,7 +130,7 @@ impl LayoutBox {
 impl LayoutBoxPtr {
     pub fn is_root_element(&self) -> bool {
         match &self.node {
-            Some(node) => match node.node.as_element_opt() {
+            Some(node) => match node.as_element_opt() {
                 Some(element) => element.tag_name() == "html",
                 _ => false,
             },
@@ -141,7 +140,7 @@ impl LayoutBoxPtr {
 
     pub fn is_body_element(&self) -> bool {
         match &self.node {
-            Some(node) => match node.node.as_element_opt() {
+            Some(node) => match node.as_element_opt() {
                 Some(element) => element.tag_name() == "body",
                 _ => false,
             },
@@ -220,8 +219,8 @@ impl LayoutBoxPtr {
     }
 
     pub fn is_inline_block(&self) -> bool {
-        match self.render_node() {
-            Some(node) => match node.get_style(&Property::Display).inner() {
+        match self.node() {
+            Some(node) => match node.get_style(&Property::Display) {
                 Value::Display(Display::Full(_, InnerDisplayType::FlowRoot)) => self.is_inline(),
                 _ => false,
             },
@@ -230,9 +229,9 @@ impl LayoutBoxPtr {
     }
 
     pub fn is_positioned(&self, position: Position) -> bool {
-        match self.render_node() {
-            Some(node) => match node.get_style(&Property::Position).inner() {
-                Value::Position(pos) => *pos == position,
+        match self.node() {
+            Some(node) => match node.get_style(&Property::Position) {
+                Value::Position(pos) => pos == position,
                 _ => false,
             },
             _ => false,
@@ -240,8 +239,8 @@ impl LayoutBoxPtr {
     }
 
     pub fn is_non_replaced(&self) -> bool {
-        match &self.render_node() {
-            Some(node) => match node.node.as_element_opt() {
+        match &self.node() {
+            Some(node) => match node.as_element_opt() {
                 Some(e) => match e.tag_name().as_str() {
                     "video" | "image" | "img" | "canvas" => false,
                     _ => true,
@@ -315,7 +314,7 @@ impl LayoutBoxPtr {
         self.absolute_rect().add_outer_edges(&padding_box)
     }
 
-    pub fn render_node(&self) -> Option<RenderNodePtr> {
+    pub fn node(&self) -> Option<NodePtr> {
         self.node.clone()
     }
 
@@ -342,9 +341,9 @@ impl LayoutBoxPtr {
             return;
         }
 
-        if let Some(render_node) = self.render_node() {
-            let computed_width = render_node.get_style(&Property::Width);
-            let computed_height = render_node.get_style(&Property::Height);
+        if let Some(node) = self.node() {
+            let computed_width = node.get_style(&Property::Width);
+            let computed_height = node.get_style(&Property::Height);
 
             if !computed_width.is_auto() {
                 let used_width = computed_width.to_px(containing_block.width);
@@ -382,8 +381,8 @@ impl LayoutBoxPtr {
             self.absolute_rect().height,
         );
 
-        let node_info = match &self.render_node() {
-            Some(node) => format!(" {:?}", node.node),
+        let node_info = match &self.node() {
+            Some(node) => format!(" {:?}", node),
             None => String::new(),
         };
 

@@ -11,9 +11,6 @@ css = { version = "*", path = "../css" }
 dom = { version = "*", path = "../dom" }
 shared = { version = "*", path = "../shared" }
 style_types = { path = "../style_types" }
-lazy_static = { version = "1.4.0" }
-strum_macros = "0.19"
-strum = { version = "0.19", features = ["derive"] }
 log = "*"
 
 [dev-dependencies]

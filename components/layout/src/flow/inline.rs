@@ -6,7 +6,7 @@ use crate::{
 use dom::node::NodeData;
 use regex::Regex;
 use shared::primitive::edge::Edge;
-use style::property::Property;
+use style_types::Property;
 
 use super::line_box::LineBoxBuilder;
 
@@ -83,8 +83,8 @@ impl InlineFormattingContext {
         let inline_child_iter = InlineBoxIterator::new(layout_node.clone());
 
         for child in inline_child_iter {
-            match child.render_node() {
-                Some(render_node) => match render_node.node.data() {
+            match child.node() {
+                Some(node) => match node.data() {
                     Some(NodeData::Text(content)) => {
                         let text_content = content.get_data();
                         if text_content.trim().is_empty() {
@@ -127,14 +127,14 @@ impl InlineFormattingContext {
     fn calculate_width_for_element(&self, layout_node: LayoutBoxPtr) {
         let containing_block = layout_node.containing_block().unwrap().content_size();
 
-        let render_node = match layout_node.render_node() {
+        let node = match layout_node.node() {
             Some(node) => node.clone(),
             _ => return,
         };
 
-        let computed_width = render_node.get_style(&Property::Width);
-        let computed_margin_left = render_node.get_style(&Property::MarginLeft);
-        let computed_margin_right = render_node.get_style(&Property::MarginRight);
+        let computed_width = node.get_style(&Property::Width);
+        let computed_margin_left = node.get_style(&Property::MarginLeft);
+        let computed_margin_right = node.get_style(&Property::MarginRight);
         let containing_width = containing_block.width;
 
         let mut used_width = computed_width.to_px(containing_width);
@@ -169,28 +169,28 @@ impl InlineFormattingContext {
     fn apply_vertical_spacing(&self, layout_node: LayoutBoxPtr) {
         let containing_block = layout_node.containing_block().unwrap().content_size();
 
-        let render_node = layout_node.render_node();
+        let node = layout_node.node();
         let mut box_model = layout_node.box_model.borrow_mut();
 
-        if let Some(render_node) = render_node {
-            let margin_top = render_node
+        if let Some(node) = node {
+            let margin_top = node
                 .get_style(&Property::MarginTop)
                 .to_px(containing_block.width);
-            let margin_bottom = render_node
+            let margin_bottom = node
                 .get_style(&Property::MarginBottom)
                 .to_px(containing_block.width);
 
-            let border_top = render_node
+            let border_top = node
                 .get_style(&Property::BorderTopWidth)
                 .to_px(containing_block.width);
-            let border_bottom = render_node
+            let border_bottom = node
                 .get_style(&Property::BorderBottomWidth)
                 .to_px(containing_block.width);
 
-            let padding_top = render_node
+            let padding_top = node
                 .get_style(&Property::PaddingTop)
                 .to_px(containing_block.width);
-            let padding_bottom = render_node
+            let padding_bottom = node
                 .get_style(&Property::PaddingBottom)
                 .to_px(containing_block.width);
 

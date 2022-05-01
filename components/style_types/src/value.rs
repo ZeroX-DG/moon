@@ -1,9 +1,6 @@
 use css::{parser::structs::ComponentValue, tokenizer::token::Token};
 
-use crate::{
-    property::Property,
-    value_processing::{ComputeContext, ValueRef},
-};
+use crate::{property::Property, values::length::LengthUnit};
 
 use super::values::prelude::*;
 
@@ -274,14 +271,30 @@ impl Value {
         }
     }
 
-    pub fn compute(&self, property: &Property, context: &mut ComputeContext) -> ValueRef {
+    pub fn is_auto(&self) -> bool {
         match self {
-            Value::Color(color) => color.compute(property, context),
-            Value::BorderRadius(border_radius) => border_radius.compute(property, context),
-            Value::BorderWidth(border_width) => border_width.compute(property, context),
-            Value::Length(length) => length.compute(property, context),
-            Value::Percentage(percentage) => percentage.compute(property, context),
-            _ => context.style_cache.get(&self),
+            Value::Auto => true,
+            _ => false,
+        }
+    }
+
+    pub fn to_px(&self, relative_to: f32) -> f32 {
+        match self {
+            Value::Length(l) => l.to_px(),
+            Value::Percentage(p) => p.to_px(relative_to),
+            Value::BorderWidth(w) => w.to_px(),
+            Value::Auto => 0.,
+            _ => unreachable!("Invalid call to_px on invalid value: {:?}", self),
+        }
+    }
+
+    pub fn to_absolute_px(&self) -> f32 {
+        match self {
+            Value::Length(Length {
+                value,
+                unit: LengthUnit::Px,
+            }) => **value,
+            _ => unreachable!("Calling to_absolute_px for unsupported value"),
         }
     }
 }

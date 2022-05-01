@@ -1,5 +1,9 @@
+use dom::node::NodePtr;
 use shared::tree_node::TreeNode;
-use style::render_tree::RenderNodePtr;
+use style_types::{
+    values::{display::DisplayBox, prelude::Display},
+    Value,
+};
 
 use crate::layout_box::{BoxData, LayoutBox, LayoutBoxPtr};
 
@@ -14,19 +18,34 @@ impl TreeBuilder {
         }
     }
 
-    pub fn build(mut self, root: RenderNodePtr) -> LayoutBoxPtr {
-        let root_box = LayoutBoxPtr(TreeNode::new(LayoutBox::new(root.clone())));
+    pub fn build(mut self, root: NodePtr) -> Option<LayoutBoxPtr> {
+        let root_node = if root.is_document() {
+            // the first child is HTML tag
+            root.first_child().map(|n| NodePtr(n))
+        } else {
+            Some(root)
+        };
 
-        self.parent_stack.push(root_box.clone());
-        root.for_each_child(|child| {
-            self.build_layout_tree(RenderNodePtr(child));
-        });
-        self.parent_stack.pop();
+        if let Some(root_node) = root_node {
+            let root_box = LayoutBoxPtr(TreeNode::new(LayoutBox::new(root_node.clone())));
 
-        root_box
+            self.parent_stack.push(root_box.clone());
+            root_node.for_each_child(|child| {
+                self.build_layout_tree(NodePtr(child));
+            });
+            self.parent_stack.pop();
+
+            return Some(root_box);
+        }
+        None
     }
 
-    fn build_layout_tree(&mut self, node: RenderNodePtr) {
+    fn build_layout_tree(&mut self, node: NodePtr) {
+        if let Value::Display(Display::Box(DisplayBox::None)) =
+            node.get_style(&style_types::Property::Display)
+        {
+            return;
+        }
         let layout_box = TreeNode::new(LayoutBox::new(node.clone()));
 
         let parent = if LayoutBoxPtr(layout_box.clone()).is_inline() {
@@ -39,7 +58,7 @@ impl TreeBuilder {
 
         self.parent_stack.push(LayoutBoxPtr(layout_box));
         node.for_each_child(|child| {
-            self.build_layout_tree(RenderNodePtr(child));
+            self.build_layout_tree(NodePtr(child));
         });
         self.parent_stack.pop();
     }
@@ -61,7 +80,7 @@ impl TreeBuilder {
             .parent_stack
             .iter()
             .rfind(|parent_box| !parent_box.is_inline() && parent_box.can_have_children())
-            .expect("No parent in stack");
+            .expect(&format!("No parent in stack: {:?}", self.parent_stack));
 
         if !parent.has_no_child() && parent.children_are_inline() {
             let anonymous = TreeNode::new(LayoutBox::new_anonymous(BoxData::block_box()));

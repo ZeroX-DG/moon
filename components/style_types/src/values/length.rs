@@ -1,8 +1,3 @@
-use crate::property::Property;
-use crate::render_tree::RenderNodePtr;
-use crate::value::Value;
-use crate::value_processing::{ComputeContext, ValueRef};
-
 use super::number::Number;
 use css::parser::structs::ComponentValue;
 use css::tokenizer::token::Token;
@@ -79,53 +74,6 @@ impl Length {
             LengthUnit::Em | LengthUnit::Rem => *self.value * font_size,
             _ => unimplemented!("Calling resolve on unsupported length unit"),
         }
-    }
-
-    pub fn compute_value(&self, _: &Property, context: &mut ComputeContext) -> Self {
-        match self {
-            Length {
-                value,
-                unit: LengthUnit::Em,
-            } => {
-                let parent_font_size = context
-                    .parent
-                    .as_ref()
-                    .map(|parent| {
-                        if let Some(p) = parent.upgrade() {
-                            return RenderNodePtr(p)
-                                .get_style(&Property::FontSize)
-                                .to_absolute_px();
-                        }
-                        BASE_FONT_SIZE
-                    })
-                    .unwrap_or_default();
-                Length::new_px(value.0 * parent_font_size)
-            }
-            Length {
-                value,
-                unit: LengthUnit::Rem,
-            } => {
-                let root_font_size = context
-                    .root
-                    .as_ref()
-                    .map(|root| {
-                        if let Some(root) = root.upgrade() {
-                            return RenderNodePtr(root)
-                                .get_style(&Property::FontSize)
-                                .to_absolute_px();
-                        }
-                        BASE_FONT_SIZE
-                    })
-                    .unwrap_or(BASE_FONT_SIZE);
-                Length::new_px(value.0 * root_font_size)
-            }
-            _ => self.clone(),
-        }
-    }
-
-    pub fn compute(&self, property: &Property, context: &mut ComputeContext) -> ValueRef {
-        let value = self.compute_value(property, context);
-        context.style_cache.get(&Value::Length(value))
     }
 }
 

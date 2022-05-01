@@ -7,3 +7,7 @@ edition = "2021"
 
 [dependencies]
 css = { path = "../css" }
+strum_macros = "0.19"
+strum = { version = "0.19", features = ["derive"] }
+log = "*"
+shared = { version = "*", path = "../shared" }
