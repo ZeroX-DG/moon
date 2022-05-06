@@ -13,3 +13,4 @@ render = { path = "../render" }
 loader = { path = "../components/loader" }
 log = "*"
 flume = { version = "0.10.11" }
+html-escape = "0.2.11"

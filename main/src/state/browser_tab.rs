@@ -66,9 +66,33 @@ impl BrowserTab {
     }
 
     pub fn load(&self) {
+        match self.url.scheme.as_str() {
+            "http" | "https" | "file" => self.load_html(),
+            "view-source" => self.load_source(),
+            _ => self.load_not_supported(),
+        }
+    }
+
+    fn load_html(&self) {
         let bytes = ResourceLoader::load(self.url.clone()).expect("Unable to load HTML");
         let html = ByteString::new(&bytes);
         self.render_engine
             .load_html(html.to_string(), self.url.clone());
+    }
+
+    fn load_source(&self) {
+        let bytes = ResourceLoader::load(self.url.clone()).expect("Unable to load source");
+        let raw_html_string = ByteString::new(&bytes).to_string();
+        let raw_html = html_escape::encode_text(&raw_html_string);
+        let source_html = format!("<html><pre>{}</pre></html>", raw_html);
+
+        log::debug!("{}", source_html);
+
+        self.render_engine.load_html(source_html, self.url.clone());
+    }
+
+    fn load_not_supported(&self) {
+        let source_html = format!("<h1>Not supported protocol: {}</h1>", self.url.scheme);
+        self.render_engine.load_html(source_html, self.url.clone());
     }
 }

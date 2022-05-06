@@ -1,11 +1,12 @@
 use net::http::HttpResponse;
 use tokio::runtime::Runtime;
-use url::Url;
+use url::{parser::URLParser, Url};
 
 #[derive(Debug)]
 pub enum LoadError {
     UnsupportedProtocol(String),
     IOError(String),
+    InvalidURL(String),
 }
 
 type Bytes = Vec<u8>;
@@ -29,6 +30,11 @@ impl ResourceLoader {
                 HttpResponse::Success(bytes) => Ok(bytes),
                 HttpResponse::Failure(err) => Err(LoadError::IOError(err)),
             },
+            "view-source" => {
+                let target_url = URLParser::parse(&url.path.as_str(), None)
+                    .ok_or_else(|| LoadError::InvalidURL(url.as_str()))?;
+                ResourceLoader::load(target_url)
+            }
             protocol => Err(LoadError::UnsupportedProtocol(protocol.to_string())),
         };
         load_result
