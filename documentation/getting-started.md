@@ -7,7 +7,7 @@ Make sure you have all the dependencies installed:
 **Debian / Ubuntu**
 
 ```
-sudo apt install build-essential cmake pkg-config libssl-dev libgtk-3-dev
+sudo apt install build-essential cmake pkg-config libssl-dev libgtk-3-dev mold
 ```
 
 > Optional: [`cargo-make`](https://github.com/sagiegurari/cargo-make) for running predefined building & running tasks.
