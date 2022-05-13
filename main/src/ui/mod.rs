@@ -74,7 +74,7 @@ impl UI {
                 }));
         });
 
-        content_area.connect_button_press_event(|_, event|{
+        content_area.connect_button_press_event(|_, event| {
             let right_button = 3;
             if event.button() == right_button {
                 let menu = gtk::Menu::new();
@@ -82,7 +82,6 @@ impl UI {
 
                 item.connect_activate(|_| {
                     get_app_runtime().update_state(|state| {
-
                         let active_tab_url = state.active_tab().url().as_str();
 
                         if active_tab_url.starts_with("view-source:") {
@@ -90,7 +89,9 @@ impl UI {
                         }
 
                         let url = format!("view-source:{}", active_tab_url);
-                        state.active_tab_mut().goto(URLParser::parse(&url, None).unwrap());
+                        state
+                            .active_tab_mut()
+                            .goto(URLParser::parse(&url, None).unwrap());
                     });
                 });
 
