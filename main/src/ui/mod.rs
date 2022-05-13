@@ -5,10 +5,12 @@ use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
+use gtk::gdk::EventMask;
 use gtk::gdk_pixbuf::Pixbuf;
 use gtk::{prelude::*, DrawingArea, Orientation};
 use gtk::{Application, ApplicationWindow};
 use shared::primitive::Size;
+use url::parser::URLParser;
 
 use crate::app::get_app_runtime;
 use crate::delayed_task::DelayedTask;
@@ -30,9 +32,14 @@ impl UI {
             .title("Moon")
             .default_width(1200)
             .default_height(600)
+            .events(EventMask::BUTTON_PRESS_MASK)
             .build();
 
-        let content_area = DrawingArea::builder().hexpand(true).vexpand(true).build();
+        let content_area = DrawingArea::builder()
+            .hexpand(true)
+            .vexpand(true)
+            .events(EventMask::BUTTON_PRESS_MASK)
+            .build();
 
         let web_content: Rc<RefCell<Option<Pixbuf>>> = Rc::new(RefCell::new(None));
 
@@ -67,6 +74,34 @@ impl UI {
                 }));
         });
 
+        content_area.connect_button_press_event(|_, event|{
+            let right_button = 3;
+            if event.button() == right_button {
+                let menu = gtk::Menu::new();
+                let item = gtk::MenuItem::with_label("View Source");
+
+                item.connect_activate(|_| {
+                    get_app_runtime().update_state(|state| {
+
+                        let active_tab_url = state.active_tab().url().as_str();
+
+                        if active_tab_url.starts_with("view-source:") {
+                            return;
+                        }
+
+                        let url = format!("view-source:{}", active_tab_url);
+                        state.active_tab_mut().goto(URLParser::parse(&url, None).unwrap());
+                    });
+                });
+
+                menu.append(&item);
+
+                menu.show_all();
+                menu.popup_easy(event.button(), event.time());
+            }
+            Inhibit(true)
+        });
+
         let container = gtk::Box::builder()
             .orientation(Orientation::Vertical)
             .build();
@@ -86,6 +121,10 @@ impl UI {
 
     pub fn set_title(&mut self, title: &str) {
         self.window.set_title(title);
+    }
+
+    pub fn set_url(&mut self, url: &str) {
+        self.primary_bar.url_entry.set_text(url);
     }
 
     pub fn set_content_pixbuf(&mut self, content: Pixbuf) {

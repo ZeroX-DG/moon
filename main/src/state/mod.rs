@@ -53,6 +53,10 @@ impl AppState {
         self.tabs.get_mut(self.active_tab).unwrap()
     }
 
+    pub fn active_tab(&self) -> &BrowserTab {
+        self.tabs.get(self.active_tab).unwrap()
+    }
+
     pub fn set_active_tab(&mut self, index: usize) {
         // set current active tab to not active
         self.active_tab_mut().set_active(false);
