@@ -8,7 +8,6 @@ use browser_tab::BrowserTab;
 use gtk::{
     gdk_pixbuf::{Colorspace, Pixbuf},
     glib::Bytes,
-    traits::WidgetExt,
 };
 use shared::primitive::Size;
 use url::Url;
@@ -34,10 +33,8 @@ impl AppState {
 
     pub fn new_tab(&mut self, url: Url, active: bool) -> &BrowserTab {
         let tab = BrowserTab::new(url.clone());
-        let viewport = Size::new(
-            self.ui.content_area.allocated_width() as f32,
-            self.ui.content_area.allocated_height() as f32,
-        );
+        let (width, height) = self.ui.content_area.render_area_size();
+        let viewport = Size::new(width as f32, height as f32);
         tab.resize(viewport);
         tab.load();
         self.tabs.push(tab);
@@ -67,16 +64,9 @@ impl AppState {
     }
 
     pub fn on_active_tab_bitmap(&mut self, bitmap: Vec<u8>) {
+        let (width, height) = self.ui.content_area.render_area_size();
         let bytes = Bytes::from_owned(bitmap);
-        let pixbuf = Pixbuf::from_bytes(
-            &bytes,
-            Colorspace::Rgb,
-            true,
-            8,
-            self.ui.content_area.allocated_width(),
-            self.ui.content_area.allocated_height(),
-            self.ui.content_area.allocated_width() * 4,
-        );
+        let pixbuf = Pixbuf::from_bytes(&bytes, Colorspace::Rgb, true, 8, width, height, width * 4);
         self.ui.set_content_pixbuf(pixbuf);
     }
 }
