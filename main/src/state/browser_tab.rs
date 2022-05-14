@@ -60,17 +60,29 @@ impl BrowserTab {
         self.render_engine.resize(size);
     }
 
+    pub fn url(&self) -> &Url {
+        &self.url
+    }
+
     pub fn goto(&mut self, url: Url) {
         self.url = url;
         self.load();
     }
 
     pub fn load(&self) {
+        self.update_current_url();
         match self.url.scheme.as_str() {
             "http" | "https" | "file" => self.load_html(),
             "view-source" => self.load_source(),
             _ => self.load_not_supported(),
         }
+    }
+
+    fn update_current_url(&self) {
+        get_app_runtime().update_state(|state| {
+            let active_tab_url = state.active_tab().url().as_str();
+            state.ui.set_url(&active_tab_url);
+        });
     }
 
     fn load_html(&self) {
