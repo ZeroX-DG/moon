@@ -144,7 +144,7 @@ impl BrowserTab {
         self.load_error("Unsupported Protocol", &error);
     }
 
-    fn load_error(&self, title: &str, error: &str) {
+    pub fn load_error(&self, title: &str, error: &str) {
         let source_html = self.get_error_page_content(title, error);
         self.render_engine.load_html(source_html, self.url.clone());
     }

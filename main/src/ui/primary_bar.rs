@@ -27,6 +27,10 @@ impl PrimaryBar {
                 let parse_url_result = URLParser::parse(&raw_url, None);
                 if let Some(url) = parse_url_result {
                     state.active_tab_mut().goto(url);
+                } else {
+                    state
+                        .active_tab_mut()
+                        .load_error("Invalid URL", &format!("Invalid URL entered: {}", raw_url));
                 }
             });
         });
