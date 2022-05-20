@@ -85,6 +85,26 @@ impl BrowserTab {
         });
     }
 
+    fn get_error_page_content(&self, title: &str, error: &str) -> String {
+        format!("
+            <html>
+                <style>
+                    body {{ background-color: #262ded }}
+                    #error-content {{
+                        width: 500px;
+                        margin: 0 auto;
+                        margin-top: 50px;
+                        color: white;
+                    }}
+                </style>
+                <div id='error-content'>
+                    <h1>{}</h1>
+                    <p>{}</p>
+                </div>
+            </html>
+        ", title, error)
+    }
+
     fn load_html(&self) {
         let bytes = ResourceLoader::load(self.url.clone()).expect("Unable to load HTML");
         let html = ByteString::new(&bytes);
@@ -98,13 +118,12 @@ impl BrowserTab {
         let raw_html = html_escape::encode_text(&raw_html_string);
         let source_html = format!("<html><pre>{}</pre></html>", raw_html);
 
-        log::debug!("{}", source_html);
-
         self.render_engine.load_html(source_html, self.url.clone());
     }
 
     fn load_not_supported(&self) {
-        let source_html = format!("<h1>Not supported protocol: {}</h1>", self.url.scheme);
+        let error = format!("Unable to load resource via unsupported protocol: {}", self.url.scheme);
+        let source_html = self.get_error_page_content("Protocol Not Supported", &error);
         self.render_engine.load_html(source_html, self.url.clone());
     }
 }
