@@ -86,7 +86,8 @@ impl BrowserTab {
     }
 
     fn get_error_page_content(&self, title: &str, error: &str) -> String {
-        format!("
+        format!(
+            "
             <html>
                 <style>
                     body {{ background-color: #262ded }}
@@ -102,7 +103,9 @@ impl BrowserTab {
                     <p>{}</p>
                 </div>
             </html>
-        ", title, error)
+        ",
+            title, error
+        )
     }
 
     fn load_html(&self) {
@@ -134,7 +137,10 @@ impl BrowserTab {
     }
 
     fn load_not_supported(&self) {
-        let error = format!("Unable to load resource via unsupported protocol: {}", self.url.scheme);
+        let error = format!(
+            "Unable to load resource via unsupported protocol: {}",
+            self.url.scheme
+        );
         self.load_error("Unsupported Protocol", &error);
     }
 

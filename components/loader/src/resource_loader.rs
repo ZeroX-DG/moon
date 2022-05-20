@@ -21,8 +21,13 @@ impl LoadError {
     pub fn get_friendly_message(&self) -> String {
         match self {
             LoadError::IOError(error) => format!("Unable to load resource from local: {}", error),
-            LoadError::UnsupportedProtocol(error) => format!("Unable to load resource from unsupported protocol: {}", error),
-            LoadError::InvalidURL(error) => format!("Unable to load resource from invalid URL: {}", error),
+            LoadError::UnsupportedProtocol(error) => format!(
+                "Unable to load resource from unsupported protocol: {}",
+                error
+            ),
+            LoadError::InvalidURL(error) => {
+                format!("Unable to load resource from invalid URL: {}", error)
+            }
         }
     }
 }
