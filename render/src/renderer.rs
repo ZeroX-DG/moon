@@ -2,7 +2,6 @@ use super::page::Page;
 use gfx::{Bitmap, Canvas};
 use painting::Painter;
 use shared::primitive::Size;
-use tokio::runtime::Runtime;
 use url::Url;
 
 pub struct Renderer<'a> {
@@ -17,10 +16,9 @@ pub struct RendererInitializeParams {
 }
 
 impl<'a> Renderer<'a> {
-    pub fn new() -> Renderer<'a> {
-        let rt = Runtime::new().unwrap();
+    pub async fn new() -> Renderer<'a> {
         Self {
-            painter: Painter::new(rt.block_on(Canvas::new())),
+            painter: Painter::new(Canvas::new().await),
             page: Page::new(),
             new_title_handler: None,
         }
@@ -43,9 +41,8 @@ impl<'a> Renderer<'a> {
         self.paint();
     }
 
-    pub fn output(&mut self) -> Bitmap {
-        let rt = Runtime::new().unwrap();
-        rt.block_on(self.painter.output())
+    pub async fn output(&mut self) -> Bitmap {
+        self.painter.output().await
     }
 
     pub fn on_new_title(&mut self, handler: impl Fn(String) + 'static) {
