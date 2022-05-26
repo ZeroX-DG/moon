@@ -17,6 +17,7 @@ painting = { version = "*", path = "../components/painting" }
 shared = { version = "*", path = "../components/shared" }
 gfx = { version = "*", path = "../components/gfx" }
 url = { path = "../components/url" }
-dirs = "2.0.2"
 log = "*"
-serde = { version = "*", features = ["derive"] }
+flume = "*"
+anyhow = "1.0.57"
+tokio = "1.18.2"

@@ -6,30 +6,30 @@ use shared::{primitive::Size, tree_node::TreeNode};
 use style_types::{CSSLocation, CascadeOrigin, ContextualStyleSheet};
 use url::Url;
 
+use crate::pipeline::Pipeline;
+
 use super::frame::Frame;
 
 const USER_AGENT_STYLES: &str = include_str!("./html.css");
 
-pub struct Page {
+pub struct Page<'a> {
     main_frame: Frame,
+    pipeline: Pipeline<'a>,
 }
 
-impl Page {
-    pub fn new() -> Self {
-        Self {
+impl<'a> Page<'a> {
+    pub async fn new() -> Page<'a> {
+        Page {
             main_frame: Frame::new(),
+            pipeline: Pipeline::new().await,
         }
     }
 
-    pub fn main_frame(&self) -> &Frame {
-        &self.main_frame
+    pub async fn resize(&mut self, size: Size) {
+        self.main_frame.resize(size, &mut self.pipeline).await;
     }
 
-    pub fn resize(&mut self, size: Size) {
-        self.main_frame.resize(size);
-    }
-
-    pub fn load_html(&mut self, html: String, base_url: Url) {
+    pub async fn load_html(&mut self, html: String, base_url: Url) {
         let document = NodePtr(TreeNode::new(Node::new(
             NodeData::Document(Document::new()),
         )));
@@ -48,6 +48,6 @@ impl Page {
         let tree_builder = html::tree_builder::TreeBuilder::new(tokenizer, document);
         let document = tree_builder.run();
 
-        self.main_frame.set_document(document);
+        self.main_frame.set_document(document, &mut self.pipeline).await;
     }
 }
