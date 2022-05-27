@@ -26,6 +26,7 @@ impl<'a> Pipeline<'a> {
         }
         let layout_node = self.calculate_layout(document_node, size);
 
+        self.painter.resize(size.clone());
         if let Some(node) = layout_node {
             self.painter.paint(node);
         }

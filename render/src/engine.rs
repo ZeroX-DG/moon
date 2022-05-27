@@ -16,8 +16,8 @@ pub struct RenderEngine<'a> {
 }
 
 impl<'a> RenderEngine<'a> {
-    pub async fn new() -> RenderEngine<'a> {
-        let page = Page::new().await;
+    pub async fn new(viewport: Size) -> RenderEngine<'a> {
+        let page = Page::new(viewport).await;
         Self {
             page
         }

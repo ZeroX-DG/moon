@@ -2,6 +2,7 @@ use dom::{
     document::Document,
     node::{Node, NodeData, NodePtr},
 };
+use gfx::Bitmap;
 use shared::{primitive::Size, tree_node::TreeNode};
 use style_types::{CSSLocation, CascadeOrigin, ContextualStyleSheet};
 use url::Url;
@@ -18,9 +19,9 @@ pub struct Page<'a> {
 }
 
 impl<'a> Page<'a> {
-    pub async fn new() -> Page<'a> {
+    pub async fn new(init_size: Size) -> Page<'a> {
         Page {
-            main_frame: Frame::new(),
+            main_frame: Frame::new(init_size),
             pipeline: Pipeline::new().await,
         }
     }
@@ -49,5 +50,9 @@ impl<'a> Page<'a> {
         let document = tree_builder.run();
 
         self.main_frame.set_document(document, &mut self.pipeline).await;
+    }
+
+    pub fn bitmap(&self) -> &Bitmap {
+        self.main_frame.bitmap()
     }
 }

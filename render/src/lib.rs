@@ -1,7 +1,7 @@
 mod frame;
-mod page;
 mod engine;
 mod pipeline;
+pub mod page;
 
 pub use engine::*;
 

@@ -11,10 +11,10 @@ pub struct Frame {
 }
 
 impl Frame {
-    pub fn new() -> Self {
+    pub fn new(init_size: Size) -> Self {
         Self {
             document: None,
-            size: Size::new(0., 0.),
+            size: init_size,
             bitmap: None
         }
     }
@@ -39,6 +39,10 @@ impl Frame {
 
     pub fn document(&self) -> NodePtr {
         self.document.clone().expect("No document available")
+    }
+
+    pub fn bitmap(&self) -> &Bitmap {
+        self.bitmap.as_ref().expect("No bitmap available")
     }
 
     async fn render_frame(&mut self, pipeline: &mut Pipeline<'_>, opts: PipelineRunOptions) {
