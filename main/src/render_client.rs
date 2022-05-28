@@ -1,7 +1,7 @@
-use flume::{Sender, Receiver};
+use flume::{Receiver, Sender};
 use shared::primitive::Size;
 
-use render::{RenderEngine, InputEvent, OutputEvent};
+use render::{InputEvent, OutputEvent, RenderEngine};
 use url::Url;
 
 pub struct RenderClient {
@@ -38,13 +38,14 @@ impl RenderClient {
     }
 
     pub fn load_html(&self, html: String, base_url: Url) {
-        self.event_sender.send(InputEvent::LoadHTML {
-            html,
-            base_url
-        }).expect("Unable to load HTML");
+        self.event_sender
+            .send(InputEvent::LoadHTML { html, base_url })
+            .expect("Unable to load HTML");
     }
 
     pub fn resize(&self, size: Size) {
-        self.event_sender.send(InputEvent::ViewportResize(size)).expect("Unable to load HTML");
+        self.event_sender
+            .send(InputEvent::ViewportResize(size))
+            .expect("Unable to load HTML");
     }
 }

@@ -7,7 +7,7 @@ use crate::pipeline::{Pipeline, PipelineRunOptions};
 pub struct Frame {
     document: Option<NodePtr>,
     size: Size,
-    bitmap: Option<Bitmap>
+    bitmap: Option<Bitmap>,
 }
 
 impl Frame {
@@ -15,7 +15,7 @@ impl Frame {
         Self {
             document: None,
             size: init_size,
-            bitmap: None
+            bitmap: None,
         }
     }
 
@@ -25,16 +25,24 @@ impl Frame {
 
     pub async fn resize(&mut self, new_size: Size, pipeline: &mut Pipeline<'_>) {
         self.size = new_size.clone();
-        self.render_frame(pipeline, PipelineRunOptions {
-            skip_style_calculation: true
-        }).await;
+        self.render_frame(
+            pipeline,
+            PipelineRunOptions {
+                skip_style_calculation: true,
+            },
+        )
+        .await;
     }
 
     pub async fn set_document(&mut self, document: NodePtr, pipeline: &mut Pipeline<'_>) {
         self.document = Some(document.clone());
-        self.render_frame(pipeline, PipelineRunOptions {
-            skip_style_calculation: false
-        }).await;
+        self.render_frame(
+            pipeline,
+            PipelineRunOptions {
+                skip_style_calculation: false,
+            },
+        )
+        .await;
     }
 
     pub fn document(&self) -> Option<NodePtr> {
@@ -52,4 +60,3 @@ impl Frame {
         }
     }
 }
-

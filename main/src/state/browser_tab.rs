@@ -38,7 +38,6 @@ impl BrowserTab {
                 }
             }
         });
-        
 
         Self {
             url,
@@ -112,8 +111,7 @@ impl BrowserTab {
         match ResourceLoader::load(self.url.clone()) {
             Ok(bytes) => {
                 let html = ByteString::new(&bytes);
-                self.client
-                    .load_html(html.to_string(), self.url.clone());
+                self.client.load_html(html.to_string(), self.url.clone());
             }
             Err(e) => {
                 self.load_error("Aw, Snap!", &e.get_friendly_message());

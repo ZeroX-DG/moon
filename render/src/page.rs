@@ -49,7 +49,9 @@ impl<'a> Page<'a> {
         let tree_builder = html::tree_builder::TreeBuilder::new(tokenizer, document);
         let document = tree_builder.run();
 
-        self.main_frame.set_document(document, &mut self.pipeline).await;
+        self.main_frame
+            .set_document(document, &mut self.pipeline)
+            .await;
     }
 
     pub fn bitmap(&self) -> Option<&Bitmap> {

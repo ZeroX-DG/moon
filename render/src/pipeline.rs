@@ -1,8 +1,14 @@
 use dom::node::NodePtr;
-use gfx::{Canvas, Bitmap};
-use layout::{formatting_context::{LayoutContext, establish_context, FormattingContextType}, layout_box::{LayoutBoxPtr, LayoutBox}};
+use gfx::{Bitmap, Canvas};
+use layout::{
+    formatting_context::{establish_context, FormattingContextType, LayoutContext},
+    layout_box::{LayoutBox, LayoutBoxPtr},
+};
 use painting::Painter;
-use shared::{primitive::{Size, Rect}, tree_node::TreeNode};
+use shared::{
+    primitive::{Rect, Size},
+    tree_node::TreeNode,
+};
 use style_types::ContextualRule;
 
 pub struct Pipeline<'a> {
@@ -16,11 +22,16 @@ pub struct PipelineRunOptions {
 impl<'a> Pipeline<'a> {
     pub async fn new() -> Pipeline<'a> {
         Pipeline {
-            painter: Painter::new(Canvas::new().await)
+            painter: Painter::new(Canvas::new().await),
         }
     }
 
-    pub async fn run(&mut self, document_node: NodePtr, size: &Size, opts: PipelineRunOptions) -> Bitmap {
+    pub async fn run(
+        &mut self,
+        document_node: NodePtr,
+        size: &Size,
+        opts: PipelineRunOptions,
+    ) -> Bitmap {
         if !opts.skip_style_calculation {
             self.calculate_styles(document_node.clone());
         }
@@ -77,4 +88,3 @@ impl<'a> Pipeline<'a> {
         layout_tree
     }
 }
-

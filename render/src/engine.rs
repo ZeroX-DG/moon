@@ -6,10 +6,7 @@ use url::Url;
 
 pub enum InputEvent {
     ViewportResize(Size),
-    LoadHTML {
-        html: String,
-        base_url: Url,
-    },
+    LoadHTML { html: String, base_url: Url },
 }
 
 pub enum OutputEvent {
@@ -17,21 +14,19 @@ pub enum OutputEvent {
 }
 
 pub struct RenderEngine<'a> {
-    page: Page<'a>
+    page: Page<'a>,
 }
 
 impl<'a> RenderEngine<'a> {
     pub async fn new(viewport: Size) -> RenderEngine<'a> {
         let page = Page::new(viewport).await;
-        Self {
-            page
-        }
+        Self { page }
     }
 
     pub async fn run(
         mut self,
         event_receiver: Receiver<InputEvent>,
-        event_emitter: Sender<OutputEvent>
+        event_emitter: Sender<OutputEvent>,
     ) -> anyhow::Result<()> {
         loop {
             let event = event_receiver.recv()?;
@@ -39,16 +34,20 @@ impl<'a> RenderEngine<'a> {
         }
     }
 
-    async fn handle_event(&mut self, event: InputEvent, event_emitter: &Sender<OutputEvent>) -> anyhow::Result<()> {
+    async fn handle_event(
+        &mut self,
+        event: InputEvent,
+        event_emitter: &Sender<OutputEvent>,
+    ) -> anyhow::Result<()> {
         match event {
             InputEvent::ViewportResize(new_size) => {
                 self.page.resize(new_size).await;
                 self.emit_new_frame(event_emitter)?;
-            },
+            }
             InputEvent::LoadHTML { html, base_url } => {
                 self.page.load_html(html, base_url).await;
                 self.emit_new_frame(event_emitter)?;
-            },
+            }
         }
 
         Ok(())
@@ -61,4 +60,3 @@ impl<'a> RenderEngine<'a> {
         Ok(())
     }
 }
-
