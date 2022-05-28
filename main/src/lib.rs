@@ -2,7 +2,7 @@ use gtk::{prelude::*, Application};
 
 mod app;
 mod delayed_task;
-mod render_engine;
+mod render_client;
 mod state;
 mod ui;
 

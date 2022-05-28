@@ -25,7 +25,6 @@ pub fn accept_cli<'a>() -> ArgMatches<'a> {
 
     let render_once_subcommand = App::new("render")
         .about("Start a rendering process of Moon and render once")
-        .version(render::version())
         .author(AUTHOR)
         .arg(html_file_arg.clone().required(true))
         .arg(size_arg.clone())
@@ -33,7 +32,6 @@ pub fn accept_cli<'a>() -> ArgMatches<'a> {
         .arg(ouput_arg.clone());
 
     App::new("Moon Renderer")
-        .version("1.0")
         .author(AUTHOR)
         .about("Moon web browser!")
         .subcommand(render_once_subcommand)
