@@ -52,7 +52,7 @@ impl<'a> Page<'a> {
         self.main_frame.set_document(document, &mut self.pipeline).await;
     }
 
-    pub fn bitmap(&self) -> &Bitmap {
+    pub fn bitmap(&self) -> Option<&Bitmap> {
         self.main_frame.bitmap()
     }
 }

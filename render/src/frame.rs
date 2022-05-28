@@ -24,7 +24,7 @@ impl Frame {
     }
 
     pub async fn resize(&mut self, new_size: Size, pipeline: &mut Pipeline<'_>) {
-        self.size = new_size;
+        self.size = new_size.clone();
         self.render_frame(pipeline, PipelineRunOptions {
             skip_style_calculation: true
         }).await;
@@ -37,17 +37,19 @@ impl Frame {
         }).await;
     }
 
-    pub fn document(&self) -> NodePtr {
-        self.document.clone().expect("No document available")
+    pub fn document(&self) -> Option<NodePtr> {
+        self.document.clone()
     }
 
-    pub fn bitmap(&self) -> &Bitmap {
-        self.bitmap.as_ref().expect("No bitmap available")
+    pub fn bitmap(&self) -> Option<&Bitmap> {
+        self.bitmap.as_ref()
     }
 
     async fn render_frame(&mut self, pipeline: &mut Pipeline<'_>, opts: PipelineRunOptions) {
-        let bitmap = pipeline.run(self.document(), &self.size(), opts).await;
-        self.bitmap = Some(bitmap);
+        if let Some(document) = self.document() {
+            let bitmap = pipeline.run(document, &self.size(), opts).await;
+            self.bitmap = Some(bitmap);
+        }
     }
 }
 
