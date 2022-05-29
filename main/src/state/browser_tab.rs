@@ -17,6 +17,7 @@ pub enum TabAction {
 pub enum TabEvent {
     URLChanged(Url),
     FrameReceived(Vec<u8>),
+    TitleChanged(String),
 }
 
 pub struct TabHandler {
@@ -128,6 +129,7 @@ impl BrowserTab {
     fn handle_render_engine_event(&self, event: OutputEvent) -> anyhow::Result<()> {
         match event {
             OutputEvent::FrameRendered(frame) => self.emit_event(TabEvent::FrameReceived(frame))?,
+            OutputEvent::TitleChanged(title) => self.emit_event(TabEvent::TitleChanged(title))?,
         }
 
         Ok(())

@@ -2,7 +2,8 @@ mod content_area;
 mod primary_bar;
 
 use gtk::gdk::EventMask;
-use gtk::gdk_pixbuf::Pixbuf;
+use gtk::gdk_pixbuf::{Colorspace, Pixbuf};
+use gtk::glib::Bytes;
 use gtk::{prelude::*, Orientation};
 use gtk::{Application, ApplicationWindow};
 
@@ -50,7 +51,15 @@ impl UI {
         self.primary_bar.url_entry.set_text(url);
     }
 
-    pub fn set_content_pixbuf(&mut self, content: Pixbuf) {
-        self.content_area.set_content_pixbuf(content);
+    pub fn set_web_content_bitmap(&mut self, bitmap: Vec<u8>) {
+        let (width, height) = self.content_area.render_area_size();
+
+        if (width * height * 4) as usize > bitmap.len() {
+            return;
+        }
+
+        let bytes = Bytes::from_owned(bitmap);
+        let pixbuf = Pixbuf::from_bytes(&bytes, Colorspace::Rgb, true, 8, width, height, width * 4);
+        self.content_area.set_content_pixbuf(pixbuf);
     }
 }

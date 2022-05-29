@@ -145,10 +145,15 @@ impl Browser {
                     let is_active_tab = tab_index == self.active_tab_index;
                     match event {
                         TabEvent::URLChanged(url) if is_active_tab => {
-                            get_app_runtime().update_state(|state| state.update_url(url));
+                            get_app_runtime()
+                                .update_state(move |state| state.ui.set_url(&url.as_str()));
                         }
                         TabEvent::FrameReceived(frame) if is_active_tab => {
-                            get_app_runtime().update_state(|state| state.update_web_content(frame));
+                            get_app_runtime()
+                                .update_state(|state| state.ui.set_web_content_bitmap(frame));
+                        }
+                        TabEvent::TitleChanged(title) if is_active_tab => {
+                            get_app_runtime().update_state(move |state| state.ui.set_title(&title));
                         }
                         _ => {}
                     }

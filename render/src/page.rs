@@ -57,4 +57,11 @@ impl<'a> Page<'a> {
     pub fn bitmap(&self) -> Option<&Bitmap> {
         self.main_frame.bitmap()
     }
+
+    pub fn title(&self) -> String {
+        self.main_frame
+            .document()
+            .map(|document| document.as_document().title())
+            .unwrap_or_default()
+    }
 }

@@ -11,6 +11,7 @@ pub enum InputEvent {
 
 pub enum OutputEvent {
     FrameRendered(Bitmap),
+    TitleChanged(String),
 }
 
 pub struct RenderEngine<'a> {
@@ -47,9 +48,14 @@ impl<'a> RenderEngine<'a> {
             InputEvent::LoadHTML { html, base_url } => {
                 self.page.load_html(html, base_url).await;
                 self.emit_new_frame(event_emitter)?;
+                self.emit_new_title(event_emitter)?;
             }
         }
+        Ok(())
+    }
 
+    fn emit_new_title(&self, event_emitter: &Sender<OutputEvent>) -> anyhow::Result<()> {
+        event_emitter.send(OutputEvent::TitleChanged(self.page.title()))?;
         Ok(())
     }
 
