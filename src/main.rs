@@ -1,6 +1,7 @@
 mod cli;
 
 use image::{ImageBuffer, Rgba};
+use render::page::Page;
 use shared::primitive::Size;
 use simplelog::*;
 use std::io::Read;
@@ -44,26 +45,20 @@ fn main() {
             let absolute_path_url = format!("file://{}/", absolute_path.to_str().unwrap());
             let base_url = URLParser::parse(&absolute_path_url, None).unwrap();
 
-            let bitmap = render::render_once(html_code.to_string(), base_url, Size::from(viewport));
-
             let (width, height) = viewport;
 
-            let buffer = ImageBuffer::<Rgba<u8>, _>::from_raw(width, height, bitmap).unwrap();
-            buffer.save(output_path).unwrap();
+            let rt = tokio::runtime::Runtime::new().unwrap();
+            rt.block_on(async {
+                let mut page = Page::new(Size::new(width as f32, height as f32)).await;
+                page.load_html(html_code.to_string(), base_url).await;
+                let bitmap = page.bitmap().unwrap().clone();
+
+                let buffer = ImageBuffer::<Rgba<u8>, _>::from_raw(width, height, bitmap).unwrap();
+                buffer.save(output_path).unwrap();
+            });
         }
         cli::Action::StartMain => {
             main::start_main();
         }
     }
-
-    //     let html_code = include_str!("../fixtures/test_text.html");
-    //     let viewport = (500, 300);
-    //     let output_path = "image.png";
-    //
-    //     let bitmap = render::render_once(html_code.to_string(), viewport).await;
-    //
-    //     let (width, height) = viewport;
-    //
-    //     let buffer = ImageBuffer::<Rgba<u8>, _>::from_raw(width, height, bitmap).unwrap();
-    //     buffer.save(output_path).unwrap();
 }

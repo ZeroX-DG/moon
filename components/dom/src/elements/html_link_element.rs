@@ -38,7 +38,7 @@ impl HTMLLinkElement {
     pub fn load_stylesheet(&self, url: &Url, document: NodePtr) {
         log::info!("Loading stylesheet from: {}", url);
 
-        match ResourceLoader::load(url.clone()) {
+        match ResourceLoader::load(url) {
             Ok(bytes) => {
                 let css = ByteString::new(&bytes);
                 let tokenizer = Tokenizer::new(css.chars());

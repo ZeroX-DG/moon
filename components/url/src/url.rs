@@ -63,7 +63,12 @@ impl Url {
         if let Some(port) = self.port {
             result.push_str(&format!(":{}", port));
         }
-        result.push_str(&format!("/{}", self.path));
+        let path = if self.path.as_str().starts_with("/") {
+            format!("{}", self.path)
+        } else {
+            format!("/{}", self.path)
+        };
+        result.push_str(&path);
         if let Some(fragment) = &self.fragment {
             result.push_str(&format!("#{}", fragment));
         }

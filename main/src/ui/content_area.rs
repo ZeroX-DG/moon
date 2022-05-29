@@ -13,7 +13,6 @@ use gtk::{
     DrawingArea, Inhibit,
 };
 use shared::primitive::Size;
-use url::parser::URLParser;
 
 use crate::{app::get_app_runtime, delayed_task::DelayedTask};
 
@@ -57,7 +56,7 @@ impl ContentArea {
                     get_app_runtime().update_state(|state| {
                         let (width, height) = state.ui.content_area.render_area_size();
                         let new_size = Size::new(width as f32, height as f32);
-                        state.active_tab_mut().resize(new_size);
+                        state.browser().resize(new_size);
                     });
                 }));
         });
@@ -70,16 +69,7 @@ impl ContentArea {
 
                 item.connect_activate(|_| {
                     get_app_runtime().update_state(|state| {
-                        let active_tab_url = state.active_tab().url().as_str();
-
-                        if active_tab_url.starts_with("view-source:") {
-                            return;
-                        }
-
-                        let url = format!("view-source:{}", active_tab_url);
-                        state
-                            .active_tab_mut()
-                            .goto(URLParser::parse(&url, None).unwrap());
+                        state.browser().view_source_current_tab();
                     });
                 });
 
