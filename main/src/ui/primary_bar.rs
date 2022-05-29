@@ -22,6 +22,7 @@ impl PrimaryBar {
 
         url_entry.connect_activate(|entry| {
             let raw_url = entry.text().to_string();
+            log::debug!("GOTO: {}", raw_url);
             get_app_runtime().update_state(move |state| {
                 state.browser().goto(raw_url);
             });

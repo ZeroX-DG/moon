@@ -44,9 +44,18 @@ impl BrowserHandler {
     }
 
     pub fn goto(&self, raw_url: String) {
+        if raw_url.is_empty() {
+            return;
+        }
+
         self.update(move |browser| {
             let active_tab = browser.get_active_tab();
-            active_tab.goto(URLParser::parse(&raw_url, None).unwrap()).unwrap();
+
+            if let Some(url) = URLParser::parse(&raw_url, None) {
+                active_tab.goto(url).unwrap();
+            } else {
+                active_tab.show_error("Invalid URL".to_string(), format!("Invalid URL entered: {}", raw_url)).unwrap();
+            }
         });
     }
 

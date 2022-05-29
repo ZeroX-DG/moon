@@ -11,6 +11,10 @@ use url::Url;
 pub enum TabAction {
     Resize(Size),
     Goto(Url),
+    ShowError {
+        title: String,
+        body: String
+    }
 }
 
 pub enum TabEvent {
@@ -32,6 +36,11 @@ impl TabHandler {
 
     pub fn goto(&self, url: Url) -> anyhow::Result<()> {
         self.sender.send(TabAction::Goto(url))?;
+        Ok(())
+    }
+
+    pub fn show_error(&self, title: String, body: String) -> anyhow::Result<()> {
+        self.sender.send(TabAction::ShowError { title, body })?;
         Ok(())
     }
 
@@ -112,6 +121,7 @@ impl BrowserTab {
         match event {
             TabAction::Resize(new_size) => self.client.resize(new_size),
             TabAction::Goto(url) => self.goto(url)?,
+            TabAction::ShowError { title, body } => self.load_error(&title, &body),
         }
         Ok(())
     }
@@ -134,6 +144,7 @@ impl BrowserTab {
 
 impl BrowserTab {
     fn goto(&self, url: Url) -> anyhow::Result<()> {
+        *self.info.url.lock().unwrap() = url.clone();
         self.load(&url)?;
         self.change_url(url)?;
         Ok(())
@@ -150,7 +161,6 @@ impl BrowserTab {
     }
 
     fn change_url(&self, url: Url) -> anyhow::Result<()> {
-        *self.info.url.lock().unwrap() = url.clone();
         self.emit_event(TabEvent::URLChanged(url))?;
         Ok(())
     }
