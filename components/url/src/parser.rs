@@ -699,4 +699,21 @@ mod tests {
 
         assert_eq!(url.path, "_folder/index.html");
     }
+
+    #[test]
+    fn produce_correct_url_str() {
+        let input_url = "index.html";
+        let base_url = URLParser::parse("file:///home/user/data/", None);
+
+        let url = URLParser::parse(input_url, base_url).unwrap();
+
+        assert_eq!(url.as_str(), "file:///home/user/data/index.html");
+
+        let input_url = "index.html";
+        let base_url = URLParser::parse("http://google.com", None);
+
+        let url = URLParser::parse(input_url, base_url).unwrap();
+
+        assert_eq!(url.as_str(), "http://google.com/index.html");
+    }
 }
