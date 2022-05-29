@@ -29,7 +29,7 @@ impl AppState {
         Self {
             ui,
             runtime,
-            handler
+            handler,
         }
     }
 

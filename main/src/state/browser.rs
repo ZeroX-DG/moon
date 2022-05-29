@@ -1,12 +1,12 @@
 use std::path::Path;
 
-use flume::{Sender, Receiver};
+use flume::{Receiver, Sender};
 use shared::primitive::Size;
 use url::{parser::URLParser, Url};
 
 use crate::app::get_app_runtime;
 
-use super::browser_tab::{BrowserTab, TabHandler, TabEvent};
+use super::browser_tab::{BrowserTab, TabEvent, TabHandler};
 
 fn start_tab(tab: BrowserTab) -> TabHandler {
     let handler = tab.handler();
@@ -39,7 +39,9 @@ impl BrowserHandler {
             }
 
             let url = format!("view-source:{}", active_tab_url);
-            active_tab.goto(URLParser::parse(&url, None).unwrap()).unwrap();
+            active_tab
+                .goto(URLParser::parse(&url, None).unwrap())
+                .unwrap();
         });
     }
 
@@ -54,7 +56,12 @@ impl BrowserHandler {
             if let Some(url) = URLParser::parse(&raw_url, None) {
                 active_tab.goto(url).unwrap();
             } else {
-                active_tab.show_error("Invalid URL".to_string(), format!("Invalid URL entered: {}", raw_url)).unwrap();
+                active_tab
+                    .show_error(
+                        "Invalid URL".to_string(),
+                        format!("Invalid URL entered: {}", raw_url),
+                    )
+                    .unwrap();
             }
         });
     }
@@ -68,7 +75,7 @@ pub struct Browser {
     home_url: Url,
     tab_handlers: Vec<TabHandler>,
     active_tab_index: usize,
-    update_channel: (Sender<BrowserAction>, Receiver<BrowserAction>)
+    update_channel: (Sender<BrowserAction>, Receiver<BrowserAction>),
 }
 
 impl Browser {
@@ -102,7 +109,10 @@ impl Browser {
     }
 
     pub fn get_active_tab(&self) -> &TabHandler {
-        self.tab_handlers.get(self.active_tab_index).as_ref().unwrap()
+        self.tab_handlers
+            .get(self.active_tab_index)
+            .as_ref()
+            .unwrap()
     }
 
     pub fn run(mut self) -> anyhow::Result<()> {
@@ -118,11 +128,15 @@ impl Browser {
             let mut selector = flume::Selector::new();
 
             for (tab_index, tab) in self.tab_handlers.iter().enumerate() {
-                selector = selector.recv(tab.events(), move |event| event.map(|e| Event::TabEvent((tab_index, e))));
+                selector = selector.recv(tab.events(), move |event| {
+                    event.map(|e| Event::TabEvent((tab_index, e)))
+                });
             }
 
             let (_, update_receiver) = &self.update_channel;
-            selector = selector.recv(update_receiver, |event| event.map(|e| Event::UpdateEvent(e)));
+            selector = selector.recv(update_receiver, |event| {
+                event.map(|e| Event::UpdateEvent(e))
+            });
 
             let event = selector.wait()?;
 

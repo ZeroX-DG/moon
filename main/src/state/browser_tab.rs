@@ -11,10 +11,7 @@ use url::Url;
 pub enum TabAction {
     Resize(Size),
     Goto(Url),
-    ShowError {
-        title: String,
-        body: String
-    }
+    ShowError { title: String, body: String },
 }
 
 pub enum TabEvent {
@@ -68,7 +65,7 @@ impl BrowserTab {
     pub fn new(url: Url) -> Self {
         let client = RenderClient::new();
         let info = TabInfo {
-            url: Mutex::new(url)
+            url: Mutex::new(url),
         };
 
         Self {
@@ -91,7 +88,9 @@ impl BrowserTab {
         loop {
             let event = Selector::new()
                 .recv(&tab_action_rx, |event| event.map(|e| Event::TabAction(e)))
-                .recv(&render_engine_events, |event| event.map(|e| Event::RenderEngineEvent(e)))
+                .recv(&render_engine_events, |event| {
+                    event.map(|e| Event::RenderEngineEvent(e))
+                })
                 .wait()?;
 
             match event {
@@ -107,7 +106,7 @@ impl BrowserTab {
         TabHandler {
             sender,
             receiver,
-            info
+            info,
         }
     }
 
@@ -125,7 +124,7 @@ impl BrowserTab {
         }
         Ok(())
     }
-    
+
     fn handle_render_engine_event(&self, event: OutputEvent) -> anyhow::Result<()> {
         match event {
             OutputEvent::FrameRendered(frame) => self.emit_event(TabEvent::FrameReceived(frame))?,
@@ -139,7 +138,6 @@ impl BrowserTab {
         sender.send(event)?;
         Ok(())
     }
-
 }
 
 impl BrowserTab {
@@ -149,7 +147,6 @@ impl BrowserTab {
         self.change_url(url)?;
         Ok(())
     }
-
 
     fn load(&self, url: &Url) -> anyhow::Result<()> {
         match url.scheme.as_str() {
