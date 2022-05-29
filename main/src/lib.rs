@@ -19,11 +19,6 @@ pub fn start_main() {
             state.ui.window.show_all();
             state.ui.window.present();
         });
-
-        app_runtime.update_state(|state| {
-            let initial_url = state.browser.home_url().clone();
-            state.new_tab(initial_url, true);
-        });
     });
 
     app.run();

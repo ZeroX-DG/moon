@@ -4,67 +4,50 @@ mod browser_tab;
 use crate::{app::AppRuntime, ui::UI};
 
 use browser::Browser;
-use browser_tab::BrowserTab;
 use gtk::{
     gdk_pixbuf::{Colorspace, Pixbuf},
     glib::Bytes,
 };
-use shared::primitive::Size;
 use url::Url;
+
+use self::browser::BrowserHandler;
 
 pub struct AppState {
     pub ui: UI,
     pub runtime: AppRuntime,
-    pub browser: Browser,
-    tabs: Vec<BrowserTab>,
-    pub active_tab: usize,
+    handler: BrowserHandler,
 }
 
 impl AppState {
     pub fn new(ui: UI, runtime: AppRuntime) -> Self {
+        let browser = Browser::new();
+        let handler = browser.handler();
+        let _ = std::thread::spawn(move || {
+            browser.run().expect("Browser crashed");
+        });
+
         Self {
             ui,
             runtime,
-            browser: Browser::new(),
-            tabs: Vec::new(),
-            active_tab: 0,
+            handler
         }
     }
 
-    pub fn new_tab(&mut self, url: Url, active: bool) -> &BrowserTab {
-        let tab = BrowserTab::new(url.clone());
-        let (width, height) = self.ui.content_area.render_area_size();
-        let viewport = Size::new(width as f32, height as f32);
-        tab.resize(viewport);
-        tab.load();
-        self.tabs.push(tab);
+    pub fn browser(&self) -> &BrowserHandler {
+        &self.handler
+    }
 
-        if active {
-            self.set_active_tab(self.tabs.len() - 1);
+    pub fn update_url(&mut self, url: Url) {
+        self.ui.set_url(&url.as_str());
+    }
+
+    pub fn update_web_content(&mut self, bitmap: Vec<u8>) {
+        let (width, height) = self.ui.content_area.render_area_size();
+
+        if (width * height * 4) as usize > bitmap.len() {
+            return;
         }
 
-        self.tabs.last().unwrap()
-    }
-
-    pub fn active_tab_mut(&mut self) -> &mut BrowserTab {
-        self.tabs.get_mut(self.active_tab).unwrap()
-    }
-
-    pub fn active_tab(&self) -> &BrowserTab {
-        self.tabs.get(self.active_tab).unwrap()
-    }
-
-    pub fn set_active_tab(&mut self, index: usize) {
-        // set current active tab to not active
-        self.active_tab_mut().set_active(false);
-
-        // set new active tab to active & repaint
-        self.active_tab = index;
-        self.active_tab_mut().set_active(true);
-    }
-
-    pub fn on_active_tab_bitmap(&mut self, bitmap: Vec<u8>) {
-        let (width, height) = self.ui.content_area.render_area_size();
         let bytes = Bytes::from_owned(bitmap);
         let pixbuf = Pixbuf::from_bytes(&bytes, Colorspace::Rgb, true, 8, width, height, width * 4);
         self.ui.set_content_pixbuf(pixbuf);

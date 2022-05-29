@@ -35,7 +35,7 @@ impl LoadError {
 pub struct ResourceLoader;
 
 impl ResourceLoader {
-    pub fn load(url: Url) -> Result<Bytes, LoadError> {
+    pub fn load(url: &Url) -> Result<Bytes, LoadError> {
         let rt = Runtime::new().unwrap();
         let load_result = match url.scheme.as_str() {
             "file" => {
@@ -48,7 +48,7 @@ impl ResourceLoader {
             "view-source" => {
                 let target_url = URLParser::parse(&url.path.as_str(), None)
                     .ok_or_else(|| LoadError::InvalidURL(url.as_str()))?;
-                ResourceLoader::load(target_url)
+                ResourceLoader::load(&target_url)
             }
             protocol => Err(LoadError::UnsupportedProtocol(protocol.to_string())),
         };

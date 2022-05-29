@@ -2,7 +2,6 @@ use gtk::{
     traits::{ContainerExt, EntryExt},
     Button, Entry, Image,
 };
-use url::parser::URLParser;
 
 use crate::app::get_app_runtime;
 
@@ -24,14 +23,7 @@ impl PrimaryBar {
         url_entry.connect_activate(|entry| {
             let raw_url = entry.text().to_string();
             get_app_runtime().update_state(move |state| {
-                let parse_url_result = URLParser::parse(&raw_url, None);
-                if let Some(url) = parse_url_result {
-                    state.active_tab_mut().goto(url);
-                } else {
-                    state
-                        .active_tab_mut()
-                        .load_error("Invalid URL", &format!("Invalid URL entered: {}", raw_url));
-                }
+                state.browser().goto(raw_url);
             });
         });
 
