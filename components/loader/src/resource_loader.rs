@@ -1,5 +1,5 @@
+use flume::{unbounded, Sender};
 use net::http::HttpResponse;
-use tokio::runtime::Runtime;
 use url::{parser::URLParser, Url};
 
 #[derive(Debug)]
@@ -32,26 +32,74 @@ impl LoadError {
     }
 }
 
-pub struct ResourceLoader;
+pub struct LoadRequest {
+    url: Url,
+    response_tx: Sender<Result<Bytes, LoadError>>,
+}
+
+static mut RESOURCE_LOADER: Option<ResourceLoader> = None;
+
+#[derive(Clone)]
+pub struct ResourceLoader(Sender<LoadRequest>);
 
 impl ResourceLoader {
-    pub fn load(url: &Url) -> Result<Bytes, LoadError> {
-        let rt = Runtime::new().unwrap();
-        let load_result = match url.scheme.as_str() {
-            "file" => {
-                std::fs::read(url.path.as_str()).map_err(|e| LoadError::IOError(e.to_string()))
+    pub fn init() -> Self {
+        let (request_tx, request_rx) = unbounded();
+
+        let loader = ResourceLoader(request_tx);
+
+        unsafe {
+            if RESOURCE_LOADER.is_none() {
+                RESOURCE_LOADER = Some(loader.clone());
             }
-            "http" | "https" => match rt.block_on(net::http::request("GET", &url.as_str())) {
-                HttpResponse::Success(bytes) => Ok(bytes),
-                HttpResponse::Failure(err) => Err(LoadError::IOError(err)),
-            },
-            "view-source" => {
-                let target_url = URLParser::parse(&url.path.as_str(), None)
-                    .ok_or_else(|| LoadError::InvalidURL(url.as_str()))?;
-                ResourceLoader::load(&target_url)
+        }
+
+        std::thread::spawn(move || {
+            let rt = tokio::runtime::Runtime::new().unwrap();
+
+            fn load(url: &Url, rt: &tokio::runtime::Runtime) -> Result<Vec<u8>, LoadError> {
+                let load_result = match url.scheme.as_str() {
+                    "file" => std::fs::read(url.path.as_str())
+                        .map_err(|e| LoadError::IOError(e.to_string())),
+                    "http" | "https" => match rt.block_on(net::http::request("GET", &url.as_str()))
+                    {
+                        HttpResponse::Success(bytes) => Ok(bytes),
+                        HttpResponse::Failure(err) => Err(LoadError::IOError(err)),
+                    },
+                    "view-source" => {
+                        let target_url = URLParser::parse(&url.path.as_str(), None)
+                            .ok_or_else(|| LoadError::InvalidURL(url.as_str()))?;
+                        load(&target_url, rt)
+                    }
+                    protocol => Err(LoadError::UnsupportedProtocol(protocol.to_string())),
+                };
+                load_result
             }
-            protocol => Err(LoadError::UnsupportedProtocol(protocol.to_string())),
-        };
-        load_result
+
+            loop {
+                let request = request_rx.recv().unwrap();
+                let url = request.url;
+                let response = load(&url, &rt);
+
+                request.response_tx.send(response).unwrap();
+            }
+        });
+
+        loader
+    }
+
+    pub fn current() -> Self {
+        unsafe { RESOURCE_LOADER.clone().unwrap() }
+    }
+
+    pub fn load(&self, url: &Url) -> Result<Bytes, LoadError> {
+        let (tx, rx) = flume::bounded(1);
+        self.0
+            .send(LoadRequest {
+                url: url.clone(),
+                response_tx: tx,
+            })
+            .unwrap();
+        rx.recv().unwrap()
     }
 }

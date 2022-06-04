@@ -3,6 +3,7 @@ use dom::{
     node::{Node, NodeData, NodePtr},
 };
 use gfx::Bitmap;
+use loader::ResourceLoader;
 use shared::{primitive::Size, tree_node::TreeNode};
 use style_types::{CSSLocation, CascadeOrigin, ContextualStyleSheet};
 use url::Url;
@@ -20,6 +21,7 @@ pub struct Page<'a> {
 
 impl<'a> Page<'a> {
     pub async fn new(init_size: Size) -> Page<'a> {
+        ResourceLoader::init();
         Page {
             main_frame: Frame::new(init_size),
             pipeline: Pipeline::new().await,

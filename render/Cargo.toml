@@ -17,7 +17,8 @@ painting = { version = "*", path = "../components/painting" }
 shared = { version = "*", path = "../components/shared" }
 gfx = { version = "*", path = "../components/gfx" }
 url = { path = "../components/url" }
+loader = { path = "../components/loader" }
 log = "*"
-flume = "*"
+flume = "0.10.12"
 anyhow = "1.0.57"
 tokio = "1.18.2"
