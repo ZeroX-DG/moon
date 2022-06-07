@@ -39,7 +39,7 @@ impl<'a> Pipeline<'a> {
 
         self.painter.resize(size.clone());
         if let Some(node) = layout_node {
-            self.painter.paint(node);
+            self.painter.paint(&node);
         }
         self.painter.output().await
     }
