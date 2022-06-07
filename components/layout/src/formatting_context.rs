@@ -72,7 +72,7 @@ pub fn establish_context(
     context
 }
 
-fn use_context(context: Rc<dyn FormattingContext>, node: LayoutBoxPtr) {
+pub fn use_context(context: Rc<dyn FormattingContext>, node: LayoutBoxPtr) {
     node.formatting_context.replace(Some(context));
 }
 

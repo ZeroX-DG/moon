@@ -112,7 +112,7 @@ impl core::fmt::Debug for NodeData {
             NodeData::Text(text) => write!(f, "Text({:?})", text.get_data()),
             NodeData::Comment(comment) => write!(f, "Comment({:?})", comment.get_data()),
             NodeData::Document(_) => write!(f, "Document"),
-            NodeData::Element(element) => write!(f, "Element({:?})", element.tag_name()),
+            NodeData::Element(element) => write!(f, "{:?}", element),
         }
     }
 }

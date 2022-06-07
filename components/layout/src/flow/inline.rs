@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use crate::{
     box_model::BoxComponent,
     formatting_context::{BaseFormattingContext, FormattingContext, LayoutContext},
@@ -12,16 +14,14 @@ use super::line_box::LineBoxBuilder;
 
 pub struct InlineBoxIterator {
     stack: Vec<LayoutBoxPtr>,
+    visited: Vec<LayoutBoxPtr>,
 }
 
 impl InlineBoxIterator {
     pub fn new(parent: LayoutBoxPtr) -> Self {
         Self {
-            stack: parent
-                .iterate_children()
-                .rev()
-                .map(|child| LayoutBoxPtr(child))
-                .collect(),
+            stack: vec![parent.clone()],
+            visited: vec![parent],
         }
     }
 }
@@ -29,16 +29,32 @@ impl InlineBoxIterator {
 impl Iterator for InlineBoxIterator {
     type Item = LayoutBoxPtr;
     fn next(&mut self) -> Option<Self::Item> {
-        if self.stack.is_empty() {
-            return None;
-        }
-        let ptr = self.stack.pop().unwrap();
+        if let Some(node) = self.stack.last() {
+            let mut maybe_found_node = None;
+            // if top of the stack is a leaf then remove it and skip to the next element
+            if node.has_no_child() {
+                self.stack.pop();
+                return self.next();
+            }
 
-        for child in ptr.iterate_children().rev() {
-            self.stack.push(LayoutBoxPtr(child));
-        }
+            for child in node.iterate_children() {
+                if !self.visited.iter().any(|n| Rc::ptr_eq(&n.0, &child)) {
+                    let child_box = LayoutBoxPtr(child.clone());
+                    self.stack.push(child_box.clone());
+                    self.visited.push(child_box.clone());
+                    maybe_found_node = Some(child_box);
+                    break;
+                }
+            }
 
-        return Some(ptr);
+            if let Some(found_node) = maybe_found_node {
+                return Some(found_node);
+            } else {
+                self.stack.pop();
+                return self.next();
+            }
+        }
+        None
     }
 }
 
@@ -88,7 +104,7 @@ impl InlineFormattingContext {
                     Some(NodeData::Text(content)) => {
                         let text_content = content.get_data();
                         if text_content.trim().is_empty() {
-                            return;
+                            continue;
                         }
                         // TODO: Support different line break types
                         let regex = Regex::new(r"\s|\t|\n").unwrap();
@@ -203,5 +219,137 @@ impl InlineFormattingContext {
             box_model.set(BoxComponent::Border, Edge::Top, border_top);
             box_model.set(BoxComponent::Border, Edge::Bottom, border_bottom);
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use shared::primitive::Rect;
+    use test_utils::dom_creator::{document, element};
+
+    use crate::{
+        formatting_context::{establish_context, FormattingContextType, LayoutContext},
+        layout_box::LayoutBoxPtr,
+        utils::{build_tree, SHARED_CSS},
+    };
+
+    use super::InlineBoxIterator;
+
+    #[test]
+    fn test_iterate_inline() {
+        let document = document();
+        let dom = element(
+            "div",
+            document.clone(),
+            vec![
+                element("a", document.clone(), vec![]),
+                element("a", document.clone(), vec![]),
+                element("a", document.clone(), vec![]),
+                element(
+                    "div.inline-block#a",
+                    document.clone(),
+                    vec![
+                        element("div.inline-block#b", document.clone(), vec![]),
+                        element("div.inline-block#c", document.clone(), vec![]),
+                        element("div.inline-block#d", document.clone(), vec![]),
+                    ],
+                ),
+                element(
+                    "div.inline-block#f",
+                    document.clone(),
+                    vec![
+                        element(
+                            "div.inline-block#g",
+                            document.clone(),
+                            vec![element("div.inline-block#z", document.clone(), vec![])],
+                        ),
+                        element("div.inline-block#h", document.clone(), vec![]),
+                        element("div.inline-block#j", document.clone(), vec![]),
+                    ],
+                ),
+            ],
+        );
+
+        let root = build_tree(dom, SHARED_CSS);
+        let mut inline_iterator = InlineBoxIterator::new(root);
+
+        let mapper1 = |e: LayoutBoxPtr| e.node().unwrap().as_element().tag_name();
+        let mapper2 = |e: LayoutBoxPtr| {
+            let node = e.node().unwrap();
+            let element = node.as_element();
+            (element.tag_name(), element.id().unwrap())
+        };
+
+        assert_eq!(inline_iterator.next().map(mapper1), Some("a".to_string()));
+        assert_eq!(inline_iterator.next().map(mapper1), Some("a".to_string()));
+        assert_eq!(inline_iterator.next().map(mapper1), Some("a".to_string()));
+        assert_eq!(
+            inline_iterator.next().map(mapper2),
+            Some(("div".to_string(), "a".to_string()))
+        );
+        assert_eq!(
+            inline_iterator.next().map(mapper2),
+            Some(("div".to_string(), "b".to_string()))
+        );
+        assert_eq!(
+            inline_iterator.next().map(mapper2),
+            Some(("div".to_string(), "c".to_string()))
+        );
+        assert_eq!(
+            inline_iterator.next().map(mapper2),
+            Some(("div".to_string(), "d".to_string()))
+        );
+
+        assert_eq!(
+            inline_iterator.next().map(mapper2),
+            Some(("div".to_string(), "f".to_string()))
+        );
+        assert_eq!(
+            inline_iterator.next().map(mapper2),
+            Some(("div".to_string(), "g".to_string()))
+        );
+        assert_eq!(
+            inline_iterator.next().map(mapper2),
+            Some(("div".to_string(), "z".to_string()))
+        );
+        assert_eq!(
+            inline_iterator.next().map(mapper2),
+            Some(("div".to_string(), "h".to_string()))
+        );
+        assert_eq!(
+            inline_iterator.next().map(mapper2),
+            Some(("div".to_string(), "j".to_string()))
+        );
+
+        assert_eq!(inline_iterator.next().map(mapper1), None);
+    }
+
+    #[test]
+    fn test_inline_format() {
+        let document = document();
+        let dom = element(
+            "div",
+            document.clone(),
+            vec![
+                element("div.inline-block", document.clone(), vec![]),
+                element("div.inline-block", document.clone(), vec![]),
+                element("div.inline-block", document.clone(), vec![]),
+            ],
+        );
+
+        let root = build_tree(dom, SHARED_CSS);
+
+        let layout_context = LayoutContext {
+            viewport: Rect::new(0., 0., 500., 300.),
+        };
+
+        establish_context(FormattingContextType::InlineFormattingContext, root.clone());
+        root.formatting_context().run(&layout_context, root.clone());
+
+        assert_eq!(root.lines().borrow().len(), 1);
+        assert_eq!(
+            root.lines().borrow().first().map(|l| l.fragments.len()),
+            Some(3)
+        );
     }
 }

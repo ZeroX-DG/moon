@@ -373,6 +373,8 @@ impl LayoutBoxPtr {
             format!("[{}]", self.friendly_name())
         };
 
+        let formatting_context = format!("[{:?}]", self.formatting_context().base().context_type);
+
         let dimensions = format!(
             " (x: {} | y: {} | w: {} | h: {})",
             self.absolute_rect().x,
@@ -387,9 +389,10 @@ impl LayoutBoxPtr {
         };
 
         result.push_str(&format!(
-            "{}{}{}{}\n",
+            "{}{}{}{}{}\n",
             "  ".repeat(level),
             box_type,
+            formatting_context,
             node_info,
             dimensions
         ));

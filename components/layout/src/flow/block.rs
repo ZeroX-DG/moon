@@ -1,8 +1,8 @@
 use crate::{
     box_model::BoxComponent,
     formatting_context::{
-        create_independent_formatting_context_if_needed, BaseFormattingContext, FormattingContext,
-        LayoutContext,
+        create_independent_formatting_context_if_needed, use_context, BaseFormattingContext,
+        FormattingContext, LayoutContext,
     },
     layout_box::LayoutBoxPtr,
 };
@@ -62,6 +62,7 @@ impl BlockFormattingContext {
             if let Some(independent_formatting_context) =
                 create_independent_formatting_context_if_needed(child.clone())
             {
+                use_context(independent_formatting_context.clone(), child.clone());
                 independent_formatting_context.run(context, child.clone());
             } else {
                 self.layout_block_level_children(context, child.clone());

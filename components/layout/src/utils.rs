@@ -6,11 +6,18 @@ use test_utils::css::parse_stylesheet;
 use crate::layout_box::LayoutBoxPtr;
 
 pub const SHARED_CSS: &str = r#"
+html, body {
+    display: block;
+}
 p, div {
     display: block;
 }
 span, a {
     display: inline;
+}
+.inline-block {
+    display: inline-block;
+}
 }"#;
 
 pub fn build_tree(dom: NodePtr, css: &str) -> LayoutBoxPtr {
