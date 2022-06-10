@@ -158,6 +158,16 @@ impl LineBoxBuilder {
     }
 
     pub fn add_box_fragment(&mut self, layout_box: LayoutBoxPtr) {
+        if let Some(node) = layout_box.node() {
+            if let Some(element) = node.as_element_opt() {
+                if element.tag_name() == "br" {
+                    self.break_line();
+                    self.update_last_line();
+                    return;
+                }
+            }
+        }
+
         let fragment_width = layout_box.content_size().width;
         let fragment_height = layout_box.content_size().height;
         self.break_line_if_needed(layout_box.margin_box_width());
@@ -207,6 +217,19 @@ impl LineBoxBuilder {
         }
 
         let last_line = self.line_boxes.last_mut().unwrap();
+
+        if last_line.fragments.is_empty() {
+            let parent = self.parent.get_non_anonymous_parent();
+            let font_size = parent
+                .node()
+                .unwrap()
+                .get_style(&Property::FontSize)
+                .to_absolute_px();
+            let mut text_measurer = TextMeasure::new();
+            let text_size = text_measurer.measure("H", font_size);
+
+            last_line.size.height = text_size.height;
+        }
 
         let mut x_offset = last_line
             .fragments
