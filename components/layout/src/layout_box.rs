@@ -364,6 +364,19 @@ impl LayoutBoxPtr {
         }
     }
 
+    pub fn get_non_anonymous_parent(&self) -> LayoutBoxPtr {
+        let mut result = self.clone();
+
+        loop {
+            if result.node.is_some() {
+                break;
+            }
+            result = LayoutBoxPtr(result.parent().unwrap());
+        }
+
+        return result;
+    }
+
     pub fn dump(&self, level: usize) -> String {
         let mut result = String::new();
 
