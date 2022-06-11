@@ -10,31 +10,26 @@ use url::Url;
 #[derive(Debug)]
 pub struct HTMLAnchorElement {
     href: RefCell<Option<Url>>,
-    _raw_href: RefCell<String>,
 }
 
 impl HTMLAnchorElement {
     pub fn empty() -> Self {
         Self {
             href: RefCell::new(None),
-            _raw_href: RefCell::new(String::new()),
         }
     }
 }
 
-impl ElementHooks for HTMLAnchorElement {
-    fn on_attribute_change(&self, attr: &str, value: &str) {
-        if attr == "href" {
-            *self._raw_href.borrow_mut() = value.to_string();
-        }
-    }
-}
+impl ElementHooks for HTMLAnchorElement {}
 
 impl NodeHooks for HTMLAnchorElement {
     fn on_inserted(&self, context: InsertContext) {
         let document = context.document;
         let base = document.as_document().base();
-        *self.href.borrow_mut() = URLParser::parse(&self._raw_href.borrow(), base);
+
+        let element = context.current_node.as_element();
+        let href_str = element.attributes().borrow().get_str("href");
+        *self.href.borrow_mut() = URLParser::parse(&href_str, base);
     }
 }
 
