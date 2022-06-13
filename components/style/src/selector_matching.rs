@@ -78,11 +78,15 @@ pub fn is_match_selector(element: NodePtr, selector: &Selector) -> bool {
 }
 
 fn is_match_simple_selector_seq(element: &NodePtr, sequence: &SimpleSelectorSequence) -> bool {
-    let element = element.as_element();
-    sequence
-        .values()
-        .iter()
-        .all(|selector| is_match_simple_selector(element, selector))
+    if let Some(element) = element.as_element_opt() {
+        return sequence
+            .values()
+            .iter()
+            .all(|selector| is_match_simple_selector(element, selector));
+    }
+
+    log::warn!("Trying to match selector on non-element: {:?}", element);
+    false
 }
 
 fn is_match_simple_selector(element: &Element, selector: &SimpleSelector) -> bool {

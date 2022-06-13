@@ -205,8 +205,9 @@ impl LineBoxBuilder {
     fn break_line(&mut self) {
         self.update_last_line();
 
-        let last_line_height = self.line_boxes.last().unwrap().size.height;
-        self.current_offset_y += last_line_height;
+        if let Some(last_line) = self.line_boxes.last() {
+            self.current_offset_y += last_line.size.height;
+        }
 
         self.line_boxes.push(LineBox::new());
     }

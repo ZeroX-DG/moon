@@ -27,6 +27,11 @@ impl TreeBuilder {
         };
 
         if let Some(root_node) = root_node {
+            if let Value::Display(Display::Box(DisplayBox::None)) =
+                root_node.get_style(&style_types::Property::Display)
+            {
+                return None;
+            }
             let root_box = LayoutBoxPtr(TreeNode::new(LayoutBox::new(root_node.clone())));
 
             self.parent_stack.push(root_box.clone());
