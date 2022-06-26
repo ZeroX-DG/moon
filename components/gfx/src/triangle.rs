@@ -7,8 +7,8 @@ const VERTEX_BUFFER_SIZE: usize = 10_000;
 const INDEX_BUFFER_SIZE: usize = 10_000;
 const UNIFORM_BUFFER_SIZE: usize = 50;
 
-const INDEX_FORMAT: wgpu::IndexFormat = wgpu::IndexFormat::Uint16;
-pub type Index = u16;
+const INDEX_FORMAT: wgpu::IndexFormat = wgpu::IndexFormat::Uint32;
+pub type Index = u32;
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
