@@ -1,0 +1,28 @@
+<style>
+    html,
+    body {
+        display: block;
+    }
+    
+    #rect {
+        width: 100px;
+        height: 100px;
+        display: block;
+        background-color: blue;
+        border: 25px solid red;
+    }
+
+    #triangle {
+        width: 0px;
+        height: 0px;
+        display: block;
+        border-top: 25px solid transparent;
+        border-bottom: 25px solid transparent;
+        border-left: 25px solid blue;
+    }
+</style>
+<p>Should be a red border box:
+<div id="rect"></div>
+
+<p>Should be a triangle:
+<div id="triangle"></div>

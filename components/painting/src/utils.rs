@@ -8,6 +8,7 @@ pub fn is_zero(value: &Value) -> bool {
     match value {
         Value::Length(l) => *l.value == 0.0,
         Value::Percentage(p) => *p.0 == 0.0,
+        Value::BorderRadius(BorderRadius(hr, vr)) => hr.is_zero() && vr.is_zero(),
         _ => false,
     }
 }
