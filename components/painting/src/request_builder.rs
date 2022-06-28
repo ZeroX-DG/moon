@@ -3,7 +3,10 @@ use shared::{
     color::Color,
     primitive::{Corners, RRect, Rect, Size},
 };
-use style_types::{values::color::Color as CSSColor, Property, Value};
+use style_types::{
+    values::{color::Color as CSSColor, prelude::BorderStyle},
+    Property, Value,
+};
 
 use crate::utils::{color_from_value, is_zero, to_radii};
 
@@ -22,6 +25,22 @@ pub struct PaintRequest {
 pub struct PaintBox {
     pub rect: RectOrRRect,
     pub background_color: Color,
+    pub borders: PaintBoxBorders,
+    pub border_rect: Rect,
+}
+
+#[derive(Debug)]
+pub struct PaintBoxBorders {
+    pub top: Option<PaintBoxBorder>,
+    pub right: Option<PaintBoxBorder>,
+    pub bottom: Option<PaintBoxBorder>,
+    pub left: Option<PaintBoxBorder>,
+}
+
+#[derive(Debug)]
+pub struct PaintBoxBorder {
+    pub style: BorderStyle,
+    pub color: Color,
 }
 
 pub struct PaintText {
@@ -31,6 +50,7 @@ pub struct PaintText {
     pub rect: Rect,
 }
 
+#[derive(Debug)]
 pub enum RectOrRRect {
     Rect(Rect),
     RRect(RRect),
@@ -148,10 +168,47 @@ impl<'a> RequestBuilder<'a> {
             RectOrRRect::Rect(rect)
         };
 
+        let borders = self.compute_borders(layout_box);
+        let border_rect = layout_box.border_box_absolute();
+
         Some(PaintBox {
             rect,
             background_color,
+            borders,
+            border_rect,
         })
+    }
+
+    fn compute_borders(&self, layout_box: &LayoutBoxPtr) -> PaintBoxBorders {
+        if layout_box.is_anonymous() {
+            return PaintBoxBorders {
+                top: None,
+                right: None,
+                bottom: None,
+                left: None,
+            };
+        }
+        let node = layout_box.node().unwrap();
+
+        macro_rules! compute_border {
+            ($style:ident, $color:ident) => {
+                match node.get_style(&Property::$style) {
+                    Value::BorderStyle(BorderStyle::None) => None,
+                    Value::BorderStyle(style) => Some(PaintBoxBorder {
+                        color: color_from_value(&node.get_style(&Property::$color)),
+                        style,
+                    }),
+                    _ => None,
+                }
+            };
+        }
+
+        PaintBoxBorders {
+            top: compute_border!(BorderTopStyle, BorderTopColor),
+            right: compute_border!(BorderRightStyle, BorderRightColor),
+            bottom: compute_border!(BorderBottomStyle, BorderBottomColor),
+            left: compute_border!(BorderLeftStyle, BorderLeftColor),
+        }
     }
 
     fn compute_border_radius_corner(&self, layout_box: &LayoutBoxPtr) -> Option<Corners> {

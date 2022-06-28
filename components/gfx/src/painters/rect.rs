@@ -1,33 +1,18 @@
 use lyon_tessellation::geom::point;
 use lyon_tessellation::path::Path;
-use lyon_tessellation::{BuffersBuilder, FillOptions, FillTessellator, VertexBuffers};
 use shared::color::Color;
 use shared::primitive::{RRect, Rect};
 
-use crate::triangle::{Index, Vertex, VertexConstructor};
+use crate::tessellator::Tessellator;
 
-pub struct RectPainter {
-    fill_tess: FillTessellator,
-    vertex_buffers: Vec<VertexBuffers<Vertex, Index>>,
-}
+pub struct RectPainter;
 
 impl RectPainter {
     pub fn new() -> Self {
-        Self {
-            fill_tess: FillTessellator::new(),
-            vertex_buffers: Vec::new(),
-        }
+        Self
     }
 
-    pub fn vertex_buffers(&self) -> &[VertexBuffers<Vertex, Index>] {
-        &self.vertex_buffers
-    }
-
-    pub fn clear(&mut self) {
-        self.vertex_buffers.clear();
-    }
-
-    pub fn draw_solid_rect(&mut self, rect: &Rect, color: &Color) {
+    pub fn draw_solid_rect(&mut self, tessellator: &mut Tessellator, rect: &Rect, color: &Color) {
         let color_arr: [f32; 4] = [
             color.r.into(),
             color.g.into(),
@@ -43,10 +28,10 @@ impl RectPainter {
         path_builder.end(true);
 
         let path = path_builder.build();
-        self.tessellate_path(path);
+        tessellator.tessellate_path(path);
     }
 
-    pub fn draw_solid_rrect(&mut self, rect: &RRect, color: &Color) {
+    pub fn draw_solid_rrect(&mut self, tessellator: &mut Tessellator, rect: &RRect, color: &Color) {
         let color_arr: [f32; 4] = [
             color.r.into(),
             color.g.into(),
@@ -124,25 +109,6 @@ impl RectPainter {
         path_builder.end(true);
 
         let path = path_builder.build();
-        self.tessellate_path(path);
-    }
-
-    fn tessellate_path(&mut self, path: Path) {
-        let mut buffer: VertexBuffers<Vertex, Index> = VertexBuffers::new();
-
-        let result = self.fill_tess.tessellate_with_ids(
-            path.id_iter(),
-            &path,
-            Some(&path),
-            &FillOptions::DEFAULT,
-            &mut BuffersBuilder::new(&mut buffer, VertexConstructor),
-        );
-
-        if let Err(e) = result {
-            log::error!("Tessellation failed: {:?}", e);
-            return;
-        }
-
-        self.vertex_buffers.push(buffer);
+        tessellator.tessellate_path(path);
     }
 }

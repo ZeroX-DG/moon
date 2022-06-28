@@ -11,7 +11,7 @@ mod margin;
 mod padding;
 
 pub(crate) mod prelude {
-    pub use super::border::expand_border;
+    pub use super::border::*;
     pub use super::border_color::expand_border_color;
     pub use super::border_radius::expand_border_radius;
     pub use super::border_style::expand_border_style;

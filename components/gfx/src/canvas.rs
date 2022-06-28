@@ -1,7 +1,9 @@
 use super::backend::{Backend, DrawRequest};
 use super::Bitmap;
+use crate::painters::polygon::PolygonPainter;
 use crate::painters::rect::RectPainter;
 use crate::painters::text::TextPainter;
+use crate::tessellator::Tessellator;
 use crate::Graphics;
 use async_trait::async_trait;
 use futures::task::SpawnExt;
@@ -9,6 +11,8 @@ use shared::color::Color;
 use shared::primitive::*;
 
 pub struct Canvas<'a> {
+    tessellator: Tessellator,
+    polygon_painter: PolygonPainter,
     rect_painter: RectPainter,
     text_painter: TextPainter,
     backend: Backend,
@@ -74,6 +78,8 @@ impl<'a> Canvas<'a> {
 
         Self {
             backend: Backend::new(&device, TEXTURE_FORMAT),
+            tessellator: Tessellator::new(),
+            polygon_painter: PolygonPainter::new(),
             rect_painter: RectPainter::new(),
             text_painter: TextPainter::new(),
             device,
@@ -101,7 +107,7 @@ impl<'a> Canvas<'a> {
     }
 
     pub fn paint(&mut self) {
-        let triangles = self.rect_painter.vertex_buffers();
+        let triangles = self.tessellator.vertex_buffers();
         let texts = self.text_painter.texts();
 
         let request = DrawRequest { triangles, texts };
@@ -164,7 +170,7 @@ impl<'a> Canvas<'a> {
 
         // clean up for next draw
         self.text_painter.clear();
-        self.rect_painter.clear();
+        self.tessellator.clear();
     }
 
     fn get_bytes_per_row(&self) -> u32 {
@@ -208,15 +214,22 @@ impl<'a> Canvas<'a> {
 #[async_trait(?Send)]
 impl<'a> Graphics for Canvas<'a> {
     fn fill_rect(&mut self, rect: Rect, color: Color) {
-        self.rect_painter.draw_solid_rect(&rect, &color);
+        self.rect_painter
+            .draw_solid_rect(&mut self.tessellator, &rect, &color);
     }
 
     fn fill_rrect(&mut self, rect: RRect, color: Color) {
-        self.rect_painter.draw_solid_rrect(&rect, &color);
+        self.rect_painter
+            .draw_solid_rrect(&mut self.tessellator, &rect, &color);
     }
 
     fn fill_text(&mut self, content: String, bounds: Rect, color: Color, size: f32) {
         self.text_painter.fill_text(content, bounds, color, size);
+    }
+
+    fn fill_polygon(&mut self, points: Vec<Point>, color: Color) {
+        self.polygon_painter
+            .fill_polygon(&mut self.tessellator, &points, &color);
     }
 
     fn resize(&mut self, size: Size) {

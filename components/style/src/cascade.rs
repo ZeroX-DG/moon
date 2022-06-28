@@ -61,6 +61,10 @@ fn get_expander_shorthand_property(
         "border-width" => Some(&expand_border_width),
         "border-color" => Some(&expand_border_color),
         "border-radius" => Some(&expand_border_radius),
+        "border-top" => Some(&expand_border_top),
+        "border-right" => Some(&expand_border_right),
+        "border-bottom" => Some(&expand_border_bottom),
+        "border-left" => Some(&expand_border_left),
         _ => None,
     }
 }

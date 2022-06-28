@@ -3,6 +3,7 @@ mod canvas;
 mod fonts;
 mod graphics;
 mod painters;
+mod tessellator;
 mod text;
 mod text_measure;
 mod triangle;
