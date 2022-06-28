@@ -1,5 +1,5 @@
-use lyon_tessellation::{path::Path, geom::point};
-use shared::{primitive::Point, color::Color};
+use lyon_tessellation::{geom::point, path::Path};
+use shared::{color::Color, primitive::Point};
 
 use crate::tessellator::Tessellator;
 
@@ -10,12 +10,7 @@ impl PolygonPainter {
         Self
     }
 
-    pub fn fill_polygon(
-        &self,
-        tessellator: &mut Tessellator,
-        points: &[Point],
-        color: &Color
-    ) {
+    pub fn fill_polygon(&self, tessellator: &mut Tessellator, points: &[Point], color: &Color) {
         if points.len() < 3 {
             return;
         }

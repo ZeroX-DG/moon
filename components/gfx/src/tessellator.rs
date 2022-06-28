@@ -1,6 +1,6 @@
-use lyon_tessellation::{FillTessellator, VertexBuffers, FillOptions, BuffersBuilder, path::Path};
+use lyon_tessellation::{path::Path, BuffersBuilder, FillOptions, FillTessellator, VertexBuffers};
 
-use crate::triangle::{Vertex, Index, VertexConstructor};
+use crate::triangle::{Index, Vertex, VertexConstructor};
 
 pub struct Tessellator {
     fill_tess: FillTessellator,
@@ -42,4 +42,3 @@ impl Tessellator {
         self.vertex_buffers.push(buffer);
     }
 }
-

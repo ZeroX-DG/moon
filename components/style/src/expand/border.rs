@@ -82,12 +82,39 @@ fn expand_single_border(values: &[&[ComponentValue]], property: &str) -> ExpandO
     let mut expanded_color = None;
 
     let map = HashMap::from([
-        ("top", [Property::BorderTopStyle, Property::BorderTopWidth, Property::BorderTopColor]),
-        ("right", [Property::BorderRightStyle, Property::BorderRightWidth, Property::BorderRightColor]),
-        ("bottom", [Property::BorderBottomStyle, Property::BorderBottomWidth, Property::BorderBottomColor]),
-        ("left", [Property::BorderLeftStyle, Property::BorderLeftWidth, Property::BorderLeftColor]),
+        (
+            "top",
+            [
+                Property::BorderTopStyle,
+                Property::BorderTopWidth,
+                Property::BorderTopColor,
+            ],
+        ),
+        (
+            "right",
+            [
+                Property::BorderRightStyle,
+                Property::BorderRightWidth,
+                Property::BorderRightColor,
+            ],
+        ),
+        (
+            "bottom",
+            [
+                Property::BorderBottomStyle,
+                Property::BorderBottomWidth,
+                Property::BorderBottomColor,
+            ],
+        ),
+        (
+            "left",
+            [
+                Property::BorderLeftStyle,
+                Property::BorderLeftWidth,
+                Property::BorderLeftColor,
+            ],
+        ),
     ]);
-
 
     for tokens in values {
         if let Some(style) = Value::parse(&Property::BorderTopStyle, tokens) {
@@ -121,11 +148,10 @@ fn expand_single_border(values: &[&[ComponentValue]], property: &str) -> ExpandO
     result.extend([(map[property][0].clone(), expanded_style)]);
     result.extend([(map[property][1].clone(), expanded_width)]);
     result.extend([(map[property][2].clone(), expanded_color)]);
-    
+
     if result.len() == 1 {
         return None;
     }
 
     Some(result)
 }
-

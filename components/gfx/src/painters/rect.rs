@@ -112,4 +112,3 @@ impl RectPainter {
         tessellator.tessellate_path(path);
     }
 }
-

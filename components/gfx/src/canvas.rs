@@ -3,8 +3,8 @@ use super::Bitmap;
 use crate::painters::polygon::PolygonPainter;
 use crate::painters::rect::RectPainter;
 use crate::painters::text::TextPainter;
-use crate::Graphics;
 use crate::tessellator::Tessellator;
+use crate::Graphics;
 use async_trait::async_trait;
 use futures::task::SpawnExt;
 use shared::color::Color;
@@ -214,11 +214,13 @@ impl<'a> Canvas<'a> {
 #[async_trait(?Send)]
 impl<'a> Graphics for Canvas<'a> {
     fn fill_rect(&mut self, rect: Rect, color: Color) {
-        self.rect_painter.draw_solid_rect(&mut self.tessellator, &rect, &color);
+        self.rect_painter
+            .draw_solid_rect(&mut self.tessellator, &rect, &color);
     }
 
     fn fill_rrect(&mut self, rect: RRect, color: Color) {
-        self.rect_painter.draw_solid_rrect(&mut self.tessellator, &rect, &color);
+        self.rect_painter
+            .draw_solid_rrect(&mut self.tessellator, &rect, &color);
     }
 
     fn fill_text(&mut self, content: String, bounds: Rect, color: Color, size: f32) {
@@ -226,7 +228,8 @@ impl<'a> Graphics for Canvas<'a> {
     }
 
     fn fill_polygon(&mut self, points: Vec<Point>, color: Color) {
-        self.polygon_painter.fill_polygon(&mut self.tessellator, &points, &color);
+        self.polygon_painter
+            .fill_polygon(&mut self.tessellator, &points, &color);
     }
 
     fn resize(&mut self, size: Size) {

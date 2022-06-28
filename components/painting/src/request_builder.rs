@@ -3,7 +3,10 @@ use shared::{
     color::Color,
     primitive::{Corners, RRect, Rect, Size},
 };
-use style_types::{values::{color::Color as CSSColor, prelude::BorderStyle}, Property, Value};
+use style_types::{
+    values::{color::Color as CSSColor, prelude::BorderStyle},
+    Property, Value,
+};
 
 use crate::utils::{color_from_value, is_zero, to_radii};
 
@@ -172,7 +175,7 @@ impl<'a> RequestBuilder<'a> {
             rect,
             background_color,
             borders,
-            border_rect
+            border_rect,
         })
     }
 
@@ -182,7 +185,7 @@ impl<'a> RequestBuilder<'a> {
                 top: None,
                 right: None,
                 bottom: None,
-                left: None
+                left: None,
             };
         }
         let node = layout_box.node().unwrap();
@@ -195,16 +198,16 @@ impl<'a> RequestBuilder<'a> {
                         color: color_from_value(&node.get_style(&Property::$color)),
                         style,
                     }),
-                    _ => None
+                    _ => None,
                 }
             };
         }
-        
+
         PaintBoxBorders {
             top: compute_border!(BorderTopStyle, BorderTopColor),
             right: compute_border!(BorderRightStyle, BorderRightColor),
             bottom: compute_border!(BorderBottomStyle, BorderBottomColor),
-            left: compute_border!(BorderLeftStyle, BorderLeftColor)
+            left: compute_border!(BorderLeftStyle, BorderLeftColor),
         }
     }
 

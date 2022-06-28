@@ -1,7 +1,7 @@
-use crate::request_builder::{PaintBox, PaintText, RectOrRRect, RequestBuilder, PaintBoxBorders};
+use crate::request_builder::{PaintBox, PaintBoxBorders, PaintText, RectOrRRect, RequestBuilder};
 use gfx::Graphics;
 use layout::layout_box::LayoutBoxPtr;
-use shared::primitive::{Size, Rect, Point};
+use shared::primitive::{Point, Rect, Size};
 use style_types::values::prelude::BorderStyle;
 
 pub struct Painter<G: Graphics> {
@@ -68,116 +68,173 @@ impl<G: Graphics> Painter<G> {
         self.paint_border_corners(box_rect, border_rect, borders);
     }
 
-    fn paint_border_corners(&mut self, box_rect: &Rect, border_rect: &Rect, borders: &PaintBoxBorders) {
+    fn paint_border_corners(
+        &mut self,
+        box_rect: &Rect,
+        border_rect: &Rect,
+        borders: &PaintBoxBorders,
+    ) {
         if let (Some(border_top), Some(border_left)) = (&borders.top, &borders.left) {
             assert!(matches!(border_top.style, BorderStyle::Solid));
             assert!(matches!(border_left.style, BorderStyle::Solid));
 
-            self.gfx.fill_polygon(vec![
-                                  Point::new(border_rect.x, border_rect.y),
-                                  Point::new(box_rect.x, border_rect.y),
-                                  Point::new(box_rect.x, box_rect.y),
-            ], border_top.color.clone());
+            self.gfx.fill_polygon(
+                vec![
+                    Point::new(border_rect.x, border_rect.y),
+                    Point::new(box_rect.x, border_rect.y),
+                    Point::new(box_rect.x, box_rect.y),
+                ],
+                border_top.color.clone(),
+            );
 
-            self.gfx.fill_polygon(vec![
-                                  Point::new(border_rect.x, border_rect.y),
-                                  Point::new(box_rect.x, box_rect.y),
-                                  Point::new(border_rect.x, box_rect.y),
-            ], border_left.color.clone());
+            self.gfx.fill_polygon(
+                vec![
+                    Point::new(border_rect.x, border_rect.y),
+                    Point::new(box_rect.x, box_rect.y),
+                    Point::new(border_rect.x, box_rect.y),
+                ],
+                border_left.color.clone(),
+            );
         }
 
         if let (Some(border_left), Some(border_bottom)) = (&borders.left, &borders.bottom) {
             assert!(matches!(border_bottom.style, BorderStyle::Solid));
             assert!(matches!(border_left.style, BorderStyle::Solid));
 
-            self.gfx.fill_polygon(vec![
-                                  Point::new(border_rect.x, border_rect.y + border_rect.height),
-                                  Point::new(box_rect.x, box_rect.y + box_rect.height),
-                                  Point::new(box_rect.x, border_rect.y + border_rect.height),
-            ], border_bottom.color.clone());
+            self.gfx.fill_polygon(
+                vec![
+                    Point::new(border_rect.x, border_rect.y + border_rect.height),
+                    Point::new(box_rect.x, box_rect.y + box_rect.height),
+                    Point::new(box_rect.x, border_rect.y + border_rect.height),
+                ],
+                border_bottom.color.clone(),
+            );
 
-            self.gfx.fill_polygon(vec![
-                                  Point::new(border_rect.x, border_rect.y + border_rect.height),
-                                  Point::new(box_rect.x, box_rect.y + box_rect.height),
-                                  Point::new(border_rect.x, box_rect.y + box_rect.height),
-            ], border_left.color.clone());
+            self.gfx.fill_polygon(
+                vec![
+                    Point::new(border_rect.x, border_rect.y + border_rect.height),
+                    Point::new(box_rect.x, box_rect.y + box_rect.height),
+                    Point::new(border_rect.x, box_rect.y + box_rect.height),
+                ],
+                border_left.color.clone(),
+            );
         }
 
         if let (Some(border_right), Some(border_bottom)) = (&borders.right, &borders.bottom) {
             assert!(matches!(border_bottom.style, BorderStyle::Solid));
             assert!(matches!(border_right.style, BorderStyle::Solid));
 
-            self.gfx.fill_polygon(vec![
-                                  Point::new(border_rect.x + border_rect.width, border_rect.y + border_rect.height),
-                                  Point::new(box_rect.x + box_rect.width, box_rect.y + box_rect.height),
-                                  Point::new(box_rect.x + box_rect.width, border_rect.y + border_rect.height),
-            ], border_bottom.color.clone());
+            self.gfx.fill_polygon(
+                vec![
+                    Point::new(
+                        border_rect.x + border_rect.width,
+                        border_rect.y + border_rect.height,
+                    ),
+                    Point::new(box_rect.x + box_rect.width, box_rect.y + box_rect.height),
+                    Point::new(
+                        box_rect.x + box_rect.width,
+                        border_rect.y + border_rect.height,
+                    ),
+                ],
+                border_bottom.color.clone(),
+            );
 
-            self.gfx.fill_polygon(vec![
-                                  Point::new(border_rect.x + border_rect.width, border_rect.y + border_rect.height),
-                                  Point::new(box_rect.x + box_rect.width, box_rect.y + box_rect.height),
-                                  Point::new(border_rect.x + border_rect.width, box_rect.y + box_rect.height),
-            ], border_right.color.clone());
+            self.gfx.fill_polygon(
+                vec![
+                    Point::new(
+                        border_rect.x + border_rect.width,
+                        border_rect.y + border_rect.height,
+                    ),
+                    Point::new(box_rect.x + box_rect.width, box_rect.y + box_rect.height),
+                    Point::new(
+                        border_rect.x + border_rect.width,
+                        box_rect.y + box_rect.height,
+                    ),
+                ],
+                border_right.color.clone(),
+            );
         }
 
         if let (Some(border_right), Some(border_top)) = (&borders.right, &borders.top) {
             assert!(matches!(border_top.style, BorderStyle::Solid));
             assert!(matches!(border_right.style, BorderStyle::Solid));
 
-            self.gfx.fill_polygon(vec![
-                                  Point::new(border_rect.x + border_rect.width, border_rect.y),
-                                  Point::new(box_rect.x + box_rect.width, box_rect.y),
-                                  Point::new(box_rect.x + box_rect.width, border_rect.y),
-            ], border_top.color.clone());
+            self.gfx.fill_polygon(
+                vec![
+                    Point::new(border_rect.x + border_rect.width, border_rect.y),
+                    Point::new(box_rect.x + box_rect.width, box_rect.y),
+                    Point::new(box_rect.x + box_rect.width, border_rect.y),
+                ],
+                border_top.color.clone(),
+            );
 
-            self.gfx.fill_polygon(vec![
-                                  Point::new(border_rect.x + border_rect.width, border_rect.y),
-                                  Point::new(box_rect.x + box_rect.width, box_rect.y),
-                                  Point::new(border_rect.x + border_rect.width, box_rect.y),
-            ], border_right.color.clone());
+            self.gfx.fill_polygon(
+                vec![
+                    Point::new(border_rect.x + border_rect.width, border_rect.y),
+                    Point::new(box_rect.x + box_rect.width, box_rect.y),
+                    Point::new(border_rect.x + border_rect.width, box_rect.y),
+                ],
+                border_right.color.clone(),
+            );
         }
     }
 
-    fn paint_border_edges(&mut self, box_rect: &Rect, border_rect: &Rect, borders: &PaintBoxBorders) {
+    fn paint_border_edges(
+        &mut self,
+        box_rect: &Rect,
+        border_rect: &Rect,
+        borders: &PaintBoxBorders,
+    ) {
         if let Some(border) = &borders.top {
             assert!(matches!(border.style, BorderStyle::Solid));
-            self.gfx.fill_rect(Rect::new(
+            self.gfx.fill_rect(
+                Rect::new(
                     box_rect.x,
                     border_rect.y,
                     box_rect.width,
-                    box_rect.y - border_rect.y
-            ), border.color.clone());
+                    box_rect.y - border_rect.y,
+                ),
+                border.color.clone(),
+            );
         }
 
         if let Some(border) = &borders.right {
             assert!(matches!(border.style, BorderStyle::Solid));
-            self.gfx.fill_rect(Rect::new(
+            self.gfx.fill_rect(
+                Rect::new(
                     box_rect.x + box_rect.width,
                     box_rect.y,
                     (border_rect.x + border_rect.width) - (box_rect.x + box_rect.width),
-                    box_rect.height
-            ), border.color.clone());
+                    box_rect.height,
+                ),
+                border.color.clone(),
+            );
         }
 
         if let Some(border) = &borders.bottom {
             assert!(matches!(border.style, BorderStyle::Solid));
-            self.gfx.fill_rect(Rect::new(
+            self.gfx.fill_rect(
+                Rect::new(
                     box_rect.x,
                     box_rect.y + box_rect.height,
                     box_rect.width,
-                    (border_rect.y + border_rect.height) - (box_rect.y + box_rect.height)
-            ), border.color.clone());
+                    (border_rect.y + border_rect.height) - (box_rect.y + box_rect.height),
+                ),
+                border.color.clone(),
+            );
         }
 
         if let Some(border) = &borders.left {
             assert!(matches!(border.style, BorderStyle::Solid));
-            self.gfx.fill_rect(Rect::new(
+            self.gfx.fill_rect(
+                Rect::new(
                     border_rect.x,
                     box_rect.y,
                     box_rect.x - border_rect.x,
-                    box_rect.height
-            ), border.color.clone());
+                    box_rect.height,
+                ),
+                border.color.clone(),
+            );
         }
     }
 }
-
