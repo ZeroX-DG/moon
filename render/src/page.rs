@@ -21,7 +21,6 @@ pub struct Page<'a> {
 
 impl<'a> Page<'a> {
     pub async fn new(init_size: Size) -> Page<'a> {
-        ResourceLoader::init();
         Page {
             main_frame: Frame::new(init_size),
             pipeline: Pipeline::new().await,

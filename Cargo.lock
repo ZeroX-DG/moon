@@ -1487,6 +1487,7 @@ name = "loader"
 version = "0.1.0"
 dependencies = [
  "flume",
+ "lazy_static",
  "net",
  "tokio",
  "url 0.1.0",

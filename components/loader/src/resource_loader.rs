@@ -36,8 +36,13 @@ pub struct LoadRequest {
     url: Url,
     response_tx: Sender<Result<Bytes, LoadError>>,
 }
+tokio::task_local! {
+    pub static RESOURCE_LOADER: ResourceLoader;
+}
 
-static mut RESOURCE_LOADER: Option<ResourceLoader> = None;
+lazy_static::lazy_static! {
+    static ref GLOBAL_RESOURCE_LOADER: ResourceLoader = ResourceLoader::init();
+}
 
 #[derive(Clone)]
 pub struct ResourceLoader(Sender<LoadRequest>);
@@ -47,13 +52,6 @@ impl ResourceLoader {
         let (request_tx, request_rx) = unbounded();
 
         let loader = ResourceLoader(request_tx);
-
-        unsafe {
-            if RESOURCE_LOADER.is_none() {
-                RESOURCE_LOADER = Some(loader.clone());
-            }
-        }
-
         std::thread::spawn(move || {
             let rt = tokio::runtime::Runtime::new().unwrap();
 
@@ -89,7 +87,11 @@ impl ResourceLoader {
     }
 
     pub fn current() -> Self {
-        unsafe { RESOURCE_LOADER.clone().unwrap() }
+        RESOURCE_LOADER.with(|loader| loader.clone())
+    }
+
+    pub fn global() -> &'static Self {
+        &GLOBAL_RESOURCE_LOADER
     }
 
     pub fn load(&self, url: &Url) -> Result<Bytes, LoadError> {
