@@ -197,7 +197,7 @@ impl BrowserTab {
 
     fn load_html(&self) {
         let current_url = self.info.url.lock().unwrap().clone();
-        match ResourceLoader::current().load(&current_url) {
+        match ResourceLoader::global().load(&current_url) {
             Ok(bytes) => {
                 let html = ByteString::new(&bytes);
                 self.client.load_html(html.to_string(), current_url);
@@ -210,7 +210,7 @@ impl BrowserTab {
 
     fn load_source(&self) {
         let current_url = self.info.url.lock().unwrap().clone();
-        match ResourceLoader::current().load(&current_url) {
+        match ResourceLoader::global().load(&current_url) {
             Ok(bytes) => {
                 let raw_html_string = ByteString::new(&bytes).to_string();
                 let raw_html = html_escape::encode_text(&raw_html_string);

@@ -11,3 +11,4 @@ url = { path = "../url" }
 net = { path = "../net" }
 tokio = { version = "1.6.2", features = ["rt", "rt-multi-thread"] }
 flume = "0.10.12"
+lazy_static = "1.4"
