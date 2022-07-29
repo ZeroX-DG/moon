@@ -3,7 +3,7 @@ use dom::{
     node::{Node, NodeData, NodePtr},
 };
 use gfx::Bitmap;
-use loader::ResourceLoader;
+use loader::{ResourceLoader, resource_loader::{ResourceLoader, self}};
 use shared::{primitive::Size, tree_node::TreeNode};
 use style_types::{CSSLocation, CascadeOrigin, ContextualStyleSheet};
 use url::Url;
