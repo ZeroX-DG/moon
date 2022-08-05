@@ -1,7 +1,7 @@
 use super::page::Page;
 use flume::{Receiver, Sender};
 use gfx::Bitmap;
-use loader::resource_loader::{ResourceLoader, InProcessResourceLoader};
+use loader::resource_loader::ResourceLoader;
 use shared::primitive::Size;
 use url::Url;
 
@@ -17,13 +17,13 @@ pub enum OutputEvent {
 
 pub struct RenderEngine<'a> {
     page: Page<'a>,
-    resource_loader: InProcessResourceLoader,
+    resource_loader: ResourceLoader,
 }
 
 impl<'a> RenderEngine<'a> {
     pub async fn new(viewport: Size) -> RenderEngine<'a> {
         let page = Page::new(viewport).await;
-        let resource_loader = InProcessResourceLoader::new();
+        let resource_loader = ResourceLoader::new();
         Self { page, resource_loader }
     }
 

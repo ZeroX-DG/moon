@@ -1,8 +1,10 @@
 use super::node::NodeHooks;
 use css::cssom::css_rule::CSSRule;
+use loader::document_loader::DocumentLoader;
 use std::cell::RefCell;
 use std::ops::Deref;
 use std::rc::{Rc, Weak};
+use std::sync::{Arc, Mutex};
 use style_types::{ContextualRule, ContextualStyleSheet};
 use url::Url;
 
@@ -10,7 +12,8 @@ pub struct Document {
     title: RefCell<String>,
     doctype: RefCell<Option<DocumentType>>,
     mode: RefCell<QuirksMode>,
-    stylesheets: RefCell<Vec<Rc<ContextualStyleSheet>>>,
+    loader: RefCell<Option<DocumentLoader>>,
+    stylesheets: Arc<Mutex<Vec<Rc<ContextualStyleSheet>>>>,
     cached_style_rules: RefCell<Vec<(Weak<ContextualStyleSheet>, Vec<ContextualRule>)>>,
     base: RefCell<Option<Url>>,
 }
@@ -42,6 +45,7 @@ impl Document {
             title: RefCell::new(String::new()),
             doctype: RefCell::new(None),
             mode: RefCell::new(QuirksMode::NoQuirks),
+            loader: RefCell::new(None),
             stylesheets: RefCell::new(Vec::new()),
             cached_style_rules: RefCell::new(Vec::new()),
             base: RefCell::new(None),
@@ -66,6 +70,10 @@ impl Document {
 
     pub fn title(&self) -> String {
         self.title.borrow().deref().clone()
+    }
+
+    pub fn loader(&self) -> DocumentLoader {
+        self.loader.borrow().deref().unwrap().clone()
     }
 
     pub fn append_stylesheet(&self, stylesheet: ContextualStyleSheet) -> Rc<ContextualStyleSheet> {

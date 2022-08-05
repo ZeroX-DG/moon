@@ -1,6 +1,3 @@
-use crate::property::Property;
-use crate::value::Value;
-
 use super::number::Number;
 use css::parser::structs::ComponentValue;
 use css::parser::structs::Function;

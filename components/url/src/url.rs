@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use crate::helper::{is_normalized_window_drive_letter, SPECIAL_SCHEMES};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub struct Url {
     pub scheme: String,
     pub host: Option<String>,
@@ -12,7 +12,7 @@ pub struct Url {
     pub fragment: Option<String>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum UrlPath {
     Opaque(String),
     List(Vec<String>),
