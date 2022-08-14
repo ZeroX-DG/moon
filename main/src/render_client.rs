@@ -60,4 +60,10 @@ impl RenderClient {
             .send(InputEvent::ViewportResize(size))
             .expect("Unable to load HTML");
     }
+
+    pub fn load_url(&self, url: &Url) {
+        self.event_sender
+            .send(InputEvent::LoadURL(url.clone()))
+            .expect("Unable to load URL");
+    }
 }

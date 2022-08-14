@@ -8,6 +8,7 @@ use url::Url;
 pub enum InputEvent {
     ViewportResize(Size),
     LoadHTML { html: String, base_url: Url },
+    LoadURL(Url),
 }
 
 pub enum OutputEvent {
@@ -51,6 +52,11 @@ impl<'a> RenderEngine<'a> {
             }
             InputEvent::LoadHTML { html, base_url } => {
                 self.page.load_html(html, base_url, self.resource_loop_tx.clone()).await;
+                self.emit_new_frame(event_emitter)?;
+                self.emit_new_title(event_emitter)?;
+            }
+            InputEvent::LoadURL(url) => {
+                self.page.load_url(url, self.resource_loop_tx.clone()).await;
                 self.emit_new_frame(event_emitter)?;
                 self.emit_new_title(event_emitter)?;
             }

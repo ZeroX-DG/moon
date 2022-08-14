@@ -6,7 +6,7 @@ use super::{
 };
 use flume::{unbounded, Receiver, Sender, bounded, select};
 use net::http::{self, HttpResponse};
-use url::Url;
+use url::{Url, parser::URLParser};
 
 pub struct ResourceLoop {
     request_channel: (Sender<LoadRequest>, Receiver<LoadRequest>),
@@ -61,7 +61,7 @@ impl ResourceLoop {
                     host_request_counter.insert(url.clone(), request_count);
 
                     request.listener().on_started();
-                    fetch(request);
+                    fetch_async(request);
                 }
             }
         });
@@ -81,12 +81,28 @@ fn tick(ms: u64) -> Receiver<()> {
 }
 
 /// Spawn a new thread & fetch the request. Return resource bytes (Vec<u8>) if success, otherwise a LoadError.
+fn fetch_async(request: LoadRequest) {
+    std::thread::spawn(|| fetch(request));
+}
+
 fn fetch(request: LoadRequest) {
-    std::thread::spawn(|| match request.url().scheme.as_str() {
+    match request.url().scheme.as_str() {
         "file" => fetch_local(request),
         "http" | "https" => fetch_remote(request),
+        "view-source" => fetch_source(request),
         scheme => request.listener().on_errored(LoadError::UnsupportedProtocol(scheme.to_string())),
-    });
+    }
+}
+
+fn fetch_source(request: LoadRequest) {
+    let target_url = URLParser::parse(&request.url().path.as_str(), None)
+        .ok_or_else(|| LoadError::InvalidURL(request.url().as_str()));
+
+    let listener = request.listener();
+    match target_url {
+        Ok(url) => fetch(LoadRequest::new(url, listener)),
+        Err(error) => listener.on_errored(error),
+    }
 }
 
 fn fetch_local(request: LoadRequest) {
