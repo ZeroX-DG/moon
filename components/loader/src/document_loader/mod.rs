@@ -16,8 +16,8 @@ impl DocumentLoader {
         }
     }
 
-    pub fn fetch(&self, url: Url, listener: Arc<dyn FetchListener>) {
-        let request = LoadRequest::new(url, listener);
+    pub fn fetch(&self, url: Url, listener: impl FetchListener + 'static) {
+        let request = LoadRequest::new(url, Arc::new(listener));
         self.resource_loop_tx.send(request).expect("Unable to send fetch request");
     }
 }

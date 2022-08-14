@@ -1,6 +1,7 @@
 mod cli;
 
 use image::{ImageBuffer, Rgba};
+use loader::resource_loop::ResourceLoop;
 use render::page::Page;
 use shared::primitive::Size;
 use simplelog::*;
@@ -49,8 +50,10 @@ fn main() {
 
             let rt = tokio::runtime::Runtime::new().unwrap();
             rt.block_on(async {
+                let resource_loop = ResourceLoop::new();
+                let resource_loop_tx = resource_loop.start_loop();
                 let mut page = Page::new(Size::new(width as f32, height as f32)).await;
-                page.load_html(html_code.to_string(), base_url).await;
+                page.load_html(html_code.to_string(), base_url, resource_loop_tx).await;
                 let bitmap = page.bitmap().unwrap().clone();
 
                 let buffer = ImageBuffer::<Rgba<u8>, _>::from_raw(width, height, bitmap).unwrap();

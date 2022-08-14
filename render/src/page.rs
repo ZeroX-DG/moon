@@ -2,8 +2,9 @@ use dom::{
     document::Document,
     node::{Node, NodeData, NodePtr},
 };
+use flume::Sender;
 use gfx::Bitmap;
-use loader::{ResourceLoader, resource_loader::{ResourceLoader, self}};
+use loader::{resource_loop::request::LoadRequest, document_loader::DocumentLoader};
 use shared::{primitive::Size, tree_node::TreeNode};
 use style_types::{CSSLocation, CascadeOrigin, ContextualStyleSheet};
 use url::Url;
@@ -31,17 +32,19 @@ impl<'a> Page<'a> {
         self.main_frame.resize(size, &mut self.pipeline).await;
     }
 
-    pub async fn load_html(&mut self, html: String, base_url: Url) {
+    pub async fn load_html(&mut self, html: String, base_url: Url, resource_loop_tx: Sender<LoadRequest>) {
         let document = NodePtr(TreeNode::new(Node::new(
             NodeData::Document(Document::new()),
         )));
+
+        document.as_document().set_loader(DocumentLoader::new(resource_loop_tx));
 
         let tokenizer = css::tokenizer::Tokenizer::new(USER_AGENT_STYLES.chars());
         let mut parser = css::parser::Parser::<css::tokenizer::token::Token>::new(tokenizer.run());
         let stylesheet = parser.parse_a_css_stylesheet();
         let stylesheet =
             ContextualStyleSheet::new(stylesheet, CascadeOrigin::UserAgent, CSSLocation::External);
-        document.as_document().append_stylesheet(stylesheet);
+        document.as_document().set_user_agent_stylesheet(stylesheet);
 
         log::debug!("Base URL: {}", base_url);
         document.as_document().set_base(Some(base_url));

@@ -563,6 +563,7 @@ version = "0.1.0"
 dependencies = [
  "css",
  "enum_dispatch",
+ "flume",
  "loader",
  "log",
  "shared",
@@ -1674,6 +1675,7 @@ dependencies = [
  "clap",
  "flume",
  "image",
+ "loader",
  "log",
  "main",
  "render",

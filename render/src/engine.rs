@@ -1,7 +1,7 @@
 use super::page::Page;
 use flume::{Receiver, Sender};
 use gfx::Bitmap;
-use loader::resource_loader::ResourceLoader;
+use loader::resource_loop::{ResourceLoop, request::LoadRequest};
 use shared::primitive::Size;
 use url::Url;
 
@@ -17,14 +17,15 @@ pub enum OutputEvent {
 
 pub struct RenderEngine<'a> {
     page: Page<'a>,
-    resource_loader: ResourceLoader,
+    resource_loop_tx: Sender<LoadRequest>
 }
 
 impl<'a> RenderEngine<'a> {
     pub async fn new(viewport: Size) -> RenderEngine<'a> {
         let page = Page::new(viewport).await;
-        let resource_loader = ResourceLoader::new();
-        Self { page, resource_loader }
+        let resource_loop = ResourceLoop::new();
+        let resource_loop_tx = resource_loop.start_loop();
+        Self { page, resource_loop_tx }
     }
 
     pub async fn run(
@@ -49,7 +50,7 @@ impl<'a> RenderEngine<'a> {
                 self.emit_new_frame(event_emitter)?;
             }
             InputEvent::LoadHTML { html, base_url } => {
-                self.page.load_html(html, base_url).await;
+                self.page.load_html(html, base_url, self.resource_loop_tx.clone()).await;
                 self.emit_new_frame(event_emitter)?;
                 self.emit_new_title(event_emitter)?;
             }

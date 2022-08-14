@@ -39,10 +39,13 @@ impl ResourceLoop {
             let event = select::Selector::new()
                 .recv(&request_rx, |e| e.map(|req| Event::QueueRequest(req)))
                 .recv(&tick_rx, |e| e.map(|_| Event::Tick))
-                .wait()
-                .expect("Unable to receive resource event.");
+                .wait();
 
-            match event {
+            if event.is_err() {
+                break;
+            }
+
+            match event.unwrap() {
                 Event::QueueRequest(request) => {
                     request.listener().on_queued();
                     request_queue.push_back(request);
