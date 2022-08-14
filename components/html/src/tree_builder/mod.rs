@@ -381,7 +381,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
         &self,
         target: Option<NodePtr>,
     ) -> AdjustedInsertionLocation {
-        let target = target.unwrap_or(self.open_elements.current_node().unwrap());
+        let target = target.unwrap_or(self.current_node());
 
         let adjusted_location = if self.foster_parenting
             && match_any!(
@@ -2367,6 +2367,9 @@ impl<T: Tokenizing> TreeBuilder<T> {
         if token.is_end_tag() && token.tag_name() == "script" {
             // TODO: support script tag
             self.flush_text_insertion();
+            self.open_elements.pop();
+            self.switch_to(self.original_insert_mode.clone().unwrap());
+            return;
         }
 
         if token.is_end_tag() {

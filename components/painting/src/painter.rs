@@ -2,7 +2,6 @@ use crate::request_builder::{PaintBox, PaintBoxBorders, PaintText, RectOrRRect, 
 use gfx::Graphics;
 use layout::layout_box::LayoutBoxPtr;
 use shared::primitive::{Point, Rect, Size};
-use style_types::values::prelude::BorderStyle;
 
 pub struct Painter<G: Graphics> {
     gfx: G,
@@ -75,9 +74,6 @@ impl<G: Graphics> Painter<G> {
         borders: &PaintBoxBorders,
     ) {
         if let (Some(border_top), Some(border_left)) = (&borders.top, &borders.left) {
-            assert!(matches!(border_top.style, BorderStyle::Solid));
-            assert!(matches!(border_left.style, BorderStyle::Solid));
-
             self.gfx.fill_polygon(
                 vec![
                     Point::new(border_rect.x, border_rect.y),
@@ -98,9 +94,6 @@ impl<G: Graphics> Painter<G> {
         }
 
         if let (Some(border_left), Some(border_bottom)) = (&borders.left, &borders.bottom) {
-            assert!(matches!(border_bottom.style, BorderStyle::Solid));
-            assert!(matches!(border_left.style, BorderStyle::Solid));
-
             self.gfx.fill_polygon(
                 vec![
                     Point::new(border_rect.x, border_rect.y + border_rect.height),
@@ -121,9 +114,6 @@ impl<G: Graphics> Painter<G> {
         }
 
         if let (Some(border_right), Some(border_bottom)) = (&borders.right, &borders.bottom) {
-            assert!(matches!(border_bottom.style, BorderStyle::Solid));
-            assert!(matches!(border_right.style, BorderStyle::Solid));
-
             self.gfx.fill_polygon(
                 vec![
                     Point::new(
@@ -156,9 +146,6 @@ impl<G: Graphics> Painter<G> {
         }
 
         if let (Some(border_right), Some(border_top)) = (&borders.right, &borders.top) {
-            assert!(matches!(border_top.style, BorderStyle::Solid));
-            assert!(matches!(border_right.style, BorderStyle::Solid));
-
             self.gfx.fill_polygon(
                 vec![
                     Point::new(border_rect.x + border_rect.width, border_rect.y),
@@ -186,7 +173,6 @@ impl<G: Graphics> Painter<G> {
         borders: &PaintBoxBorders,
     ) {
         if let Some(border) = &borders.top {
-            assert!(matches!(border.style, BorderStyle::Solid));
             self.gfx.fill_rect(
                 Rect::new(
                     box_rect.x,
@@ -199,7 +185,6 @@ impl<G: Graphics> Painter<G> {
         }
 
         if let Some(border) = &borders.right {
-            assert!(matches!(border.style, BorderStyle::Solid));
             self.gfx.fill_rect(
                 Rect::new(
                     box_rect.x + box_rect.width,
@@ -212,7 +197,6 @@ impl<G: Graphics> Painter<G> {
         }
 
         if let Some(border) = &borders.bottom {
-            assert!(matches!(border.style, BorderStyle::Solid));
             self.gfx.fill_rect(
                 Rect::new(
                     box_rect.x,
@@ -225,7 +209,6 @@ impl<G: Graphics> Painter<G> {
         }
 
         if let Some(border) = &borders.left {
-            assert!(matches!(border.style, BorderStyle::Solid));
             self.gfx.fill_rect(
                 Rect::new(
                     border_rect.x,
