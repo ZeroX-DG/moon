@@ -112,13 +112,19 @@ impl Document {
             let element = element.as_element();
 
             let rules = match element.data() {
-                crate::elements::ElementData::Link(link) => {
-                    link.stylesheet().lock().unwrap().as_ref().map(stylesheet_to_rules).unwrap_or(Vec::new())
-                }
-                crate::elements::ElementData::Style(style) => {
-                    style.stylesheet().as_ref().map(stylesheet_to_rules).unwrap_or(Vec::new())
-                }
-                _ => Vec::new()
+                crate::elements::ElementData::Link(link) => link
+                    .stylesheet()
+                    .lock()
+                    .unwrap()
+                    .as_ref()
+                    .map(stylesheet_to_rules)
+                    .unwrap_or(Vec::new()),
+                crate::elements::ElementData::Style(style) => style
+                    .stylesheet()
+                    .as_ref()
+                    .map(stylesheet_to_rules)
+                    .unwrap_or(Vec::new()),
+                _ => Vec::new(),
             };
 
             style_rules.extend(rules);

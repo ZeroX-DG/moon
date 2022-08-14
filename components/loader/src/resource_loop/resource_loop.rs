@@ -1,12 +1,9 @@
 use std::collections::{HashMap, VecDeque};
 
-use super::{
-    error::LoadError,
-    request::LoadRequest,
-};
-use flume::{unbounded, Receiver, Sender, bounded, select};
+use super::{error::LoadError, request::LoadRequest};
+use flume::{bounded, select, unbounded, Receiver, Sender};
 use net::http::{self, HttpResponse};
-use url::{Url, parser::URLParser};
+use url::{parser::URLParser, Url};
 
 pub struct ResourceLoop {
     request_channel: (Sender<LoadRequest>, Receiver<LoadRequest>),
@@ -49,7 +46,7 @@ impl ResourceLoop {
                 Event::QueueRequest(request) => {
                     request.listener().on_queued();
                     request_queue.push_back(request);
-                },
+                }
                 Event::Tick => {
                     if request_queue.is_empty() {
                         continue;
@@ -90,7 +87,9 @@ fn fetch(request: LoadRequest) {
         "file" => fetch_local(request),
         "http" | "https" => fetch_remote(request),
         "view-source" => fetch_source(request),
-        scheme => request.listener().on_errored(LoadError::UnsupportedProtocol(scheme.to_string())),
+        scheme => request
+            .listener()
+            .on_errored(LoadError::UnsupportedProtocol(scheme.to_string())),
     }
 }
 
@@ -108,7 +107,7 @@ fn fetch_source(request: LoadRequest) {
 fn fetch_local(request: LoadRequest) {
     let fetch_result =
         std::fs::read(request.url().path.as_str()).map_err(|e| LoadError::IOError(e.to_string()));
-    
+
     let listener = request.listener();
     match fetch_result {
         Ok(bytes) => listener.on_finished(bytes),

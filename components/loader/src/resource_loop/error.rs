@@ -3,7 +3,7 @@ pub enum LoadError {
     UnsupportedProtocol(String),
     IOError(String),
     InvalidURL(String),
-    LoaderDisconnected
+    LoaderDisconnected,
 }
 
 impl std::fmt::Display for LoadError {
@@ -29,4 +29,3 @@ impl LoadError {
         }
     }
 }
-

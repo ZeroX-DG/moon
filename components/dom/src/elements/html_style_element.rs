@@ -31,8 +31,11 @@ impl HTMLStyleElement {
 impl ElementHooks for HTMLStyleElement {}
 
 impl NodeHooks for HTMLStyleElement {
-    fn on_inserted(&self, context:crate::node::InsertContext) {
-        context.document.as_document().register_style_element(context.current_node);
+    fn on_inserted(&self, context: crate::node::InsertContext) {
+        context
+            .document
+            .as_document()
+            .register_style_element(context.current_node);
     }
 
     fn on_children_updated(&self, context: ChildrenUpdateContext) {

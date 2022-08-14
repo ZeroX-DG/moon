@@ -53,7 +53,8 @@ fn main() {
                 let resource_loop = ResourceLoop::new();
                 let resource_loop_tx = resource_loop.start_loop();
                 let mut page = Page::new(Size::new(width as f32, height as f32)).await;
-                page.load_html(html_code.to_string(), base_url, resource_loop_tx).await;
+                page.load_html(html_code.to_string(), base_url, resource_loop_tx)
+                    .await;
                 let bitmap = page.bitmap().unwrap().clone();
 
                 let buffer = ImageBuffer::<Rgba<u8>, _>::from_raw(width, height, bitmap).unwrap();

@@ -6,8 +6,8 @@ use super::ElementMethods;
 use crate::node::InsertContext;
 use crate::node::NodeHooks;
 use crate::node::NodePtr;
-use flume::Sender;
 use flume::bounded;
+use flume::Sender;
 use loader::resource_loop::request::FetchListener;
 use shared::byte_string::ByteString;
 use style_types::ContextualStyleSheet;
@@ -61,10 +61,8 @@ impl HTMLLinkElement {
         let (tx, rx) = bounded(1);
 
         let loader = document.as_document().loader();
-        loader.fetch(url.clone(), StyleLoaderContext {
-            stylesheet_tx: tx
-        });
-        
+        loader.fetch(url.clone(), StyleLoaderContext { stylesheet_tx: tx });
+
         // This is blocking the main thread manually. In the future, this receiving should run on a separate thread
         // and the main thread should wait for that thread to finish, while working on other things.
         match rx.recv() {
@@ -95,9 +93,11 @@ impl NodeHooks for HTMLLinkElement {
         match href_url {
             Some(url) => match rel_str.as_str() {
                 "stylesheet" => {
-                    document.as_document().register_style_element(context.current_node);
+                    document
+                        .as_document()
+                        .register_style_element(context.current_node);
                     self.load_stylesheet(&url, document);
-                },
+                }
                 _ => {
                     log::warn!("Unsupported link rel value: {}", rel_str);
                 }

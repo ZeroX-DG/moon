@@ -2,10 +2,13 @@ use dom::{
     document::Document,
     node::{Node, NodeData, NodePtr},
 };
-use flume::{Sender, bounded};
+use flume::{bounded, Sender};
 use gfx::Bitmap;
-use loader::{resource_loop::request::{LoadRequest, FetchListener}, document_loader::DocumentLoader};
-use shared::{primitive::Size, tree_node::TreeNode, byte_string::ByteString};
+use loader::{
+    document_loader::DocumentLoader,
+    resource_loop::request::{FetchListener, LoadRequest},
+};
+use shared::{byte_string::ByteString, primitive::Size, tree_node::TreeNode};
 use style_types::{CSSLocation, CascadeOrigin, ContextualStyleSheet};
 use url::Url;
 
@@ -32,12 +35,19 @@ impl<'a> Page<'a> {
         self.main_frame.resize(size, &mut self.pipeline).await;
     }
 
-    pub async fn load_html(&mut self, html: String, base_url: Url, resource_loop_tx: Sender<LoadRequest>) {
+    pub async fn load_html(
+        &mut self,
+        html: String,
+        base_url: Url,
+        resource_loop_tx: Sender<LoadRequest>,
+    ) {
         let document = NodePtr(TreeNode::new(Node::new(
             NodeData::Document(Document::new()),
         )));
 
-        document.as_document().set_loader(DocumentLoader::new(resource_loop_tx));
+        document
+            .as_document()
+            .set_loader(DocumentLoader::new(resource_loop_tx));
 
         let tokenizer = css::tokenizer::Tokenizer::new(USER_AGENT_STYLES.chars());
         let mut parser = css::parser::Parser::<css::tokenizer::token::Token>::new(tokenizer.run());
@@ -59,7 +69,7 @@ impl<'a> Page<'a> {
     }
 
     pub async fn load_url(&mut self, url: Url, resource_loop_tx: Sender<LoadRequest>) {
-        let html = self.fetch_html(DocumentLoader::new(resource_loop_tx.clone()), url.clone());    
+        let html = self.fetch_html(DocumentLoader::new(resource_loop_tx.clone()), url.clone());
         self.load_html(html, url, resource_loop_tx).await;
     }
 
@@ -85,18 +95,19 @@ impl<'a> Page<'a> {
                 if self.url.scheme == "view-source" {
                     let raw_html = ByteString::new(&bytes).to_string();
                     let raw_html_encoded = html_escape::encode_text(&raw_html);
-                    self.html_tx.send(format!("<pre>{}</pre>", raw_html_encoded)).unwrap();
+                    self.html_tx
+                        .send(format!("<pre>{}</pre>", raw_html_encoded))
+                        .unwrap();
                     return;
                 }
-                self.html_tx.send(ByteString::new(&bytes).to_string()).unwrap();
+                self.html_tx
+                    .send(ByteString::new(&bytes).to_string())
+                    .unwrap();
             }
         }
 
         let (tx, rx) = bounded(1);
-        document_loader.fetch(url.clone(), HTMLLoaderContext {
-            html_tx: tx,
-            url,
-        });
+        document_loader.fetch(url.clone(), HTMLLoaderContext { html_tx: tx, url });
 
         rx.recv().expect("Unable to fetch HTML")
     }

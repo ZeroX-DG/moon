@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
-use url::Url;
 use super::error::LoadError;
+use url::Url;
 
 pub type Bytes = Vec<u8>;
 
