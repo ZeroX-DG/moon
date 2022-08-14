@@ -1,3 +1,2 @@
-mod resource_loader;
-
-pub use resource_loader::*;
+pub mod document_loader;
+pub mod resource_loop;

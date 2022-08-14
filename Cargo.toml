@@ -31,6 +31,7 @@ render = { version = "*", path = "./render" }
 main = { version = "*", path = "./main" }
 url = { path = "./components/url" }
 shared = { path = "./components/shared" }
+loader = { path = "./components/loader" }
 log = "*"
 flume = "*"
 clap = "*"

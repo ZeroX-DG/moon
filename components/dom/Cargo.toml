@@ -13,4 +13,5 @@ css = { path = "../css" }
 loader = { path = "../loader" }
 shared = { path = "../shared" }
 style_types = { path = "../style_types" }
+flume = "0.10.12"
 log = "*"

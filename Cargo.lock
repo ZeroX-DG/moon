@@ -563,6 +563,7 @@ version = "0.1.0"
 dependencies = [
  "css",
  "enum_dispatch",
+ "flume",
  "loader",
  "log",
  "shared",
@@ -1488,7 +1489,9 @@ version = "0.1.0"
 dependencies = [
  "flume",
  "lazy_static",
+ "log",
  "net",
+ "shared",
  "tokio",
  "url 0.1.0",
 ]
@@ -1549,7 +1552,6 @@ dependencies = [
  "anyhow",
  "flume",
  "gtk",
- "html-escape",
  "loader",
  "log",
  "render",
@@ -1672,6 +1674,7 @@ dependencies = [
  "clap",
  "flume",
  "image",
+ "loader",
  "log",
  "main",
  "render",
@@ -2315,6 +2318,7 @@ dependencies = [
  "flume",
  "gfx",
  "html",
+ "html-escape",
  "layout",
  "loader",
  "log",

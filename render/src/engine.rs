@@ -1,13 +1,14 @@
 use super::page::Page;
 use flume::{Receiver, Sender};
 use gfx::Bitmap;
-use loader::{ResourceLoader, RESOURCE_LOADER};
+use loader::resource_loop::{request::LoadRequest, ResourceLoop};
 use shared::primitive::Size;
 use url::Url;
 
 pub enum InputEvent {
     ViewportResize(Size),
     LoadHTML { html: String, base_url: Url },
+    LoadURL(Url),
 }
 
 pub enum OutputEvent {
@@ -17,14 +18,18 @@ pub enum OutputEvent {
 
 pub struct RenderEngine<'a> {
     page: Page<'a>,
-    res_loader: ResourceLoader,
+    resource_loop_tx: Sender<LoadRequest>,
 }
 
 impl<'a> RenderEngine<'a> {
     pub async fn new(viewport: Size) -> RenderEngine<'a> {
         let page = Page::new(viewport).await;
-        let res_loader = ResourceLoader::init();
-        Self { page, res_loader }
+        let resource_loop = ResourceLoop::new();
+        let resource_loop_tx = resource_loop.start_loop();
+        Self {
+            page,
+            resource_loop_tx,
+        }
     }
 
     pub async fn run(
@@ -49,11 +54,14 @@ impl<'a> RenderEngine<'a> {
                 self.emit_new_frame(event_emitter)?;
             }
             InputEvent::LoadHTML { html, base_url } => {
-                RESOURCE_LOADER
-                    .scope(self.res_loader.clone(), async {
-                        self.page.load_html(html, base_url).await;
-                    })
+                self.page
+                    .load_html(html, base_url, self.resource_loop_tx.clone())
                     .await;
+                self.emit_new_frame(event_emitter)?;
+                self.emit_new_title(event_emitter)?;
+            }
+            InputEvent::LoadURL(url) => {
+                self.page.load_url(url, self.resource_loop_tx.clone()).await;
                 self.emit_new_frame(event_emitter)?;
                 self.emit_new_title(event_emitter)?;
             }

@@ -2,8 +2,6 @@ use super::number::Number;
 use css::parser::structs::ComponentValue;
 use css::tokenizer::token::Token;
 
-const BASE_FONT_SIZE: f32 = 16.; // 16px
-
 #[derive(Debug, Clone, PartialEq, Hash)]
 pub struct Length {
     pub value: Number,

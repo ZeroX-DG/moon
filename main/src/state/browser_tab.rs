@@ -2,9 +2,7 @@ use std::sync::{Arc, Mutex};
 
 use crate::render_client::RenderClient;
 use flume::{Receiver, Selector, Sender};
-use loader::ResourceLoader;
 use render::OutputEvent;
-use shared::byte_string::ByteString;
 use shared::primitive::Size;
 use url::Url;
 
@@ -154,8 +152,7 @@ impl BrowserTab {
 
     fn load(&self, url: &Url) -> anyhow::Result<()> {
         match url.scheme.as_str() {
-            "http" | "https" | "file" => self.load_html(),
-            "view-source" => self.load_source(),
+            "http" | "https" | "file" | "view-source" => self.client.load_url(url),
             _ => self.load_not_supported(),
         }
         Ok(())
@@ -193,35 +190,6 @@ impl BrowserTab {
         ",
             title, error
         )
-    }
-
-    fn load_html(&self) {
-        let current_url = self.info.url.lock().unwrap().clone();
-        match ResourceLoader::global().load(&current_url) {
-            Ok(bytes) => {
-                let html = ByteString::new(&bytes);
-                self.client.load_html(html.to_string(), current_url);
-            }
-            Err(e) => {
-                self.load_error("Aw, Snap!", &e.get_friendly_message());
-            }
-        }
-    }
-
-    fn load_source(&self) {
-        let current_url = self.info.url.lock().unwrap().clone();
-        match ResourceLoader::global().load(&current_url) {
-            Ok(bytes) => {
-                let raw_html_string = ByteString::new(&bytes).to_string();
-                let raw_html = html_escape::encode_text(&raw_html_string);
-                let source_html = format!("<html><pre>{}</pre></html>", raw_html);
-
-                self.client.load_html(source_html, current_url);
-            }
-            Err(e) => {
-                self.load_error("Aw, Snap!", &e.get_friendly_message());
-            }
-        }
     }
 
     fn load_not_supported(&self) {

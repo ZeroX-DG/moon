@@ -1,5 +1,5 @@
+use std::cell::Ref;
 use std::cell::RefCell;
-use std::rc::Rc;
 
 use css::parser::Parser;
 use css::tokenizer::token::Token;
@@ -13,7 +13,7 @@ use crate::node::NodeHooks;
 
 #[derive(Debug)]
 pub struct HTMLStyleElement {
-    stylesheet: RefCell<Option<Rc<ContextualStyleSheet>>>,
+    stylesheet: RefCell<Option<ContextualStyleSheet>>,
 }
 
 impl HTMLStyleElement {
@@ -22,13 +22,23 @@ impl HTMLStyleElement {
             stylesheet: RefCell::new(None),
         }
     }
+
+    pub fn stylesheet(&self) -> Ref<Option<ContextualStyleSheet>> {
+        self.stylesheet.borrow()
+    }
 }
 
 impl ElementHooks for HTMLStyleElement {}
 
 impl NodeHooks for HTMLStyleElement {
+    fn on_inserted(&self, context: crate::node::InsertContext) {
+        context
+            .document
+            .as_document()
+            .register_style_element(context.current_node);
+    }
+
     fn on_children_updated(&self, context: ChildrenUpdateContext) {
-        let document = context.document.as_document();
         let css = context.current_node.descendant_text_content();
         let tokenizer = Tokenizer::new(css.chars());
         let mut parser = Parser::<Token>::new(tokenizer.run());
@@ -40,12 +50,7 @@ impl NodeHooks for HTMLStyleElement {
             style_types::CSSLocation::Embedded,
         );
 
-        if let Some(sheet) = &*self.stylesheet.borrow() {
-            document.remove_stylesheet(sheet);
-        }
-
-        let stylesheet_ptr = document.append_stylesheet(stylesheet);
-        self.stylesheet.replace(Some(stylesheet_ptr));
+        self.stylesheet.replace(Some(stylesheet));
     }
 }
 

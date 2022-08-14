@@ -9,6 +9,8 @@ edition = "2018"
 [dependencies]
 url = { path = "../url" }
 net = { path = "../net" }
+shared = { path = "../shared" }
 tokio = { version = "1.6.2", features = ["rt", "rt-multi-thread"] }
 flume = "0.10.12"
 lazy_static = "1.4"
+log = "*"

@@ -125,4 +125,8 @@ impl Element {
     pub fn handle_on_children_updated(&self, context: ChildrenUpdateContext) {
         self.data.handle_on_children_updated(context);
     }
+
+    pub fn data(&self) -> &ElementData {
+        &self.data
+    }
 }

@@ -2,8 +2,13 @@ use dom::{
     document::Document,
     node::{Node, NodeData, NodePtr},
 };
+use flume::{bounded, Sender};
 use gfx::Bitmap;
-use shared::{primitive::Size, tree_node::TreeNode};
+use loader::{
+    document_loader::DocumentLoader,
+    resource_loop::request::{FetchListener, LoadRequest},
+};
+use shared::{byte_string::ByteString, primitive::Size, tree_node::TreeNode};
 use style_types::{CSSLocation, CascadeOrigin, ContextualStyleSheet};
 use url::Url;
 
@@ -30,17 +35,26 @@ impl<'a> Page<'a> {
         self.main_frame.resize(size, &mut self.pipeline).await;
     }
 
-    pub async fn load_html(&mut self, html: String, base_url: Url) {
+    pub async fn load_html(
+        &mut self,
+        html: String,
+        base_url: Url,
+        resource_loop_tx: Sender<LoadRequest>,
+    ) {
         let document = NodePtr(TreeNode::new(Node::new(
             NodeData::Document(Document::new()),
         )));
+
+        document
+            .as_document()
+            .set_loader(DocumentLoader::new(resource_loop_tx));
 
         let tokenizer = css::tokenizer::Tokenizer::new(USER_AGENT_STYLES.chars());
         let mut parser = css::parser::Parser::<css::tokenizer::token::Token>::new(tokenizer.run());
         let stylesheet = parser.parse_a_css_stylesheet();
         let stylesheet =
             ContextualStyleSheet::new(stylesheet, CascadeOrigin::UserAgent, CSSLocation::External);
-        document.as_document().append_stylesheet(stylesheet);
+        document.as_document().set_user_agent_stylesheet(stylesheet);
 
         log::debug!("Base URL: {}", base_url);
         document.as_document().set_base(Some(base_url));
@@ -54,6 +68,11 @@ impl<'a> Page<'a> {
             .await;
     }
 
+    pub async fn load_url(&mut self, url: Url, resource_loop_tx: Sender<LoadRequest>) {
+        let html = self.fetch_html(DocumentLoader::new(resource_loop_tx.clone()), url.clone());
+        self.load_html(html, url, resource_loop_tx).await;
+    }
+
     pub fn bitmap(&self) -> Option<&Bitmap> {
         self.main_frame.bitmap()
     }
@@ -63,5 +82,33 @@ impl<'a> Page<'a> {
             .document()
             .map(|document| document.as_document().title())
             .unwrap_or_default()
+    }
+
+    fn fetch_html(&self, document_loader: DocumentLoader, url: Url) -> String {
+        struct HTMLLoaderContext {
+            url: Url,
+            html_tx: Sender<String>,
+        }
+
+        impl FetchListener for HTMLLoaderContext {
+            fn on_finished(&self, bytes: loader::resource_loop::request::Bytes) {
+                if self.url.scheme == "view-source" {
+                    let raw_html = ByteString::new(&bytes).to_string();
+                    let raw_html_encoded = html_escape::encode_text(&raw_html);
+                    self.html_tx
+                        .send(format!("<pre>{}</pre>", raw_html_encoded))
+                        .unwrap();
+                    return;
+                }
+                self.html_tx
+                    .send(ByteString::new(&bytes).to_string())
+                    .unwrap();
+            }
+        }
+
+        let (tx, rx) = bounded(1);
+        document_loader.fetch(url.clone(), HTMLLoaderContext { html_tx: tx, url });
+
+        rx.recv().expect("Unable to fetch HTML")
     }
 }
