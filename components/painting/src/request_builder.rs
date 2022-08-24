@@ -110,6 +110,11 @@ impl<'a> RequestBuilder<'a> {
                         let color = color_from_value(&node.get_style(&Property::Color));
                         let font_size = node.get_style(&Property::FontSize).to_absolute_px();
 
+                        // Don't render texts out side the frame
+                        if text_rect.y + text_rect.height < 0. || text_rect.y > self.canvas_size.height {
+                            continue;
+                        }
+
                         self.texts.push(PaintText {
                             content: content.to_string(),
                             color,
@@ -158,6 +163,11 @@ impl<'a> RequestBuilder<'a> {
             if self.root_element_use_body_background {
                 rect = Rect::new(0., 0., self.canvas_size.width, self.canvas_size.height);
             }
+        }
+
+        // Don't render boxes out side the frame
+        if rect.y + rect.height < 0. || rect.y > self.canvas_size.height {
+            return None;
         }
 
         let maybe_corners = self.compute_border_radius_corner(layout_box);

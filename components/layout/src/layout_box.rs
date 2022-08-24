@@ -28,6 +28,7 @@ pub struct LayoutBox {
     pub offset: RefCell<Point>,
     pub content_size: RefCell<Size>,
     pub formatting_context: RefCell<Option<Rc<dyn FormattingContext>>>,
+    pub scroll_top: RefCell<f32>,
 }
 
 pub struct LayoutBoxPtr(pub TreeNode<LayoutBox>);
@@ -109,6 +110,7 @@ impl LayoutBox {
             box_model: Default::default(),
             offset: Default::default(),
             content_size: Default::default(),
+            scroll_top: RefCell::new(0.),
             formatting_context: RefCell::new(None),
             data: box_data,
             node: Some(node),
@@ -119,6 +121,7 @@ impl LayoutBox {
         Self {
             box_model: Default::default(),
             offset: Default::default(),
+            scroll_top: RefCell::new(0.),
             content_size: Default::default(),
             formatting_context: RefCell::new(None),
             data,
@@ -276,6 +279,25 @@ impl LayoutBoxPtr {
         self.offset.borrow().clone()
     }
 
+    pub fn scroll_top(&self) -> f32 {
+        *self.scroll_top.borrow()
+    }
+
+    pub fn set_scroll_top(&self, y: f32) {
+        *self.scroll_top.borrow_mut() = y;
+    }
+
+    pub fn scroll(&self, delta_y: f32) -> bool {
+        self.set_scroll_top(self.scroll_top() + delta_y);
+
+        if self.scroll_top() < 0. {
+            self.set_scroll_top(0.);
+        }
+
+        // TODO: Limit scroll over content size
+        true
+    }
+
     pub fn margin_box_height(&self) -> f32 {
         let margin_box = self.box_model.borrow().margin_box();
         self.content_size().height + margin_box.top + margin_box.bottom
@@ -293,6 +315,7 @@ impl LayoutBoxPtr {
 
         while let Some(block) = containing_block {
             rect.translate(block.offset().x, block.offset().y);
+            rect.translate(0., -block.scroll_top());
             containing_block = block.containing_block();
         }
 

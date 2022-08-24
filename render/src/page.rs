@@ -35,6 +35,10 @@ impl<'a> Page<'a> {
         self.main_frame.resize(size, &mut self.pipeline).await;
     }
 
+    pub async fn scroll(&mut self, y: f32) {
+        self.main_frame.scroll(y, &mut self.pipeline).await;
+    }
+
     pub async fn load_html(
         &mut self,
         html: String,

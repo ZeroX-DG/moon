@@ -26,7 +26,7 @@ impl ContentArea {
         let render_area = DrawingArea::builder()
             .hexpand(true)
             .vexpand(true)
-            .events(EventMask::BUTTON_PRESS_MASK)
+            .events(EventMask::BUTTON_PRESS_MASK | EventMask::SMOOTH_SCROLL_MASK)
             .build();
 
         let web_content_pixbuf: Rc<RefCell<Option<Pixbuf>>> = Rc::new(RefCell::new(None));
@@ -59,6 +59,15 @@ impl ContentArea {
                         state.browser().resize(new_size);
                     });
                 }));
+        });
+
+        render_area.connect_scroll_event(move |_, event| {
+            let delta_y = event.delta().1 as f32;
+            get_app_runtime().update_state(move |state| {
+                state.browser().scroll(delta_y * 1.2);
+            });
+
+            Inhibit(false)
         });
 
         render_area.connect_button_press_event(|_, event| {

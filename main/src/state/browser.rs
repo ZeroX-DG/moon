@@ -29,6 +29,13 @@ impl BrowserHandler {
         });
     }
 
+    pub fn scroll(&self, y: f32) {
+        self.update(move |browser| {
+            let active_tab = browser.get_active_tab();
+            active_tab.scroll(y).unwrap();
+        });
+    }
+
     pub fn view_source_current_tab(&self) {
         self.update(|browser| {
             let active_tab = browser.get_active_tab();

@@ -13,16 +13,19 @@ use style_types::ContextualRule;
 
 pub struct Pipeline<'a> {
     painter: Painter<Canvas<'a>>,
+    layout_tree: Option<LayoutBoxPtr>,
 }
 
 pub struct PipelineRunOptions {
     pub skip_style_calculation: bool,
+    pub skip_layout_calculation: bool
 }
 
 impl<'a> Pipeline<'a> {
     pub async fn new() -> Pipeline<'a> {
         Pipeline {
             painter: Painter::new(Canvas::new().await),
+            layout_tree: None
         }
     }
 
@@ -35,13 +38,20 @@ impl<'a> Pipeline<'a> {
         if !opts.skip_style_calculation {
             self.calculate_styles(document_node.clone());
         }
-        let layout_node = self.calculate_layout(document_node, size);
+
+        if !opts.skip_layout_calculation {
+            self.layout_tree = self.calculate_layout(document_node, size);
+        }
 
         self.painter.resize(size.clone());
-        if let Some(node) = layout_node {
-            self.painter.paint(&node);
+        if let Some(node) = &self.layout_tree {
+            self.painter.paint(node);
         }
         self.painter.output().await
+    }
+
+    pub fn content(&self) -> Option<LayoutBoxPtr> {
+        self.layout_tree.clone()
     }
 
     fn calculate_styles(&self, document_node: NodePtr) {
