@@ -200,6 +200,19 @@ impl LayoutBoxPtr {
             .map(|node| LayoutBoxPtr(node));
     }
 
+    // TODO: Get parent base on overflow property instead
+    pub fn scrolling_containing_block(&self) -> Option<LayoutBoxPtr> {
+        self
+            .find_first_ancestor(|parent| parent.parent().is_none())
+            .map(|node| LayoutBoxPtr(node))
+    }
+
+    pub fn is_visible_in_scrolling_area(&self) -> bool {
+        self.scrolling_containing_block()
+            .map(|containing_block| self.padding_box_absolute().is_overlap_rect(&containing_block.absolute_rect()))
+            .unwrap_or(true)
+    }
+
     pub fn can_have_children(&self) -> bool {
         match self.data {
             BoxData::InlineContents(InlineContents::TextRun) => false,
