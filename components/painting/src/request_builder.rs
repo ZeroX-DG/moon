@@ -114,9 +114,10 @@ impl<'a> RequestBuilder<'a> {
                         let color = color_from_value(&node.get_style(&Property::Color));
                         let font_size = node.get_style(&Property::FontSize).to_absolute_px();
 
-                        let box_is_visible = layout_box.scrolling_containing_block().map(|block| {
-                            text_rect.is_overlap_rect(&block.absolute_rect())
-                        }).unwrap_or(true);
+                        let box_is_visible = layout_box
+                            .scrolling_containing_block()
+                            .map(|block| text_rect.is_overlap_rect(&block.absolute_rect()))
+                            .unwrap_or(true);
 
                         if !box_is_visible {
                             continue;
@@ -172,7 +173,8 @@ impl<'a> RequestBuilder<'a> {
             }
         }
 
-        let is_box_visible = layout_box.scrolling_containing_block()
+        let is_box_visible = layout_box
+            .scrolling_containing_block()
             .map(|containing_block| rect.is_overlap_rect(&containing_block.absolute_rect()))
             .unwrap_or(true);
 

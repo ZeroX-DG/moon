@@ -26,9 +26,9 @@ impl Rect {
 
     pub fn is_overlap_rect(&self, other: &Rect) -> bool {
         self.x < other.x + other.width
-        && self.x + self.width > other.x
-        && self.y < other.y + other.height
-        && self.y + self.height > other.y
+            && self.x + self.width > other.x
+            && self.y < other.y + other.height
+            && self.y + self.height > other.y
     }
 
     pub fn new(x: f32, y: f32, width: f32, height: f32) -> Self {

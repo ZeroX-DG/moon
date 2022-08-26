@@ -47,7 +47,15 @@ impl BlockFormattingContext {
         layout_node.set_content_height(height);
         layout_node.set_offset(0., 0.);
 
-        self.layout_block_level_children(context, layout_node);
+        self.layout_block_level_children(context, layout_node.clone());
+
+        // The first child of initial block box is guarenteed to be a HTML container
+        // so we use its height as the scroll height for our initial block box.
+        let scroll_height = layout_node
+            .first_child()
+            .map(|child| LayoutBoxPtr(child).margin_box_height())
+            .unwrap_or(height);
+        layout_node.set_scroll_height(scroll_height);
     }
 
     fn layout_block_level_children(&self, context: &LayoutContext, layout_node: LayoutBoxPtr) {

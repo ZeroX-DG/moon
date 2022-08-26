@@ -18,14 +18,14 @@ pub struct Pipeline<'a> {
 
 pub struct PipelineRunOptions {
     pub skip_style_calculation: bool,
-    pub skip_layout_calculation: bool
+    pub skip_layout_calculation: bool,
 }
 
 impl<'a> Pipeline<'a> {
     pub async fn new() -> Pipeline<'a> {
         Pipeline {
             painter: Painter::new(Canvas::new().await),
-            layout_tree: None
+            layout_tree: None,
         }
     }
 
@@ -69,9 +69,8 @@ impl<'a> Pipeline<'a> {
     }
 
     fn calculate_layout(&self, document_node: NodePtr, size: &Size) -> Option<LayoutBoxPtr> {
-        let layout_tree = layout::tree_builder::TreeBuilder::new().build(document_node);
-
-        if let Some(root) = &layout_tree {
+        let constructed_tree = layout::tree_builder::TreeBuilder::new().build(document_node);
+        let layout_tree = constructed_tree.map(|tree| {
             let layout_context = LayoutContext {
                 viewport: Rect {
                     x: 0.,
@@ -84,7 +83,7 @@ impl<'a> Pipeline<'a> {
             let initial_block_box = LayoutBoxPtr(TreeNode::new(LayoutBox::new_anonymous(
                 layout::layout_box::BoxData::block_box(),
             )));
-            initial_block_box.append_child(root.0.clone());
+            initial_block_box.append_child(tree.0.clone());
 
             establish_context(
                 FormattingContextType::BlockFormattingContext,
@@ -93,7 +92,9 @@ impl<'a> Pipeline<'a> {
             initial_block_box
                 .formatting_context()
                 .run(&layout_context, initial_block_box.clone());
-        }
+
+            initial_block_box
+        });
 
         layout_tree
     }

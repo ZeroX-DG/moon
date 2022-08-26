@@ -29,7 +29,7 @@ impl Frame {
             pipeline,
             PipelineRunOptions {
                 skip_style_calculation: true,
-                skip_layout_calculation: false
+                skip_layout_calculation: false,
             },
         )
         .await;
@@ -44,14 +44,14 @@ impl Frame {
         }
 
         if !need_redraw {
-            return
+            return;
         }
 
         self.render_frame(
             pipeline,
             PipelineRunOptions {
                 skip_style_calculation: true,
-                skip_layout_calculation: true
+                skip_layout_calculation: true,
             },
         )
         .await;
@@ -63,7 +63,7 @@ impl Frame {
             pipeline,
             PipelineRunOptions {
                 skip_style_calculation: false,
-                skip_layout_calculation: false
+                skip_layout_calculation: false,
             },
         )
         .await;
