@@ -7,6 +7,7 @@ use url::Url;
 
 pub enum InputEvent {
     ViewportResize(Size),
+    Scroll(f32),
     LoadHTML { html: String, base_url: Url },
     LoadURL(Url),
 }
@@ -51,6 +52,10 @@ impl<'a> RenderEngine<'a> {
         match event {
             InputEvent::ViewportResize(new_size) => {
                 self.page.resize(new_size).await;
+                self.emit_new_frame(event_emitter)?;
+            }
+            InputEvent::Scroll(delta_y) => {
+                self.page.scroll(delta_y).await;
                 self.emit_new_frame(event_emitter)?;
             }
             InputEvent::LoadHTML { html, base_url } => {

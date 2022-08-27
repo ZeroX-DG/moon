@@ -58,7 +58,13 @@ impl RenderClient {
     pub fn resize(&self, size: Size) {
         self.event_sender
             .send(InputEvent::ViewportResize(size))
-            .expect("Unable to load HTML");
+            .expect("Unable to resize");
+    }
+
+    pub fn scroll(&self, y: f32) {
+        self.event_sender
+            .send(InputEvent::Scroll(y))
+            .expect("Unable to send scroll event");
     }
 
     pub fn load_url(&self, url: &Url) {

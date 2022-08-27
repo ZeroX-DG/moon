@@ -29,6 +29,29 @@ impl Frame {
             pipeline,
             PipelineRunOptions {
                 skip_style_calculation: true,
+                skip_layout_calculation: false,
+            },
+        )
+        .await;
+    }
+
+    pub async fn scroll(&mut self, delta_y: f32, pipeline: &mut Pipeline<'_>) {
+        let mut need_redraw = false;
+
+        // TODO: Handle scrolling for other overflow element within the current frame's document
+        if let Some(root_node) = pipeline.content() {
+            need_redraw = root_node.scroll(delta_y);
+        }
+
+        if !need_redraw {
+            return;
+        }
+
+        self.render_frame(
+            pipeline,
+            PipelineRunOptions {
+                skip_style_calculation: true,
+                skip_layout_calculation: true,
             },
         )
         .await;
@@ -40,6 +63,7 @@ impl Frame {
             pipeline,
             PipelineRunOptions {
                 skip_style_calculation: false,
+                skip_layout_calculation: false,
             },
         )
         .await;

@@ -28,6 +28,8 @@ pub struct LayoutBox {
     pub offset: RefCell<Point>,
     pub content_size: RefCell<Size>,
     pub formatting_context: RefCell<Option<Rc<dyn FormattingContext>>>,
+    pub scroll_top: RefCell<f32>,
+    pub scroll_height: RefCell<f32>,
 }
 
 pub struct LayoutBoxPtr(pub TreeNode<LayoutBox>);
@@ -109,6 +111,8 @@ impl LayoutBox {
             box_model: Default::default(),
             offset: Default::default(),
             content_size: Default::default(),
+            scroll_top: RefCell::new(0.),
+            scroll_height: RefCell::new(0.),
             formatting_context: RefCell::new(None),
             data: box_data,
             node: Some(node),
@@ -119,6 +123,8 @@ impl LayoutBox {
         Self {
             box_model: Default::default(),
             offset: Default::default(),
+            scroll_top: RefCell::new(0.),
+            scroll_height: RefCell::new(0.),
             content_size: Default::default(),
             formatting_context: RefCell::new(None),
             data,
@@ -195,6 +201,21 @@ impl LayoutBoxPtr {
         return self
             .find_first_ancestor(|parent| LayoutBoxPtr(parent).is_block_container())
             .map(|node| LayoutBoxPtr(node));
+    }
+
+    // TODO: Get parent base on overflow property instead
+    pub fn scrolling_containing_block(&self) -> Option<LayoutBoxPtr> {
+        self.find_first_ancestor(|parent| parent.parent().is_none())
+            .map(|node| LayoutBoxPtr(node))
+    }
+
+    pub fn is_visible_in_scrolling_area(&self) -> bool {
+        self.scrolling_containing_block()
+            .map(|containing_block| {
+                self.padding_box_absolute()
+                    .is_overlap_rect(&containing_block.absolute_rect())
+            })
+            .unwrap_or(true)
     }
 
     pub fn can_have_children(&self) -> bool {
@@ -276,6 +297,46 @@ impl LayoutBoxPtr {
         self.offset.borrow().clone()
     }
 
+    pub fn scroll_top(&self) -> f32 {
+        *self.scroll_top.borrow()
+    }
+
+    pub fn set_scroll_top(&self, y: f32) {
+        *self.scroll_top.borrow_mut() = y;
+    }
+
+    pub fn scroll_height(&self) -> f32 {
+        *self.scroll_height.borrow()
+    }
+
+    pub fn set_scroll_height(&self, height: f32) {
+        *self.scroll_height.borrow_mut() = height;
+    }
+
+    pub fn scroll(&self, delta_y: f32) -> bool {
+        if !self.scrollable() {
+            return false;
+        }
+
+        self.set_scroll_top(self.scroll_top() + delta_y);
+
+        if self.scroll_top() < 0. {
+            self.set_scroll_top(0.);
+        }
+
+        let max_scroll_y = self.scroll_height() - self.content_size().height;
+
+        if self.scroll_top() > max_scroll_y {
+            self.set_scroll_top(max_scroll_y);
+        }
+
+        true
+    }
+
+    pub fn scrollable(&self) -> bool {
+        self.scroll_height() - self.content_size().height > 0.
+    }
+
     pub fn margin_box_height(&self) -> f32 {
         let margin_box = self.box_model.borrow().margin_box();
         self.content_size().height + margin_box.top + margin_box.bottom
@@ -293,6 +354,7 @@ impl LayoutBoxPtr {
 
         while let Some(block) = containing_block {
             rect.translate(block.offset().x, block.offset().y);
+            rect.translate(0., -block.scroll_top());
             containing_block = block.containing_block();
         }
 
@@ -340,6 +402,9 @@ impl LayoutBoxPtr {
         if self.is_inline() && !self.is_inline_block() {
             return;
         }
+
+        // Set scroll height to the actual content size before the content size get cut off by explicit size.
+        self.set_scroll_height(self.content_size().height);
 
         if let Some(node) = self.node() {
             let computed_width = node.get_style(&Property::Width);

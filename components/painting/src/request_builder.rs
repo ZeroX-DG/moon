@@ -75,6 +75,10 @@ impl<'a> RequestBuilder<'a> {
     }
 
     fn process(&mut self, layout_box: &LayoutBoxPtr) {
+        if !layout_box.is_visible_in_scrolling_area() {
+            return;
+        }
+
         if let Some(paint_box) = self.build_paint_box(layout_box, None) {
             self.boxes.push(paint_box);
         }
@@ -109,6 +113,15 @@ impl<'a> RequestBuilder<'a> {
                         text_rect.translate(fragment.offset.x, fragment.offset.y);
                         let color = color_from_value(&node.get_style(&Property::Color));
                         let font_size = node.get_style(&Property::FontSize).to_absolute_px();
+
+                        let box_is_visible = layout_box
+                            .scrolling_containing_block()
+                            .map(|block| text_rect.is_overlap_rect(&block.absolute_rect()))
+                            .unwrap_or(true);
+
+                        if !box_is_visible {
+                            continue;
+                        }
 
                         self.texts.push(PaintText {
                             content: content.to_string(),
@@ -158,6 +171,15 @@ impl<'a> RequestBuilder<'a> {
             if self.root_element_use_body_background {
                 rect = Rect::new(0., 0., self.canvas_size.width, self.canvas_size.height);
             }
+        }
+
+        let is_box_visible = layout_box
+            .scrolling_containing_block()
+            .map(|containing_block| rect.is_overlap_rect(&containing_block.absolute_rect()))
+            .unwrap_or(true);
+
+        if !is_box_visible {
+            return None;
         }
 
         let maybe_corners = self.compute_border_radius_corner(layout_box);

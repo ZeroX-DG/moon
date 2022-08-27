@@ -8,6 +8,7 @@ use url::Url;
 
 pub enum TabAction {
     Resize(Size),
+    Scroll(f32),
     Goto(Url),
     ShowError { title: String, body: String },
 }
@@ -27,6 +28,11 @@ pub struct TabHandler {
 impl TabHandler {
     pub fn resize(&self, size: Size) -> anyhow::Result<()> {
         self.sender.send(TabAction::Resize(size))?;
+        Ok(())
+    }
+
+    pub fn scroll(&self, y: f32) -> anyhow::Result<()> {
+        self.sender.send(TabAction::Scroll(y))?;
         Ok(())
     }
 
@@ -120,6 +126,7 @@ impl BrowserTab {
     fn handle_tab_action(&self, event: TabAction) -> anyhow::Result<()> {
         match event {
             TabAction::Resize(new_size) => self.client.resize(new_size),
+            TabAction::Scroll(y) => self.client.scroll(y),
             TabAction::Goto(url) => self.goto(url)?,
             TabAction::ShowError { title, body } => self.load_error(&title, &body),
         }
