@@ -94,7 +94,7 @@ fn is_match_simple_selector(element: &Element, selector: &SimpleSelector) -> boo
         SimpleSelectorType::Universal => true,
         SimpleSelectorType::Type => {
             if let Some(type_name) = selector.value() {
-                return element.tag_name() == *type_name;
+                return element.tag_name().to_lowercase() == *type_name.to_lowercase();
             }
             false
         }
@@ -125,18 +125,7 @@ mod tests {
     use shared::tree_node::WeakTreeNode;
     use test_utils::dom_creator::document;
 
-    #[test]
-    fn match_simple_type() {
-        let element = create_element(WeakTreeNode::from(&document().0), "h1");
-        let css = "h1 { color: red; }";
-
-        let tokenizer = Tokenizer::new(css.chars());
-        let tokens = tokenizer.run();
-        let mut parser = Parser::<Token>::new(tokens);
-        let stylesheet = parser.parse_a_css_stylesheet();
-
-        let rule = stylesheet.first().unwrap();
-
+    fn assert_style_rule_matched_element(rule: &CSSRule, element: &NodePtr) {
         match rule {
             CSSRule::Style(style) => {
                 let selectors = &style.selectors;
@@ -145,10 +134,38 @@ mod tests {
         }
     }
 
+    fn assert_style_rule_not_matched_element(rule: &CSSRule, element: &NodePtr) {
+        match rule {
+            CSSRule::Style(style) => {
+                let selectors = &style.selectors;
+                assert!(!is_match_selectors(&element, selectors));
+            }
+        }
+    }
+
+    #[test]
+    fn match_simple_type() {
+        let element = create_element(WeakTreeNode::from(&document().0), "h1");
+        let css = "h1 { color: red; } H1 { text-align: center; }";
+
+        let tokenizer = Tokenizer::new(css.chars());
+        let tokens = tokenizer.run();
+        let mut parser = Parser::<Token>::new(tokens);
+        let stylesheet = parser.parse_a_css_stylesheet();
+
+        let mut rules = stylesheet.iter();
+
+        let first_rule = rules.next().unwrap();
+        let second_rule = rules.next().unwrap();
+
+        assert_style_rule_matched_element(&first_rule, &element);
+        assert_style_rule_matched_element(&second_rule, &element);
+    }
+
     #[test]
     fn match_simple_id() {
-        let element_node = create_element(WeakTreeNode::from(&document().0), "h1");
-        element_node.as_element().set_attribute("id", "button");
+        let element = create_element(WeakTreeNode::from(&document().0), "h1");
+        element.as_element().set_attribute("id", "button");
         let css = "h1#button { color: red; }";
 
         let tokenizer = Tokenizer::new(css.chars());
@@ -157,13 +174,7 @@ mod tests {
         let stylesheet = parser.parse_a_css_stylesheet();
 
         let rule = stylesheet.first().unwrap();
-
-        match rule {
-            CSSRule::Style(style) => {
-                let selectors = &style.selectors;
-                assert!(is_match_selectors(&element_node, selectors));
-            }
-        }
+        assert_style_rule_matched_element(rule, &element);
     }
 
     #[test]
@@ -182,12 +193,7 @@ mod tests {
 
         let rule = stylesheet.first().unwrap();
 
-        match rule {
-            CSSRule::Style(style) => {
-                let selectors = &style.selectors;
-                assert!(is_match_selectors(&child, selectors));
-            }
-        }
+        assert_style_rule_matched_element(rule, &child);
     }
 
     #[test]
@@ -206,12 +212,7 @@ mod tests {
 
         let rule = stylesheet.first().unwrap();
 
-        match rule {
-            CSSRule::Style(style) => {
-                let selectors = &style.selectors;
-                assert!(is_match_selectors(&child, selectors));
-            }
-        }
+        assert_style_rule_matched_element(rule, &child);
     }
 
     #[test]
@@ -230,12 +231,7 @@ mod tests {
 
         let rule = stylesheet.first().unwrap();
 
-        match rule {
-            CSSRule::Style(style) => {
-                let selectors = &style.selectors;
-                assert!(!is_match_selectors(&child, selectors));
-            }
-        }
+        assert_style_rule_not_matched_element(rule, &child);
     }
 
     #[test]
@@ -254,12 +250,7 @@ mod tests {
 
         let rule = stylesheet.first().unwrap();
 
-        match rule {
-            CSSRule::Style(style) => {
-                let selectors = &style.selectors;
-                assert!(!is_match_selectors(&child, selectors));
-            }
-        }
+        assert_style_rule_not_matched_element(rule, &child);
     }
 
     #[test]
@@ -278,12 +269,6 @@ mod tests {
 
         let rule = stylesheet.first().unwrap();
 
-        match rule {
-            CSSRule::Style(style) => {
-                let selectors = &style.selectors;
-                assert!(is_match_selectors(&child, selectors));
-                assert!(is_match_selectors(&parent, selectors));
-            }
-        }
+        assert_style_rule_matched_element(rule, &child);
     }
 }
