@@ -79,15 +79,14 @@ impl<'a> RequestBuilder<'a> {
             return;
         }
 
-        if let Some(paint_box) = self.build_paint_box(layout_box, None) {
-            self.boxes.push(paint_box);
-        }
+        self.build_paint_boxes(layout_box, None);
 
         if layout_box.is_block() && layout_box.children_are_inline() {
             self.process_lines(layout_box);
         }
 
         layout_box.for_each_child(|child| self.process(&LayoutBoxPtr(child)));
+        self.build_paint_box_for_vertical_scroll_bar(layout_box);
     }
 
     fn process_lines(&mut self, containing_block: &LayoutBoxPtr) {
@@ -102,7 +101,7 @@ impl<'a> RequestBuilder<'a> {
                             fragment.size.clone(),
                         ));
                         rect.translate(fragment.offset.x, fragment.offset.y);
-                        self.build_paint_box(layout_box, Some(rect));
+                        self.build_paint_boxes(layout_box, Some(rect));
                     }
                     LineFragmentData::Text(layout_box, content) => {
                         let node = layout_box.node().unwrap();
@@ -136,13 +135,13 @@ impl<'a> RequestBuilder<'a> {
         }
     }
 
-    fn build_paint_box(
+    fn build_paint_boxes(
         &mut self,
         layout_box: &LayoutBoxPtr,
         override_rect: Option<Rect>,
-    ) -> Option<PaintBox> {
+    ) {
         if layout_box.is_anonymous() {
-            return None;
+            return;
         }
 
         let node = layout_box.node().unwrap();
@@ -162,7 +161,7 @@ impl<'a> RequestBuilder<'a> {
 
             if self.root_element_use_body_background {
                 // Delegate the rendering to the body element
-                return None;
+                return;
             }
         }
 
@@ -179,7 +178,7 @@ impl<'a> RequestBuilder<'a> {
             .unwrap_or(true);
 
         if !is_box_visible {
-            return None;
+            return;
         }
 
         let maybe_corners = self.compute_border_radius_corner(layout_box);
@@ -193,12 +192,13 @@ impl<'a> RequestBuilder<'a> {
         let borders = self.compute_borders(layout_box);
         let border_rect = layout_box.border_box_absolute();
 
-        Some(PaintBox {
+        let paint_box = PaintBox {
             rect,
             background_color,
             borders,
             border_rect,
-        })
+        };
+        self.boxes.push(paint_box);
     }
 
     fn compute_borders(&self, layout_box: &LayoutBoxPtr) -> PaintBoxBorders {
@@ -262,5 +262,40 @@ impl<'a> RequestBuilder<'a> {
         let br = to_radii(&border_bottom_right_radius, border_box.width, font_size);
 
         Some(Corners::new(tl, tr, bl, br))
+    }
+
+    fn build_paint_box_for_vertical_scroll_bar(&mut self, layout_box: &LayoutBoxPtr) {
+        if !layout_box.scrollable() {
+            return;
+        }
+
+        let container_rect = layout_box.absolute_rect();
+        let container_scroll_height = layout_box.scroll_height();
+        let scroll_bar_width = 12.;
+
+        // Thanks to Huy Nguyen
+        let scroll_bar_height = container_rect.height * (container_rect.height / container_scroll_height);
+        let scroll_bar_x = container_rect.x + container_rect.width - scroll_bar_width;
+        let scroll_bar_y = layout_box.scroll_top() * (container_rect.height / container_scroll_height);
+
+        let scroll_bar_rect = Rect::new(scroll_bar_x, scroll_bar_y, scroll_bar_width, scroll_bar_height);
+        let borders = PaintBoxBorders {
+            top: None,
+            right: None,
+            bottom: None,
+            left: None,
+        };
+        let paint_box = PaintBox {
+            rect: RectOrRRect::Rect(scroll_bar_rect.clone()),
+            border_rect: scroll_bar_rect,
+            background_color: Color {
+                r: 97,
+                g: 97,
+                b: 97,
+                a: 255,
+            },
+            borders
+        };
+        self.boxes.push(paint_box);
     }
 }
