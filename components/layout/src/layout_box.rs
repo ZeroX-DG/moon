@@ -29,7 +29,6 @@ pub struct LayoutBox {
     pub content_size: RefCell<Size>,
     pub formatting_context: RefCell<Option<Rc<dyn FormattingContext>>>,
     pub scroll_top: RefCell<f32>,
-    pub scroll_height: RefCell<f32>,
 }
 
 pub struct LayoutBoxPtr(pub TreeNode<LayoutBox>);
@@ -112,7 +111,6 @@ impl LayoutBox {
             offset: Default::default(),
             content_size: Default::default(),
             scroll_top: RefCell::new(0.),
-            scroll_height: RefCell::new(0.),
             formatting_context: RefCell::new(None),
             data: box_data,
             node: Some(node),
@@ -124,7 +122,6 @@ impl LayoutBox {
             box_model: Default::default(),
             offset: Default::default(),
             scroll_top: RefCell::new(0.),
-            scroll_height: RefCell::new(0.),
             content_size: Default::default(),
             formatting_context: RefCell::new(None),
             data,
@@ -205,8 +202,9 @@ impl LayoutBoxPtr {
 
     // TODO: Get parent base on overflow property instead
     pub fn scrolling_containing_block(&self) -> Option<LayoutBoxPtr> {
-        self.find_first_ancestor(|parent| parent.parent().is_none())
-            .map(|node| LayoutBoxPtr(node))
+        self.parent().map(|node| LayoutBoxPtr(node))
+        // self.find_first_ancestor(|parent| parent.parent().is_none())
+        //     .map(|node| LayoutBoxPtr(node))
     }
 
     pub fn is_visible_in_scrolling_area(&self) -> bool {
@@ -311,11 +309,19 @@ impl LayoutBoxPtr {
     }
 
     pub fn scroll_height(&self) -> f32 {
-        *self.scroll_height.borrow()
-    }
-
-    pub fn set_scroll_height(&self, height: f32) {
-        *self.scroll_height.borrow_mut() = height;
+        let mut height = 0.;
+        if self.children_are_inline() {
+            self.for_each_child(|child| {
+                let child_height = LayoutBoxPtr(child).margin_box_height();
+                height = if child_height > height { child_height } else { height };
+            });
+        } else {
+            self.for_each_child(|child| {
+                let child_height = LayoutBoxPtr(child).margin_box_height();
+                height += child_height;
+            });
+        }
+        height
     }
 
     pub fn scroll(&self, delta_y: f32) -> bool {
@@ -407,9 +413,6 @@ impl LayoutBoxPtr {
         if self.is_inline() && !self.is_inline_block() {
             return;
         }
-
-        // Set scroll height to the actual content size before the content size get cut off by explicit size.
-        self.set_scroll_height(self.content_size().height);
 
         if let Some(node) = self.node() {
             let computed_width = node.get_style(&Property::Width);
