@@ -63,6 +63,7 @@ pub enum Value {
     Direction(Direction),
     BorderRadius(BorderRadius),
     TextAlign(TextAlign),
+    Overflow(Overflow),
     Auto,
     Inherit,
     Initial,
@@ -224,6 +225,14 @@ impl Value {
                 TextAlign | Inherit;
                 tokens
             ),
+            Property::OverflowX => parse_value!(
+                Overflow | Auto;
+                tokens
+            ),
+            Property::OverflowY => parse_value!(
+                Overflow | Auto;
+                tokens
+            ),
         }
     }
 
@@ -268,6 +277,8 @@ impl Value {
             // TODO: replace with `medium` when we support absolute size
             Property::FontSize => Value::Length(Length::new_px(16.)),
             Property::TextAlign => Value::TextAlign(TextAlign::Left),
+            Property::OverflowX => Value::Overflow(Overflow::Visible),
+            Property::OverflowY => Value::Overflow(Overflow::Visible),
         }
     }
 

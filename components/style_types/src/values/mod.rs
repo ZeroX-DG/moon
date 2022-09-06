@@ -11,6 +11,7 @@ pub mod number;
 pub mod percentage;
 pub mod position;
 pub mod text_align;
+pub mod overflow;
 
 // Let this pub because in the future we may want to use this in other places.
 // Just maybe....
@@ -27,4 +28,5 @@ pub mod prelude {
     pub use super::percentage::Percentage;
     pub use super::position::Position;
     pub use super::text_align::TextAlign;
+    pub use super::overflow::Overflow;
 }
