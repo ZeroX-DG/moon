@@ -272,30 +272,40 @@ impl<'a> RequestBuilder<'a> {
         let container_rect = layout_box.padding_box_absolute();
         let container_scroll_height = layout_box.scroll_height();
         let scroll_bar_width = layout_box.scrollbar_width();
+        let scroll_bar_height = container_rect.height;
+        let scroll_bar_x = container_rect.x + container_rect.width;
+        let scroll_bar_y = container_rect.y;
 
         // Thanks to Huy Nguyen
-        let scroll_bar_height = container_rect.height * (container_rect.height / container_scroll_height);
-        let scroll_bar_x = container_rect.x + container_rect.width;
-        let scroll_bar_y = layout_box.scroll_top() * (container_rect.height / container_scroll_height);
+        let scroll_bar_thumb_height = container_rect.height * (container_rect.height / container_scroll_height);
+        let scroll_bar_thumb_y = container_rect.y + layout_box.scroll_top() * (container_rect.height / container_scroll_height);
 
-        let scroll_bar_rect = Rect::new(scroll_bar_x, scroll_bar_y, scroll_bar_width, scroll_bar_height);
-        let borders = PaintBoxBorders {
-            top: None,
-            right: None,
-            bottom: None,
-            left: None,
-        };
-        let paint_box = PaintBox {
-            rect: RectOrRRect::Rect(scroll_bar_rect.clone()),
-            border_rect: scroll_bar_rect,
-            background_color: Color {
-                r: 97,
-                g: 97,
-                b: 97,
-                a: 255,
-            },
-            borders
-        };
-        self.boxes.push(paint_box);
+        fn get_rect_paint_box(rect: Rect, color: Color) -> PaintBox {
+            let borders = PaintBoxBorders {
+                top: None,
+                right: None,
+                bottom: None,
+                left: None,
+            };
+            PaintBox {
+                rect: RectOrRRect::Rect(rect.clone()),
+                border_rect: rect,
+                background_color: color,
+                borders
+            }
+        }
+
+        let gutter_paint_box = get_rect_paint_box(
+            Rect::new(scroll_bar_x, scroll_bar_y, scroll_bar_width, scroll_bar_height),
+            Color { r: 36, g: 36, b: 36, a: 255 }
+        );
+
+        let thumb_paint_box = get_rect_paint_box(
+            Rect::new(scroll_bar_x, scroll_bar_thumb_y, scroll_bar_width, scroll_bar_thumb_height),
+            Color { r: 173, g: 173, b: 173, a: 255 }
+        );
+        
+        self.boxes.push(gutter_paint_box);
+        self.boxes.push(thumb_paint_box);
     }
 }
