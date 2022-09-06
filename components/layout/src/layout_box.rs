@@ -9,7 +9,7 @@ use style_types::{
     values::{
         display::Display,
         display::{InnerDisplayType, OuterDisplayType},
-        prelude::Position,
+        prelude::{Position, Overflow},
     },
     Property, Value,
 };
@@ -200,20 +200,27 @@ impl LayoutBoxPtr {
             .map(|node| LayoutBoxPtr(node));
     }
 
-    // TODO: Get parent base on overflow property instead
-    pub fn scrolling_containing_block(&self) -> Option<LayoutBoxPtr> {
-        self.parent().map(|node| LayoutBoxPtr(node))
-        // self.find_first_ancestor(|parent| parent.parent().is_none())
-        //     .map(|node| LayoutBoxPtr(node))
-    }
+    pub fn is_visible_for_painting(&self, custom_rect: Option<&Rect>) -> bool {
+        let padding_box = self.padding_box_absolute();
+        let current_padding_box = custom_rect.unwrap_or(&padding_box);
+        let parent = self.find_first_ancestor(|parent| parent.parent().is_none() || LayoutBoxPtr(parent).node().is_some());
 
-    pub fn is_visible_in_scrolling_area(&self) -> bool {
-        self.scrolling_containing_block()
-            .map(|containing_block| {
-                self.padding_box_absolute()
-                    .is_overlap_rect(&containing_block.absolute_rect())
-            })
-            .unwrap_or(true)
+        if parent.is_none() {
+            return true;
+        }
+
+        let parent = LayoutBoxPtr(parent.unwrap());
+
+        // If checking against initial block box then we just need to make sure the padding box
+        // overlaps the initial block box rect (viewport)
+        if parent.parent().is_none() {
+            return parent.absolute_rect().is_overlap_rect(&current_padding_box);
+        }
+
+        // If checking against regular elements, make sure the box overlaps parent box or parent
+        // box overflow is visible.
+        parent.absolute_rect().is_overlap_rect(&current_padding_box)
+            || parent.node().unwrap().get_style(&Property::OverflowY) == Value::Overflow(Overflow::Visible)
     }
 
     // TODO: Support dynamic scroll bar width
