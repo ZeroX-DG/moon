@@ -1,6 +1,7 @@
 use dom::node::NodePtr;
 use gfx::Bitmap;
-use shared::primitive::Size;
+use layout::layout_box::LayoutBoxPtr;
+use shared::primitive::{Point, Size};
 
 use crate::pipeline::{Pipeline, PipelineRunOptions};
 
@@ -33,6 +34,25 @@ impl Frame {
             },
         )
         .await;
+    }
+
+    pub async fn handle_mouse_move(&self, coord: Point, pipeline: &mut Pipeline<'_>) {
+        if let Some(root_node) = pipeline.content() {
+            mark_mouse_over_boxes(root_node, &coord);
+        }
+
+        fn mark_mouse_over_boxes(root: LayoutBoxPtr, mouse_coord: &Point) {
+            root.for_each_child(|child| {
+                let child = LayoutBoxPtr(child);
+                if child.border_box_absolute().is_contain_point(mouse_coord) {
+                    child.set_mouse_over(true);
+                } else {
+                    child.set_mouse_over(false);
+                }
+
+                mark_mouse_over_boxes(child, mouse_coord);
+            });
+        }
     }
 
     pub async fn scroll(&mut self, delta_y: f32, pipeline: &mut Pipeline<'_>) {

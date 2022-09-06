@@ -2,12 +2,13 @@ use super::page::Page;
 use flume::{Receiver, Sender};
 use gfx::Bitmap;
 use loader::resource_loop::{request::LoadRequest, ResourceLoop};
-use shared::primitive::Size;
+use shared::primitive::{Point, Size};
 use url::Url;
 
 pub enum InputEvent {
     ViewportResize(Size),
     Scroll(f32),
+    MouseMove(Point),
     LoadHTML { html: String, base_url: Url },
     LoadURL(Url),
 }
@@ -56,6 +57,10 @@ impl<'a> RenderEngine<'a> {
             }
             InputEvent::Scroll(delta_y) => {
                 self.page.scroll(delta_y).await;
+                self.emit_new_frame(event_emitter)?;
+            }
+            InputEvent::MouseMove(coord) => {
+                self.page.handle_mouse_move(coord).await;
                 self.emit_new_frame(event_emitter)?;
             }
             InputEvent::LoadHTML { html, base_url } => {

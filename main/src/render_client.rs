@@ -72,4 +72,10 @@ impl RenderClient {
             .send(InputEvent::LoadURL(url.clone()))
             .expect("Unable to load URL");
     }
+
+    pub fn mouse_move(&self, coord: shared::primitive::Point) {
+        self.event_sender
+            .send(InputEvent::MouseMove(coord))
+            .expect("Unable to send mouse move event");
+    }
 }

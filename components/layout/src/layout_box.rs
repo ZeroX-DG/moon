@@ -30,6 +30,7 @@ pub struct LayoutBox {
     pub formatting_context: RefCell<Option<Rc<dyn FormattingContext>>>,
     pub scroll_top: RefCell<f32>,
     pub scroll_height: RefCell<f32>,
+    pub is_mouse_over: RefCell<bool>,
 }
 
 pub struct LayoutBoxPtr(pub TreeNode<LayoutBox>);
@@ -113,6 +114,7 @@ impl LayoutBox {
             content_size: Default::default(),
             scroll_top: RefCell::new(0.),
             scroll_height: RefCell::new(0.),
+            is_mouse_over: RefCell::new(false),
             formatting_context: RefCell::new(None),
             data: box_data,
             node: Some(node),
@@ -125,6 +127,7 @@ impl LayoutBox {
             offset: Default::default(),
             scroll_top: RefCell::new(0.),
             scroll_height: RefCell::new(0.),
+            is_mouse_over: RefCell::new(false),
             content_size: Default::default(),
             formatting_context: RefCell::new(None),
             data,
@@ -303,6 +306,10 @@ impl LayoutBoxPtr {
 
     pub fn set_scroll_top(&self, y: f32) {
         *self.scroll_top.borrow_mut() = y;
+    }
+
+    pub fn set_mouse_over(&self, value: bool) {
+        *self.is_mouse_over.borrow_mut() = value;
     }
 
     pub fn scroll_height(&self) -> f32 {
