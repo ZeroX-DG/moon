@@ -56,6 +56,10 @@ impl BlockFormattingContext {
             .map(|child| LayoutBoxPtr(child).margin_box_height())
             .unwrap_or(height);
         layout_node.set_scroll_height(scroll_height);
+
+        if layout_node.scrollable() {
+            layout_node.set_content_width(width - layout_node.scrollbar_width());
+        }
     }
 
     fn layout_block_level_children(&self, context: &LayoutContext, layout_node: LayoutBoxPtr) {
@@ -81,6 +85,10 @@ impl BlockFormattingContext {
             }
 
             child.apply_explicit_sizes();
+
+            if child.scrollable() {
+                child.set_content_width(child.content_size().width - child.scrollbar_width());
+            }
 
             if child.border_box_absolute().height > 0. {
                 self.last_sibling.replace(Some(child.clone()));

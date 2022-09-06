@@ -218,6 +218,11 @@ impl LayoutBoxPtr {
             .unwrap_or(true)
     }
 
+    // TODO: Support dynamic scroll bar width
+    pub fn scrollbar_width(&self) -> f32 {
+        12.
+    }
+
     pub fn can_have_children(&self) -> bool {
         match self.data {
             BoxData::InlineContents(InlineContents::TextRun) => false,

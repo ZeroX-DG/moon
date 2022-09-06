@@ -269,13 +269,13 @@ impl<'a> RequestBuilder<'a> {
             return;
         }
 
-        let container_rect = layout_box.absolute_rect();
+        let container_rect = layout_box.padding_box_absolute();
         let container_scroll_height = layout_box.scroll_height();
-        let scroll_bar_width = 12.;
+        let scroll_bar_width = layout_box.scrollbar_width();
 
         // Thanks to Huy Nguyen
         let scroll_bar_height = container_rect.height * (container_rect.height / container_scroll_height);
-        let scroll_bar_x = container_rect.x + container_rect.width - scroll_bar_width;
+        let scroll_bar_x = container_rect.x + container_rect.width;
         let scroll_bar_y = layout_box.scroll_top() * (container_rect.height / container_scroll_height);
 
         let scroll_bar_rect = Rect::new(scroll_bar_x, scroll_bar_y, scroll_bar_width, scroll_bar_height);
