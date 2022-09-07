@@ -384,7 +384,7 @@ impl LayoutBoxPtr {
 
     pub fn border_box_absolute(&self) -> Rect {
         let border_box = self.box_model.borrow().border_box();
-        self.padding_box_absolute().add_outer_edges(&border_box)
+        self.absolute_rect().add_outer_edges(&border_box)
     }
 
     pub fn padding_box_absolute(&self) -> Rect {
