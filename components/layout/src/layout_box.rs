@@ -340,6 +340,15 @@ impl LayoutBoxPtr {
         true
     }
 
+    pub fn handle_mouse_move(&self, mouse_coord: &Point) {
+        if self.border_box_absolute().is_contain_point(mouse_coord) {
+            self.set_mouse_over(true);
+        } else {
+            self.set_mouse_over(false);
+        }
+        self.for_each_child(|child| LayoutBoxPtr(child).handle_mouse_move(mouse_coord));
+    }
+
     pub fn scrollable(&self) -> bool {
         self.scroll_height() - self.content_size().height > 0.
     }
