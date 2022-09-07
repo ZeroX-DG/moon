@@ -1,7 +1,7 @@
 use std::path::Path;
 
 use flume::{Receiver, Sender};
-use shared::primitive::Size;
+use shared::primitive::{Point, Size};
 use url::{parser::URLParser, Url};
 
 use crate::app::get_app_runtime;
@@ -33,6 +33,13 @@ impl BrowserHandler {
         self.update(move |browser| {
             let active_tab = browser.get_active_tab();
             active_tab.scroll(y).unwrap();
+        });
+    }
+
+    pub fn handle_mouse_move(&self, mouse_coord: Point) {
+        self.update(move |browser| {
+            let active_tab = browser.get_active_tab();
+            active_tab.handle_mouse_move(mouse_coord).unwrap();
         });
     }
 

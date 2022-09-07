@@ -12,7 +12,7 @@ use gtk::{
     traits::{ContainerExt, GtkMenuItemExt, MenuShellExt, WidgetExt},
     DrawingArea, Inhibit,
 };
-use shared::primitive::Size;
+use shared::primitive::{Point, Size};
 
 use crate::{app::get_app_runtime, delayed_task::DelayedTask};
 
@@ -26,7 +26,11 @@ impl ContentArea {
         let render_area = DrawingArea::builder()
             .hexpand(true)
             .vexpand(true)
-            .events(EventMask::BUTTON_PRESS_MASK | EventMask::SMOOTH_SCROLL_MASK)
+            .events(
+                EventMask::BUTTON_PRESS_MASK
+                    | EventMask::SMOOTH_SCROLL_MASK
+                    | EventMask::POINTER_MOTION_MASK,
+            )
             .build();
 
         let web_content_pixbuf: Rc<RefCell<Option<Pixbuf>>> = Rc::new(RefCell::new(None));
@@ -87,6 +91,15 @@ impl ContentArea {
                 menu.show_all();
                 menu.popup_easy(event.button(), event.time());
             }
+            Inhibit(true)
+        });
+
+        render_area.connect_motion_notify_event(|_, event| {
+            let (x, y) = event.position();
+            let coord = Point::new(x as f32, y as f32);
+            get_app_runtime().update_state(|state| {
+                state.browser().handle_mouse_move(coord);
+            });
             Inhibit(true)
         });
 

@@ -39,6 +39,12 @@ impl<'a> Page<'a> {
         self.main_frame.scroll(y, &mut self.pipeline).await;
     }
 
+    pub async fn handle_mouse_move(&mut self, coord: shared::primitive::Point) {
+        self.main_frame
+            .handle_mouse_move(coord, &mut self.pipeline)
+            .await;
+    }
+
     pub async fn load_html(
         &mut self,
         html: String,

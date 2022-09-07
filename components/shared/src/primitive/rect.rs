@@ -31,6 +31,13 @@ impl Rect {
             && self.y + self.height > other.y
     }
 
+    pub fn is_contain_point(&self, point: &Point) -> bool {
+        self.x <= point.x
+            && self.x + self.width >= point.x
+            && self.y <= point.y
+            && self.y + self.height >= point.y
+    }
+
     pub fn new(x: f32, y: f32, width: f32, height: f32) -> Self {
         Self {
             x,
