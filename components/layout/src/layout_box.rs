@@ -367,8 +367,19 @@ impl LayoutBoxPtr {
         self.for_each_child(|child| LayoutBoxPtr(child).handle_mouse_move(mouse_coord));
     }
 
+    pub fn is_mouse_over(&self) -> bool {
+        *self.is_mouse_over.borrow()
+    }
+
     pub fn scrollable(&self) -> bool {
-        self.scroll_height() - self.content_size().height > 0.
+        let is_content_overflowed = self.scroll_height() - self.content_size().height > 0.;
+
+        let is_overflow_scrollable = self.node().map(|node| {
+            let overflow_value = node.get_style(&Property::OverflowY);
+            overflow_value.is_auto() || overflow_value == Value::Overflow(Overflow::Scroll)
+        }).unwrap_or_else(|| self.parent().is_none());
+
+        is_content_overflowed && is_overflow_scrollable
     }
 
     pub fn margin_box_height(&self) -> f32 {

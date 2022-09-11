@@ -49,7 +49,16 @@ impl Frame {
 
         // TODO: Handle scrolling for other overflow element within the current frame's document
         if let Some(root_node) = pipeline.content() {
-            need_redraw = root_node.scroll(delta_y);
+            let deepest_scrollable_container = root_node.find_first_deepest_decendant(|node| {
+                let node = LayoutBoxPtr(node);
+                node.is_mouse_over() && node.scrollable()
+            });
+
+            if let Some(node) = deepest_scrollable_container {
+                need_redraw = LayoutBoxPtr(node).scroll(delta_y);
+            } else {
+                need_redraw = root_node.scroll(delta_y);
+            }
         }
 
         if !need_redraw {

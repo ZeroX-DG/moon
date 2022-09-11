@@ -132,25 +132,18 @@ impl<T: TreeNodeHooks<T> + Debug> TreeNode<T> {
     where
         F: Fn(TreeNode<T>) -> bool,
     {
-        // Level = 0
-        // F(root, Level)
-        //   F(child, Level + 1)
-        //   F(child, Level + 1)
-        //      F(child, Level + 1)
-        //      F(child, Level + 1)
-        //          F(child, Level + 1)
-        //      F(child, Level + 1)
-        //
-        // 
         fn match_decendant<T, F>(node: &TreeNode<T>, level: usize, callback: &F, current_deepest: &mut Option<(TreeNode<T>, usize)>) -> Option<(TreeNode<T>, usize)>
             where T: Debug + TreeNodeHooks<T>,
                   F: Fn(TreeNode<T>) -> bool
         {
-            if node.has_no_child() {
-                if callback(node.clone()) {
-                    return Some((node.clone(), level));
+            if callback(node.clone()) {
+                if current_deepest.is_none() {
+                    current_deepest.replace((node.clone(), level));
+                } else if let Some((_, current_deepest_level)) = current_deepest {
+                    if level > *current_deepest_level {
+                        current_deepest.replace((node.clone(), level));
+                    }
                 }
-                return None;
             }
 
             for child in node.iterate_children() {
