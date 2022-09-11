@@ -1,6 +1,7 @@
 use dom::node::NodePtr;
 use gfx::Bitmap;
-use shared::primitive::Size;
+use layout::layout_box::LayoutBoxPtr;
+use shared::primitive::{Point, Size};
 
 use crate::pipeline::{Pipeline, PipelineRunOptions};
 
@@ -33,6 +34,14 @@ impl Frame {
             },
         )
         .await;
+    }
+
+    pub async fn handle_mouse_move(&self, coord: Point, pipeline: &mut Pipeline<'_>) {
+        if let Some(root_node) = pipeline.content() {
+            root_node.handle_mouse_move(&coord);
+        }
+
+        // TODO: Re-render the frame if needed
     }
 
     pub async fn scroll(&mut self, delta_y: f32, pipeline: &mut Pipeline<'_>) {

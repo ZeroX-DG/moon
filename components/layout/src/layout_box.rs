@@ -29,6 +29,7 @@ pub struct LayoutBox {
     pub content_size: RefCell<Size>,
     pub formatting_context: RefCell<Option<Rc<dyn FormattingContext>>>,
     pub scroll_top: RefCell<f32>,
+    pub is_mouse_over: RefCell<bool>,
 }
 
 pub struct LayoutBoxPtr(pub TreeNode<LayoutBox>);
@@ -111,6 +112,7 @@ impl LayoutBox {
             offset: Default::default(),
             content_size: Default::default(),
             scroll_top: RefCell::new(0.),
+            is_mouse_over: RefCell::new(false),
             formatting_context: RefCell::new(None),
             data: box_data,
             node: Some(node),
@@ -122,6 +124,7 @@ impl LayoutBox {
             box_model: Default::default(),
             offset: Default::default(),
             scroll_top: RefCell::new(0.),
+            is_mouse_over: RefCell::new(false),
             content_size: Default::default(),
             formatting_context: RefCell::new(None),
             data,
@@ -315,6 +318,10 @@ impl LayoutBoxPtr {
         *self.scroll_top.borrow_mut() = y;
     }
 
+    pub fn set_mouse_over(&self, value: bool) {
+        *self.is_mouse_over.borrow_mut() = value;
+    }
+
     pub fn scroll_height(&self) -> f32 {
         let mut height = 0.;
         if self.children_are_inline() {
@@ -349,6 +356,15 @@ impl LayoutBoxPtr {
         }
 
         true
+    }
+
+    pub fn handle_mouse_move(&self, mouse_coord: &Point) {
+        if self.border_box_absolute().is_contain_point(mouse_coord) {
+            self.set_mouse_over(true);
+        } else {
+            self.set_mouse_over(false);
+        }
+        self.for_each_child(|child| LayoutBoxPtr(child).handle_mouse_move(mouse_coord));
     }
 
     pub fn scrollable(&self) -> bool {
@@ -386,7 +402,7 @@ impl LayoutBoxPtr {
 
     pub fn border_box_absolute(&self) -> Rect {
         let border_box = self.box_model.borrow().border_box();
-        self.padding_box_absolute().add_outer_edges(&border_box)
+        self.absolute_rect().add_outer_edges(&border_box)
     }
 
     pub fn padding_box_absolute(&self) -> Rect {

@@ -3,12 +3,13 @@ use std::sync::{Arc, Mutex};
 use crate::render_client::RenderClient;
 use flume::{Receiver, Selector, Sender};
 use render::OutputEvent;
-use shared::primitive::Size;
+use shared::primitive::{Point, Size};
 use url::Url;
 
 pub enum TabAction {
     Resize(Size),
     Scroll(f32),
+    MouseMove(Point),
     Goto(Url),
     ShowError { title: String, body: String },
 }
@@ -52,6 +53,11 @@ impl TabHandler {
 
     pub fn info(&self) -> Arc<TabInfo> {
         self.info.clone()
+    }
+
+    pub fn handle_mouse_move(&self, mouse_coord: shared::primitive::Point) -> anyhow::Result<()> {
+        self.sender.send(TabAction::MouseMove(mouse_coord))?;
+        Ok(())
     }
 }
 
@@ -127,6 +133,7 @@ impl BrowserTab {
         match event {
             TabAction::Resize(new_size) => self.client.resize(new_size),
             TabAction::Scroll(y) => self.client.scroll(y),
+            TabAction::MouseMove(coord) => self.client.mouse_move(coord),
             TabAction::Goto(url) => self.goto(url)?,
             TabAction::ShowError { title, body } => self.load_error(&title, &body),
         }
