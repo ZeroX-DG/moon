@@ -382,6 +382,13 @@ impl LayoutBoxPtr {
         is_content_overflowed && is_overflow_scrollable
     }
 
+    pub fn is_overflow_visible(&self) -> bool {
+        self.node().map(|node| {
+            let overflow_value = node.get_style(&Property::OverflowY);
+            overflow_value == Value::Overflow(Overflow::Visible)
+        }).unwrap_or(true)
+    }
+
     pub fn margin_box_height(&self) -> f32 {
         let margin_box = self.box_model.borrow().margin_box();
         self.content_size().height + margin_box.top + margin_box.bottom

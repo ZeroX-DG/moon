@@ -14,6 +14,8 @@ pub enum Command {
     FillRRect(RRect, Color),
     FillBorder(Rect, Rect, Borders),
     FillText(String, Rect, Color, f32),
+    ClipRect(Rect),
+    EndClipRect
 }
 
 pub struct Borders {
@@ -55,11 +57,23 @@ impl<'a> DisplayListBuilder<'a> {
 
         self.build_paint_boxes(layout_box, None);
 
+        let mut clipping = false;
+
+        if !layout_box.is_overflow_visible() {
+            self.display_list.clip_rect(layout_box.absolute_rect());
+            clipping = true;
+        }
+
         if layout_box.is_block() && layout_box.children_are_inline() {
             self.process_lines(layout_box);
         }
 
         layout_box.for_each_child(|child| self.process(&LayoutBoxPtr(child)));
+
+        if clipping {
+            self.display_list.end_clip_rect();
+        }
+
         self.build_paint_box_for_vertical_scroll_bar(layout_box);
     }
 
@@ -277,6 +291,17 @@ impl DisplayList {
         let command = Command::FillText(content, rect, color, font_size);
         self.0.push(command);
     }
+
+    pub fn clip_rect(&mut self, rect: Rect) {
+        let command = Command::ClipRect(rect);
+        self.0.push(command);
+    }
+
+    pub fn end_clip_rect(&mut self) {
+        let command = Command::EndClipRect;
+        self.0.push(command);
+    }
+
     pub fn commands(self) -> Vec<Command> {
         self.0
     }
