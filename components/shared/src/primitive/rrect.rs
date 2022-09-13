@@ -32,6 +32,15 @@ impl RRect {
     }
 }
 
+impl From<(Rect, Corners)> for RRect {
+    fn from((rect, corners): (Rect, Corners)) -> Self {
+        Self {
+            rect,
+            corners
+        }
+    }
+}
+
 impl std::ops::Deref for RRect {
     type Target = Rect;
     fn deref(&self) -> &Self::Target {

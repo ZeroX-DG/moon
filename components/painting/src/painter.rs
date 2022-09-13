@@ -1,7 +1,8 @@
-use crate::request_builder::{PaintBox, PaintBoxBorders, PaintText, RectOrRRect, RequestBuilder};
 use gfx::Graphics;
 use layout::layout_box::LayoutBoxPtr;
 use shared::primitive::{Point, Rect, Size};
+
+use crate::display_list::{DisplayListBuilder, Command, Borders};
 
 pub struct Painter<G: Graphics> {
     gfx: G,
@@ -27,51 +28,28 @@ impl<G: Graphics> Painter<G> {
     }
 
     pub fn paint(&mut self, layout_box: &LayoutBoxPtr) {
-        let request = RequestBuilder::new(&self.canvas_size).build(layout_box);
+        let display_list = DisplayListBuilder::new(&self.canvas_size).build(layout_box);
 
-        log::info!("Number of boxes to paint: {}", request.boxes.len());
-        log::info!("Number of texts to paint: {}", request.texts.len());
-
-        for current_box in request.boxes {
-            self.paint_box(current_box);
-        }
-
-        for text in request.texts {
-            self.paint_text(text);
-        }
-    }
-
-    fn paint_text(&mut self, paint_text: PaintText) {
-        self.gfx.fill_text(
-            paint_text.content,
-            paint_text.rect,
-            paint_text.color,
-            paint_text.font_size,
-        );
-    }
-
-    fn paint_box(&mut self, paint_box: PaintBox) {
-        match paint_box.rect {
-            RectOrRRect::Rect(rect) => {
-                self.paint_borders(&rect, &paint_box.border_rect, &paint_box.borders);
-                self.gfx.fill_rect(rect, paint_box.background_color);
-            }
-            RectOrRRect::RRect(rrect) => {
-                self.gfx.fill_rrect(rrect, paint_box.background_color);
+        for command in display_list.commands() {
+            match command {
+                Command::FillRect(rect, color) => self.gfx.fill_rect(rect, color),
+                Command::FillRRect(rect, color) => self.gfx.fill_rrect(rect, color),
+                Command::FillBorder(rect, border_rect, borders) => self.paint_borders(rect, border_rect, borders),
+                Command::FillText(content, rect, color, font_size) => self.gfx.fill_text(content, rect, color, font_size),
             }
         }
     }
 
-    fn paint_borders(&mut self, box_rect: &Rect, border_rect: &Rect, borders: &PaintBoxBorders) {
-        self.paint_border_edges(box_rect, border_rect, borders);
-        self.paint_border_corners(box_rect, border_rect, borders);
+    fn paint_borders(&mut self, box_rect: Rect, border_rect: Rect, borders: Borders) {
+        self.paint_border_edges(&box_rect, &border_rect, &borders);
+        self.paint_border_corners(&box_rect, &border_rect, &borders);
     }
 
     fn paint_border_corners(
         &mut self,
         box_rect: &Rect,
         border_rect: &Rect,
-        borders: &PaintBoxBorders,
+        borders: &Borders,
     ) {
         if let (Some(border_top), Some(border_left)) = (&borders.top, &borders.left) {
             self.gfx.fill_polygon(
@@ -170,7 +148,7 @@ impl<G: Graphics> Painter<G> {
         &mut self,
         box_rect: &Rect,
         border_rect: &Rect,
-        borders: &PaintBoxBorders,
+        borders: &Borders,
     ) {
         if let Some(border) = &borders.top {
             self.gfx.fill_rect(

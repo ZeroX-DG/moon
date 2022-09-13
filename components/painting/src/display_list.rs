@@ -1,8 +1,5 @@
-use layout::{flow::line_box::LineFragmentData, layout_box::LayoutBoxPtr};
-use shared::{
-    color::Color,
-    primitive::{Corners, RRect, Rect, Size},
-};
+use layout::{layout_box::LayoutBoxPtr, flow::line_box::LineFragmentData};
+use shared::{color::Color, primitive::{Rect, RRect, Size, Corners}};
 use style_types::{
     values::{color::Color as CSSColor, prelude::BorderStyle},
     Property, Value,
@@ -10,68 +7,45 @@ use style_types::{
 
 use crate::utils::{color_from_value, is_zero, to_radii};
 
-pub struct RequestBuilder<'a> {
-    boxes: Vec<PaintBox>,
-    texts: Vec<PaintText>,
-    root_element_use_body_background: bool,
-    canvas_size: &'a Size,
+pub struct DisplayList(Vec<Command>);
+
+pub enum Command {
+    FillRect(Rect, Color),
+    FillRRect(RRect, Color),
+    FillBorder(Rect, Rect, Borders),
+    FillText(String, Rect, Color, f32),
 }
 
-pub struct PaintRequest {
-    pub boxes: Vec<PaintBox>,
-    pub texts: Vec<PaintText>,
+pub struct Borders {
+    pub top: Option<Border>,
+    pub right: Option<Border>,
+    pub bottom: Option<Border>,
+    pub left: Option<Border>,
 }
 
-pub struct PaintBox {
-    pub rect: RectOrRRect,
-    pub background_color: Color,
-    pub borders: PaintBoxBorders,
-    pub border_rect: Rect,
-}
-
-#[derive(Debug)]
-pub struct PaintBoxBorders {
-    pub top: Option<PaintBoxBorder>,
-    pub right: Option<PaintBoxBorder>,
-    pub bottom: Option<PaintBoxBorder>,
-    pub left: Option<PaintBoxBorder>,
-}
-
-#[derive(Debug)]
-pub struct PaintBoxBorder {
+pub struct Border {
     pub style: BorderStyle,
     pub color: Color,
 }
 
-pub struct PaintText {
-    pub content: String,
-    pub font_size: f32,
-    pub color: Color,
-    pub rect: Rect,
+pub struct DisplayListBuilder<'a> {
+    canvas_size: &'a Size,
+    display_list: DisplayList,
+    root_element_use_body_background: bool,
 }
 
-#[derive(Debug)]
-pub enum RectOrRRect {
-    Rect(Rect),
-    RRect(RRect),
-}
-
-impl<'a> RequestBuilder<'a> {
+impl<'a> DisplayListBuilder<'a> {
     pub fn new(canvas_size: &'a Size) -> Self {
         Self {
-            boxes: Vec::new(),
-            texts: Vec::new(),
-            root_element_use_body_background: false,
             canvas_size,
+            display_list: DisplayList::new(),
+            root_element_use_body_background: false,
         }
     }
 
-    pub fn build(mut self, layout_box: &LayoutBoxPtr) -> PaintRequest {
+    pub fn build(mut self, layout_box: &LayoutBoxPtr) -> DisplayList {
         self.process(layout_box);
-        PaintRequest {
-            boxes: self.boxes,
-            texts: self.texts,
-        }
+        self.display_list
     }
 
     fn process(&mut self, layout_box: &LayoutBoxPtr) {
@@ -119,12 +93,7 @@ impl<'a> RequestBuilder<'a> {
                             continue;
                         }
 
-                        self.texts.push(PaintText {
-                            content: content.to_string(),
-                            color,
-                            font_size,
-                            rect: text_rect,
-                        });
+                        self.display_list.fill_text(content.to_string(), text_rect, color, font_size);
                     }
                     _ => {}
                 }
@@ -176,28 +145,24 @@ impl<'a> RequestBuilder<'a> {
         }
 
         let maybe_corners = self.compute_border_radius_corner(layout_box);
-
-        let rect = if let Some(corners) = maybe_corners {
-            RectOrRRect::RRect(RRect { rect, corners })
-        } else {
-            RectOrRRect::Rect(rect)
-        };
-
         let borders = self.compute_borders(layout_box);
         let border_rect = layout_box.border_box_absolute();
 
-        let paint_box = PaintBox {
-            rect,
-            background_color,
-            borders,
-            border_rect,
-        };
-        self.boxes.push(paint_box);
+        match maybe_corners {
+            Some(corners) => {
+                self.display_list.fill_rrect(RRect::from((rect, corners)), background_color);
+            }
+            _ => {
+                self.display_list.fill_rect(rect.clone(), background_color);
+                self.display_list.fill_borders(rect, border_rect, borders);
+            }
+        }
+
     }
 
-    fn compute_borders(&self, layout_box: &LayoutBoxPtr) -> PaintBoxBorders {
+    fn compute_borders(&self, layout_box: &LayoutBoxPtr) -> Borders { 
         if layout_box.is_anonymous() {
-            return PaintBoxBorders {
+            return Borders {
                 top: None,
                 right: None,
                 bottom: None,
@@ -205,12 +170,11 @@ impl<'a> RequestBuilder<'a> {
             };
         }
         let node = layout_box.node().unwrap();
-
         macro_rules! compute_border {
             ($style:ident, $color:ident) => {
                 match node.get_style(&Property::$style) {
                     Value::BorderStyle(BorderStyle::None) => None,
-                    Value::BorderStyle(style) => Some(PaintBoxBorder {
+                    Value::BorderStyle(style) => Some(Border {
                         color: color_from_value(&node.get_style(&Property::$color)),
                         style,
                     }),
@@ -219,7 +183,7 @@ impl<'a> RequestBuilder<'a> {
             };
         }
 
-        PaintBoxBorders {
+        Borders {
             top: compute_border!(BorderTopStyle, BorderTopColor),
             right: compute_border!(BorderRightStyle, BorderRightColor),
             bottom: compute_border!(BorderBottomStyle, BorderBottomColor),
@@ -274,32 +238,47 @@ impl<'a> RequestBuilder<'a> {
         let scroll_bar_thumb_height = container_rect.height * (container_rect.height / container_scroll_height);
         let scroll_bar_thumb_y = container_rect.y + layout_box.scroll_top() * (container_rect.height / container_scroll_height);
 
-        fn get_rect_paint_box(rect: Rect, color: Color) -> PaintBox {
-            let borders = PaintBoxBorders {
-                top: None,
-                right: None,
-                bottom: None,
-                left: None,
-            };
-            PaintBox {
-                rect: RectOrRRect::Rect(rect.clone()),
-                border_rect: rect,
-                background_color: color,
-                borders
-            }
-        }
-
-        let gutter_paint_box = get_rect_paint_box(
+        // Gutter
+        self.display_list.fill_rect(
             Rect::new(scroll_bar_x, scroll_bar_y, scroll_bar_width, scroll_bar_height),
             Color { r: 36, g: 36, b: 36, a: 255 }
         );
 
-        let thumb_paint_box = get_rect_paint_box(
+        // Thumb
+        self.display_list.fill_rect(
             Rect::new(scroll_bar_x, scroll_bar_thumb_y, scroll_bar_width, scroll_bar_thumb_height),
             Color { r: 173, g: 173, b: 173, a: 255 }
         );
         
-        self.boxes.push(gutter_paint_box);
-        self.boxes.push(thumb_paint_box);
     }
 }
+
+impl DisplayList {
+    pub fn new() -> Self {
+        Self(Vec::new())
+    }
+
+    pub fn fill_rect(&mut self, rect: Rect, color: Color) {
+        let command = Command::FillRect(rect, color);
+        self.0.push(command);
+    }
+
+    pub fn fill_rrect(&mut self, rect: RRect, color: Color) {
+        let command = Command::FillRRect(rect, color);
+        self.0.push(command);
+    }
+
+    pub fn fill_borders(&mut self, rect: Rect, border_rect: Rect, borders: Borders) {
+        let command = Command::FillBorder(rect, border_rect, borders);
+        self.0.push(command);
+    }
+
+    pub fn fill_text(&mut self, content: String, rect: Rect, color: Color, font_size: f32) {
+        let command = Command::FillText(content, rect, color, font_size);
+        self.0.push(command);
+    }
+    pub fn commands(self) -> Vec<Command> {
+        self.0
+    }
+}
+
