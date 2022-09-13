@@ -43,7 +43,7 @@ pub enum Property {
     FontSize,
     TextAlign,
     OverflowX,
-    OverflowY
+    OverflowY,
 }
 
 impl Property {

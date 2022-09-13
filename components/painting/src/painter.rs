@@ -1,13 +1,16 @@
 use gfx::Graphics;
 use layout::layout_box::LayoutBoxPtr;
-use shared::{primitive::{Point, Rect, Size, RRect}, color::Color};
+use shared::{
+    color::Color,
+    primitive::{Point, RRect, Rect, Size},
+};
 
-use crate::display_list::{DisplayListBuilder, Command, Borders};
+use crate::display_list::{Borders, Command, DisplayListBuilder};
 
 pub struct Painter<G: Graphics> {
     gfx: G,
     canvas_size: Size,
-    clip_rects: Vec<Rect>
+    clip_rects: Vec<Rect>,
 }
 
 impl<G: Graphics> Painter<G> {
@@ -15,7 +18,7 @@ impl<G: Graphics> Painter<G> {
         Self {
             gfx,
             canvas_size: Size::default(),
-            clip_rects: Vec::new()
+            clip_rects: Vec::new(),
         }
     }
 
@@ -34,24 +37,31 @@ impl<G: Graphics> Painter<G> {
 
         for command in display_list.commands() {
             match command {
-                Command::FillRect(rect, color) => self.fill_rect(rect, color),
+                Command::FillRect(rect, color) => self.gfx.fill_rect(self.clip_rect(rect), color),
                 Command::FillRRect(rect, color) => self.gfx.fill_rrect(rect, color),
-                Command::FillBorder(rect, border_rect, borders) => self.paint_borders(rect, border_rect, borders),
-                Command::FillText(content, rect, color, font_size) => self.gfx.fill_text(content, rect, color, font_size),
+                Command::FillBorder(rect, border_rect, borders) => {
+                    self.paint_borders(rect, border_rect, borders)
+                }
+                Command::FillText(content, rect, color, font_size) => {
+                    self.gfx
+                        .fill_text(content, self.clip_rect(rect), color, font_size)
+                }
                 Command::ClipRect(rect) => self.clip_rects.push(rect),
-                Command::EndClipRect => {self.clip_rects.pop();},
+                Command::EndClipRect => {
+                    self.clip_rects.pop();
+                }
             }
         }
     }
 
-    fn fill_rect(&mut self, rect: Rect, color: Color) {
+    fn clip_rect(&self, rect: Rect) -> Rect {
         let mut used_rect = rect;
 
         for clipping_rect in &self.clip_rects {
             used_rect.intersect(clipping_rect);
         }
 
-        self.gfx.fill_rect(used_rect, color);
+        used_rect
     }
 
     fn paint_borders(&mut self, box_rect: Rect, border_rect: Rect, borders: Borders) {
@@ -59,12 +69,7 @@ impl<G: Graphics> Painter<G> {
         self.paint_border_corners(&box_rect, &border_rect, &borders);
     }
 
-    fn paint_border_corners(
-        &mut self,
-        box_rect: &Rect,
-        border_rect: &Rect,
-        borders: &Borders,
-    ) {
+    fn paint_border_corners(&mut self, box_rect: &Rect, border_rect: &Rect, borders: &Borders) {
         if let (Some(border_top), Some(border_left)) = (&borders.top, &borders.left) {
             self.gfx.fill_polygon(
                 vec![
@@ -158,12 +163,7 @@ impl<G: Graphics> Painter<G> {
         }
     }
 
-    fn paint_border_edges(
-        &mut self,
-        box_rect: &Rect,
-        border_rect: &Rect,
-        borders: &Borders,
-    ) {
+    fn paint_border_edges(&mut self, box_rect: &Rect, border_rect: &Rect, borders: &Borders) {
         if let Some(border) = &borders.top {
             self.gfx.fill_rect(
                 Rect::new(

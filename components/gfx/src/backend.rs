@@ -57,7 +57,7 @@ impl Backend {
                             z: 0.0,
                         },
                     }],
-                    layout: wgpu_glyph::Layout::default()
+                    layout: wgpu_glyph::Layout::default_single_line()
                         .h_align(wgpu_glyph::HorizontalAlign::Left)
                         .v_align(wgpu_glyph::VerticalAlign::Top),
                     ..Default::default()

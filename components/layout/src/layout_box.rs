@@ -9,7 +9,7 @@ use style_types::{
     values::{
         display::Display,
         display::{InnerDisplayType, OuterDisplayType},
-        prelude::{Position, Overflow},
+        prelude::{Overflow, Position},
     },
     Property, Value,
 };
@@ -206,7 +206,9 @@ impl LayoutBoxPtr {
     pub fn is_visible_for_painting(&self, custom_rect: Option<&Rect>) -> bool {
         let padding_box = self.padding_box_absolute();
         let current_padding_box = custom_rect.unwrap_or(&padding_box);
-        let parent = self.find_first_ancestor(|parent| parent.parent().is_none() || LayoutBoxPtr(parent).node().is_some());
+        let parent = self.find_first_ancestor(|parent| {
+            parent.parent().is_none() || LayoutBoxPtr(parent).node().is_some()
+        });
 
         if parent.is_none() {
             return true;
@@ -223,7 +225,8 @@ impl LayoutBoxPtr {
         // If checking against regular elements, make sure the box overlaps parent box or parent
         // box overflow is visible.
         parent.absolute_rect().is_overlap_rect(&current_padding_box)
-            || parent.node().unwrap().get_style(&Property::OverflowY) == Value::Overflow(Overflow::Visible)
+            || parent.node().unwrap().get_style(&Property::OverflowY)
+                == Value::Overflow(Overflow::Visible)
     }
 
     // TODO: Support dynamic scroll bar width
@@ -327,7 +330,11 @@ impl LayoutBoxPtr {
         if self.children_are_inline() {
             self.for_each_child(|child| {
                 let child_height = LayoutBoxPtr(child).margin_box_height();
-                height = if child_height > height { child_height } else { height };
+                height = if child_height > height {
+                    child_height
+                } else {
+                    height
+                };
             });
         } else {
             self.for_each_child(|child| {
@@ -374,19 +381,24 @@ impl LayoutBoxPtr {
     pub fn scrollable(&self) -> bool {
         let is_content_overflowed = self.scroll_height() - self.content_size().height > 0.;
 
-        let is_overflow_scrollable = self.node().map(|node| {
-            let overflow_value = node.get_style(&Property::OverflowY);
-            overflow_value.is_auto() || overflow_value == Value::Overflow(Overflow::Scroll)
-        }).unwrap_or_else(|| self.parent().is_none());
+        let is_overflow_scrollable = self
+            .node()
+            .map(|node| {
+                let overflow_value = node.get_style(&Property::OverflowY);
+                overflow_value.is_auto() || overflow_value == Value::Overflow(Overflow::Scroll)
+            })
+            .unwrap_or_else(|| self.parent().is_none());
 
         is_content_overflowed && is_overflow_scrollable
     }
 
     pub fn is_overflow_visible(&self) -> bool {
-        self.node().map(|node| {
-            let overflow_value = node.get_style(&Property::OverflowY);
-            overflow_value == Value::Overflow(Overflow::Visible)
-        }).unwrap_or(true)
+        self.node()
+            .map(|node| {
+                let overflow_value = node.get_style(&Property::OverflowY);
+                overflow_value == Value::Overflow(Overflow::Visible)
+            })
+            .unwrap_or(true)
     }
 
     pub fn margin_box_height(&self) -> f32 {

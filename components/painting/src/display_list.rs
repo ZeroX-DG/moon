@@ -1,5 +1,8 @@
-use layout::{layout_box::LayoutBoxPtr, flow::line_box::LineFragmentData};
-use shared::{color::Color, primitive::{Rect, RRect, Size, Corners}};
+use layout::{flow::line_box::LineFragmentData, layout_box::LayoutBoxPtr};
+use shared::{
+    color::Color,
+    primitive::{Corners, RRect, Rect, Size},
+};
 use style_types::{
     values::{color::Color as CSSColor, prelude::BorderStyle},
     Property, Value,
@@ -15,7 +18,7 @@ pub enum Command {
     FillBorder(Rect, Rect, Borders),
     FillText(String, Rect, Color, f32),
     ClipRect(Rect),
-    EndClipRect
+    EndClipRect,
 }
 
 pub struct Borders {
@@ -107,7 +110,12 @@ impl<'a> DisplayListBuilder<'a> {
                             continue;
                         }
 
-                        self.display_list.fill_text(content.to_string(), text_rect, color, font_size);
+                        self.display_list.fill_text(
+                            content.to_string(),
+                            text_rect,
+                            color,
+                            font_size,
+                        );
                     }
                     _ => {}
                 }
@@ -115,11 +123,7 @@ impl<'a> DisplayListBuilder<'a> {
         }
     }
 
-    fn build_paint_boxes(
-        &mut self,
-        layout_box: &LayoutBoxPtr,
-        override_rect: Option<Rect>,
-    ) {
+    fn build_paint_boxes(&mut self, layout_box: &LayoutBoxPtr, override_rect: Option<Rect>) {
         if layout_box.is_anonymous() {
             return;
         }
@@ -164,17 +168,17 @@ impl<'a> DisplayListBuilder<'a> {
 
         match maybe_corners {
             Some(corners) => {
-                self.display_list.fill_rrect(RRect::from((rect, corners)), background_color);
+                self.display_list
+                    .fill_rrect(RRect::from((rect, corners)), background_color);
             }
             _ => {
                 self.display_list.fill_rect(rect.clone(), background_color);
                 self.display_list.fill_borders(rect, border_rect, borders);
             }
         }
-
     }
 
-    fn compute_borders(&self, layout_box: &LayoutBoxPtr) -> Borders { 
+    fn compute_borders(&self, layout_box: &LayoutBoxPtr) -> Borders {
         if layout_box.is_anonymous() {
             return Borders {
                 top: None,
@@ -241,6 +245,7 @@ impl<'a> DisplayListBuilder<'a> {
             return;
         }
 
+        let padding_box = layout_box.box_model().borrow().padding_box();
         let container_rect = layout_box.padding_box_absolute();
         let container_scroll_height = layout_box.scroll_height();
         let scroll_bar_width = layout_box.scrollbar_width();
@@ -249,21 +254,43 @@ impl<'a> DisplayListBuilder<'a> {
         let scroll_bar_y = container_rect.y;
 
         // Thanks to Huy Nguyen
-        let scroll_bar_thumb_height = container_rect.height * (container_rect.height / container_scroll_height);
-        let scroll_bar_thumb_y = container_rect.y + layout_box.scroll_top() * (container_rect.height / container_scroll_height);
+        let scroll_bar_thumb_height = container_rect.height
+            * ((container_rect.height - padding_box.top - padding_box.bottom)
+                / container_scroll_height);
+        let scroll_bar_thumb_y = container_rect.y
+            + layout_box.scroll_top() * (container_rect.height / container_scroll_height);
 
         // Gutter
         self.display_list.fill_rect(
-            Rect::new(scroll_bar_x, scroll_bar_y, scroll_bar_width, scroll_bar_height),
-            Color { r: 36, g: 36, b: 36, a: 255 }
+            Rect::new(
+                scroll_bar_x,
+                scroll_bar_y,
+                scroll_bar_width,
+                scroll_bar_height,
+            ),
+            Color {
+                r: 36,
+                g: 36,
+                b: 36,
+                a: 255,
+            },
         );
 
         // Thumb
         self.display_list.fill_rect(
-            Rect::new(scroll_bar_x, scroll_bar_thumb_y, scroll_bar_width, scroll_bar_thumb_height),
-            Color { r: 173, g: 173, b: 173, a: 255 }
+            Rect::new(
+                scroll_bar_x,
+                scroll_bar_thumb_y,
+                scroll_bar_width,
+                scroll_bar_thumb_height,
+            ),
+            Color {
+                r: 173,
+                g: 173,
+                b: 173,
+                a: 255,
+            },
         );
-        
     }
 }
 
@@ -306,4 +333,3 @@ impl DisplayList {
         self.0
     }
 }
-

@@ -6,7 +6,7 @@ pub enum Overflow {
     Visible,
     Hidden,
     Clip,
-    Scroll
+    Scroll,
 }
 
 impl Eq for Overflow {}

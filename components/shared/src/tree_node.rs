@@ -132,9 +132,15 @@ impl<T: TreeNodeHooks<T> + Debug> TreeNode<T> {
     where
         F: Fn(TreeNode<T>) -> bool,
     {
-        fn match_decendant<T, F>(node: &TreeNode<T>, level: usize, callback: &F, current_deepest: &mut Option<(TreeNode<T>, usize)>) -> Option<(TreeNode<T>, usize)>
-            where T: Debug + TreeNodeHooks<T>,
-                  F: Fn(TreeNode<T>) -> bool
+        fn match_decendant<T, F>(
+            node: &TreeNode<T>,
+            level: usize,
+            callback: &F,
+            current_deepest: &mut Option<(TreeNode<T>, usize)>,
+        ) -> Option<(TreeNode<T>, usize)>
+        where
+            T: Debug + TreeNodeHooks<T>,
+            F: Fn(TreeNode<T>) -> bool,
         {
             if callback(node.clone()) {
                 if current_deepest.is_none() {
@@ -147,7 +153,9 @@ impl<T: TreeNodeHooks<T> + Debug> TreeNode<T> {
             }
 
             for child in node.iterate_children() {
-                if let Some((node, level)) = match_decendant(&child, level + 1, callback, current_deepest) {
+                if let Some((node, level)) =
+                    match_decendant(&child, level + 1, callback, current_deepest)
+                {
                     if current_deepest.is_none() {
                         current_deepest.replace((node, level));
                         continue;
@@ -414,7 +422,7 @@ mod test {
 
     #[derive(Debug)]
     pub struct TestNodeWithData {
-        data: u8
+        data: u8,
     }
     impl TreeNodeHooks<TestNodeWithData> for TestNodeWithData {}
 
@@ -586,7 +594,7 @@ mod test {
         let level2_node2 = TreeNode::new(TestNode);
 
         let level3_node1 = TreeNode::new(TestNode);
-        
+
         level2_node2.append_child(level3_node1.clone());
         level1_node3.append_child(level2_node2);
 
@@ -620,7 +628,7 @@ mod test {
         let level2_node2 = TreeNode::new(TestNodeWithData { data: 2 });
 
         let level3_node1 = TreeNode::new(TestNodeWithData { data: 3 });
-        
+
         level2_node2.append_child(level3_node1);
         level1_node3.append_child(level2_node2);
 
