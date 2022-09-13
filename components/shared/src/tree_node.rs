@@ -128,6 +128,55 @@ impl<T: TreeNodeHooks<T> + Debug> TreeNode<T> {
         return None;
     }
 
+    pub fn find_first_deepest_decendant<F>(&self, callback: F) -> Option<TreeNode<T>>
+    where
+        F: Fn(TreeNode<T>) -> bool,
+    {
+        fn match_decendant<T, F>(
+            node: &TreeNode<T>,
+            level: usize,
+            callback: &F,
+            current_deepest: &mut Option<(TreeNode<T>, usize)>,
+        ) -> Option<(TreeNode<T>, usize)>
+        where
+            T: Debug + TreeNodeHooks<T>,
+            F: Fn(TreeNode<T>) -> bool,
+        {
+            if callback(node.clone()) {
+                if current_deepest.is_none() {
+                    current_deepest.replace((node.clone(), level));
+                } else if let Some((_, current_deepest_level)) = current_deepest {
+                    if level > *current_deepest_level {
+                        current_deepest.replace((node.clone(), level));
+                    }
+                }
+            }
+
+            for child in node.iterate_children() {
+                if let Some((node, level)) =
+                    match_decendant(&child, level + 1, callback, current_deepest)
+                {
+                    if current_deepest.is_none() {
+                        current_deepest.replace((node, level));
+                        continue;
+                    }
+
+                    if let Some((_, current_deepest_level)) = current_deepest {
+                        if level > *current_deepest_level {
+                            current_deepest.replace((node, level));
+                        }
+                    }
+                }
+            }
+            current_deepest.clone()
+        }
+
+        let mut current_deepest = None;
+        match_decendant(self, 0, &callback, &mut current_deepest);
+
+        current_deepest.map(|(node, _)| node)
+    }
+
     pub fn iterate_children(&self) -> ChildrenIterator<T> {
         ChildrenIterator::new(self.clone())
     }
@@ -371,7 +420,13 @@ mod test {
     pub struct TestNode;
     impl TreeNodeHooks<TestNode> for TestNode {}
 
-    fn assert_node_eq(a: NullableNode<TestNode>, b: NullableNode<TestNode>) {
+    #[derive(Debug)]
+    pub struct TestNodeWithData {
+        data: u8,
+    }
+    impl TreeNodeHooks<TestNodeWithData> for TestNodeWithData {}
+
+    fn assert_node_eq<T: Debug + TreeNodeHooks<T>>(a: NullableNode<T>, b: NullableNode<T>) {
         let result = match (a, b) {
             (None, None) => true,
             (Some(a), Some(b)) => Rc::ptr_eq(&a, &b),
@@ -517,5 +572,73 @@ mod test {
         assert_eq!(parent.children_count(), 0);
         assert_eq!(new_parent.children_count(), 3);
         assert_eq!(child3.children_count(), 3);
+    }
+
+    #[test]
+    fn test_get_first_deepest_decendant() {
+        //
+        // Div
+        //  |- Div
+        //  |- Div
+        //      |- Div
+        //  |- Div
+        //      |- Div
+        //          |- Div
+        let parent = TreeNode::new(TestNode);
+
+        let level1_node1 = TreeNode::new(TestNode);
+        let level1_node2 = TreeNode::new(TestNode);
+        let level1_node3 = TreeNode::new(TestNode);
+
+        let level2_node1 = TreeNode::new(TestNode);
+        let level2_node2 = TreeNode::new(TestNode);
+
+        let level3_node1 = TreeNode::new(TestNode);
+
+        level2_node2.append_child(level3_node1.clone());
+        level1_node3.append_child(level2_node2);
+
+        level1_node2.append_child(level2_node1);
+
+        parent.append_child(level1_node1);
+        parent.append_child(level1_node2);
+        parent.append_child(level1_node3);
+
+        let deepest_node = parent.find_first_deepest_decendant(|_| true);
+        assert_node_eq(deepest_node, Some(level3_node1));
+    }
+
+    #[test]
+    fn test_get_first_deepest_decendant_with_condition() {
+        //
+        // Div
+        //  |- Div
+        //  |- Div
+        //      |- Div <-- match condition
+        //  |- Div
+        //      |- Div
+        //          |- Div
+        let parent = TreeNode::new(TestNodeWithData { data: 0 });
+
+        let level1_node1 = TreeNode::new(TestNodeWithData { data: 1 });
+        let level1_node2 = TreeNode::new(TestNodeWithData { data: 2 });
+        let level1_node3 = TreeNode::new(TestNodeWithData { data: 2 });
+
+        let level2_node1 = TreeNode::new(TestNodeWithData { data: 2 });
+        let level2_node2 = TreeNode::new(TestNodeWithData { data: 2 });
+
+        let level3_node1 = TreeNode::new(TestNodeWithData { data: 3 });
+
+        level2_node2.append_child(level3_node1);
+        level1_node3.append_child(level2_node2);
+
+        level1_node2.append_child(level2_node1.clone());
+
+        parent.append_child(level1_node1);
+        parent.append_child(level1_node2);
+        parent.append_child(level1_node3);
+
+        let deepest_node = parent.find_first_deepest_decendant(|node| node.data.data == 2);
+        assert_node_eq(deepest_node, Some(level2_node1));
     }
 }

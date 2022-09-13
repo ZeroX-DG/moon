@@ -8,6 +8,7 @@ pub mod float;
 pub mod length;
 pub mod length_percentage;
 pub mod number;
+pub mod overflow;
 pub mod percentage;
 pub mod position;
 pub mod text_align;
@@ -24,6 +25,7 @@ pub mod prelude {
     pub use super::float::Float;
     pub use super::length::Length;
     pub use super::length_percentage::LengthPercentage;
+    pub use super::overflow::Overflow;
     pub use super::percentage::Percentage;
     pub use super::position::Position;
     pub use super::text_align::TextAlign;

@@ -10,77 +10,61 @@ use style_types::{
 
 use crate::utils::{color_from_value, is_zero, to_radii};
 
-pub struct RequestBuilder<'a> {
-    boxes: Vec<PaintBox>,
-    texts: Vec<PaintText>,
-    root_element_use_body_background: bool,
-    canvas_size: &'a Size,
+pub struct DisplayList(Vec<Command>);
+
+pub enum Command {
+    FillRect(Rect, Color),
+    FillRRect(RRect, Color),
+    FillBorder(Rect, Rect, Borders),
+    FillText(String, Rect, Color, f32),
+    ClipRect(Rect),
+    EndClipRect,
 }
 
-pub struct PaintRequest {
-    pub boxes: Vec<PaintBox>,
-    pub texts: Vec<PaintText>,
+pub struct Borders {
+    pub top: Option<Border>,
+    pub right: Option<Border>,
+    pub bottom: Option<Border>,
+    pub left: Option<Border>,
 }
 
-pub struct PaintBox {
-    pub rect: RectOrRRect,
-    pub background_color: Color,
-    pub borders: PaintBoxBorders,
-    pub border_rect: Rect,
-}
-
-#[derive(Debug)]
-pub struct PaintBoxBorders {
-    pub top: Option<PaintBoxBorder>,
-    pub right: Option<PaintBoxBorder>,
-    pub bottom: Option<PaintBoxBorder>,
-    pub left: Option<PaintBoxBorder>,
-}
-
-#[derive(Debug)]
-pub struct PaintBoxBorder {
+pub struct Border {
     pub style: BorderStyle,
     pub color: Color,
 }
 
-pub struct PaintText {
-    pub content: String,
-    pub font_size: f32,
-    pub color: Color,
-    pub rect: Rect,
+pub struct DisplayListBuilder<'a> {
+    canvas_size: &'a Size,
+    display_list: DisplayList,
+    root_element_use_body_background: bool,
 }
 
-#[derive(Debug)]
-pub enum RectOrRRect {
-    Rect(Rect),
-    RRect(RRect),
-}
-
-impl<'a> RequestBuilder<'a> {
+impl<'a> DisplayListBuilder<'a> {
     pub fn new(canvas_size: &'a Size) -> Self {
         Self {
-            boxes: Vec::new(),
-            texts: Vec::new(),
-            root_element_use_body_background: false,
             canvas_size,
+            display_list: DisplayList::new(),
+            root_element_use_body_background: false,
         }
     }
 
-    pub fn build(mut self, layout_box: &LayoutBoxPtr) -> PaintRequest {
+    pub fn build(mut self, layout_box: &LayoutBoxPtr) -> DisplayList {
         self.process(layout_box);
-        PaintRequest {
-            boxes: self.boxes,
-            texts: self.texts,
-        }
+        self.display_list
     }
 
     fn process(&mut self, layout_box: &LayoutBoxPtr) {
-        if !layout_box.is_visible_in_scrolling_area() {
+        if !layout_box.is_visible_for_painting(None) {
             return;
         }
 
-        if let Some(paint_box) = self.build_paint_box(layout_box, None) {
-            self.boxes.push(paint_box);
+        self.build_paint_boxes(layout_box, None);
+
+        let mut clipping = false;
+
+        if !layout_box.is_overflow_visible() {
+            self.display_list.clip_rect(layout_box.absolute_rect());
+            clipping = true;
         }
 
         if layout_box.is_block() && layout_box.children_are_inline() {
@@ -88,6 +72,12 @@ impl<'a> RequestBuilder<'a> {
         }
 
         layout_box.for_each_child(|child| self.process(&LayoutBoxPtr(child)));
+
+        if clipping {
+            self.display_list.end_clip_rect();
+        }
+
+        self.build_paint_box_for_vertical_scroll_bar(layout_box);
     }
 
     fn process_lines(&mut self, containing_block: &LayoutBoxPtr) {
@@ -102,7 +92,7 @@ impl<'a> RequestBuilder<'a> {
                             fragment.size.clone(),
                         ));
                         rect.translate(fragment.offset.x, fragment.offset.y);
-                        self.build_paint_box(layout_box, Some(rect));
+                        self.build_paint_boxes(layout_box, Some(rect));
                     }
                     LineFragmentData::Text(layout_box, content) => {
                         let node = layout_box.node().unwrap();
@@ -114,21 +104,18 @@ impl<'a> RequestBuilder<'a> {
                         let color = color_from_value(&node.get_style(&Property::Color));
                         let font_size = node.get_style(&Property::FontSize).to_absolute_px();
 
-                        let box_is_visible = layout_box
-                            .scrolling_containing_block()
-                            .map(|block| text_rect.is_overlap_rect(&block.absolute_rect()))
-                            .unwrap_or(true);
+                        let box_is_visible = layout_box.is_visible_for_painting(Some(&text_rect));
 
                         if !box_is_visible {
                             continue;
                         }
 
-                        self.texts.push(PaintText {
-                            content: content.to_string(),
+                        self.display_list.fill_text(
+                            content.to_string(),
+                            text_rect,
                             color,
                             font_size,
-                            rect: text_rect,
-                        });
+                        );
                     }
                     _ => {}
                 }
@@ -136,13 +123,9 @@ impl<'a> RequestBuilder<'a> {
         }
     }
 
-    fn build_paint_box(
-        &mut self,
-        layout_box: &LayoutBoxPtr,
-        override_rect: Option<Rect>,
-    ) -> Option<PaintBox> {
+    fn build_paint_boxes(&mut self, layout_box: &LayoutBoxPtr, override_rect: Option<Rect>) {
         if layout_box.is_anonymous() {
-            return None;
+            return;
         }
 
         let node = layout_box.node().unwrap();
@@ -162,7 +145,7 @@ impl<'a> RequestBuilder<'a> {
 
             if self.root_element_use_body_background {
                 // Delegate the rendering to the body element
-                return None;
+                return;
             }
         }
 
@@ -173,37 +156,31 @@ impl<'a> RequestBuilder<'a> {
             }
         }
 
-        let is_box_visible = layout_box
-            .scrolling_containing_block()
-            .map(|containing_block| rect.is_overlap_rect(&containing_block.absolute_rect()))
-            .unwrap_or(true);
+        let is_box_visible = layout_box.is_visible_for_painting(Some(&rect));
 
         if !is_box_visible {
-            return None;
+            return;
         }
 
         let maybe_corners = self.compute_border_radius_corner(layout_box);
-
-        let rect = if let Some(corners) = maybe_corners {
-            RectOrRRect::RRect(RRect { rect, corners })
-        } else {
-            RectOrRRect::Rect(rect)
-        };
-
         let borders = self.compute_borders(layout_box);
         let border_rect = layout_box.border_box_absolute();
 
-        Some(PaintBox {
-            rect,
-            background_color,
-            borders,
-            border_rect,
-        })
+        match maybe_corners {
+            Some(corners) => {
+                self.display_list
+                    .fill_rrect(RRect::from((rect, corners)), background_color);
+            }
+            _ => {
+                self.display_list.fill_rect(rect.clone(), background_color);
+                self.display_list.fill_borders(rect, border_rect, borders);
+            }
+        }
     }
 
-    fn compute_borders(&self, layout_box: &LayoutBoxPtr) -> PaintBoxBorders {
+    fn compute_borders(&self, layout_box: &LayoutBoxPtr) -> Borders {
         if layout_box.is_anonymous() {
-            return PaintBoxBorders {
+            return Borders {
                 top: None,
                 right: None,
                 bottom: None,
@@ -211,12 +188,11 @@ impl<'a> RequestBuilder<'a> {
             };
         }
         let node = layout_box.node().unwrap();
-
         macro_rules! compute_border {
             ($style:ident, $color:ident) => {
                 match node.get_style(&Property::$style) {
                     Value::BorderStyle(BorderStyle::None) => None,
-                    Value::BorderStyle(style) => Some(PaintBoxBorder {
+                    Value::BorderStyle(style) => Some(Border {
                         color: color_from_value(&node.get_style(&Property::$color)),
                         style,
                     }),
@@ -225,7 +201,7 @@ impl<'a> RequestBuilder<'a> {
             };
         }
 
-        PaintBoxBorders {
+        Borders {
             top: compute_border!(BorderTopStyle, BorderTopColor),
             right: compute_border!(BorderRightStyle, BorderRightColor),
             bottom: compute_border!(BorderBottomStyle, BorderBottomColor),
@@ -262,5 +238,98 @@ impl<'a> RequestBuilder<'a> {
         let br = to_radii(&border_bottom_right_radius, border_box.width, font_size);
 
         Some(Corners::new(tl, tr, bl, br))
+    }
+
+    fn build_paint_box_for_vertical_scroll_bar(&mut self, layout_box: &LayoutBoxPtr) {
+        if !layout_box.scrollable() {
+            return;
+        }
+
+        let padding_box = layout_box.box_model().borrow().padding_box();
+        let container_rect = layout_box.padding_box_absolute();
+        let container_scroll_height = layout_box.scroll_height();
+        let scroll_bar_width = layout_box.scrollbar_width();
+        let scroll_bar_height = container_rect.height;
+        let scroll_bar_x = container_rect.x + container_rect.width;
+        let scroll_bar_y = container_rect.y;
+
+        // Thanks to Huy Nguyen
+        let scroll_bar_thumb_height = container_rect.height
+            * ((container_rect.height - padding_box.top - padding_box.bottom)
+                / container_scroll_height);
+        let scroll_bar_thumb_y = container_rect.y
+            + layout_box.scroll_top() * (container_rect.height / container_scroll_height);
+
+        // Gutter
+        self.display_list.fill_rect(
+            Rect::new(
+                scroll_bar_x,
+                scroll_bar_y,
+                scroll_bar_width,
+                scroll_bar_height,
+            ),
+            Color {
+                r: 36,
+                g: 36,
+                b: 36,
+                a: 255,
+            },
+        );
+
+        // Thumb
+        self.display_list.fill_rect(
+            Rect::new(
+                scroll_bar_x,
+                scroll_bar_thumb_y,
+                scroll_bar_width,
+                scroll_bar_thumb_height,
+            ),
+            Color {
+                r: 173,
+                g: 173,
+                b: 173,
+                a: 255,
+            },
+        );
+    }
+}
+
+impl DisplayList {
+    pub fn new() -> Self {
+        Self(Vec::new())
+    }
+
+    pub fn fill_rect(&mut self, rect: Rect, color: Color) {
+        let command = Command::FillRect(rect, color);
+        self.0.push(command);
+    }
+
+    pub fn fill_rrect(&mut self, rect: RRect, color: Color) {
+        let command = Command::FillRRect(rect, color);
+        self.0.push(command);
+    }
+
+    pub fn fill_borders(&mut self, rect: Rect, border_rect: Rect, borders: Borders) {
+        let command = Command::FillBorder(rect, border_rect, borders);
+        self.0.push(command);
+    }
+
+    pub fn fill_text(&mut self, content: String, rect: Rect, color: Color, font_size: f32) {
+        let command = Command::FillText(content, rect, color, font_size);
+        self.0.push(command);
+    }
+
+    pub fn clip_rect(&mut self, rect: Rect) {
+        let command = Command::ClipRect(rect);
+        self.0.push(command);
+    }
+
+    pub fn end_clip_rect(&mut self) {
+        let command = Command::EndClipRect;
+        self.0.push(command);
+    }
+
+    pub fn commands(self) -> Vec<Command> {
+        self.0
     }
 }

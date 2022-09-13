@@ -42,6 +42,8 @@ pub enum Property {
     Direction,
     FontSize,
     TextAlign,
+    OverflowX,
+    OverflowY,
 }
 
 impl Property {
@@ -75,6 +77,8 @@ impl Property {
             "margin-block-start" => Some(Property::MarginTop),
             "margin-block-end" => Some(Property::MarginBottom),
             "text-align" => Some(Property::TextAlign),
+            "overflow-x" => Some(Property::OverflowX),
+            "overflow-y" => Some(Property::OverflowY),
             _ => {
                 log::debug!("Unsupported CSS property: {}", property);
                 None

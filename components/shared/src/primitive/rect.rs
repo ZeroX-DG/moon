@@ -24,6 +24,21 @@ impl Rect {
         self.y += dy;
     }
 
+    /// Compute intersection with another rectangle. Modify the current rectangle into the
+    /// intersection rectangle.
+    pub fn intersect(&mut self, other: &Rect) {
+        let x = f32::max(self.x, other.x);
+        let y = f32::max(self.y, other.y);
+
+        let w = f32::min(self.x + self.width, other.x + other.width) - x;
+        let h = f32::min(self.y + self.height, other.y + other.height) - y;
+
+        self.x = x;
+        self.y = y;
+        self.width = w;
+        self.height = h;
+    }
+
     pub fn is_overlap_rect(&self, other: &Rect) -> bool {
         self.x < other.x + other.width
             && self.x + self.width > other.x

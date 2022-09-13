@@ -1,11 +1,16 @@
-use crate::request_builder::{PaintBox, PaintBoxBorders, PaintText, RectOrRRect, RequestBuilder};
 use gfx::Graphics;
 use layout::layout_box::LayoutBoxPtr;
-use shared::primitive::{Point, Rect, Size};
+use shared::{
+    color::Color,
+    primitive::{Point, RRect, Rect, Size},
+};
+
+use crate::display_list::{Borders, Command, DisplayListBuilder};
 
 pub struct Painter<G: Graphics> {
     gfx: G,
     canvas_size: Size,
+    clip_rects: Vec<Rect>,
 }
 
 impl<G: Graphics> Painter<G> {
@@ -13,6 +18,7 @@ impl<G: Graphics> Painter<G> {
         Self {
             gfx,
             canvas_size: Size::default(),
+            clip_rects: Vec::new(),
         }
     }
 
@@ -27,52 +33,43 @@ impl<G: Graphics> Painter<G> {
     }
 
     pub fn paint(&mut self, layout_box: &LayoutBoxPtr) {
-        let request = RequestBuilder::new(&self.canvas_size).build(layout_box);
+        let display_list = DisplayListBuilder::new(&self.canvas_size).build(layout_box);
 
-        log::info!("Number of boxes to paint: {}", request.boxes.len());
-        log::info!("Number of texts to paint: {}", request.texts.len());
-
-        for current_box in request.boxes {
-            self.paint_box(current_box);
-        }
-
-        for text in request.texts {
-            self.paint_text(text);
-        }
-    }
-
-    fn paint_text(&mut self, paint_text: PaintText) {
-        self.gfx.fill_text(
-            paint_text.content,
-            paint_text.rect,
-            paint_text.color,
-            paint_text.font_size,
-        );
-    }
-
-    fn paint_box(&mut self, paint_box: PaintBox) {
-        match paint_box.rect {
-            RectOrRRect::Rect(rect) => {
-                self.paint_borders(&rect, &paint_box.border_rect, &paint_box.borders);
-                self.gfx.fill_rect(rect, paint_box.background_color);
-            }
-            RectOrRRect::RRect(rrect) => {
-                self.gfx.fill_rrect(rrect, paint_box.background_color);
+        for command in display_list.commands() {
+            match command {
+                Command::FillRect(rect, color) => self.gfx.fill_rect(self.clip_rect(rect), color),
+                Command::FillRRect(rect, color) => self.gfx.fill_rrect(rect, color),
+                Command::FillBorder(rect, border_rect, borders) => {
+                    self.paint_borders(rect, border_rect, borders)
+                }
+                Command::FillText(content, rect, color, font_size) => {
+                    self.gfx
+                        .fill_text(content, self.clip_rect(rect), color, font_size)
+                }
+                Command::ClipRect(rect) => self.clip_rects.push(rect),
+                Command::EndClipRect => {
+                    self.clip_rects.pop();
+                }
             }
         }
     }
 
-    fn paint_borders(&mut self, box_rect: &Rect, border_rect: &Rect, borders: &PaintBoxBorders) {
-        self.paint_border_edges(box_rect, border_rect, borders);
-        self.paint_border_corners(box_rect, border_rect, borders);
+    fn clip_rect(&self, rect: Rect) -> Rect {
+        let mut used_rect = rect;
+
+        for clipping_rect in &self.clip_rects {
+            used_rect.intersect(clipping_rect);
+        }
+
+        used_rect
     }
 
-    fn paint_border_corners(
-        &mut self,
-        box_rect: &Rect,
-        border_rect: &Rect,
-        borders: &PaintBoxBorders,
-    ) {
+    fn paint_borders(&mut self, box_rect: Rect, border_rect: Rect, borders: Borders) {
+        self.paint_border_edges(&box_rect, &border_rect, &borders);
+        self.paint_border_corners(&box_rect, &border_rect, &borders);
+    }
+
+    fn paint_border_corners(&mut self, box_rect: &Rect, border_rect: &Rect, borders: &Borders) {
         if let (Some(border_top), Some(border_left)) = (&borders.top, &borders.left) {
             self.gfx.fill_polygon(
                 vec![
@@ -166,12 +163,7 @@ impl<G: Graphics> Painter<G> {
         }
     }
 
-    fn paint_border_edges(
-        &mut self,
-        box_rect: &Rect,
-        border_rect: &Rect,
-        borders: &PaintBoxBorders,
-    ) {
+    fn paint_border_edges(&mut self, box_rect: &Rect, border_rect: &Rect, borders: &Borders) {
         if let Some(border) = &borders.top {
             self.gfx.fill_rect(
                 Rect::new(
