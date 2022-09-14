@@ -224,9 +224,26 @@ impl LayoutBoxPtr {
 
         // If checking against regular elements, make sure the box overlaps parent box or parent
         // box overflow is visible.
-        parent.absolute_rect().is_overlap_rect(&current_padding_box)
-            || parent.node().unwrap().get_style(&Property::OverflowY)
-                == Value::Overflow(Overflow::Visible)
+        let mut parent = Some(parent);
+        while let Some(current_parent) = parent {
+            let is_visible = current_parent
+                .absolute_rect()
+                .is_overlap_rect(&current_padding_box)
+                || current_parent
+                    .node()
+                    .map(|node| {
+                        node.get_style(&Property::OverflowY) == Value::Overflow(Overflow::Visible)
+                    })
+                    .unwrap_or(false);
+
+            if !is_visible {
+                return false;
+            }
+
+            parent = current_parent.parent().map(|p| LayoutBoxPtr(p));
+        }
+
+        true
     }
 
     // TODO: Support dynamic scroll bar width

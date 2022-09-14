@@ -1,9 +1,6 @@
 use gfx::Graphics;
 use layout::layout_box::LayoutBoxPtr;
-use shared::{
-    color::Color,
-    primitive::{Point, RRect, Rect, Size},
-};
+use shared::primitive::{Point, Rect, Size};
 
 use crate::display_list::{Borders, Command, DisplayListBuilder};
 
@@ -57,7 +54,11 @@ impl<G: Graphics> Painter<G> {
     fn clip_rect(&self, rect: Rect) -> Rect {
         let mut used_rect = rect;
 
-        for clipping_rect in &self.clip_rects {
+        for clipping_rect in self.clip_rects.iter().rev() {
+            if !used_rect.is_overlap_rect(clipping_rect) {
+                // If the current rect is not within the clipping rect region, don't render it.
+                return Rect::new(0., 0., 0., 0.);
+            }
             used_rect.intersect(clipping_rect);
         }
 
