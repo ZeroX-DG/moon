@@ -38,6 +38,10 @@ impl BlockFormattingContext {
         }
     }
 
+    fn reset_state(&self) {
+        *self.last_sibling.borrow_mut() = None;
+    }
+
     fn layout_initial_block_box(&self, context: &LayoutContext, layout_node: LayoutBoxPtr) {
         // Initial containing block has the dimensions of the viewport
         let width = context.viewport.width;
@@ -50,7 +54,9 @@ impl BlockFormattingContext {
         self.layout_block_level_children(context, layout_node.clone());
 
         if layout_node.scrollable() {
+            self.reset_state();
             layout_node.set_content_width(width - layout_node.scrollbar_width());
+            self.layout_block_level_children(context, layout_node);
         }
     }
 
@@ -80,6 +86,14 @@ impl BlockFormattingContext {
 
             if child.scrollable() {
                 child.set_content_width(child.content_size().width - child.scrollbar_width());
+                if let Some(independent_formatting_context) =
+                    create_independent_formatting_context_if_needed(child.clone())
+                {
+                    use_context(independent_formatting_context.clone(), child.clone());
+                    independent_formatting_context.run(context, child.clone());
+                } else {
+                    self.layout_block_level_children(context, child.clone());
+                }
             }
 
             if child.border_box_absolute().height > 0. {
