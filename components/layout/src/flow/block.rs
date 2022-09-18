@@ -4,7 +4,8 @@ use crate::{
         create_independent_formatting_context_if_needed, use_context, BaseFormattingContext,
         FormattingContext,
     },
-    layout_box::LayoutBoxPtr, layout_context::LayoutContext,
+    layout_box::LayoutBoxPtr,
+    layout_context::LayoutContext,
 };
 use shared::primitive::edge::Edge;
 use std::cell::RefCell;
@@ -17,7 +18,7 @@ pub struct BlockFormattingContext {
 }
 
 impl FormattingContext for BlockFormattingContext {
-    fn run(&self, context: &LayoutContext, layout_node: LayoutBoxPtr) {
+    fn run(&self, context: &mut LayoutContext, layout_node: LayoutBoxPtr) {
         if layout_node.is_block() && layout_node.parent().is_none() {
             self.layout_initial_block_box(context, layout_node);
             return;
@@ -42,7 +43,7 @@ impl BlockFormattingContext {
         *self.last_sibling.borrow_mut() = None;
     }
 
-    fn layout_initial_block_box(&self, context: &LayoutContext, layout_node: LayoutBoxPtr) {
+    fn layout_initial_block_box(&self, context: &mut LayoutContext, layout_node: LayoutBoxPtr) {
         // Initial containing block has the dimensions of the viewport
         let width = context.viewport.width;
         let height = context.viewport.height;
@@ -60,7 +61,7 @@ impl BlockFormattingContext {
         }
     }
 
-    fn layout_block_level_children(&self, context: &LayoutContext, layout_node: LayoutBoxPtr) {
+    fn layout_block_level_children(&self, context: &mut LayoutContext, layout_node: LayoutBoxPtr) {
         layout_node.for_each_child(|child| {
             let child = LayoutBoxPtr(child);
             if child.is_positioned(Position::Absolute) {
@@ -385,13 +386,14 @@ mod tests {
 
         let root = build_tree(dom, &css);
 
-        let layout_context = LayoutContext {
+        let mut layout_context = LayoutContext {
             viewport: Rect {
                 x: 0.,
                 y: 0.,
                 width: 500.,
                 height: 300.,
             },
+            measure_text_fn: Box::new(|_, _| Size::new(0., 0.)),
         };
 
         let initial_block_box = LayoutBoxPtr(TreeNode::new(LayoutBox::new_anonymous(
@@ -405,7 +407,7 @@ mod tests {
 
         initial_block_box
             .formatting_context()
-            .run(&layout_context, initial_block_box.clone());
+            .run(&mut layout_context, initial_block_box.clone());
 
         assert_eq!(root.content_size().height, 40.);
         assert_eq!(root.content_size().width, layout_context.viewport.width);

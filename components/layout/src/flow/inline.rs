@@ -3,7 +3,8 @@ use std::rc::Rc;
 use crate::{
     box_model::BoxComponent,
     formatting_context::{BaseFormattingContext, FormattingContext},
-    layout_box::LayoutBoxPtr, layout_context::LayoutContext,
+    layout_box::LayoutBoxPtr,
+    layout_context::LayoutContext,
 };
 use dom::node::NodeData;
 use regex::Regex;
@@ -64,7 +65,7 @@ pub struct InlineFormattingContext {
 }
 
 impl FormattingContext for InlineFormattingContext {
-    fn run(&self, context: &LayoutContext, layout_node: LayoutBoxPtr) {
+    fn run(&self, context: &mut LayoutContext, layout_node: LayoutBoxPtr) {
         if !layout_node.is_block() {
             log::debug!("Attempt to run IFC on non-block box");
             return;
@@ -92,7 +93,7 @@ impl InlineFormattingContext {
         Self { base }
     }
 
-    fn generate_line_boxes(&self, context: &LayoutContext, layout_node: LayoutBoxPtr) {
+    fn generate_line_boxes(&self, context: &mut LayoutContext, layout_node: LayoutBoxPtr) {
         let mut line_box_builder = LineBoxBuilder::new(layout_node.clone());
         layout_node.lines().borrow_mut().clear();
 
@@ -112,8 +113,16 @@ impl InlineFormattingContext {
                             if word.is_empty() {
                                 continue;
                             }
-                            line_box_builder.add_text_fragment(context, child.clone(), word.to_string());
-                            line_box_builder.add_text_fragment(context, child.clone(), ' '.to_string());
+                            line_box_builder.add_text_fragment(
+                                context,
+                                child.clone(),
+                                word.to_string(),
+                            );
+                            line_box_builder.add_text_fragment(
+                                context,
+                                child.clone(),
+                                ' '.to_string(),
+                            );
                         }
                     }
                     Some(NodeData::Element(_)) => {
@@ -131,7 +140,7 @@ impl InlineFormattingContext {
         *layout_node.lines().borrow_mut() = line_box_builder.finish(context);
     }
 
-    fn layout_dimension_box(&self, context: &LayoutContext, layout_node: LayoutBoxPtr) {
+    fn layout_dimension_box(&self, context: &mut LayoutContext, layout_node: LayoutBoxPtr) {
         self.calculate_width_for_element(layout_node.clone());
 
         self.layout_inside(context, layout_node.clone());
@@ -230,7 +239,8 @@ mod tests {
     use crate::{
         formatting_context::{establish_context, FormattingContextType},
         layout_box::LayoutBoxPtr,
-        utils::{build_tree, SHARED_CSS}, layout_context::LayoutContext,
+        layout_context::LayoutContext,
+        utils::{build_tree, SHARED_CSS},
     };
 
     use super::InlineBoxIterator;
@@ -339,13 +349,14 @@ mod tests {
 
         let root = build_tree(dom, SHARED_CSS);
 
-        let layout_context = LayoutContext {
+        let mut layout_context = LayoutContext {
             viewport: Rect::new(0., 0., 500., 300.),
-            measure_text_fn: Box::new(|_, _| Size::new(0., 0.))
+            measure_text_fn: Box::new(|_, _| Size::new(0., 0.)),
         };
 
         establish_context(FormattingContextType::InlineFormattingContext, root.clone());
-        root.formatting_context().run(&layout_context, root.clone());
+        root.formatting_context()
+            .run(&mut layout_context, root.clone());
 
         assert_eq!(root.lines().borrow().len(), 1);
         assert_eq!(

@@ -8,7 +8,8 @@ use style_types::{
 
 use crate::{
     flow::{block::BlockFormattingContext, inline::InlineFormattingContext},
-    layout_box::{LayoutBox, LayoutBoxPtr}, layout_context::LayoutContext
+    layout_box::{LayoutBox, LayoutBoxPtr},
+    layout_context::LayoutContext,
 };
 
 #[derive(Debug, Clone, PartialEq)]
@@ -25,10 +26,10 @@ pub struct BaseFormattingContext {
 
 pub trait FormattingContext: Debug {
     fn base(&self) -> &BaseFormattingContext;
-    fn run(&self, context: &LayoutContext, node: LayoutBoxPtr);
+    fn run(&self, context: &mut LayoutContext, node: LayoutBoxPtr);
     fn layout_inside(
         &self,
-        context: &LayoutContext,
+        context: &mut LayoutContext,
         node: LayoutBoxPtr,
     ) -> Option<Rc<dyn FormattingContext>> {
         if !node.can_have_children() {

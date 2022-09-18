@@ -151,12 +151,12 @@ impl LineBoxBuilder {
         }
     }
 
-    pub fn finish(mut self, context: &LayoutContext) -> Vec<LineBox> {
+    pub fn finish(mut self, context: &mut LayoutContext) -> Vec<LineBox> {
         self.update_last_line(context);
         self.line_boxes
     }
 
-    pub fn add_box_fragment(&mut self, context: &LayoutContext, layout_box: LayoutBoxPtr) {
+    pub fn add_box_fragment(&mut self, context: &mut LayoutContext, layout_box: LayoutBoxPtr) {
         if let Some(node) = layout_box.node() {
             if let Some(element) = node.as_element_opt() {
                 if element.tag_name() == "br" {
@@ -175,7 +175,12 @@ impl LineBoxBuilder {
             .add_box_fragment(fragment_width, fragment_height, layout_box);
     }
 
-    pub fn add_text_fragment(&mut self, context: &LayoutContext, layout_box: LayoutBoxPtr, text: String) {
+    pub fn add_text_fragment(
+        &mut self,
+        context: &mut LayoutContext,
+        layout_box: LayoutBoxPtr,
+        text: String,
+    ) {
         let node = layout_box.node().unwrap();
         let font_size = node.get_style(&Property::FontSize).to_absolute_px();
         let text_size = context.measure_text(&text, font_size);
@@ -186,7 +191,7 @@ impl LineBoxBuilder {
             .add_text_fragment(fragment_width, fragment_height, layout_box, text);
     }
 
-    fn break_line_if_needed(&mut self, context: &LayoutContext, next_fragment_width: f32) {
+    fn break_line_if_needed(&mut self, context: &mut LayoutContext, next_fragment_width: f32) {
         if self.line_boxes.is_empty() {
             return;
         }
@@ -200,7 +205,7 @@ impl LineBoxBuilder {
         }
     }
 
-    fn break_line(&mut self, context: &LayoutContext) {
+    fn break_line(&mut self, context: &mut LayoutContext) {
         self.update_last_line(context);
 
         if let Some(last_line) = self.line_boxes.last() {
@@ -210,7 +215,7 @@ impl LineBoxBuilder {
         self.line_boxes.push(LineBox::new());
     }
 
-    fn update_last_line(&mut self, context: &LayoutContext) {
+    fn update_last_line(&mut self, context: &mut LayoutContext) {
         if self.line_boxes.is_empty() {
             return;
         }

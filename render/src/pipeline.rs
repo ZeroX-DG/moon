@@ -1,8 +1,9 @@
 use dom::node::NodePtr;
-use gfx::{Bitmap, Canvas};
+use gfx::{Bitmap, Canvas, TextMeasure};
 use layout::{
     formatting_context::{establish_context, FormattingContextType},
-    layout_box::{LayoutBox, LayoutBoxPtr}, layout_context::LayoutContext,
+    layout_box::{LayoutBox, LayoutBoxPtr},
+    layout_context::LayoutContext,
 };
 use painting::Painter;
 use shared::{
@@ -70,15 +71,18 @@ impl<'a> Pipeline<'a> {
 
     fn calculate_layout(&self, document_node: NodePtr, size: &Size) -> Option<LayoutBoxPtr> {
         let constructed_tree = layout::tree_builder::TreeBuilder::new().build(document_node);
+        let mut text_measure = TextMeasure::new();
         let layout_tree = constructed_tree.map(|tree| {
-            let layout_context = LayoutContext {
+            let mut layout_context = LayoutContext {
                 viewport: Rect {
                     x: 0.,
                     y: 0.,
                     width: size.width,
                     height: size.height,
                 },
-                measure_text_fn: Box::new(|_, _| Size::new(0., 0.))
+                measure_text_fn: Box::new(move |content, font_size| {
+                    text_measure.measure(content, font_size)
+                }),
             };
 
             let initial_block_box = LayoutBoxPtr(TreeNode::new(LayoutBox::new_anonymous(
@@ -92,7 +96,7 @@ impl<'a> Pipeline<'a> {
             );
             initial_block_box
                 .formatting_context()
-                .run(&layout_context, initial_block_box.clone());
+                .run(&mut layout_context, initial_block_box.clone());
 
             initial_block_box
         });
