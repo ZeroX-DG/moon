@@ -80,6 +80,13 @@ impl BrowserHandler {
         });
     }
 
+    pub fn reload(&self) {
+        self.update(move |browser| {
+            let active_tab = browser.get_active_tab();
+            active_tab.reload().expect("Unable to reload");
+        });
+    }
+
     fn update(&self, action: impl FnOnce(&mut Browser) + Send + 'static) {
         self.0.send(Box::new(action)).unwrap();
     }

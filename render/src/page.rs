@@ -19,6 +19,7 @@ use super::frame::Frame;
 const USER_AGENT_STYLES: &str = include_str!("./html.css");
 
 pub struct Page<'a> {
+    url: Option<Url>,
     main_frame: Frame,
     pipeline: Pipeline<'a>,
 }
@@ -26,6 +27,7 @@ pub struct Page<'a> {
 impl<'a> Page<'a> {
     pub async fn new(init_size: Size) -> Page<'a> {
         Page {
+            url: None,
             main_frame: Frame::new(init_size),
             pipeline: Pipeline::new().await,
         }
@@ -79,8 +81,15 @@ impl<'a> Page<'a> {
     }
 
     pub async fn load_url(&mut self, url: Url, resource_loop_tx: Sender<LoadRequest>) {
+        self.url = Some(url.clone());
         let html = self.fetch_html(DocumentLoader::new(resource_loop_tx.clone()), url.clone());
         self.load_html(html, url, resource_loop_tx).await;
+    }
+
+    pub async fn reload(&mut self, resource_loop_tx: Sender<LoadRequest>) {
+        if let Some(url) = &self.url {
+            self.load_url(url.clone(), resource_loop_tx).await;
+        }
     }
 
     pub fn bitmap(&self) -> Option<&Bitmap> {

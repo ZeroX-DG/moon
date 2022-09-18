@@ -11,6 +11,7 @@ pub enum InputEvent {
     MouseMove(Point),
     LoadHTML { html: String, base_url: Url },
     LoadURL(Url),
+    Reload
 }
 
 pub enum OutputEvent {
@@ -72,6 +73,11 @@ impl<'a> RenderEngine<'a> {
             }
             InputEvent::LoadURL(url) => {
                 self.page.load_url(url, self.resource_loop_tx.clone()).await;
+                self.emit_new_frame(event_emitter)?;
+                self.emit_new_title(event_emitter)?;
+            }
+            InputEvent::Reload => {
+                self.page.reload(self.resource_loop_tx.clone()).await;
                 self.emit_new_frame(event_emitter)?;
                 self.emit_new_title(event_emitter)?;
             }

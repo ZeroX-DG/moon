@@ -78,4 +78,10 @@ impl RenderClient {
             .send(InputEvent::MouseMove(coord))
             .expect("Unable to send mouse move event");
     }
-}
+
+    pub fn reload(&self) {
+        self.event_sender
+            .send(InputEvent::Reload)
+            .expect("Unable to send mouse move event");
+    }
+} 

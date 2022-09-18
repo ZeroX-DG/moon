@@ -11,6 +11,7 @@ pub enum TabAction {
     Scroll(f32),
     MouseMove(Point),
     Goto(Url),
+    Reload,
     ShowError { title: String, body: String },
 }
 
@@ -39,6 +40,11 @@ impl TabHandler {
 
     pub fn goto(&self, url: Url) -> anyhow::Result<()> {
         self.sender.send(TabAction::Goto(url))?;
+        Ok(())
+    }
+
+    pub fn reload(&self) -> anyhow::Result<()> {
+        self.sender.send(TabAction::Reload)?;
         Ok(())
     }
 
@@ -136,6 +142,7 @@ impl BrowserTab {
             TabAction::MouseMove(coord) => self.client.mouse_move(coord),
             TabAction::Goto(url) => self.goto(url)?,
             TabAction::ShowError { title, body } => self.load_error(&title, &body),
+            TabAction::Reload => self.reload()?,
         }
         Ok(())
     }
@@ -157,6 +164,11 @@ impl BrowserTab {
 }
 
 impl BrowserTab {
+    fn reload(&self) -> anyhow::Result<()> {
+        self.client.reload();
+        Ok(())
+    }
+
     fn goto(&self, url: Url) -> anyhow::Result<()> {
         *self.info.url.lock().unwrap() = url.clone();
         self.load(&url)?;
