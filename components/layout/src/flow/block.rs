@@ -2,9 +2,9 @@ use crate::{
     box_model::BoxComponent,
     formatting_context::{
         create_independent_formatting_context_if_needed, use_context, BaseFormattingContext,
-        FormattingContext, LayoutContext,
+        FormattingContext,
     },
-    layout_box::LayoutBoxPtr,
+    layout_box::LayoutBoxPtr, layout_context::LayoutContext,
 };
 use shared::primitive::edge::Edge;
 use std::cell::RefCell;
@@ -351,8 +351,9 @@ impl BlockFormattingContext {
 
 #[cfg(test)]
 mod tests {
-    use crate::formatting_context::{establish_context, FormattingContextType, LayoutContext};
+    use crate::formatting_context::{establish_context, FormattingContextType};
     use crate::layout_box::{BoxData, LayoutBox, LayoutBoxPtr};
+    use crate::layout_context::LayoutContext;
     use crate::utils::*;
     use shared::primitive::*;
     use shared::tree_node::TreeNode;

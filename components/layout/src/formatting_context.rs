@@ -1,6 +1,6 @@
 use std::{cell::RefCell, fmt::Debug, rc::Rc};
 
-use shared::{primitive::*, tree_node::WeakTreeNode};
+use shared::tree_node::WeakTreeNode;
 use style_types::{
     values::{display::InnerDisplayType, prelude::Display},
     Property, Value,
@@ -8,12 +8,8 @@ use style_types::{
 
 use crate::{
     flow::{block::BlockFormattingContext, inline::InlineFormattingContext},
-    layout_box::{LayoutBox, LayoutBoxPtr},
+    layout_box::{LayoutBox, LayoutBoxPtr}, layout_context::LayoutContext
 };
-
-pub struct LayoutContext {
-    pub viewport: Rect,
-}
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum FormattingContextType {

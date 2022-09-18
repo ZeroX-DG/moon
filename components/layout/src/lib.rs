@@ -3,6 +3,7 @@ pub mod flow;
 pub mod formatting_context;
 pub mod layout_box;
 pub mod tree_builder;
+pub mod layout_context;
 
 #[macro_export]
 macro_rules! dump_layout {

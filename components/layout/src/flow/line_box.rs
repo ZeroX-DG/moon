@@ -1,10 +1,9 @@
 use std::rc::Rc;
 
-use gfx::TextMeasure;
 use shared::primitive::{Point, Size};
 use style_types::{values::prelude::TextAlign, Property, Value};
 
-use crate::layout_box::LayoutBoxPtr;
+use crate::{layout_box::LayoutBoxPtr, layout_context::LayoutContext};
 
 #[derive(Debug)]
 pub struct LineFragment {
@@ -152,17 +151,17 @@ impl LineBoxBuilder {
         }
     }
 
-    pub fn finish(mut self) -> Vec<LineBox> {
-        self.update_last_line();
+    pub fn finish(mut self, context: &LayoutContext) -> Vec<LineBox> {
+        self.update_last_line(context);
         self.line_boxes
     }
 
-    pub fn add_box_fragment(&mut self, layout_box: LayoutBoxPtr) {
+    pub fn add_box_fragment(&mut self, context: &LayoutContext, layout_box: LayoutBoxPtr) {
         if let Some(node) = layout_box.node() {
             if let Some(element) = node.as_element_opt() {
                 if element.tag_name() == "br" {
-                    self.break_line();
-                    self.update_last_line();
+                    self.break_line(context);
+                    self.update_last_line(context);
                     return;
                 }
             }
@@ -170,25 +169,24 @@ impl LineBoxBuilder {
 
         let fragment_width = layout_box.content_size().width;
         let fragment_height = layout_box.content_size().height;
-        self.break_line_if_needed(layout_box.margin_box_width());
+        self.break_line_if_needed(context, layout_box.margin_box_width());
 
         self.current_line()
             .add_box_fragment(fragment_width, fragment_height, layout_box);
     }
 
-    pub fn add_text_fragment(&mut self, layout_box: LayoutBoxPtr, text: String) {
+    pub fn add_text_fragment(&mut self, context: &LayoutContext, layout_box: LayoutBoxPtr, text: String) {
         let node = layout_box.node().unwrap();
         let font_size = node.get_style(&Property::FontSize).to_absolute_px();
-        let mut text_measurer = TextMeasure::new();
-        let text_size = text_measurer.measure(&text, font_size);
+        let text_size = context.measure_text(&text, font_size);
         let fragment_width = text_size.width;
         let fragment_height = text_size.height;
-        self.break_line_if_needed(fragment_width);
+        self.break_line_if_needed(context, fragment_width);
         self.current_line()
             .add_text_fragment(fragment_width, fragment_height, layout_box, text);
     }
 
-    fn break_line_if_needed(&mut self, next_fragment_width: f32) {
+    fn break_line_if_needed(&mut self, context: &LayoutContext, next_fragment_width: f32) {
         if self.line_boxes.is_empty() {
             return;
         }
@@ -198,12 +196,12 @@ impl LineBoxBuilder {
         let should_break = new_line_box_width > parent_width;
 
         if should_break {
-            self.break_line();
+            self.break_line(context);
         }
     }
 
-    fn break_line(&mut self) {
-        self.update_last_line();
+    fn break_line(&mut self, context: &LayoutContext) {
+        self.update_last_line(context);
 
         if let Some(last_line) = self.line_boxes.last() {
             self.current_offset_y += last_line.size.height;
@@ -212,7 +210,7 @@ impl LineBoxBuilder {
         self.line_boxes.push(LineBox::new());
     }
 
-    fn update_last_line(&mut self) {
+    fn update_last_line(&mut self, context: &LayoutContext) {
         if self.line_boxes.is_empty() {
             return;
         }
@@ -226,8 +224,7 @@ impl LineBoxBuilder {
                 .unwrap()
                 .get_style(&Property::FontSize)
                 .to_absolute_px();
-            let mut text_measurer = TextMeasure::new();
-            let text_size = text_measurer.measure("H", font_size);
+            let text_size = context.measure_text("H", font_size);
 
             last_line.size.height = text_size.height;
         }

@@ -1,8 +1,8 @@
 use dom::node::NodePtr;
 use gfx::{Bitmap, Canvas};
 use layout::{
-    formatting_context::{establish_context, FormattingContextType, LayoutContext},
-    layout_box::{LayoutBox, LayoutBoxPtr},
+    formatting_context::{establish_context, FormattingContextType},
+    layout_box::{LayoutBox, LayoutBoxPtr}, layout_context::LayoutContext,
 };
 use painting::Painter;
 use shared::{
@@ -78,6 +78,7 @@ impl<'a> Pipeline<'a> {
                     width: size.width,
                     height: size.height,
                 },
+                measure_text_fn: Box::new(|_, _| Size::new(0., 0.))
             };
 
             let initial_block_box = LayoutBoxPtr(TreeNode::new(LayoutBox::new_anonymous(

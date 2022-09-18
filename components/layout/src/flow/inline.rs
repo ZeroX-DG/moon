@@ -2,8 +2,8 @@ use std::rc::Rc;
 
 use crate::{
     box_model::BoxComponent,
-    formatting_context::{BaseFormattingContext, FormattingContext, LayoutContext},
-    layout_box::LayoutBoxPtr,
+    formatting_context::{BaseFormattingContext, FormattingContext},
+    layout_box::LayoutBoxPtr, layout_context::LayoutContext,
 };
 use dom::node::NodeData;
 use regex::Regex;
@@ -112,23 +112,23 @@ impl InlineFormattingContext {
                             if word.is_empty() {
                                 continue;
                             }
-                            line_box_builder.add_text_fragment(child.clone(), word.to_string());
-                            line_box_builder.add_text_fragment(child.clone(), ' '.to_string());
+                            line_box_builder.add_text_fragment(context, child.clone(), word.to_string());
+                            line_box_builder.add_text_fragment(context, child.clone(), ' '.to_string());
                         }
                     }
                     Some(NodeData::Element(_)) => {
                         self.layout_dimension_box(context, child.clone());
-                        line_box_builder.add_box_fragment(child.clone());
+                        line_box_builder.add_box_fragment(context, child.clone());
                     }
                     _ => {}
                 },
                 _ => {
                     self.layout_dimension_box(context, child.clone());
-                    line_box_builder.add_box_fragment(child.clone());
+                    line_box_builder.add_box_fragment(context, child.clone());
                 }
             }
         }
-        *layout_node.lines().borrow_mut() = line_box_builder.finish();
+        *layout_node.lines().borrow_mut() = line_box_builder.finish(context);
     }
 
     fn layout_dimension_box(&self, context: &LayoutContext, layout_node: LayoutBoxPtr) {
@@ -224,13 +224,13 @@ impl InlineFormattingContext {
 
 #[cfg(test)]
 mod tests {
-    use shared::primitive::Rect;
+    use shared::primitive::{Rect, Size};
     use test_utils::dom_creator::{document, element};
 
     use crate::{
-        formatting_context::{establish_context, FormattingContextType, LayoutContext},
+        formatting_context::{establish_context, FormattingContextType},
         layout_box::LayoutBoxPtr,
-        utils::{build_tree, SHARED_CSS},
+        utils::{build_tree, SHARED_CSS}, layout_context::LayoutContext,
     };
 
     use super::InlineBoxIterator;
@@ -341,6 +341,7 @@ mod tests {
 
         let layout_context = LayoutContext {
             viewport: Rect::new(0., 0., 500., 300.),
+            measure_text_fn: Box::new(|_, _| Size::new(0., 0.))
         };
 
         establish_context(FormattingContextType::InlineFormattingContext, root.clone());
