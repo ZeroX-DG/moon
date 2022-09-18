@@ -1,5 +1,5 @@
 use gtk::{
-    traits::{ContainerExt, EntryExt, ButtonExt},
+    traits::{ButtonExt, ContainerExt, EntryExt},
     Button, Entry, Image,
 };
 

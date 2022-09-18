@@ -19,6 +19,8 @@ pub enum TabEvent {
     URLChanged(Url),
     FrameReceived(Vec<u8>),
     TitleChanged(String),
+    LoadingStart,
+    LoadingFinished,
 }
 
 pub struct TabHandler {
@@ -151,6 +153,8 @@ impl BrowserTab {
         match event {
             OutputEvent::FrameRendered(frame) => self.emit_event(TabEvent::FrameReceived(frame))?,
             OutputEvent::TitleChanged(title) => self.emit_event(TabEvent::TitleChanged(title))?,
+            OutputEvent::LoadingStarted => self.emit_event(TabEvent::LoadingStart)?,
+            OutputEvent::LoadingFinished => self.emit_event(TabEvent::LoadingFinished)?,
         }
 
         Ok(())

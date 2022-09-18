@@ -11,12 +11,14 @@ pub enum InputEvent {
     MouseMove(Point),
     LoadHTML { html: String, base_url: Url },
     LoadURL(Url),
-    Reload
+    Reload,
 }
 
 pub enum OutputEvent {
     FrameRendered(Bitmap),
     TitleChanged(String),
+    LoadingStarted,
+    LoadingFinished,
 }
 
 pub struct RenderEngine<'a> {
@@ -65,23 +67,39 @@ impl<'a> RenderEngine<'a> {
                 self.emit_new_frame(event_emitter)?;
             }
             InputEvent::LoadHTML { html, base_url } => {
+                self.emit_loading_started(event_emitter)?;
                 self.page
                     .load_html(html, base_url, self.resource_loop_tx.clone())
                     .await;
+                self.emit_loading_finished(event_emitter)?;
                 self.emit_new_frame(event_emitter)?;
                 self.emit_new_title(event_emitter)?;
             }
             InputEvent::LoadURL(url) => {
+                self.emit_loading_started(event_emitter)?;
                 self.page.load_url(url, self.resource_loop_tx.clone()).await;
+                self.emit_loading_finished(event_emitter)?;
                 self.emit_new_frame(event_emitter)?;
                 self.emit_new_title(event_emitter)?;
             }
             InputEvent::Reload => {
+                self.emit_loading_started(event_emitter)?;
                 self.page.reload(self.resource_loop_tx.clone()).await;
+                self.emit_loading_finished(event_emitter)?;
                 self.emit_new_frame(event_emitter)?;
                 self.emit_new_title(event_emitter)?;
             }
         }
+        Ok(())
+    }
+
+    fn emit_loading_started(&self, event_emitter: &Sender<OutputEvent>) -> anyhow::Result<()> {
+        event_emitter.send(OutputEvent::LoadingStarted)?;
+        Ok(())
+    }
+
+    fn emit_loading_finished(&self, event_emitter: &Sender<OutputEvent>) -> anyhow::Result<()> {
+        event_emitter.send(OutputEvent::LoadingFinished)?;
         Ok(())
     }
 
