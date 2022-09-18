@@ -1,6 +1,6 @@
 use std::{cell::RefCell, fmt::Debug, rc::Rc};
 
-use shared::{primitive::*, tree_node::WeakTreeNode};
+use shared::tree_node::WeakTreeNode;
 use style_types::{
     values::{display::InnerDisplayType, prelude::Display},
     Property, Value,
@@ -9,11 +9,8 @@ use style_types::{
 use crate::{
     flow::{block::BlockFormattingContext, inline::InlineFormattingContext},
     layout_box::{LayoutBox, LayoutBoxPtr},
+    layout_context::LayoutContext,
 };
-
-pub struct LayoutContext {
-    pub viewport: Rect,
-}
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum FormattingContextType {
@@ -29,10 +26,10 @@ pub struct BaseFormattingContext {
 
 pub trait FormattingContext: Debug {
     fn base(&self) -> &BaseFormattingContext;
-    fn run(&self, context: &LayoutContext, node: LayoutBoxPtr);
+    fn run(&self, context: &mut LayoutContext, node: LayoutBoxPtr);
     fn layout_inside(
         &self,
-        context: &LayoutContext,
+        context: &mut LayoutContext,
         node: LayoutBoxPtr,
     ) -> Option<Rc<dyn FormattingContext>> {
         if !node.can_have_children() {

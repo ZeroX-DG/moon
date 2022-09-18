@@ -1446,7 +1446,6 @@ version = "0.1.0"
 dependencies = [
  "css",
  "dom",
- "gfx",
  "log",
  "regex",
  "shared",

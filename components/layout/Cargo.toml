@@ -11,7 +11,6 @@ style = { version = "*", path = "../style" }
 style_types = { path = "../style_types" }
 dom = { version = "*", path = "../dom" }
 shared = { version = "*", path = "../shared" }
-gfx = { path = "../gfx" }
 log = "*"
 regex = "1"
 
