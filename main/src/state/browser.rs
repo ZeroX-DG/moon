@@ -80,6 +80,13 @@ impl BrowserHandler {
         });
     }
 
+    pub fn reload(&self) {
+        self.update(move |browser| {
+            let active_tab = browser.get_active_tab();
+            active_tab.reload().expect("Unable to reload");
+        });
+    }
+
     fn update(&self, action: impl FnOnce(&mut Browser) + Send + 'static) {
         self.0.send(Box::new(action)).unwrap();
     }
@@ -168,6 +175,14 @@ impl Browser {
                         }
                         TabEvent::TitleChanged(title) if is_active_tab => {
                             get_app_runtime().update_state(move |state| state.ui.set_title(&title));
+                        }
+                        TabEvent::LoadingStart => {
+                            get_app_runtime()
+                                .update_state(move |state| state.ui.set_loading_start());
+                        }
+                        TabEvent::LoadingFinished => {
+                            get_app_runtime()
+                                .update_state(move |state| state.ui.set_loading_finished());
                         }
                         _ => {}
                     }

@@ -15,6 +15,8 @@ pub struct UI {
     pub window: ApplicationWindow,
     pub content_area: ContentArea,
     pub primary_bar: PrimaryBar,
+
+    pub spinner: gtk::Image,
 }
 
 impl UI {
@@ -33,13 +35,20 @@ impl UI {
         let primary_bar = PrimaryBar::new(&container);
         let content_area = ContentArea::new(&container);
 
+        let header_bar = gtk::HeaderBar::builder().show_close_button(true).build();
+
+        let spinner = gtk::Image::from_file("resources/loading.gif");
+        header_bar.add(&spinner);
+
         window.add(&container);
+        window.set_titlebar(Some(&header_bar));
 
         Self {
             app,
             window,
             content_area,
             primary_bar,
+            spinner,
         }
     }
 
@@ -49,6 +58,14 @@ impl UI {
 
     pub fn set_url(&mut self, url: &str) {
         self.primary_bar.url_entry.set_text(url);
+    }
+
+    pub fn set_loading_start(&mut self) {
+        self.spinner.show();
+    }
+
+    pub fn set_loading_finished(&mut self) {
+        self.spinner.hide();
     }
 
     pub fn set_web_content_bitmap(&mut self, bitmap: Vec<u8>) {

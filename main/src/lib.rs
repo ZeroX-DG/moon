@@ -18,6 +18,7 @@ pub fn start_main() {
         app_runtime.update_state(|state| {
             state.ui.window.show_all();
             state.ui.window.present();
+            state.ui.set_loading_finished();
         });
     });
 

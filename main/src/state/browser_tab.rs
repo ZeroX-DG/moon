@@ -11,6 +11,7 @@ pub enum TabAction {
     Scroll(f32),
     MouseMove(Point),
     Goto(Url),
+    Reload,
     ShowError { title: String, body: String },
 }
 
@@ -18,6 +19,8 @@ pub enum TabEvent {
     URLChanged(Url),
     FrameReceived(Vec<u8>),
     TitleChanged(String),
+    LoadingStart,
+    LoadingFinished,
 }
 
 pub struct TabHandler {
@@ -39,6 +42,11 @@ impl TabHandler {
 
     pub fn goto(&self, url: Url) -> anyhow::Result<()> {
         self.sender.send(TabAction::Goto(url))?;
+        Ok(())
+    }
+
+    pub fn reload(&self) -> anyhow::Result<()> {
+        self.sender.send(TabAction::Reload)?;
         Ok(())
     }
 
@@ -136,6 +144,7 @@ impl BrowserTab {
             TabAction::MouseMove(coord) => self.client.mouse_move(coord),
             TabAction::Goto(url) => self.goto(url)?,
             TabAction::ShowError { title, body } => self.load_error(&title, &body),
+            TabAction::Reload => self.reload()?,
         }
         Ok(())
     }
@@ -144,6 +153,8 @@ impl BrowserTab {
         match event {
             OutputEvent::FrameRendered(frame) => self.emit_event(TabEvent::FrameReceived(frame))?,
             OutputEvent::TitleChanged(title) => self.emit_event(TabEvent::TitleChanged(title))?,
+            OutputEvent::LoadingStarted => self.emit_event(TabEvent::LoadingStart)?,
+            OutputEvent::LoadingFinished => self.emit_event(TabEvent::LoadingFinished)?,
         }
 
         Ok(())
@@ -157,6 +168,11 @@ impl BrowserTab {
 }
 
 impl BrowserTab {
+    fn reload(&self) -> anyhow::Result<()> {
+        self.client.reload();
+        Ok(())
+    }
+
     fn goto(&self, url: Url) -> anyhow::Result<()> {
         *self.info.url.lock().unwrap() = url.clone();
         self.load(&url)?;

@@ -1,5 +1,5 @@
 use gtk::{
-    traits::{ContainerExt, EntryExt},
+    traits::{ButtonExt, ContainerExt, EntryExt},
     Button, Entry, Image,
 };
 
@@ -57,6 +57,13 @@ impl PrimaryBar {
             .margin_top(5)
             .margin_bottom(5)
             .build();
+
+        reload_btn.connect_clicked(|_| {
+            log::debug!("Reload");
+            get_app_runtime().update_state(move |state| {
+                state.browser().reload();
+            });
+        });
 
         let bar = gtk::Box::builder()
             .height_request(40)
