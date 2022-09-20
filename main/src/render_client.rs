@@ -2,7 +2,6 @@ use flume::{Receiver, Sender};
 use shared::primitive::Size;
 
 use render::{InputEvent, OutputEvent, RenderEngine};
-use url::Url;
 
 pub struct RenderClient {
     event_sender: Sender<InputEvent>,
@@ -49,12 +48,6 @@ impl RenderClient {
         self.event_receiver.clone()
     }
 
-    pub fn load_html(&self, html: String, base_url: Url) {
-        self.event_sender
-            .send(InputEvent::LoadHTML { html, base_url })
-            .expect("Unable to load HTML");
-    }
-
     pub fn resize(&self, size: Size) {
         self.event_sender
             .send(InputEvent::ViewportResize(size))
@@ -67,9 +60,9 @@ impl RenderClient {
             .expect("Unable to send scroll event");
     }
 
-    pub fn load_url(&self, url: &Url) {
+    pub fn load_raw_url(&self, url: String) {
         self.event_sender
-            .send(InputEvent::LoadURL(url.clone()))
+            .send(InputEvent::LoadRawURL(url))
             .expect("Unable to load URL");
     }
 

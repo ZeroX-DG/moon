@@ -10,13 +10,14 @@ pub enum InputEvent {
     Scroll(f32),
     MouseMove(Point),
     LoadHTML { html: String, base_url: Url },
-    LoadURL(Url),
+    LoadRawURL(String),
     Reload,
 }
 
 pub enum OutputEvent {
     FrameRendered(Bitmap),
     TitleChanged(String),
+    URLChanged(Url),
     LoadingStarted,
     LoadingFinished,
 }
@@ -74,13 +75,17 @@ impl<'a> RenderEngine<'a> {
                 self.emit_loading_finished(event_emitter)?;
                 self.emit_new_frame(event_emitter)?;
                 self.emit_new_title(event_emitter)?;
+                self.emit_new_url(event_emitter)?;
             }
-            InputEvent::LoadURL(url) => {
+            InputEvent::LoadRawURL(url) => {
                 self.emit_loading_started(event_emitter)?;
-                self.page.load_url(url, self.resource_loop_tx.clone()).await;
+                self.page
+                    .load_raw_url(url, self.resource_loop_tx.clone())
+                    .await;
                 self.emit_loading_finished(event_emitter)?;
                 self.emit_new_frame(event_emitter)?;
                 self.emit_new_title(event_emitter)?;
+                self.emit_new_url(event_emitter)?;
             }
             InputEvent::Reload => {
                 self.emit_loading_started(event_emitter)?;
@@ -88,7 +93,15 @@ impl<'a> RenderEngine<'a> {
                 self.emit_loading_finished(event_emitter)?;
                 self.emit_new_frame(event_emitter)?;
                 self.emit_new_title(event_emitter)?;
+                self.emit_new_url(event_emitter)?;
             }
+        }
+        Ok(())
+    }
+
+    fn emit_new_url(&self, event_emitter: &Sender<OutputEvent>) -> anyhow::Result<()> {
+        if let Some(url) = self.page.url() {
+            event_emitter.send(OutputEvent::URLChanged(url))?;
         }
         Ok(())
     }
