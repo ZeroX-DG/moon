@@ -10,9 +10,8 @@ pub enum TabAction {
     Resize(Size),
     Scroll(f32),
     MouseMove(Point),
-    Goto(Url),
+    Goto(String),
     Reload,
-    ShowError { title: String, body: String },
 }
 
 pub enum TabEvent {
@@ -40,18 +39,13 @@ impl TabHandler {
         Ok(())
     }
 
-    pub fn goto(&self, url: Url) -> anyhow::Result<()> {
+    pub fn goto(&self, url: String) -> anyhow::Result<()> {
         self.sender.send(TabAction::Goto(url))?;
         Ok(())
     }
 
     pub fn reload(&self) -> anyhow::Result<()> {
         self.sender.send(TabAction::Reload)?;
-        Ok(())
-    }
-
-    pub fn show_error(&self, title: String, body: String) -> anyhow::Result<()> {
-        self.sender.send(TabAction::ShowError { title, body })?;
         Ok(())
     }
 
@@ -143,7 +137,6 @@ impl BrowserTab {
             TabAction::Scroll(y) => self.client.scroll(y),
             TabAction::MouseMove(coord) => self.client.mouse_move(coord),
             TabAction::Goto(url) => self.goto(url)?,
-            TabAction::ShowError { title, body } => self.load_error(&title, &body),
             TabAction::Reload => self.reload()?,
         }
         Ok(())
@@ -153,6 +146,7 @@ impl BrowserTab {
         match event {
             OutputEvent::FrameRendered(frame) => self.emit_event(TabEvent::FrameReceived(frame))?,
             OutputEvent::TitleChanged(title) => self.emit_event(TabEvent::TitleChanged(title))?,
+            OutputEvent::URLChanged(url) => self.emit_event(TabEvent::URLChanged(url))?,
             OutputEvent::LoadingStarted => self.emit_event(TabEvent::LoadingStart)?,
             OutputEvent::LoadingFinished => self.emit_event(TabEvent::LoadingFinished)?,
         }
@@ -173,61 +167,8 @@ impl BrowserTab {
         Ok(())
     }
 
-    fn goto(&self, url: Url) -> anyhow::Result<()> {
-        *self.info.url.lock().unwrap() = url.clone();
-        self.load(&url)?;
-        self.change_url(url)?;
+    fn goto(&self, url: String) -> anyhow::Result<()> {
+        self.client.load_raw_url(url);
         Ok(())
-    }
-
-    fn load(&self, url: &Url) -> anyhow::Result<()> {
-        match url.scheme.as_str() {
-            "http" | "https" | "file" | "view-source" => self.client.load_url(url),
-            _ => self.load_not_supported(),
-        }
-        Ok(())
-    }
-
-    fn change_url(&self, url: Url) -> anyhow::Result<()> {
-        self.emit_event(TabEvent::URLChanged(url))?;
-        Ok(())
-    }
-
-    fn load_error(&self, title: &str, error: &str) {
-        let current_url = self.info.url.lock().unwrap().clone();
-        let source_html = self.get_error_page_content(title, error);
-        self.client.load_html(source_html, current_url);
-    }
-
-    fn get_error_page_content(&self, title: &str, error: &str) -> String {
-        format!(
-            "
-            <html>
-                <style>
-                    body {{ background-color: #262ded }}
-                    #error-content {{
-                        width: 500px;
-                        margin: 0 auto;
-                        margin-top: 50px;
-                        color: white;
-                    }}
-                </style>
-                <div id='error-content'>
-                    <h1>{}</h1>
-                    <p>{}</p>
-                </div>
-            </html>
-        ",
-            title, error
-        )
-    }
-
-    fn load_not_supported(&self) {
-        let current_url = self.info.url.lock().unwrap().clone();
-        let error = format!(
-            "Unable to load resource via unsupported protocol: {}",
-            current_url.scheme
-        );
-        self.load_error("Unsupported Protocol", &error);
     }
 }

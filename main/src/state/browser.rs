@@ -53,9 +53,7 @@ impl BrowserHandler {
             }
 
             let url = format!("view-source:{}", active_tab_url);
-            active_tab
-                .goto(URLParser::parse(&url, None).unwrap())
-                .unwrap();
+            active_tab.goto(url).unwrap();
         });
     }
 
@@ -66,17 +64,7 @@ impl BrowserHandler {
 
         self.update(move |browser| {
             let active_tab = browser.get_active_tab();
-
-            if let Some(url) = URLParser::parse(&raw_url, None) {
-                active_tab.goto(url).unwrap();
-            } else {
-                active_tab
-                    .show_error(
-                        "Invalid URL".to_string(),
-                        format!("Invalid URL entered: {}", raw_url),
-                    )
-                    .unwrap();
-            }
+            active_tab.goto(raw_url).unwrap();
         });
     }
 
@@ -138,7 +126,7 @@ impl Browser {
 
     pub fn run(mut self) -> anyhow::Result<()> {
         let active_tab = self.get_active_tab();
-        active_tab.goto(self.home_url.clone()).unwrap();
+        active_tab.goto(self.home_url.to_string()).unwrap();
 
         enum Event {
             UpdateEvent(BrowserAction),

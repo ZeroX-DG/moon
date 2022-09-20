@@ -6,11 +6,14 @@ use flume::{bounded, Sender};
 use gfx::Bitmap;
 use loader::{
     document_loader::DocumentLoader,
-    resource_loop::request::{FetchListener, LoadRequest},
+    resource_loop::{
+        error::LoadError,
+        request::{FetchListener, LoadRequest},
+    },
 };
 use shared::{byte_string::ByteString, primitive::Size, tree_node::TreeNode};
 use style_types::{CSSLocation, CascadeOrigin, ContextualStyleSheet};
-use url::Url;
+use url::{parser::URLParser, Url};
 
 use crate::pipeline::Pipeline;
 
@@ -80,10 +83,30 @@ impl<'a> Page<'a> {
             .await;
     }
 
+    pub async fn load_raw_url(&mut self, url: String, resource_loop_tx: Sender<LoadRequest>) {
+        match URLParser::parse(&url, None) {
+            Some(url) => self.load_url(url, resource_loop_tx).await,
+            None => {
+                self.show_error(
+                    "Invalid URL",
+                    "Error while trying to navigate to an invalid URL.",
+                )
+                .await
+            }
+        }
+    }
+
     pub async fn load_url(&mut self, url: Url, resource_loop_tx: Sender<LoadRequest>) {
         self.url = Some(url.clone());
-        let html = self.fetch_html(DocumentLoader::new(resource_loop_tx.clone()), url.clone());
-        self.load_html(html, url, resource_loop_tx).await;
+        match self.fetch_html(DocumentLoader::new(resource_loop_tx.clone()), url.clone()) {
+            Ok(html) => {
+                self.load_html(html, url, resource_loop_tx).await;
+            }
+            Err(e) => {
+                self.show_error("Oh no!", &format!("Error while loading page: {:?}", e))
+                    .await;
+            }
+        }
     }
 
     pub async fn reload(&mut self, resource_loop_tx: Sender<LoadRequest>) {
@@ -103,10 +126,14 @@ impl<'a> Page<'a> {
             .unwrap_or_default()
     }
 
-    fn fetch_html(&self, document_loader: DocumentLoader, url: Url) -> String {
+    pub fn url(&self) -> Option<Url> {
+        self.url.clone()
+    }
+
+    fn fetch_html(&self, document_loader: DocumentLoader, url: Url) -> Result<String, LoadError> {
         struct HTMLLoaderContext {
             url: Url,
-            html_tx: Sender<String>,
+            html_tx: Sender<Result<String, LoadError>>,
         }
 
         impl FetchListener for HTMLLoaderContext {
@@ -115,19 +142,68 @@ impl<'a> Page<'a> {
                     let raw_html = ByteString::new(&bytes).to_string();
                     let raw_html_encoded = html_escape::encode_text(&raw_html);
                     self.html_tx
-                        .send(format!("<pre>{}</pre>", raw_html_encoded))
+                        .send(Ok(format!("<pre>{}</pre>", raw_html_encoded)))
                         .unwrap();
                     return;
                 }
                 self.html_tx
-                    .send(ByteString::new(&bytes).to_string())
+                    .send(Ok(ByteString::new(&bytes).to_string()))
                     .unwrap();
+            }
+
+            fn on_errored(&self, error: LoadError) {
+                self.html_tx.send(Err(error)).unwrap();
             }
         }
 
         let (tx, rx) = bounded(1);
         document_loader.fetch(url.clone(), HTMLLoaderContext { html_tx: tx, url });
 
-        rx.recv().expect("Unable to fetch HTML")
+        rx.recv().expect("Failed to receive HTML")
+    }
+
+    fn get_error_page_content(&self, title: &str, error: &str) -> String {
+        format!(
+            "
+            <html>
+                <style>
+                    body {{ background-color: #262ded }}
+                    #error-content {{
+                        width: 500px;
+                        margin: 0 auto;
+                        margin-top: 50px;
+                        color: white;
+                    }}
+                </style>
+                <div id='error-content'>
+                    <h1>{}</h1>
+                    <p>{}</p>
+                </div>
+            </html>
+        ",
+            title, error
+        )
+    }
+
+    async fn show_error(&mut self, title: &str, error: &str) {
+        let error_page = self.get_error_page_content(title, error);
+        let document = NodePtr(TreeNode::new(Node::new(
+            NodeData::Document(Document::new()),
+        )));
+
+        let tokenizer = css::tokenizer::Tokenizer::new(USER_AGENT_STYLES.chars());
+        let mut parser = css::parser::Parser::<css::tokenizer::token::Token>::new(tokenizer.run());
+        let stylesheet = parser.parse_a_css_stylesheet();
+        let stylesheet =
+            ContextualStyleSheet::new(stylesheet, CascadeOrigin::UserAgent, CSSLocation::External);
+        document.as_document().set_user_agent_stylesheet(stylesheet);
+
+        let tokenizer = html::tokenizer::Tokenizer::new(error_page.chars());
+        let tree_builder = html::tree_builder::TreeBuilder::new(tokenizer, document);
+        let document = tree_builder.run();
+
+        self.main_frame
+            .set_document(document, &mut self.pipeline)
+            .await;
     }
 }
