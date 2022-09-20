@@ -305,6 +305,10 @@ impl Value {
                 value,
                 unit: LengthUnit::Px,
             }) => **value,
+            Value::Length(Length {
+                value,
+                unit: LengthUnit::Pt,
+            }) => **value * (3. / 4.),
             _ => unreachable!("Calling to_absolute_px for unsupported value"),
         }
     }
