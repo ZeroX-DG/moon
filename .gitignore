@@ -4,3 +4,5 @@ node_modules/
 # output testing
 image.png
 output/
+
+.DS_Store
