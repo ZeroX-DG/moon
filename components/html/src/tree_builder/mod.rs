@@ -2575,6 +2575,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
         }
 
         self.switch_to(self.original_insert_mode.clone().unwrap());
+        self.process(token);
     }
 
     fn handle_in_caption(&mut self, token: Token) {
@@ -2784,7 +2785,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
 
     fn handle_in_table_body(&mut self, token: Token) {
         if token.is_start_tag() && token.tag_name() == "tr" {
-            self.open_elements.clear_back_to_table_context();
+            self.open_elements.clear_back_to_table_body_context();
             self.insert_html_element(token);
             self.switch_to(InsertMode::InRow);
             return;
@@ -2807,7 +2808,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
                 return;
             }
 
-            self.open_elements.clear_back_to_table_context();
+            self.open_elements.clear_back_to_table_body_context();
             self.open_elements.pop();
             self.switch_to(InsertMode::InTable);
             return;
@@ -2833,7 +2834,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
                 return;
             }
 
-            self.open_elements.clear_back_to_table_context();
+            self.open_elements.clear_back_to_table_body_context();
             self.open_elements.pop();
             self.switch_to(InsertMode::InTable);
             return self.process(token);
@@ -2861,7 +2862,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
 
     fn handle_in_row(&mut self, token: Token) {
         if token.is_start_tag() && match_any!(token.tag_name(), "th", "td") {
-            self.open_elements.clear_back_to_table_context();
+            self.open_elements.clear_back_to_table_row_context();
             self.insert_html_element(token);
             self.switch_to(InsertMode::InCell);
             self.active_formatting_elements.add_marker();
@@ -2874,7 +2875,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
                 return;
             }
 
-            self.open_elements.clear_back_to_table_context();
+            self.open_elements.clear_back_to_table_row_context();
             self.open_elements.pop();
             self.switch_to(InsertMode::InTableBody);
             return;
@@ -2897,7 +2898,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
                 self.unexpected(&token);
                 return;
             }
-            self.open_elements.clear_back_to_table_context();
+            self.open_elements.clear_back_to_table_row_context();
             self.open_elements.pop();
             self.switch_to(InsertMode::InTableBody);
             return self.process(token);
@@ -2915,7 +2916,7 @@ impl<T: Tokenizing> TreeBuilder<T> {
                 self.unexpected(&token);
                 return;
             }
-            self.open_elements.clear_back_to_table_context();
+            self.open_elements.clear_back_to_table_row_context();
             self.open_elements.pop();
             self.switch_to(InsertMode::InTableBody);
             return self.process(token);

@@ -81,13 +81,44 @@ impl StackOfOpenElements {
         while let Some(node) = self.current_node() {
             let element = node.as_element();
             let element_tag_name = element.tag_name();
-            if element_tag_name == "table"
-                || element_tag_name == "template"
-                || element_tag_name == "html"
-            {
-                break;
+            match element_tag_name.as_ref() {
+                "table" | "template" | "html" => {
+                    break;
+                }
+                _ => {
+                    self.0.pop();
+                }
             }
-            self.0.pop();
+        }
+    }
+
+    pub fn clear_back_to_table_body_context(&mut self) {
+        while let Some(node) = self.current_node() {
+            let element = node.as_element();
+            let element_tag_name = element.tag_name();
+            match element_tag_name.as_ref() {
+                "table" | "tbody" | "thead" | "tfoot" | "template" | "html" => {
+                    break;
+                }
+                _ => {
+                    self.0.pop();
+                }
+            }
+        }
+    }
+
+    pub fn clear_back_to_table_row_context(&mut self) {
+        while let Some(node) = self.current_node() {
+            let element = node.as_element();
+            let element_tag_name = element.tag_name();
+            match element_tag_name.as_ref() {
+                "tr" | "template" | "html" => {
+                    break;
+                }
+                _ => {
+                    self.0.pop();
+                }
+            }
         }
     }
 
