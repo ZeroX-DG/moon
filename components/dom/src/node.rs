@@ -153,6 +153,25 @@ impl NodePtr {
     pub fn child_nodes(&self) -> NodeList {
         NodeList::new(self.first_child())
     }
+
+    pub fn to_string(&self) -> String {
+        self.to_string_with_indent(0)
+    }
+
+    fn to_string_with_indent(&self, indent_level: usize) -> String {
+        let child_nodes = self.child_nodes();
+        let mut result = format!(
+            "{}{:#?}({} child)\n",
+            "    ".repeat(indent_level),
+            self,
+            child_nodes.length()
+        );
+        for node in child_nodes {
+            let child_result = NodePtr(node).to_string_with_indent(indent_level + 1);
+            result.push_str(&child_result);
+        }
+        result
+    }
 }
 
 impl Node {
