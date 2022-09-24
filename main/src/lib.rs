@@ -19,6 +19,20 @@ pub fn start_main() {
             state.ui.window.show_all();
             state.ui.window.present();
             state.ui.set_loading_finished();
+
+            if let Some(screen) = state.ui.window.screen() {
+                let current_monitor = std::env::var("ACTIVE_MONITOR")
+                    .map(|monitor_id| monitor_id.parse().unwrap_or(0))
+                    .unwrap_or(0);
+                let monitor_geometry = screen.monitor_geometry(current_monitor);
+                let (window_x, window_y) = state.ui.window.position();
+                let x = monitor_geometry.x() + window_x;
+                let y = monitor_geometry.y() + window_y;
+                state.ui.window.move_(x, y);
+                state.ui.window.set_keep_above(true);
+                state.ui.window.show_all();
+                state.ui.window.set_keep_above(false);
+            }
         });
     });
 
