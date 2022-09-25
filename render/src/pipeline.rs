@@ -3,7 +3,7 @@ use gfx::{Bitmap, Canvas, TextMeasure};
 use layout::{
     formatting_context::{establish_context, FormattingContextType},
     layout_box::{LayoutBox, LayoutBoxPtr},
-    layout_context::LayoutContext,
+    layout_context::LayoutContext, dump_layout,
 };
 use painting::Painter;
 use shared::{
@@ -97,6 +97,8 @@ impl<'a> Pipeline<'a> {
             initial_block_box
                 .formatting_context()
                 .run(&mut layout_context, initial_block_box.clone());
+
+            dump_layout!(initial_block_box);
 
             initial_block_box
         });

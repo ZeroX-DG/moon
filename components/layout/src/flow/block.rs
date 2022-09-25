@@ -154,7 +154,11 @@ impl BlockFormattingContext {
 
         let node = match layout_node.node() {
             Some(node) => node.clone(),
-            _ => return,
+            _ => {
+                // Anonymous block
+                layout_node.set_content_width(containing_block.width);
+                return;
+            },
         };
 
         let computed_width = node.get_style(&Property::Width);
