@@ -203,49 +203,6 @@ impl LayoutBoxPtr {
             .map(|node| LayoutBoxPtr(node));
     }
 
-    pub fn is_visible_for_painting(&self, custom_rect: Option<&Rect>) -> bool {
-        let padding_box = self.padding_box_absolute();
-        let current_padding_box = custom_rect.unwrap_or(&padding_box);
-        let parent = self.find_first_ancestor(|parent| {
-            parent.parent().is_none() || LayoutBoxPtr(parent).node().is_some()
-        });
-
-        if parent.is_none() {
-            return true;
-        }
-
-        let parent = LayoutBoxPtr(parent.unwrap());
-
-        // If checking against initial block box then we just need to make sure the padding box
-        // overlaps the initial block box rect (viewport)
-        if parent.parent().is_none() {
-            return parent.absolute_rect().is_overlap_rect(&current_padding_box);
-        }
-
-        // If checking against regular elements, make sure the box overlaps parent box or parent
-        // box overflow is visible.
-        let mut parent = Some(parent);
-        while let Some(current_parent) = parent {
-            let is_visible = current_parent
-                .absolute_rect()
-                .is_overlap_rect(&current_padding_box)
-                || current_parent
-                    .node()
-                    .map(|node| {
-                        node.get_style(&Property::OverflowY) == Value::Overflow(Overflow::Visible)
-                    })
-                    .unwrap_or(false);
-
-            if !is_visible {
-                return false;
-            }
-
-            parent = current_parent.parent().map(|p| LayoutBoxPtr(p));
-        }
-
-        true
-    }
-
     // TODO: Support dynamic scroll bar width
     pub fn scrollbar_width(&self) -> f32 {
         12.
@@ -385,10 +342,11 @@ impl LayoutBoxPtr {
     pub fn handle_mouse_move(&self, mouse_coord: &Point) {
         if self.border_box_absolute().is_contain_point(mouse_coord) {
             self.set_mouse_over(true);
+            self.for_each_child(|child| LayoutBoxPtr(child).handle_mouse_move(mouse_coord));
         } else {
             self.set_mouse_over(false);
+            self.for_each_child(|child| LayoutBoxPtr(child).set_mouse_over(false));
         }
-        self.for_each_child(|child| LayoutBoxPtr(child).handle_mouse_move(mouse_coord));
     }
 
     pub fn is_mouse_over(&self) -> bool {
