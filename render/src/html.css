@@ -68,7 +68,7 @@ figure {
     margin-inline-end: 40px;
 }
 
-q {
+q, span {
     display: inline;
 }
 

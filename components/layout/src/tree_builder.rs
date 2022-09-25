@@ -2,7 +2,7 @@ use dom::node::NodePtr;
 use shared::tree_node::TreeNode;
 use style_types::{
     values::{display::DisplayBox, prelude::Display},
-    Value,
+    Value, Property,
 };
 
 use crate::layout_box::{BoxData, LayoutBox, LayoutBoxPtr};
@@ -59,13 +59,25 @@ impl TreeBuilder {
             self.get_parent_for_block()
         };
 
-        parent.append_child(layout_box.clone());
+        if parent.is_some() {
+            parent.unwrap().append_child(layout_box.clone());
 
-        self.parent_stack.push(LayoutBoxPtr(layout_box));
-        node.for_each_child(|child| {
-            self.build_layout_tree(NodePtr(child));
-        });
-        self.parent_stack.pop();
+            if !node.is_element() && !node.is_document() {
+                return;
+            }
+
+            self.parent_stack.push(LayoutBoxPtr(layout_box));
+            node.for_each_child(|child| {
+                self.build_layout_tree(NodePtr(child));
+            });
+            self.parent_stack.pop();
+        } else {
+            let parent_stack = self.parent_stack.iter()
+                .map(|parent| format!("{} {:?}", parent.friendly_name(), parent.node()))
+                .collect::<Vec<String>>();
+            log::error!("Couldn't find the correct parent for node: {} {:?}", LayoutBoxPtr(layout_box).friendly_name(), node);
+            log::error!("Parent stack: {:#?}", parent_stack);
+        }
     }
 
     /// Get a parent for an block-level box
@@ -80,21 +92,23 @@ impl TreeBuilder {
     /// inline-level boxes currently in the parent. After that, set the
     /// formatting context of parent to block and insert the box as a direct
     /// children of the parent.
-    fn get_parent_for_block(&mut self) -> LayoutBoxPtr {
+    fn get_parent_for_block(&mut self) -> Option<LayoutBoxPtr> {
         let parent = self
             .parent_stack
             .iter()
-            .rfind(|parent_box| !parent_box.is_inline() && parent_box.can_have_children())
-            .expect(&format!("No parent in stack: {:?}", self.parent_stack));
+            .rfind(|parent_box| parent_box.is_block() && parent_box.can_have_children());
 
-        if !parent.has_no_child() && parent.children_are_inline() {
-            let anonymous = TreeNode::new(LayoutBox::new_anonymous(BoxData::block_box()));
+        if let Some(parent) = parent {
+            if !parent.has_no_child() && parent.children_are_inline() {
+                let anonymous = TreeNode::new(LayoutBox::new_anonymous(BoxData::block_box()));
 
-            parent.transfer_children_to_node(anonymous.clone());
-            parent.append_child(anonymous);
+                parent.transfer_children_to_node(anonymous.clone());
+                parent.append_child(anonymous);
+            }
+
+            return Some(parent.clone())
         }
-
-        parent.clone()
+        None
     }
 
     /// Get a parent for an inline-level box
@@ -107,28 +121,27 @@ impl TreeBuilder {
     /// Otherwise, if the nearest parent established a block formatting context
     /// then create an anonymous block-level box to wrap the inline-box in before
     /// inserting into the parent.
-    fn get_parent_for_inline(&mut self) -> LayoutBoxPtr {
-        let parent = self
-            .parent_stack
-            .last()
-            .expect("No parent in stack")
-            .clone();
+    fn get_parent_for_inline(&mut self) -> Option<LayoutBoxPtr> {
+        let parent = self.parent_stack.last();
 
-        if parent.children_are_inline() {
-            return parent;
+        if let Some(parent) = parent {
+            if parent.children_are_inline() {
+                return Some(parent.clone());
+            }
+
+            let require_anonymous_box = match parent.last_child().map(|child| LayoutBoxPtr(child)) {
+                Some(last_node) => !(last_node.is_anonymous() && last_node.children_are_inline()),
+                None => true,
+            };
+
+            if require_anonymous_box {
+                let anonymous = TreeNode::new(LayoutBox::new_anonymous(BoxData::block_box()));
+                parent.append_child(anonymous);
+            }
+            return parent.last_child().map(|node| LayoutBoxPtr(node));
         }
 
-        let require_anonymous_box = match parent.last_child().map(|child| LayoutBoxPtr(child)) {
-            Some(last_node) => !(last_node.is_anonymous() && last_node.children_are_inline()),
-            None => true,
-        };
-
-        if require_anonymous_box {
-            let anonymous = TreeNode::new(LayoutBox::new_anonymous(BoxData::block_box()));
-            parent.append_child(anonymous);
-        }
-
-        LayoutBoxPtr(parent.last_child().unwrap().clone())
+        None
     }
 }
 
