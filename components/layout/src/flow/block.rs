@@ -8,12 +8,10 @@ use crate::{
     layout_context::LayoutContext,
 };
 use shared::primitive::edge::Edge;
-use std::cell::RefCell;
 use style_types::{values::prelude::Position, Property};
 
 #[derive(Debug)]
 pub struct BlockFormattingContext {
-    last_sibling: RefCell<Option<LayoutBoxPtr>>,
     base: BaseFormattingContext,
 }
 
@@ -33,14 +31,7 @@ impl FormattingContext for BlockFormattingContext {
 
 impl BlockFormattingContext {
     pub fn new(base: BaseFormattingContext) -> Self {
-        Self {
-            last_sibling: RefCell::new(None),
-            base,
-        }
-    }
-
-    fn reset_state(&self) {
-        *self.last_sibling.borrow_mut() = None;
+        Self { base }
     }
 
     fn layout_initial_block_box(&self, context: &mut LayoutContext, layout_node: LayoutBoxPtr) {
@@ -55,20 +46,20 @@ impl BlockFormattingContext {
         self.layout_block_level_children(context, layout_node.clone());
 
         if layout_node.scrollable() {
-            self.reset_state();
             layout_node.set_content_width(width - layout_node.scrollbar_width());
             self.layout_block_level_children(context, layout_node);
         }
     }
 
     fn layout_block_level_children(&self, context: &mut LayoutContext, layout_node: LayoutBoxPtr) {
+        let mut last_sibling = None;
         layout_node.for_each_child(|child| {
             let child = LayoutBoxPtr(child);
             if child.is_positioned(Position::Absolute) {
                 return;
             }
             self.compute_width(child.clone());
-            self.place_box_in_flow(child.clone());
+            self.place_box_in_flow(child.clone(), last_sibling.clone());
 
             if let Some(independent_formatting_context) =
                 create_independent_formatting_context_if_needed(child.clone())
@@ -96,14 +87,11 @@ impl BlockFormattingContext {
                     self.layout_block_level_children(context, child.clone());
                 }
             }
-
-            if child.border_box_absolute().height > 0. {
-                self.last_sibling.replace(Some(child.clone()));
-            }
+            last_sibling.replace(child.clone());
         });
     }
 
-    fn place_box_in_flow(&self, layout_node: LayoutBoxPtr) {
+    fn place_box_in_flow(&self, layout_node: LayoutBoxPtr, last_sibling: Option<LayoutBoxPtr>) {
         self.apply_vertical_box_model_values(layout_node.clone());
 
         let box_model = layout_node.box_model().borrow();
@@ -113,7 +101,7 @@ impl BlockFormattingContext {
 
         let mut previous_collapsed_margin_bottom = 0.;
 
-        if let Some(sibling) = &*self.last_sibling.borrow() {
+        if let Some(sibling) = last_sibling {
             previous_collapsed_margin_bottom = f32::max(
                 previous_collapsed_margin_bottom,
                 sibling.box_model().borrow().margin_box().bottom,
@@ -158,7 +146,7 @@ impl BlockFormattingContext {
                 // Anonymous block
                 layout_node.set_content_width(containing_block.width);
                 return;
-            },
+            }
         };
 
         let computed_width = node.get_style(&Property::Width);
@@ -347,10 +335,33 @@ impl BlockFormattingContext {
         }
     }
 
+    // https://www.w3.org/TR/CSS22/visudet.html#normal-block
     fn compute_auto_height(&self, layout_node: LayoutBoxPtr) -> f32 {
-        layout_node.iterate_children().fold(0.0, |acc, child| {
-            acc + LayoutBoxPtr(child).margin_box_height()
-        })
+        // The element's height is the distance from its top content edge to the first applicable of the following:
+        // 1. the bottom edge of the last line box, if the box establishes a inline formatting context with one or more lines
+        if layout_node.children_are_inline() {
+            let lines = layout_node.lines();
+            let lines = lines.borrow();
+            if !lines.is_empty() {
+                let last_line = lines.last().unwrap();
+                let last_line_bottom_edge = last_line.position.y + last_line.size.height;
+                let height = last_line_bottom_edge - layout_node.absolute_location().y;
+                return height;
+            }
+            return 0.;
+        }
+        // 2. the bottom edge of the bottom (possibly collapsed) margin of its last in-flow child, if the child's bottom margin does not collapse with the element's bottom margin
+        if let Some(last_node_in_flow) = layout_node.last_child() {
+            let last_node_in_flow = LayoutBoxPtr(last_node_in_flow);
+            let margin_box = last_node_in_flow.margin_box_absolute();
+            let bottom_edge = margin_box.y + margin_box.height;
+            // TODO: Investigate why we need to substract the padding top here
+            let height = bottom_edge
+                - layout_node.absolute_rect().y
+                - layout_node.box_model().borrow().padding.top;
+            return height;
+        }
+        0.
     }
 }
 

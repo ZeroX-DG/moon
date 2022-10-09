@@ -28,6 +28,7 @@ pub struct LineBoxBuilder {
 pub struct LineBox {
     pub fragments: Vec<LineFragment>,
     pub size: Size,
+    pub position: Point,
 }
 
 impl LineBox {
@@ -35,6 +36,7 @@ impl LineBox {
         Self {
             fragments: Vec::new(),
             size: Size::new(0., 0.),
+            position: Point::new(0., 0.),
         }
     }
 

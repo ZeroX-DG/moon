@@ -2,7 +2,7 @@ use dom::node::NodePtr;
 use shared::tree_node::TreeNode;
 use style_types::{
     values::{display::DisplayBox, prelude::Display},
-    Value, Property,
+    Property, Value,
 };
 
 use crate::layout_box::{BoxData, LayoutBox, LayoutBoxPtr};
@@ -72,10 +72,16 @@ impl TreeBuilder {
             });
             self.parent_stack.pop();
         } else {
-            let parent_stack = self.parent_stack.iter()
+            let parent_stack = self
+                .parent_stack
+                .iter()
                 .map(|parent| format!("{} {:?}", parent.friendly_name(), parent.node()))
                 .collect::<Vec<String>>();
-            log::error!("Couldn't find the correct parent for node: {} {:?}", LayoutBoxPtr(layout_box).friendly_name(), node);
+            log::error!(
+                "Couldn't find the correct parent for node: {} {:?}",
+                LayoutBoxPtr(layout_box).friendly_name(),
+                node
+            );
             log::error!("Parent stack: {:#?}", parent_stack);
         }
     }
@@ -106,7 +112,7 @@ impl TreeBuilder {
                 parent.append_child(anonymous);
             }
 
-            return Some(parent.clone())
+            return Some(parent.clone());
         }
         None
     }
@@ -125,7 +131,7 @@ impl TreeBuilder {
         let parent = self.parent_stack.last();
 
         if let Some(parent) = parent {
-            if parent.children_are_inline() {
+            if parent.children_are_inline() || parent.has_no_child() {
                 return Some(parent.clone());
             }
 

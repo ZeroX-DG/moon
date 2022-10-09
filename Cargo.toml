@@ -36,5 +36,5 @@ log = "*"
 flume = "*"
 clap = "*"
 image = "*"
-simplelog = "0.10.0"
+simplelog = { version = "^0.11.0", features = ["paris"]}
 tokio = { version = "1.18.2", features = ["macros"] }

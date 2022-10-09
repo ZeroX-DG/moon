@@ -66,7 +66,11 @@ impl<'a> DisplayListBuilder<'a> {
     }
 
     fn process(&mut self, layout_box: &LayoutBoxPtr, overflow_data: &OverflowData) {
-        if !layout_box.border_box_absolute().is_overlap_rect(&overflow_data.visible_region) && !overflow_data.visible {
+        if !layout_box
+            .border_box_absolute()
+            .is_overlap_rect(&overflow_data.visible_region)
+            && !overflow_data.visible
+        {
             return;
         }
 
@@ -87,7 +91,7 @@ impl<'a> DisplayListBuilder<'a> {
         let is_overflow_visible = layout_box.is_overflow_visible();
         let overflow_data = OverflowData {
             visible_region: new_visible_region,
-            visible: is_overflow_visible
+            visible: is_overflow_visible,
         };
 
         if layout_box.is_block() && layout_box.children_are_inline() {
@@ -131,7 +135,13 @@ impl<'a> DisplayListBuilder<'a> {
         }
     }
 
-    fn build_texts(&mut self, layout_box: &LayoutBoxPtr, text_rect: Rect, content: &str, overflow_data: &OverflowData) {
+    fn build_texts(
+        &mut self,
+        layout_box: &LayoutBoxPtr,
+        text_rect: Rect,
+        content: &str,
+        overflow_data: &OverflowData,
+    ) {
         let node = layout_box.node().unwrap();
         let color = color_from_value(&node.get_style(&Property::Color));
         let font_size = node.get_style(&Property::FontSize).to_absolute_px();
@@ -140,15 +150,16 @@ impl<'a> DisplayListBuilder<'a> {
             return;
         }
 
-        self.display_list.fill_text(
-            content.to_string(),
-            text_rect,
-            color,
-            font_size,
-        );
+        self.display_list
+            .fill_text(content.to_string(), text_rect, color, font_size);
     }
 
-    fn build_paint_boxes(&mut self, layout_box: &LayoutBoxPtr, override_rect: Option<Rect>, overflow_data: &OverflowData) {
+    fn build_paint_boxes(
+        &mut self,
+        layout_box: &LayoutBoxPtr,
+        override_rect: Option<Rect>,
+        overflow_data: &OverflowData,
+    ) {
         if layout_box.is_anonymous() {
             return;
         }

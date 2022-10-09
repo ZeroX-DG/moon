@@ -1,9 +1,10 @@
 use dom::node::NodePtr;
 use gfx::{Bitmap, Canvas, TextMeasure};
 use layout::{
+    dump_layout,
     formatting_context::{establish_context, FormattingContextType},
     layout_box::{LayoutBox, LayoutBoxPtr},
-    layout_context::LayoutContext, dump_layout,
+    layout_context::LayoutContext,
 };
 use painting::Painter;
 use shared::{
