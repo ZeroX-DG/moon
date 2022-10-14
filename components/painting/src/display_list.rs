@@ -33,10 +33,16 @@ pub struct Border {
     pub color: Color,
 }
 
+pub struct OverflowData {
+    pub visible: bool,
+    pub visible_region: Rect,
+}
+
 pub struct DisplayListBuilder<'a> {
     canvas_size: &'a Size,
     display_list: DisplayList,
     root_element_use_body_background: bool,
+    paintable_nodes_count: usize,
 }
 
 impl<'a> DisplayListBuilder<'a> {
@@ -45,20 +51,32 @@ impl<'a> DisplayListBuilder<'a> {
             canvas_size,
             display_list: DisplayList::new(),
             root_element_use_body_background: false,
+            paintable_nodes_count: 0,
         }
     }
 
     pub fn build(mut self, layout_box: &LayoutBoxPtr) -> DisplayList {
-        self.process(layout_box);
+        let overflow_data = OverflowData {
+            visible: true,
+            visible_region: Rect::new(0., 0., self.canvas_size.width, self.canvas_size.height),
+        };
+        self.process(layout_box, &overflow_data);
+        log::debug!("Number of Paintable nodes: {}", self.paintable_nodes_count);
         self.display_list
     }
 
-    fn process(&mut self, layout_box: &LayoutBoxPtr) {
-        if !layout_box.is_visible_for_painting(None) {
+    fn process(&mut self, layout_box: &LayoutBoxPtr, overflow_data: &OverflowData) {
+        if !layout_box
+            .border_box_absolute()
+            .is_overlap_rect(&overflow_data.visible_region)
+            && !overflow_data.visible
+        {
             return;
         }
 
-        self.build_paint_boxes(layout_box, None);
+        self.paintable_nodes_count += 1;
+
+        self.build_paint_boxes(layout_box, None, &overflow_data);
 
         let mut clipping = false;
 
@@ -67,11 +85,20 @@ impl<'a> DisplayListBuilder<'a> {
             clipping = true;
         }
 
-        if layout_box.is_block() && layout_box.children_are_inline() {
-            self.process_lines(layout_box);
-        }
+        let mut new_visible_region = layout_box.border_box_absolute();
+        new_visible_region.intersect(&overflow_data.visible_region);
 
-        layout_box.for_each_child(|child| self.process(&LayoutBoxPtr(child)));
+        let is_overflow_visible = layout_box.is_overflow_visible();
+        let overflow_data = OverflowData {
+            visible_region: new_visible_region,
+            visible: is_overflow_visible,
+        };
+
+        if layout_box.is_block() && layout_box.children_are_inline() {
+            self.process_lines(layout_box, &overflow_data);
+        } else {
+            layout_box.for_each_child(|child| self.process(&LayoutBoxPtr(child), &overflow_data));
+        }
 
         if clipping {
             self.display_list.end_clip_rect();
@@ -80,7 +107,7 @@ impl<'a> DisplayListBuilder<'a> {
         self.build_paint_box_for_vertical_scroll_bar(layout_box);
     }
 
-    fn process_lines(&mut self, containing_block: &LayoutBoxPtr) {
+    fn process_lines(&mut self, containing_block: &LayoutBoxPtr, overflow_data: &OverflowData) {
         assert!(containing_block.is_block() && containing_block.children_are_inline());
 
         for line in containing_block.lines().borrow().iter() {
@@ -92,30 +119,15 @@ impl<'a> DisplayListBuilder<'a> {
                             fragment.size.clone(),
                         ));
                         rect.translate(fragment.offset.x, fragment.offset.y);
-                        self.build_paint_boxes(layout_box, Some(rect));
+                        self.build_paint_boxes(layout_box, Some(rect), overflow_data);
                     }
                     LineFragmentData::Text(layout_box, content) => {
-                        let node = layout_box.node().unwrap();
                         let mut text_rect = Rect::from((
                             containing_block.absolute_location(),
                             fragment.size.clone(),
                         ));
                         text_rect.translate(fragment.offset.x, fragment.offset.y);
-                        let color = color_from_value(&node.get_style(&Property::Color));
-                        let font_size = node.get_style(&Property::FontSize).to_absolute_px();
-
-                        let box_is_visible = layout_box.is_visible_for_painting(Some(&text_rect));
-
-                        if !box_is_visible {
-                            continue;
-                        }
-
-                        self.display_list.fill_text(
-                            content.to_string(),
-                            text_rect,
-                            color,
-                            font_size,
-                        );
+                        self.build_texts(layout_box, text_rect, content, overflow_data);
                     }
                     _ => {}
                 }
@@ -123,7 +135,31 @@ impl<'a> DisplayListBuilder<'a> {
         }
     }
 
-    fn build_paint_boxes(&mut self, layout_box: &LayoutBoxPtr, override_rect: Option<Rect>) {
+    fn build_texts(
+        &mut self,
+        layout_box: &LayoutBoxPtr,
+        text_rect: Rect,
+        content: &str,
+        overflow_data: &OverflowData,
+    ) {
+        let node = layout_box.node().unwrap();
+        let color = color_from_value(&node.get_style(&Property::Color));
+        let font_size = node.get_style(&Property::FontSize).to_absolute_px();
+
+        if !text_rect.is_overlap_rect(&overflow_data.visible_region) && !overflow_data.visible {
+            return;
+        }
+
+        self.display_list
+            .fill_text(content.to_string(), text_rect, color, font_size);
+    }
+
+    fn build_paint_boxes(
+        &mut self,
+        layout_box: &LayoutBoxPtr,
+        override_rect: Option<Rect>,
+        overflow_data: &OverflowData,
+    ) {
         if layout_box.is_anonymous() {
             return;
         }
@@ -156,9 +192,7 @@ impl<'a> DisplayListBuilder<'a> {
             }
         }
 
-        let is_box_visible = layout_box.is_visible_for_painting(Some(&rect));
-
-        if !is_box_visible {
+        if !rect.is_overlap_rect(&overflow_data.visible_region) && !overflow_data.visible {
             return;
         }
 

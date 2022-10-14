@@ -1,6 +1,7 @@
 use dom::node::NodePtr;
 use gfx::{Bitmap, Canvas, TextMeasure};
 use layout::{
+    dump_layout,
     formatting_context::{establish_context, FormattingContextType},
     layout_box::{LayoutBox, LayoutBoxPtr},
     layout_context::LayoutContext,
@@ -97,6 +98,8 @@ impl<'a> Pipeline<'a> {
             initial_block_box
                 .formatting_context()
                 .run(&mut layout_context, initial_block_box.clone());
+
+            dump_layout!(initial_block_box);
 
             initial_block_box
         });

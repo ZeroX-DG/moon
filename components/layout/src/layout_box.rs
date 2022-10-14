@@ -2,7 +2,7 @@ use std::{cell::RefCell, fmt::Debug, ops::Deref, rc::Rc};
 
 use dom::node::NodePtr;
 use shared::{
-    primitive::{Point, Rect, Size},
+    primitive::{EdgeSizes, Point, Rect, Size},
     tree_node::{TreeNode, TreeNodeHooks},
 };
 use style_types::{
@@ -203,49 +203,6 @@ impl LayoutBoxPtr {
             .map(|node| LayoutBoxPtr(node));
     }
 
-    pub fn is_visible_for_painting(&self, custom_rect: Option<&Rect>) -> bool {
-        let padding_box = self.padding_box_absolute();
-        let current_padding_box = custom_rect.unwrap_or(&padding_box);
-        let parent = self.find_first_ancestor(|parent| {
-            parent.parent().is_none() || LayoutBoxPtr(parent).node().is_some()
-        });
-
-        if parent.is_none() {
-            return true;
-        }
-
-        let parent = LayoutBoxPtr(parent.unwrap());
-
-        // If checking against initial block box then we just need to make sure the padding box
-        // overlaps the initial block box rect (viewport)
-        if parent.parent().is_none() {
-            return parent.absolute_rect().is_overlap_rect(&current_padding_box);
-        }
-
-        // If checking against regular elements, make sure the box overlaps parent box or parent
-        // box overflow is visible.
-        let mut parent = Some(parent);
-        while let Some(current_parent) = parent {
-            let is_visible = current_parent
-                .absolute_rect()
-                .is_overlap_rect(&current_padding_box)
-                || current_parent
-                    .node()
-                    .map(|node| {
-                        node.get_style(&Property::OverflowY) == Value::Overflow(Overflow::Visible)
-                    })
-                    .unwrap_or(false);
-
-            if !is_visible {
-                return false;
-            }
-
-            parent = current_parent.parent().map(|p| LayoutBoxPtr(p));
-        }
-
-        true
-    }
-
     // TODO: Support dynamic scroll bar width
     pub fn scrollbar_width(&self) -> f32 {
         12.
@@ -385,10 +342,11 @@ impl LayoutBoxPtr {
     pub fn handle_mouse_move(&self, mouse_coord: &Point) {
         if self.border_box_absolute().is_contain_point(mouse_coord) {
             self.set_mouse_over(true);
+            self.for_each_child(|child| LayoutBoxPtr(child).handle_mouse_move(mouse_coord));
         } else {
             self.set_mouse_over(false);
+            self.for_each_child(|child| LayoutBoxPtr(child).set_mouse_over(false));
         }
-        self.for_each_child(|child| LayoutBoxPtr(child).handle_mouse_move(mouse_coord));
     }
 
     pub fn is_mouse_over(&self) -> bool {
@@ -457,6 +415,11 @@ impl LayoutBoxPtr {
         self.absolute_rect().add_outer_edges(&padding_box)
     }
 
+    pub fn margin_box_absolute(&self) -> Rect {
+        let margin_box = self.box_model.borrow().margin_box();
+        self.absolute_rect().add_outer_edges(&margin_box)
+    }
+
     pub fn node(&self) -> Option<NodePtr> {
         self.node.clone()
     }
@@ -523,35 +486,50 @@ impl LayoutBoxPtr {
     pub fn dump(&self, level: usize) -> String {
         let mut result = String::new();
 
-        let box_type = if self.is_anonymous() {
-            format!("[Anonymous {}]", self.friendly_name())
+        let box_type_prefix = if self.is_anonymous() {
+            "Anonymous "
         } else {
-            format!("[{}]", self.friendly_name())
+            ""
         };
-
+        let box_type = format!("[{}{}]", box_type_prefix, self.friendly_name());
         let formatting_context = format!("[{:?}]", self.formatting_context().base().context_type);
+        let node_info = self
+            .node()
+            .map(|node| format!("{:?}", node))
+            .unwrap_or(String::new());
 
-        let dimensions = format!(
-            " (x: {} | y: {} | w: {} | h: {})",
-            self.absolute_rect().x,
-            self.absolute_rect().y,
-            self.absolute_rect().width,
-            self.absolute_rect().height,
-        );
-
-        let node_info = match &self.node() {
-            Some(node) => format!(" {:?}", node),
-            None => String::new(),
+        let get_rect_dimensions = |rect: Rect| {
+            format!(
+                "(x: {} | y: {} | w: {} | h: {})",
+                rect.x, rect.y, rect.width, rect.height,
+            )
         };
 
-        result.push_str(&format!(
-            "{}{}{}{}{}\n",
-            "  ".repeat(level),
-            box_type,
-            formatting_context,
-            node_info,
-            dimensions
+        let get_edge_values = |edge: &EdgeSizes| {
+            format!(
+                "(top: {} | right: {} | bottom: {} | left: {})",
+                edge.top, edge.right, edge.bottom, edge.left,
+            )
+        };
+
+        let content_box = get_rect_dimensions(self.absolute_rect());
+        let padding_box = get_edge_values(&self.box_model().borrow().padding);
+        let border_box = get_edge_values(&self.box_model().borrow().border);
+        let margin_box = get_edge_values(&self.box_model().borrow().margin);
+        let indentation = "|    ".repeat(level);
+        let children_count = self.children_count();
+
+        let mut content = String::new();
+        content.push_str(&format!(
+            "{}{}{}{} (Children Count: {})\n",
+            indentation, box_type, formatting_context, node_info, children_count
         ));
+        content.push_str(&format!("{}Content Box: {}\n", indentation, content_box));
+        content.push_str(&format!("{}Padding: {}\n", indentation, padding_box));
+        content.push_str(&format!("{}Margin: {}\n", indentation, margin_box));
+        content.push_str(&format!("{}Border: {}\n", indentation, border_box));
+
+        result.push_str(&content);
 
         if self.is_block() && self.children_are_inline() {
             for line in self.lines().borrow().iter() {

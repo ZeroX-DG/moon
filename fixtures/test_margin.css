@@ -1,0 +1,63 @@
+body {
+  margin: 20px;
+  font-family: 'Ubuntu', sans-serif;
+  color: #121212;
+  background-color: #F2F2F2;
+  font-size: 15px;
+}
+
+h1, h2, h3, h4, h5, h6, .header, .title {
+  font-family: 'roboto', sans-serif;
+  font-weight: normal;
+  color: #080808;
+}
+
+.header, .title {
+  font-size: 18px;
+}
+
+a {
+  color: blue;
+}
+
+
+.menu {
+  display: inline-block;
+}
+
+.menu a.active {
+  color: inherit;
+  text-decoration: none;
+}
+
+.main {
+  margin: 20px 15px;
+}
+
+.article {
+  margin: 15px 0px;
+}
+
+.tags .tag {
+  margin: 0px 1px;
+}
+
+.content {
+  text-align: left;
+}
+.content img {
+  max-width: 100%;
+}
+
+.subtitle.italic {
+  font-style: italic;
+}
+
+table td, table th {
+  padding: 10px;
+  border: 1px black solid;
+}
+
+code {
+  background-color: #DCDCDC;
+}
