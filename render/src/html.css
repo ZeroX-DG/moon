@@ -148,3 +148,18 @@ h6 {
 a {
     color: blue;
 }
+
+dd {
+    display: block;
+    margin-inline-start: 40px
+}
+dl {
+    display: block;
+    margin-block-start: 1__qem;
+    margin-block-end: 1em;
+    margin-inline-start: 0;
+    margin-inline-end: 0;
+}
+dt {
+    display: block
+}
