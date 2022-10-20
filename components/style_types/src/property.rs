@@ -74,11 +74,14 @@ impl Property {
             "border-bottom-left-radius" => Some(Property::BorderBottomLeftRadius),
             "border-bottom-right-radius" => Some(Property::BorderBottomRightRadius),
             "font-size" => Some(Property::FontSize),
-            "margin-block-start" => Some(Property::MarginTop),
-            "margin-block-end" => Some(Property::MarginBottom),
             "text-align" => Some(Property::TextAlign),
             "overflow-x" => Some(Property::OverflowX),
             "overflow-y" => Some(Property::OverflowY),
+            // TODO: Properly translate this base on writing direction.
+            "margin-inline-start" => Some(Property::MarginLeft), 
+            "margin-inline-end" => Some(Property::MarginRight),
+            "margin-block-start" => Some(Property::MarginTop),
+            "margin-block-end" => Some(Property::MarginBottom),
             _ => {
                 log::debug!("Unsupported CSS property: {}", property);
                 None
