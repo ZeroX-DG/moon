@@ -30,6 +30,7 @@ pub struct LayoutBox {
     pub formatting_context: RefCell<Option<Rc<dyn FormattingContext>>>,
     pub scroll_top: RefCell<f32>,
     pub is_mouse_over: RefCell<bool>,
+    pub lines: RefCell<Vec<LineBox>>,
 }
 
 pub struct LayoutBoxPtr(pub TreeNode<LayoutBox>);
@@ -54,9 +55,7 @@ impl Clone for LayoutBoxPtr {
 
 #[derive(Debug)]
 pub enum BoxData {
-    BlockBox {
-        lines: RefCell<Vec<LineBox>>, // Only if the block box establish IFC
-    },
+    BlockBox,
     InlineContents(InlineContents),
 }
 
@@ -68,9 +67,7 @@ pub enum InlineContents {
 
 impl BoxData {
     pub fn block_box() -> Self {
-        Self::BlockBox {
-            lines: RefCell::new(Vec::new()),
-        }
+        Self::BlockBox
     }
 
     pub fn inline_box() -> Self {
@@ -114,6 +111,7 @@ impl LayoutBox {
             scroll_top: RefCell::new(0.),
             is_mouse_over: RefCell::new(false),
             formatting_context: RefCell::new(None),
+            lines: RefCell::new(Vec::new()),
             data: box_data,
             node: Some(node),
         }
@@ -127,6 +125,7 @@ impl LayoutBox {
             is_mouse_over: RefCell::new(false),
             content_size: Default::default(),
             formatting_context: RefCell::new(None),
+            lines: RefCell::new(Vec::new()),
             data,
             node: None,
         }
@@ -464,10 +463,7 @@ impl LayoutBoxPtr {
     }
 
     pub fn lines(&self) -> &RefCell<Vec<LineBox>> {
-        match &self.data {
-            BoxData::BlockBox { lines } => lines,
-            _ => unreachable!("Non-block box does not have line boxes"),
-        }
+        &self.lines
     }
 
     pub fn get_non_anonymous_parent(&self) -> LayoutBoxPtr {

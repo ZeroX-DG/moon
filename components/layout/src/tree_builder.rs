@@ -2,7 +2,7 @@ use dom::node::NodePtr;
 use shared::tree_node::TreeNode;
 use style_types::{
     values::{display::DisplayBox, prelude::Display},
-    Property, Value,
+    Value,
 };
 
 use crate::layout_box::{BoxData, LayoutBox, LayoutBoxPtr};
