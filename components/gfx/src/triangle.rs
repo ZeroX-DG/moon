@@ -89,7 +89,7 @@ impl<T> Buffer<T> {
 
 impl Pipeline {
     pub fn new(device: &wgpu::Device, format: wgpu::TextureFormat) -> Self {
-        let shader = device.create_shader_module(&wgpu::ShaderModuleDescriptor {
+        let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("triangle shader"),
             source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!(concat!(
                 env!("CARGO_MANIFEST_DIR"),
@@ -159,7 +159,7 @@ impl Pipeline {
             fragment: Some(wgpu::FragmentState {
                 module: &shader,
                 entry_point: "fs_main",
-                targets: &[wgpu::ColorTargetState {
+                targets: &[Some(wgpu::ColorTargetState {
                     format,
                     blend: Some(wgpu::BlendState {
                         color: wgpu::BlendComponent {
@@ -174,7 +174,7 @@ impl Pipeline {
                         },
                     }),
                     write_mask: wgpu::ColorWrites::ALL,
-                }],
+                })],
             }),
             primitive: wgpu::PrimitiveState {
                 topology: wgpu::PrimitiveTopology::TriangleList,
@@ -186,6 +186,7 @@ impl Pipeline {
                 mask: !0,
                 alpha_to_coverage_enabled: false,
             },
+            multiview: None
         });
 
         Self {
@@ -303,14 +304,14 @@ impl Pipeline {
 
         let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("moon::gfx::triangle renderpass"),
-            color_attachments: &[wgpu::RenderPassColorAttachment {
+            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                 view: target,
                 resolve_target: None,
                 ops: wgpu::Operations {
                     load: wgpu::LoadOp::Load,
                     store: true,
                 },
-            }],
+            })],
             depth_stencil_attachment: None,
         });
 

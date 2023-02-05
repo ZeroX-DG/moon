@@ -10,10 +10,10 @@ edition = "2018"
 shared = { version = "*", path = "../shared" }
 bytemuck = { version = "1.5.0", features = ["derive"] }
 lyon_tessellation = "0.17.7"
-wgpu = "0.11"
+wgpu = "0.14"
 log = "*"
 futures = "0.3.15"
 ultraviolet = { version = "0.8.1", features = [ "bytemuck", "int" ] }
-wgpu_glyph = "0.15.1"
+wgpu_glyph = "0.18.0"
 async-trait = "0.1.52"
 glyph_brush = "0.7.3"
