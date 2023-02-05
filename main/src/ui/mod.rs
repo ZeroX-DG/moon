@@ -1,4 +1,4 @@
-//mod content_area;
+pub mod content_area;
 pub mod primary_bar;
 // use gtk::gdk::EventMask;
 // use gtk::gdk_pixbuf::{Colorspace, Pixbuf};

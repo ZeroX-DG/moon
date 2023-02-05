@@ -7,7 +7,7 @@ resolver = "2"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-iced = "0.7.0"
+iced = { version = "0.7.0", features = ["image"] }
 url = { path = "../components/url" }
 shared = { path = "../components/shared" }
 render = { path = "../render" }
