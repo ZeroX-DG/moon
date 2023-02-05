@@ -4,8 +4,6 @@ use flume::{Receiver, Sender};
 use shared::primitive::{Point, Size};
 use url::{parser::URLParser, Url};
 
-use crate::app::get_app_runtime;
-
 use super::browser_tab::{BrowserTab, TabEvent, TabHandler};
 
 fn start_tab(tab: BrowserTab) -> TabHandler {
@@ -152,28 +150,28 @@ impl Browser {
             match event {
                 Event::TabEvent((tab_index, event)) => {
                     let is_active_tab = tab_index == self.active_tab_index;
-                    match event {
-                        TabEvent::URLChanged(url) if is_active_tab => {
-                            get_app_runtime()
-                                .update_state(move |state| state.ui.set_url(&url.as_str()));
-                        }
-                        TabEvent::FrameReceived(frame) if is_active_tab => {
-                            get_app_runtime()
-                                .update_state(|state| state.ui.set_web_content_bitmap(frame));
-                        }
-                        TabEvent::TitleChanged(title) if is_active_tab => {
-                            get_app_runtime().update_state(move |state| state.ui.set_title(&title));
-                        }
-                        TabEvent::LoadingStart => {
-                            get_app_runtime()
-                                .update_state(move |state| state.ui.set_loading_start());
-                        }
-                        TabEvent::LoadingFinished => {
-                            get_app_runtime()
-                                .update_state(move |state| state.ui.set_loading_finished());
-                        }
-                        _ => {}
-                    }
+                    // match event {
+                    //     TabEvent::URLChanged(url) if is_active_tab => {
+                    //         get_app_runtime()
+                    //             .update_state(move |state| state.ui.set_url(&url.as_str()));
+                    //     }
+                    //     TabEvent::FrameReceived(frame) if is_active_tab => {
+                    //         get_app_runtime()
+                    //             .update_state(|state| state.ui.set_web_content_bitmap(frame));
+                    //     }
+                    //     TabEvent::TitleChanged(title) if is_active_tab => {
+                    //         get_app_runtime().update_state(move |state| state.ui.set_title(&title));
+                    //     }
+                    //     TabEvent::LoadingStart => {
+                    //         get_app_runtime()
+                    //             .update_state(move |state| state.ui.set_loading_start());
+                    //     }
+                    //     TabEvent::LoadingFinished => {
+                    //         get_app_runtime()
+                    //             .update_state(move |state| state.ui.set_loading_finished());
+                    //     }
+                    //     _ => {}
+                    // }
                 }
                 Event::UpdateEvent(action) => action(&mut self),
             }
