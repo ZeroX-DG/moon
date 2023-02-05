@@ -21,6 +21,8 @@ fn read_file(path: String) -> String {
 fn main() {
     let config = ConfigBuilder::new()
         .add_filter_ignore_str("wgpu")
+        .add_filter_ignore_str("iced_wgpu")
+        .add_filter_ignore_str("iced_winit")
         .add_filter_ignore_str("gfx_backend_vulkan")
         .add_filter_ignore_str("naga")
         .set_target_level(LevelFilter::Info)
