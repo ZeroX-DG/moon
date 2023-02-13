@@ -17,7 +17,11 @@ fn start_tab(tab: BrowserTab) -> TabHandler {
 
 type BrowserAction = Box<dyn FnOnce(&mut Browser) + Send>;
 
-pub struct BrowserHandler(Sender<BrowserAction>);
+#[derive(Clone)]
+pub struct BrowserHandler {
+    action_tx: Sender<BrowserAction>,
+    tab_event_rx: Receiver<(usize, TabEvent)>,
+}
 
 impl BrowserHandler {
     pub fn resize(&self, size: Size) {
@@ -73,8 +77,12 @@ impl BrowserHandler {
         });
     }
 
+    pub fn events(&self) -> Receiver<(usize, TabEvent)> {
+        self.tab_event_rx.clone()
+    }
+
     fn update(&self, action: impl FnOnce(&mut Browser) + Send + 'static) {
-        self.0.send(Box::new(action)).unwrap();
+        self.action_tx.send(Box::new(action)).unwrap();
     }
 }
 
@@ -83,6 +91,7 @@ pub struct Browser {
     tab_handlers: Vec<TabHandler>,
     active_tab_index: usize,
     update_channel: (Sender<BrowserAction>, Receiver<BrowserAction>),
+    tab_event_channel: (Sender<(usize, TabEvent)>, Receiver<(usize, TabEvent)>)
 }
 
 impl Browser {
@@ -107,12 +116,17 @@ impl Browser {
             tab_handlers: vec![initial_tab_handler],
             active_tab_index: 0,
             update_channel: flume::unbounded(),
+            tab_event_channel: flume::unbounded(),
         }
     }
 
     pub fn handler(&self) -> BrowserHandler {
         let (tx, _) = &self.update_channel;
-        BrowserHandler(tx.clone())
+        let (_, rx) = &self.tab_event_channel;
+        BrowserHandler {
+            action_tx: tx.clone(),
+            tab_event_rx: rx.clone()
+        }
     }
 
     pub fn get_active_tab(&self) -> &TabHandler {
@@ -140,6 +154,7 @@ impl Browser {
                 });
             }
 
+            let (tab_event_tx, _) = &self.tab_event_channel;
             let (_, update_receiver) = &self.update_channel;
             selector = selector.recv(update_receiver, |event| {
                 event.map(|e| Event::UpdateEvent(e))
@@ -148,31 +163,7 @@ impl Browser {
             let event = selector.wait()?;
 
             match event {
-                Event::TabEvent((tab_index, event)) => {
-                    let is_active_tab = tab_index == self.active_tab_index;
-                    // match event {
-                    //     TabEvent::URLChanged(url) if is_active_tab => {
-                    //         get_app_runtime()
-                    //             .update_state(move |state| state.ui.set_url(&url.as_str()));
-                    //     }
-                    //     TabEvent::FrameReceived(frame) if is_active_tab => {
-                    //         get_app_runtime()
-                    //             .update_state(|state| state.ui.set_web_content_bitmap(frame));
-                    //     }
-                    //     TabEvent::TitleChanged(title) if is_active_tab => {
-                    //         get_app_runtime().update_state(move |state| state.ui.set_title(&title));
-                    //     }
-                    //     TabEvent::LoadingStart => {
-                    //         get_app_runtime()
-                    //             .update_state(move |state| state.ui.set_loading_start());
-                    //     }
-                    //     TabEvent::LoadingFinished => {
-                    //         get_app_runtime()
-                    //             .update_state(move |state| state.ui.set_loading_finished());
-                    //     }
-                    //     _ => {}
-                    // }
-                }
+                Event::TabEvent((tab_index, event)) => tab_event_tx.send((tab_index, event))?, 
                 Event::UpdateEvent(action) => action(&mut self),
             }
         }
