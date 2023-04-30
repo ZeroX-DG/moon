@@ -1,14 +1,17 @@
 use std::hash::Hasher;
 
-use crate::{state::{
-    browser::{Browser, BrowserHandler},
-    browser_tab::TabEvent,
-}, fonts::ICON_FONT};
+use crate::{
+    fonts::ICON_FONT,
+    state::{
+        browser::{Browser, BrowserHandler},
+        browser_tab::TabEvent,
+    },
+};
 use iced::{
     executor,
     futures::{stream::BoxStream, StreamExt},
     keyboard::{KeyCode, Modifiers},
-    widget::{column, container, image, text_input},
+    widget::{button, column, container, image, row, text, text_input},
     Application, Command, Event, Renderer, Theme,
 };
 use shared::primitive::{Point, Size};
@@ -32,6 +35,7 @@ pub enum Message {
     MouseMoved(f32, f32),
     KeyPressed(KeyCode, Modifiers),
     TitleChanged(String),
+    ReloadTriggered,
     NoOp,
 }
 
@@ -54,7 +58,7 @@ impl Application for Moon {
             content_width: 0,
             content_height: 0,
             content_data: Vec::new(),
-            title: String::new()
+            title: String::new(),
         };
         (instance, Command::none())
     }
@@ -86,7 +90,7 @@ impl Application for Moon {
             Message::MouseMoved(x, y) => {
                 self.browser.handle_mouse_move(Point::new(x, y));
             }
-            Message::KeyPressed(KeyCode::F5, _) => {
+            Message::KeyPressed(KeyCode::F5, _) | Message::ReloadTriggered => {
                 self.browser.reload();
             }
             Message::KeyPressed(KeyCode::U, Modifiers::CTRL) => {
@@ -147,7 +151,7 @@ impl Application for Moon {
 
     fn view(&self) -> iced::Element<Self::Message, Renderer<Self::Theme>> {
         let content = column![
-            primary_bar(&self.url_input_content),
+            row![reload_button(), primary_bar(&self.url_input_content),],
             content_area(
                 self.content_width,
                 self.content_height,
@@ -156,6 +160,18 @@ impl Application for Moon {
         ];
         container(content).into()
     }
+}
+
+fn reload_button() -> iced::Element<'static, Message> {
+    let icon = text('\u{ec7f}')
+        .font(ICON_FONT)
+        .vertical_alignment(iced::alignment::Vertical::Center)
+        .horizontal_alignment(iced::alignment::Horizontal::Center);
+    button(icon)
+        .width(iced::Length::Fixed(40.))
+        .height(iced::Length::Fixed(40.))
+        .on_press(Message::ReloadTriggered)
+        .into()
 }
 
 fn primary_bar(url_content: &str) -> iced::Element<'static, Message> {
@@ -167,7 +183,7 @@ fn primary_bar(url_content: &str) -> iced::Element<'static, Message> {
             side: text_input::Side::Left,
             code_point: '\u{ed11}',
             size: Some(16.),
-            spacing: 10.
+            spacing: 10.,
         })
         .padding(10)
         .into()
