@@ -1,15 +1,24 @@
 use std::hash::Hasher;
 
-use iced::{Application, executor, Theme, Command, Renderer, widget::{container, column, text_input, image}, futures::{StreamExt, stream::BoxStream}, Event};
-use shared::primitive::Size;
-use crate::state::{browser::{Browser, BrowserHandler}, browser_tab::TabEvent};
+use crate::state::{
+    browser::{Browser, BrowserHandler},
+    browser_tab::TabEvent,
+};
+use iced::{
+    executor,
+    futures::{stream::BoxStream, StreamExt},
+    keyboard::{KeyCode, Modifiers},
+    widget::{column, container, image, text_input},
+    Application, Command, Event, Renderer, Theme,
+};
+use shared::primitive::{Point, Size};
 
 pub struct Moon {
     browser: BrowserHandler,
     url_input_content: String,
     content_width: u32,
     content_height: u32,
-    content_data: Vec<u8>
+    content_data: Vec<u8>,
 }
 
 #[derive(Debug, Clone)]
@@ -19,7 +28,9 @@ pub enum Message {
     ContentDataChanged(Vec<u8>),
     WindowResized(u32, u32),
     MouseScrolled(f32, f32),
-    NoOp
+    MouseMoved(f32, f32),
+    KeyPressed(KeyCode, Modifiers),
+    NoOp,
 }
 
 impl Application for Moon {
@@ -40,7 +51,7 @@ impl Application for Moon {
             url_input_content: String::new(),
             content_width: 0,
             content_height: 0,
-            content_data: Vec::new()
+            content_data: Vec::new(),
         };
         (instance, Command::none())
     }
@@ -69,6 +80,16 @@ impl Application for Moon {
             Message::MouseScrolled(_, y) => {
                 self.browser.scroll(-y);
             }
+            Message::MouseMoved(x, y) => {
+                self.browser.handle_mouse_move(Point::new(x, y));
+            }
+            Message::KeyPressed(KeyCode::F5, _) => {
+                self.browser.reload();
+            }
+            Message::KeyPressed(KeyCode::U, Modifiers::CTRL) => {
+                self.browser.view_source_current_tab();
+            }
+            Message::KeyPressed(_, _) => {}
             Message::NoOp => {}
         }
         Command::none()
@@ -83,32 +104,34 @@ impl Application for Moon {
                 // TODO: implement this
             }
 
-            fn stream(
-                self: Box<Self>,
-                _: BoxStream<M>,
-            ) -> BoxStream<Self::Output> {
+            fn stream(self: Box<Self>, _: BoxStream<M>) -> BoxStream<Self::Output> {
                 self.0.events().into_stream().boxed()
             }
         }
-        let browser_sub = iced::Subscription::from_recipe(BrowserSub(self.browser.clone()))
-            .map(|(_, tab_event)| match tab_event {
+        let browser_sub = iced::Subscription::from_recipe(BrowserSub(self.browser.clone())).map(
+            |(_, tab_event)| match tab_event {
                 TabEvent::FrameReceived(data) => Message::ContentDataChanged(data),
-                _ => Message::NoOp
-            });
+                _ => Message::NoOp,
+            },
+        );
 
-        let events_sub = iced::subscription::events()
-            .map(|event| match event {
-                Event::Window(iced::window::Event::Resized { width, height }) => {
-                    Message::WindowResized(width, height)
-                }
-                Event::Mouse(iced::mouse::Event::WheelScrolled { delta }) => match delta {
-                    iced::mouse::ScrollDelta::Pixels { x, y } => {
-                        Message::MouseScrolled(x, y)
-                    }
-                    _ => Message::NoOp
-                }
-                _ => Message::NoOp
-            });
+        let events_sub = iced::subscription::events().map(|event| match event {
+            Event::Window(iced::window::Event::Resized { width, height }) => {
+                Message::WindowResized(width, height)
+            }
+            Event::Mouse(iced::mouse::Event::WheelScrolled { delta }) => match delta {
+                iced::mouse::ScrollDelta::Pixels { x, y } => Message::MouseScrolled(x, y),
+                _ => Message::NoOp,
+            },
+            Event::Mouse(iced::mouse::Event::CursorMoved { position }) => {
+                Message::MouseMoved(position.x, position.y)
+            }
+            Event::Keyboard(iced::keyboard::Event::KeyPressed {
+                key_code,
+                modifiers,
+            }) => Message::KeyPressed(key_code, modifiers),
+            _ => Message::NoOp,
+        });
 
         let subs = vec![browser_sub, events_sub];
         iced::Subscription::batch(subs)
@@ -117,29 +140,27 @@ impl Application for Moon {
     fn view(&self) -> iced::Element<Self::Message, Renderer<Self::Theme>> {
         let content = column![
             primary_bar(&self.url_input_content),
-            content_area(self.content_width, self.content_height, self.content_data.clone()),
+            content_area(
+                self.content_width,
+                self.content_height,
+                self.content_data.clone()
+            ),
         ];
         container(content).into()
     }
 }
 
-fn primary_bar(
-    url_content: &str
-) -> iced::Element<'static, Message> {
+fn primary_bar(url_content: &str) -> iced::Element<'static, Message> {
     text_input("Go to...", url_content, Message::URLInputContentChanged)
         .on_submit(Message::URLNavigationTriggered)
         .into()
 }
 
-fn content_area(
-    width: u32,
-    height: u32,
-    content: Vec<u8>
-) -> iced::Element<'static, Message> {
+fn content_area(width: u32, height: u32, content: Vec<u8>) -> iced::Element<'static, Message> {
     let image_handle = image::Handle::from_pixels(width, height, content);
     let content_image = iced::widget::image(image_handle)
         .width(iced::Length::Fill)
         .height(iced::Length::Fill);
-    
+
     content_image.into()
 }

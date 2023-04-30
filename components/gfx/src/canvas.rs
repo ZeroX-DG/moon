@@ -183,7 +183,7 @@ impl<'a> Canvas<'a> {
 
         // NOTE: We have to create the mapping THEN device.poll() before await
         // the future. Otherwise the application will freeze.
-        buffer_slice.map_async(wgpu::MapMode::Read, |_|());
+        buffer_slice.map_async(wgpu::MapMode::Read, |_| ());
         self.device.poll(wgpu::Maintain::Wait);
 
         let aligned_output = buffer_slice.get_mapped_range().to_vec();

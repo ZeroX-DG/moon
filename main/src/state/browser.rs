@@ -91,7 +91,7 @@ pub struct Browser {
     tab_handlers: Vec<TabHandler>,
     active_tab_index: usize,
     update_channel: (Sender<BrowserAction>, Receiver<BrowserAction>),
-    tab_event_channel: (Sender<(usize, TabEvent)>, Receiver<(usize, TabEvent)>)
+    tab_event_channel: (Sender<(usize, TabEvent)>, Receiver<(usize, TabEvent)>),
 }
 
 impl Browser {
@@ -125,7 +125,7 @@ impl Browser {
         let (_, rx) = &self.tab_event_channel;
         BrowserHandler {
             action_tx: tx.clone(),
-            tab_event_rx: rx.clone()
+            tab_event_rx: rx.clone(),
         }
     }
 
@@ -163,7 +163,7 @@ impl Browser {
             let event = selector.wait()?;
 
             match event {
-                Event::TabEvent((tab_index, event)) => tab_event_tx.send((tab_index, event))?, 
+                Event::TabEvent((tab_index, event)) => tab_event_tx.send((tab_index, event))?,
                 Event::UpdateEvent(action) => action(&mut self),
             }
         }
