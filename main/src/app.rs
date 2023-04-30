@@ -19,6 +19,7 @@ pub struct Moon {
     content_width: u32,
     content_height: u32,
     content_data: Vec<u8>,
+    title: String,
 }
 
 #[derive(Debug, Clone)]
@@ -30,6 +31,7 @@ pub enum Message {
     MouseScrolled(f32, f32),
     MouseMoved(f32, f32),
     KeyPressed(KeyCode, Modifiers),
+    TitleChanged(String),
     NoOp,
 }
 
@@ -52,12 +54,13 @@ impl Application for Moon {
             content_width: 0,
             content_height: 0,
             content_data: Vec::new(),
+            title: String::new()
         };
         (instance, Command::none())
     }
 
     fn title(&self) -> String {
-        String::from("Moon browser")
+        self.title.clone()
     }
 
     fn update(&mut self, message: Self::Message) -> Command<Self::Message> {
@@ -89,6 +92,9 @@ impl Application for Moon {
             Message::KeyPressed(KeyCode::U, Modifiers::CTRL) => {
                 self.browser.view_source_current_tab();
             }
+            Message::TitleChanged(new_title) => {
+                self.title = new_title;
+            }
             Message::KeyPressed(_, _) => {}
             Message::NoOp => {}
         }
@@ -111,6 +117,8 @@ impl Application for Moon {
         let browser_sub = iced::Subscription::from_recipe(BrowserSub(self.browser.clone())).map(
             |(_, tab_event)| match tab_event {
                 TabEvent::FrameReceived(data) => Message::ContentDataChanged(data),
+                TabEvent::TitleChanged(new_title) => Message::TitleChanged(new_title),
+                TabEvent::URLChanged(new_url) => Message::URLInputContentChanged(new_url.as_str()),
                 _ => Message::NoOp,
             },
         );

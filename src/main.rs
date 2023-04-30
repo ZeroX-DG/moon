@@ -64,7 +64,7 @@ fn main() {
             });
         }
         cli::Action::StartMain => {
-            main::start_main();
+            main::start_main().expect("Browser crashed with error");
         }
     }
 }
