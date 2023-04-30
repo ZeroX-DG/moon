@@ -6,7 +6,6 @@ use crate::painters::text::TextPainter;
 use crate::tessellator::Tessellator;
 use crate::Graphics;
 use async_trait::async_trait;
-use futures::task::SpawnExt;
 use shared::color::Color;
 use shared::primitive::*;
 
@@ -121,14 +120,14 @@ impl<'a> Canvas<'a> {
         // Background clear
         encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("moon::gfx clear bg render pass"),
-            color_attachments: &[wgpu::RenderPassColorAttachment {
+            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                 view: &self.frame_texture_view,
                 resolve_target: None,
                 ops: wgpu::Operations {
                     load: wgpu::LoadOp::Clear(wgpu::Color::WHITE),
                     store: true,
                 },
-            }],
+            })],
             depth_stencil_attachment: None,
         });
 
@@ -161,10 +160,7 @@ impl<'a> Canvas<'a> {
 
         self.staging_belt.finish();
         self.queue.submit(Some(encoder.finish()));
-        self.local_pool
-            .spawner()
-            .spawn(self.staging_belt.recall())
-            .expect("Recall staging belt");
+        self.staging_belt.recall();
 
         self.local_pool.run_until_stalled();
 
@@ -187,10 +183,8 @@ impl<'a> Canvas<'a> {
 
         // NOTE: We have to create the mapping THEN device.poll() before await
         // the future. Otherwise the application will freeze.
-        let mapping = buffer_slice.map_async(wgpu::MapMode::Read);
+        buffer_slice.map_async(wgpu::MapMode::Read, |_| ());
         self.device.poll(wgpu::Maintain::Wait);
-
-        mapping.await.unwrap();
 
         let aligned_output = buffer_slice.get_mapped_range().to_vec();
 
