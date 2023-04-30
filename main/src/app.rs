@@ -1,9 +1,9 @@
 use std::hash::Hasher;
 
-use crate::state::{
+use crate::{state::{
     browser::{Browser, BrowserHandler},
     browser_tab::TabEvent,
-};
+}, fonts::ICON_FONT};
 use iced::{
     executor,
     futures::{stream::BoxStream, StreamExt},
@@ -77,7 +77,7 @@ impl Application for Moon {
             }
             Message::WindowResized(width, height) => {
                 self.content_width = width;
-                self.content_height = height - 30;
+                self.content_height = height - 40;
                 self.browser.resize(Size::new(width as f32, height as f32));
             }
             Message::MouseScrolled(_, y) => {
@@ -159,8 +159,17 @@ impl Application for Moon {
 }
 
 fn primary_bar(url_content: &str) -> iced::Element<'static, Message> {
-    text_input("Go to...", url_content, Message::URLInputContentChanged)
+    text_input("Go to...", url_content)
+        .on_input(Message::URLInputContentChanged)
         .on_submit(Message::URLNavigationTriggered)
+        .icon(text_input::Icon {
+            font: ICON_FONT,
+            side: text_input::Side::Left,
+            code_point: '\u{ed11}',
+            size: Some(16.),
+            spacing: 10.
+        })
+        .padding(10)
         .into()
 }
 
