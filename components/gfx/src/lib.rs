@@ -1,5 +1,6 @@
 mod backend;
 mod canvas;
+mod canvas_cpu;
 mod fonts;
 mod graphics;
 mod painters;
@@ -11,5 +12,6 @@ mod triangle;
 pub type Bitmap = Vec<u8>;
 
 pub use canvas::Canvas;
+pub use canvas_cpu::CanvasCPU;
 pub use graphics::Graphics;
 pub use text_measure::TextMeasure;

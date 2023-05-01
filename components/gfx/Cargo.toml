@@ -17,3 +17,5 @@ ultraviolet = { version = "0.8.1", features = [ "bytemuck", "int" ] }
 wgpu_glyph = "0.18.0"
 async-trait = "0.1.52"
 glyph_brush = "0.7.3"
+raqote = { version = "0.7.14", features = ["text"] }
+fontdue = "0.7.3"

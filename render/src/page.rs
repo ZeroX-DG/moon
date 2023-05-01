@@ -21,14 +21,14 @@ use super::frame::Frame;
 
 const USER_AGENT_STYLES: &str = include_str!("./html.css");
 
-pub struct Page<'a> {
+pub struct Page {
     url: Option<Url>,
     main_frame: Frame,
-    pipeline: Pipeline<'a>,
+    pipeline: Pipeline,
 }
 
-impl<'a> Page<'a> {
-    pub async fn new(init_size: Size) -> Page<'a> {
+impl Page {
+    pub async fn new(init_size: Size) -> Page {
         Page {
             url: None,
             main_frame: Frame::new(init_size),

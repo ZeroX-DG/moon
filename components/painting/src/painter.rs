@@ -4,16 +4,16 @@ use shared::primitive::{Point, Rect, Size};
 
 use crate::display_list::{Borders, Command, DisplayListBuilder};
 
-pub struct Painter<G: Graphics> {
-    gfx: G,
+pub struct Painter {
+    gfx: Box<dyn Graphics>,
     canvas_size: Size,
     clip_rects: Vec<Rect>,
 }
 
-impl<G: Graphics> Painter<G> {
-    pub fn new(gfx: G) -> Self {
+impl Painter {
+    pub fn new(gfx: impl Graphics + 'static) -> Self {
         Self {
-            gfx,
+            gfx: Box::new(gfx),
             canvas_size: Size::default(),
             clip_rects: Vec::new(),
         }

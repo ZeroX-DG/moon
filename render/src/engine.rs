@@ -22,13 +22,13 @@ pub enum OutputEvent {
     LoadingFinished,
 }
 
-pub struct RenderEngine<'a> {
-    page: Page<'a>,
+pub struct RenderEngine {
+    page: Page,
     resource_loop_tx: Sender<LoadRequest>,
 }
 
-impl<'a> RenderEngine<'a> {
-    pub async fn new(viewport: Size) -> RenderEngine<'a> {
+impl RenderEngine {
+    pub async fn new(viewport: Size) -> RenderEngine {
         let page = Page::new(viewport).await;
         let resource_loop = ResourceLoop::new();
         let resource_loop_tx = resource_loop.start_loop();
