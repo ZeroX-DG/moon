@@ -177,9 +177,10 @@ impl Graphics for CanvasCPU {
 
     fn resize(&mut self, size: Size) {
         self.target = DrawTarget::new(size.width as i32, size.height as i32);
-        self.target.clear(raqote::SolidSource::from_unpremultiplied_argb(
-            255, 255, 255, 255,
-        ));
+        self.target
+            .clear(raqote::SolidSource::from_unpremultiplied_argb(
+                255, 255, 255, 255,
+            ));
     }
 
     async fn output(&mut self) -> Vec<u8> {

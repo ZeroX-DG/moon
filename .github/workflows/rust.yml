@@ -38,6 +38,8 @@ jobs:
         with:
           node-version: '14'
 
+      - run: npm install --save-dev @percy/cli
+
       - name: Install stable toolchain
         uses: actions-rs/toolchain@v1
         with:
@@ -46,11 +48,6 @@ jobs:
 
       - name: Install mold linker
         uses: rui314/setup-mold@v1
-
-      - name: Build
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
 
       - name: Run Tests
         uses: actions-rs/cargo@v1
