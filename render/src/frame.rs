@@ -24,7 +24,7 @@ impl Frame {
         self.size.clone()
     }
 
-    pub async fn resize(&mut self, new_size: Size, pipeline: &mut Pipeline<'_>) {
+    pub async fn resize(&mut self, new_size: Size, pipeline: &mut Pipeline) {
         self.size = new_size.clone();
         self.render_frame(
             pipeline,
@@ -36,7 +36,7 @@ impl Frame {
         .await;
     }
 
-    pub async fn handle_mouse_move(&self, coord: Point, pipeline: &mut Pipeline<'_>) {
+    pub async fn handle_mouse_move(&self, coord: Point, pipeline: &mut Pipeline) {
         if let Some(root_node) = pipeline.content() {
             root_node.handle_mouse_move(&coord);
         }
@@ -44,7 +44,7 @@ impl Frame {
         // TODO: Re-render the frame if needed
     }
 
-    pub async fn scroll(&mut self, delta_y: f32, pipeline: &mut Pipeline<'_>) {
+    pub async fn scroll(&mut self, delta_y: f32, pipeline: &mut Pipeline) {
         let mut need_redraw = false;
 
         // TODO: Handle scrolling for other overflow element within the current frame's document
@@ -75,7 +75,7 @@ impl Frame {
         .await;
     }
 
-    pub async fn set_document(&mut self, document: NodePtr, pipeline: &mut Pipeline<'_>) {
+    pub async fn set_document(&mut self, document: NodePtr, pipeline: &mut Pipeline) {
         self.document = Some(document.clone());
         self.render_frame(
             pipeline,
@@ -95,7 +95,7 @@ impl Frame {
         self.bitmap.as_ref()
     }
 
-    async fn render_frame(&mut self, pipeline: &mut Pipeline<'_>, opts: PipelineRunOptions) {
+    async fn render_frame(&mut self, pipeline: &mut Pipeline, opts: PipelineRunOptions) {
         if let Some(document) = self.document() {
             let bitmap = pipeline.run(document, &self.size(), opts).await;
             self.bitmap = Some(bitmap);

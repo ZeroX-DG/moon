@@ -1,5 +1,5 @@
 use dom::node::NodePtr;
-use gfx::{Bitmap, Canvas, TextMeasure};
+use gfx::{Bitmap, Canvas, CanvasCPU, TextMeasure};
 use layout::{
     dump_layout,
     formatting_context::{establish_context, FormattingContextType},
@@ -13,8 +13,8 @@ use shared::{
 };
 use style_types::ContextualRule;
 
-pub struct Pipeline<'a> {
-    painter: Painter<Canvas<'a>>,
+pub struct Pipeline {
+    painter: Painter,
     layout_tree: Option<LayoutBoxPtr>,
 }
 
@@ -23,10 +23,15 @@ pub struct PipelineRunOptions {
     pub skip_layout_calculation: bool,
 }
 
-impl<'a> Pipeline<'a> {
-    pub async fn new() -> Pipeline<'a> {
+impl Pipeline {
+    pub async fn new() -> Pipeline {
+        let painter = if std::env::var("CPU_RENDERING").is_ok() {
+            Painter::new(CanvasCPU::new())
+        } else {
+            Painter::new(Canvas::new().await)
+        };
         Pipeline {
-            painter: Painter::new(Canvas::new().await),
+            painter,
             layout_tree: None,
         }
     }
