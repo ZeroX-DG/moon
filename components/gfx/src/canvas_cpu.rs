@@ -19,8 +19,13 @@ pub struct CanvasCPU {
 
 impl CanvasCPU {
     pub fn new() -> Self {
+        let mut target = DrawTarget::new(0, 0);
+        target.clear(raqote::SolidSource::from_unpremultiplied_argb(
+            255, 255, 255, 255,
+        ));
+
         Self {
-            target: DrawTarget::new(0, 0),
+            target,
             text_layout: Layout::new(fontdue::layout::CoordinateSystem::PositiveYDown),
             default_font: fontdue::Font::from_bytes(FALLBACK, fontdue::FontSettings::default())
                 .unwrap(),
@@ -172,6 +177,9 @@ impl Graphics for CanvasCPU {
 
     fn resize(&mut self, size: Size) {
         self.target = DrawTarget::new(size.width as i32, size.height as i32);
+        self.target.clear(raqote::SolidSource::from_unpremultiplied_argb(
+            255, 255, 255, 255,
+        ));
     }
 
     async fn output(&mut self) -> Vec<u8> {
