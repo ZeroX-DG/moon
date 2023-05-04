@@ -11,12 +11,20 @@ impl TextPainter {
         Self { texts: Vec::new() }
     }
 
-    pub fn fill_text(&mut self, content: String, bounds: Rect, color: Color, size: f32) {
+    pub fn fill_text(
+        &mut self,
+        content: String,
+        bounds: Rect,
+        color: Color,
+        size: f32,
+        bold: bool,
+    ) {
         self.texts.push(Text {
             content,
             bounds,
             color,
             size,
+            bold,
         })
     }
 

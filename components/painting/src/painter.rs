@@ -39,9 +39,9 @@ impl Painter {
                 Command::FillBorder(rect, border_rect, borders) => {
                     self.paint_borders(rect, border_rect, borders)
                 }
-                Command::FillText(content, rect, color, font_size) => {
+                Command::FillText(content, rect, color, font_size, bold) => {
                     self.gfx
-                        .fill_text(content, self.clip_rect(rect), color, font_size)
+                        .fill_text(content, self.clip_rect(rect), color, font_size, bold)
                 }
                 Command::ClipRect(rect) => self.clip_rects.push(rect),
                 Command::EndClipRect => {

@@ -217,8 +217,9 @@ impl<'a> Graphics for Canvas<'a> {
             .draw_solid_rrect(&mut self.tessellator, &rect, &color);
     }
 
-    fn fill_text(&mut self, content: String, bounds: Rect, color: Color, size: f32) {
-        self.text_painter.fill_text(content, bounds, color, size);
+    fn fill_text(&mut self, content: String, bounds: Rect, color: Color, size: f32, bold: bool) {
+        self.text_painter
+            .fill_text(content, bounds, color, size, bold);
     }
 
     fn fill_polygon(&mut self, points: Vec<Point>, color: Color) {

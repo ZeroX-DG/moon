@@ -44,14 +44,15 @@ impl Backend {
             for text in request.texts {
                 let section = wgpu_glyph::Section {
                     screen_position: (text.bounds.x, text.bounds.y),
-                    bounds: (text.bounds.width, text.bounds.height),
+                    // TODO: Re-enable this once we have proper text bounds computation
+                    // bounds: (text.bounds.width, text.bounds.height),
                     text: vec![wgpu_glyph::Text {
                         text: &text.content,
                         scale: wgpu_glyph::ab_glyph::PxScale {
                             x: text.size,
                             y: text.size,
                         },
-                        font_id: wgpu_glyph::FontId(0),
+                        font_id: wgpu_glyph::FontId(if text.bold { 1 } else { 0 }),
                         extra: wgpu_glyph::Extra {
                             color: text.color.clone().into(),
                             z: 0.0,

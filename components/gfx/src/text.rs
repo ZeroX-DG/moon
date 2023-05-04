@@ -1,4 +1,4 @@
-use crate::fonts::FALLBACK;
+use crate::fonts::{FALLBACK, FALLBACK_BOLD};
 use shared::{color::Color, primitive::rect::Rect};
 use wgpu_glyph::ab_glyph;
 
@@ -7,6 +7,7 @@ pub struct Text {
     pub bounds: Rect,
     pub size: f32,
     pub color: Color,
+    pub bold: bool,
 }
 
 pub struct Pipeline {
@@ -31,10 +32,15 @@ impl Pipeline {
             ab_glyph::FontArc::try_from_slice(FALLBACK).expect("Load fallback font")
         });
 
-        let draw_brush = wgpu_glyph::GlyphBrushBuilder::using_font(font)
+        let mut draw_brush = wgpu_glyph::GlyphBrushBuilder::using_font(font)
             .initial_cache_size((2048, 2048))
             .draw_cache_multithread(true)
             .build(device, format);
+
+        draw_brush.add_font(
+            ab_glyph::FontArc::try_from_vec(FALLBACK_BOLD.to_vec())
+                .expect("Unable to load bold fallback font"),
+        );
 
         Self { draw_brush }
     }

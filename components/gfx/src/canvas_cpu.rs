@@ -9,12 +9,16 @@ use shared::{
     primitive::{Point, RRect, Rect, Size},
 };
 
-use crate::{fonts::FALLBACK, Graphics};
+use crate::{
+    fonts::{FALLBACK, FALLBACK_BOLD},
+    Graphics,
+};
 
 pub struct CanvasCPU {
     target: DrawTarget,
     text_layout: Layout,
     default_font: Font,
+    default_font_bold: Font,
 }
 
 impl CanvasCPU {
@@ -29,6 +33,11 @@ impl CanvasCPU {
             text_layout: Layout::new(fontdue::layout::CoordinateSystem::PositiveYDown),
             default_font: fontdue::Font::from_bytes(FALLBACK, fontdue::FontSettings::default())
                 .unwrap(),
+            default_font_bold: fontdue::Font::from_bytes(
+                FALLBACK_BOLD,
+                fontdue::FontSettings::default(),
+            )
+            .unwrap(),
         }
     }
 }
@@ -103,7 +112,7 @@ impl Graphics for CanvasCPU {
         self.target.fill(&path, &src, &options);
     }
 
-    fn fill_text(&mut self, content: String, bounds: Rect, color: Color, size: f32) {
+    fn fill_text(&mut self, content: String, bounds: Rect, color: Color, size: f32, bold: bool) {
         let options = DrawOptions::new();
         self.text_layout.reset(&LayoutSettings {
             x: bounds.x,
@@ -112,15 +121,20 @@ impl Graphics for CanvasCPU {
             vertical_align: VerticalAlign::Top,
             ..LayoutSettings::default()
         });
+        let font = if bold {
+            self.default_font_bold.clone()
+        } else {
+            self.default_font.clone()
+        };
         self.text_layout.append(
-            &[self.default_font.clone()],
+            &[font.clone()],
             &TextStyle::new(&content, size * (75. / 96.), 0),
         );
 
         let mut buf = vec![0; 256 * 256];
 
         for glyph in self.text_layout.glyphs() {
-            let (_, bitmap) = self.default_font.rasterize_config(glyph.key);
+            let (_, bitmap) = font.rasterize_config(glyph.key);
 
             let width = glyph.width as i32;
             let height = glyph.height as i32;

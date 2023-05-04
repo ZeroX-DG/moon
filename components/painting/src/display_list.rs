@@ -16,7 +16,7 @@ pub enum Command {
     FillRect(Rect, Color),
     FillRRect(RRect, Color),
     FillBorder(Rect, Rect, Borders),
-    FillText(String, Rect, Color, f32),
+    FillText(String, Rect, Color, f32, bool),
     ClipRect(Rect),
     EndClipRect,
 }
@@ -150,8 +150,14 @@ impl<'a> DisplayListBuilder<'a> {
             return;
         }
 
+        let bold = if let Value::FontWeight(weight) = node.get_style(&Property::FontWeight) {
+            weight.value() >= 700.
+        } else {
+            false
+        };
+
         self.display_list
-            .fill_text(content.to_string(), text_rect, color, font_size);
+            .fill_text(content.to_string(), text_rect, color, font_size, bold);
     }
 
     fn build_paint_boxes(
@@ -348,8 +354,15 @@ impl DisplayList {
         self.0.push(command);
     }
 
-    pub fn fill_text(&mut self, content: String, rect: Rect, color: Color, font_size: f32) {
-        let command = Command::FillText(content, rect, color, font_size);
+    pub fn fill_text(
+        &mut self,
+        content: String,
+        rect: Rect,
+        color: Color,
+        font_size: f32,
+        bold: bool,
+    ) {
+        let command = Command::FillText(content, rect, color, font_size, bold);
         self.0.push(command);
     }
 
