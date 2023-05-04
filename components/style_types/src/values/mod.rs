@@ -5,6 +5,7 @@ pub mod color;
 pub mod direction;
 pub mod display;
 pub mod float;
+pub mod font_weight;
 pub mod length;
 pub mod length_percentage;
 pub mod number;
@@ -23,6 +24,7 @@ pub mod prelude {
     pub use super::direction::Direction;
     pub use super::display::Display;
     pub use super::float::Float;
+    pub use super::font_weight::FontWeight;
     pub use super::length::Length;
     pub use super::length_percentage::LengthPercentage;
     pub use super::overflow::Overflow;

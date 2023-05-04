@@ -41,6 +41,7 @@ pub enum Property {
     Bottom,
     Direction,
     FontSize,
+    FontWeight,
     TextAlign,
     OverflowX,
     OverflowY,
@@ -82,6 +83,7 @@ impl Property {
             "margin-inline-end" => Some(Property::MarginRight),
             "margin-block-start" => Some(Property::MarginTop),
             "margin-block-end" => Some(Property::MarginBottom),
+            "font-weight" => Some(Property::FontWeight),
             _ => {
                 log::debug!("Unsupported CSS property: {}", property);
                 None
@@ -97,6 +99,7 @@ impl Property {
         match self {
             Self::FontSize => true,
             Self::Color => true,
+            Self::FontWeight => true,
             _ => false,
         }
     }

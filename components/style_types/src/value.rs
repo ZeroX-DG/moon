@@ -1,6 +1,9 @@
 use css::{parser::structs::ComponentValue, tokenizer::token::Token};
 
-use crate::{property::Property, values::length::LengthUnit};
+use crate::{
+    property::Property,
+    values::{length::LengthUnit, number::Number},
+};
 
 use super::values::prelude::*;
 
@@ -64,6 +67,7 @@ pub enum Value {
     BorderRadius(BorderRadius),
     TextAlign(TextAlign),
     Overflow(Overflow),
+    FontWeight(FontWeight),
     Auto,
     Inherit,
     Initial,
@@ -233,6 +237,9 @@ impl Value {
                 Overflow | Auto;
                 tokens
             ),
+            Property::FontWeight => parse_value!(
+                FontWeight | Inherit; tokens
+            ),
         }
     }
 
@@ -279,6 +286,7 @@ impl Value {
             Property::TextAlign => Value::TextAlign(TextAlign::Left),
             Property::OverflowX => Value::Overflow(Overflow::Visible),
             Property::OverflowY => Value::Overflow(Overflow::Visible),
+            Property::FontWeight => Value::FontWeight(FontWeight(Number(400.))),
         }
     }
 
