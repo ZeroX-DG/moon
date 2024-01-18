@@ -7,14 +7,14 @@ Make sure you have all the dependencies installed:
 **Debian / Ubuntu**
 
 ```
-sudo apt install build-essential cmake pkg-config libssl-dev libgtk-3-dev mold
+sudo apt install build-essential cmake pkg-config libssl-dev mold
 ```
 
 > Optional: [`cargo-make`](https://github.com/sagiegurari/cargo-make) for running predefined building & running tasks.
 
 ## Run with UI
 
-By default Moon will start with a GTK-based UI, so to run the browser with the UI, execute the command:
+By default Moon will start with a iced-rs based UI, so to run the browser with the UI, execute the command:
 
 ```
 cargo run

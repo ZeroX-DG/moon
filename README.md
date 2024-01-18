@@ -16,7 +16,13 @@ This is a web browser developed from scratch using Rust. To fit with the "make f
 
 ## Wanna try it out?
 
-Here are the steps to try it out if you are interested:
+First, make sure you have all the right dependencies installed:
+
+```
+sudo apt install build-essential cmake pkg-config libssl-dev mold
+```
+
+Then it's just as simple as:
 
 1. Clone the repository.
 2. Run `cargo run` and wait for the code to compile & execute.
