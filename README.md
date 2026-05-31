@@ -68,8 +68,8 @@ I write about what I learn from this journey on my blog (order by latest):
 
 - [MIT](LICENSE)
 
-[1]: https://zerox-dg.github.io/blog/2020/05/29/Browser-from-Scratch-Introduction/
-[2]: https://zerox-dg.github.io/blog/2020/09/01/Browser-from-Scratch-DOM-API/
-[3]: https://zerox-dg.github.io/blog/2020/10/24/Browser-from-Scratch-HTML-parsing/
-[4]: https://zerox-dg.github.io/blog/2021/01/13/Browser-from-Scratch-CSS-parsing-processing/
-[5]: https://zerox-dg.github.io/blog/2021/09/26/Browser-from-Scratch-Layout/
+[1]: https://viethung.space/blog/Browser-from-Scratch-Introduction/
+[2]: https://viethung.space/blog/Browser-from-Scratch-DOM-API/
+[3]: https://viethung.space/blog/Browser-from-Scratch-HTML-parsing/
+[4]: https://viethung.space/blog/Browser-from-Scratch-CSS-parsing-processing/
+[5]: https://viethung.space/blog/Browser-from-Scratch-Layout/
